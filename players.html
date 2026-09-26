@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline — League Players & Stats</title>
+    <style>
+      .players-header {
+        padding: 48px 0 24px;
+        border-bottom: 1px solid #ffffff12;
+      }
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 28px 0;
+      }
+      .filter-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .filter-btn {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        padding: 8px 14px;
+        font: 700 11px var(--display);
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+      .filter-btn:hover,
+      .filter-btn.active {
+        background: var(--lime);
+        color: #171811;
+        border-color: var(--lime);
+      }
+      .search-box {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        color: var(--text);
+        padding: 8px 14px;
+        font-size: 12px;
+        outline: none;
+        width: min(260px, 100%);
+      }
+      .search-box:focus {
+        border-color: var(--lime);
+      }
+      .player-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .player-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 14px;
+      }
+      .team-badge {
+        font: 700 11px var(--display);
+        color: var(--lime);
+        letter-spacing: 1px;
+      }
+      .player-gamertag {
+        font: 800 28px/1 var(--display);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 16px;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        background: #141511;
+        border: 1px solid #ffffff0c;
+        padding: 12px 10px;
+        text-align: center;
+      }
+      .stat-item strong {
+        display: block;
+        font: 800 18px var(--display);
+        color: var(--lime);
+      }
+      .stat-item small {
+        color: var(--muted);
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="main.html#home">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          FRONTLINE<small>COMMUNITY LEAGUE</small>
+        </a>
+        <h1>COMMUNITY PLAYERS</h1>
+        <a
+          class="cta"
+          href="https://discord.com/"
+          target="_blank"
+          rel="noopener"
+          >Join Discord ↗</a
+        >
+        <div class="menu-toggle">
+          <input type="checkbox" id="menu-toggle" />
+          <label for="menu-toggle">Menu</label>
+          <nav class="links" aria-label="Main navigation">
+            <a href="main.html#league">THE LEAGUE</a>
+            <a href="main.html#standings">STANDINGS</a>
+            <a href="teams.html">TEAMS</a>
+            <a href="players.html" style="color:var(--lime);">PLAYERS</a>
+            <a href="livestreams.html">LIVESTREAMS</a>
+            <a href="vods.html">VODS</a>
+            <a href="signup.html">SIGN UP</a>
+            <a
+              class="cta"
+              href="https://discord.com/"
+              target="_blank"
+              rel="noopener"
+              >Join Discord ↗</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="players-header">
+        <div class="kicker">Roster & Combat Records</div>
+        <h2 style="font: 800 48px/0.9 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
+          League <span style="color:var(--lime);">Combatants</span>
+        </h2>
+        <p class="intro">
+          Verified player stats from active season matches, KD ratios, and team rosters. <em>Click any player to inspect their overall record & map-by-map statistics.</em>
+        </p>
+      </section>
+
+      <!-- Filter and Search Controls -->
+      <div class="filter-bar">
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">All Roles</button>
+          <button class="filter-btn" data-filter="SMG">SMG</button>
+          <button class="filter-btn" data-filter="Main AR">Main AR</button>
+          <button class="filter-btn" data-filter="Flex">Flex</button>
+        </div>
+        <input
+          type="text"
+          id="player-search"
+          class="search-box"
+          placeholder="Search gamertag or team..."
+        />
+      </div>
+
+      <!-- Player Cards Container (populated from Supabase) -->
+      <section class="cards" id="players-container">
+        <div class="empty-state">Loading combat records from database...</div>
+      </section>
+    </main>
+
+    <footer class="footer" style="margin-top: 60px;">
+      <div class="wrap footer-inner">
+        <strong>FRONTLINE · COMMUNITY LEAGUE</strong>
+        <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
+        <div class="footer-links">
+          <a href="main.html#league">League</a>
+          <a href="main.html#standings">Standings</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Supabase JS Client, Data Loader & Player Modal -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./player-modal.js"></script>
+    <script>
+      let allPlayers = [];
+      let activeRole = 'all';
+
+      async function initPlayers() {
+        const container = document.getElementById("players-container");
+        try {
+          allPlayers = await window.LeagueDB.getPlayers();
+          renderPlayers();
+        } catch (e) {
+          console.error("Error loading players:", e);
+          container.innerHTML = '<div class="empty-state">Unable to load players right now.</div>';
+        }
+      }
+
+      function renderPlayers() {
+        const container = document.getElementById("players-container");
+        const query = document.getElementById("player-search").value.toLowerCase().trim();
+
+        const filtered = allPlayers.filter(player => {
+          const roleMatch = activeRole === 'all' || player.role === activeRole;
+          const tag = (player.gamertag || '').toLowerCase();
+          const teamName = (player.teams?.name || player.team_name || '').toLowerCase();
+          const searchMatch = !query || tag.includes(query) || teamName.includes(query);
+          return roleMatch && searchMatch;
+        });
+
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="empty-state">No players found matching your criteria.</div>';
+          return;
+        }
+
+        container.innerHTML = filtered.map(player => {
+          const teamName = player.teams?.name || player.team_name || 'Free Agent';
+          const teamTag = player.teams?.tag ? `[${player.teams.tag}]` : '';
+          const kd = Number(player.kdr || 1.0).toFixed(2);
+          const kills = player.total_kills ?? 0;
+          const deaths = player.total_deaths ?? 0;
+
+          return `
+            <article class="card player-card clickable-player" data-player-id="${player.id}" title="Click to view full combat record & individual map stats">
+              <div>
+                <div class="player-top">
+                  <span class="pill">${player.role || 'Flex'}</span>
+                  <span class="team-badge">${teamTag} ${teamName}</span>
+                </div>
+                <h3 class="player-gamertag">${player.gamertag}</h3>
+              </div>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <strong>${kd}</strong>
+                  <small>K/D Ratio</small>
+                </div>
+                <div class="stat-item">
+                  <strong>${kills}</strong>
+                  <small>Total Kills</small>
+                </div>
+                <div class="stat-item">
+                  <strong>${deaths}</strong>
+                  <small>Deaths</small>
+                </div>
+              </div>
+              <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #ffffff0a; padding-top:8px;">
+                <span style="font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;">Combat Dossier</span>
+                <span style="font-size:10px; color:var(--lime); font-weight:800; letter-spacing:0.5px;">VIEW MAP STATS ↗</span>
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      // Filter button event listeners
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeRole = btn.getAttribute('data-filter');
+          renderPlayers();
+        });
+      });
+
+      // Search event listener
+      document.getElementById('player-search').addEventListener('input', renderPlayers);
+
+      initPlayers();
+    </script>
+  </body>
+</html>
+

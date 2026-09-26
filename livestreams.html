@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline — Live Twitch Stream</title>
+    <style>
+      .live-header {
+        padding: 48px 0 24px;
+        border-bottom: 1px solid #ffffff12;
+        margin-bottom: 32px;
+      }
+      .broadcast-container {
+        display: grid;
+        grid-template-columns: 2.2fr 1fr;
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+      .live-player-box {
+        background: var(--panel);
+        border: 1px solid #d5f45b50;
+        box-shadow: 0 0 30px #d5f45b12;
+      }
+      .live-top-bar {
+        background: #141511;
+        padding: 12px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+      }
+      .live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #ff4a4a;
+        font: 800 13px var(--display);
+        letter-spacing: 1.5px;
+      }
+      .live-dot {
+        width: 10px;
+        height: 10px;
+        background: #ff4a4a;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #ff4a4a;
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(0.85); }
+      }
+      .video-wrapper {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 ratio */
+        height: 0;
+        background: #000;
+      }
+      .video-wrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .chat-wrapper {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 480px;
+      }
+      .chat-header {
+        background: #141511;
+        padding: 12px 16px;
+        font: 700 13px var(--display);
+        letter-spacing: 1px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chat-wrapper iframe {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .stream-details {
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .no-live-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 60px 30px;
+        text-align: center;
+        max-width: 680px;
+        margin: 40px auto;
+      }
+      .no-live-card h3 {
+        font: 800 36px var(--display);
+        text-transform: uppercase;
+        margin: 16px 0 10px;
+      }
+      .no-live-card p {
+        color: var(--muted);
+        line-height: 1.8;
+        margin-bottom: 24px;
+      }
+      @media (max-width: 900px) {
+        .broadcast-container {
+          grid-template-columns: 1fr;
+        }
+        .chat-wrapper {
+          min-height: 420px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="main.html#home">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          FRONTLINE<small>COMMUNITY LEAGUE</small>
+        </a>
+        <h1>LIVE BROADCAST</h1>
+        <a
+          class="cta"
+          href="https://discord.com/"
+          target="_blank"
+          rel="noopener"
+          >Join Discord ↗</a
+        >
+        <div class="menu-toggle">
+          <input type="checkbox" id="menu-toggle" />
+          <label for="menu-toggle">Menu</label>
+          <nav class="links" aria-label="Main navigation">
+            <a href="main.html#league">THE LEAGUE</a>
+            <a href="main.html#standings">STANDINGS</a>
+            <a href="teams.html">TEAMS</a>
+            <a href="players.html">PLAYERS</a>
+            <a href="livestreams.html" style="color:var(--lime);">LIVESTREAMS</a>
+            <a href="vods.html">VODS</a>
+            <a href="signup.html">SIGN UP</a>
+            <a
+              class="cta"
+              href="https://discord.com/"
+              target="_blank"
+              rel="noopener"
+              >Join Discord ↗</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="live-header">
+        <div class="kicker">Match Day Central</div>
+        <h2 style="font: 800 48px/0.9 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
+          Official League <span style="color:var(--lime);">Livestream</span>
+        </h2>
+        <p class="intro">
+          Watch active tournament matches live with integrated Twitch stream & chat.
+        </p>
+      </section>
+
+      <!-- Container where live stream + chat or 'offline' card is rendered -->
+      <div id="live-root">
+        <div style="text-align:center; padding: 60px 0; color:var(--muted);">
+          Checking live broadcast status...
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer" style="margin-top: 60px;">
+      <div class="wrap footer-inner">
+        <strong>FRONTLINE · COMMUNITY LEAGUE</strong
+        ><span
+          >Unofficial community league. Not affiliated with or endorsed by
+          Activision.</span
+        >
+        <div class="footer-links">
+          <a href="main.html#league">League</a>
+          <a href="main.html#standings">Standings</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Supabase JS Client & Data Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script>
+      async function renderLiveBroadcast() {
+        const root = document.getElementById("live-root");
+        try {
+          const liveStreams = await window.LeagueDB.getLiveStreams();
+
+          // If no active live stream found
+          if (!liveStreams || liveStreams.length === 0) {
+            root.innerHTML = `
+              <div class="no-live-card">
+                <div style="font-size: 38px; color: var(--lime);">📺</div>
+                <h3>League Broadcast is Offline</h3>
+                <p>
+                  No matches are currently broadcasting live right now. Match nights are announced in Discord, and all completed matches can be replayed in the VOD archive.
+                </p>
+                <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+                  <a class="button" href="vods.html">Watch Match VODs ↗</a>
+                  <a class="plain-link" href="https://discord.com/" target="_blank" rel="noopener" style="padding-top:10px;">
+                    Check Match Schedule in Discord <span>↗</span>
+                  </a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          // Use the first active live match
+          const match = liveStreams[0];
+          const embedSrc = window.LeagueDB.getTwitchEmbedUrl(match.vod_url);
+          
+          // Determine Twitch Channel for live chat iframe
+          let channel = match.vod_url.replace(/https?:\/\/(www\.)?twitch\.tv\//, '').replace(/[@#]/g, '').trim();
+          let host = window.location.hostname || "localhost";
+          const chatSrc = `https://www.twitch.tv/embed/${channel}/chat?parent=${host}&darkpopout`;
+
+          const team1 = match.team1?.name || "Team 1";
+          const team2 = match.team2?.name || "Team 2";
+
+          root.innerHTML = `
+            <div class="broadcast-container">
+              <!-- Live Video Player -->
+              <div class="live-player-box">
+                <div class="live-top-bar">
+                  <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    <span>LIVE NOW</span>
+                  </div>
+                  <span class="pill">${match.stage || 'OFFICIAL MATCH'}</span>
+                </div>
+                <div class="video-wrapper">
+                  <iframe
+                    src="${embedSrc}"
+                    allowfullscreen
+                    scrolling="no"
+                  ></iframe>
+                </div>
+                <div class="stream-details">
+                  <div>
+                    <h3 style="font: 800 28px/1 var(--display); text-transform: uppercase; margin: 0 0 6px;">
+                      ${match.title}
+                    </h3>
+                    <span style="color:var(--muted); font-size:13px;">${team1} vs ${team2}</span>
+                  </div>
+                  <a class="button" href="vods.html">View Past VODs ↗</a>
+                </div>
+              </div>
+
+              <!-- Live Twitch Chat -->
+              <div class="chat-wrapper">
+                <div class="chat-header">
+                  <span>STREAM CHAT</span>
+                  <small style="color:var(--lime);">TWITCH</small>
+                </div>
+                <iframe src="${chatSrc}"></iframe>
+              </div>
+            </div>
+          `;
+        } catch (err) {
+          console.error("Error loading live broadcast:", err);
+          root.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted);">Unable to load live stream status.</div>`;
+        }
+      }
+
+      renderLiveBroadcast();
+    </script>
+  </body>
+</html>

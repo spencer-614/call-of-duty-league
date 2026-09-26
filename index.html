@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline — Call of Duty Community League</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="#home">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          FRONTLINE<small>COMMUNITY LEAGUE</small>
+        </a>
+        <h1>WELCOME TO THE FRONTLINE</h1>
+        <a
+          class="cta"
+          href="https://discord.com/"
+          target="_blank"
+          rel="noopener"
+          >Join Discord ↗</a
+        >
+        <div class="menu-toggle">
+          <input type="checkbox" id="menu-toggle" />
+          <label for="menu-toggle">Menu</label>
+          <nav class="links" aria-label="Main navigation">
+            <a href="#league">THE LEAGUE</a>
+            <a href="#standings">STANDINGS</a>
+            <a href="teams.html">TEAMS</a>
+            <a href="players.html">PLAYERS</a>
+            <a href="livestreams.html">LIVESTREAMS</a>
+            <a href="vods.html">VODS</a>
+            <a href="signup.html" style="color:var(--lime);">SIGN UP</a>
+            <a
+              class="cta"
+              href="https://discord.com/"
+              target="_blank"
+              rel="noopener"
+              >Join Discord ↗</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section class="hero" id="home">
+        <div class="wrap hero-grid">
+          <div>
+            <div class="eyebrow">A community-built competitive league</div>
+            <h1>Squad up.<br /><em>Show up.</em><br />Rise up.</h1>
+            <p class="intro">
+              Good games. Great people. A Call of Duty league built for players
+              who want real competition without losing the fun.
+            </p>
+            <div class="actions">
+              <a class="button" href="signup.html">Find your squad ↗</a
+              ><a class="plain-link" href="#league"
+                >Explore the league <span>↓</span></a
+              >
+            </div>
+          </div>
+          <div class="art" aria-label="Frontline league emblem">
+            <div class="orbit">
+              <img src="images/leaguelogo_1.png" alt="Frontline League Emblem" class="hero-emblem" />
+            </div>
+            <div class="tag top">NEXT SEASON<b>COMING SOON</b></div>
+            <div class="tag bottom">BUILT BY PLAYERS<b>PLAY AS A TEAM</b></div>
+          </div>
+        </div>
+      </section>
+      <div class="ticker" aria-label="League highlights ticker">
+        <div class="ticker-track">
+          <span>COMPETE TOGETHER ✳</span>
+          <span>RESPECT THE GAME ✳</span>
+          <span>ALL SKILL LEVELS WELCOME ✳</span>
+          <span>PRIZE POOL TOURNAMENTS ✳</span>
+          <span>WEEKLY SCRIMS ✳</span>
+          <span>COMPETE TOGETHER ✳</span>
+          <span>RESPECT THE GAME ✳</span>
+          <span>ALL SKILL LEVELS WELCOME ✳</span>
+          <span>PRIZE POOL TOURNAMENTS ✳</span>
+          <span>WEEKLY SCRIMS ✳</span>
+        </div>
+      </div>
+      <section class="section" id="league">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <div class="kicker">More than match night</div>
+              <h2>Your game. Your people.</h2>
+            </div>
+            <p>
+              Here for the competition or looking for your next gaming crew?
+              There’s a place for you.
+            </p>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <span class="pill">Competitive</span>
+              <div class="card-icon">⌖</div>
+              <h3>League play</h3>
+              <p>
+                Organized team matchups, clear schedules, and a season-long race
+                for the top spot.
+              </p>
+            </article>
+            <article class="card">
+              <span class="pill">Weekly</span>
+              <div class="card-icon">◷</div>
+              <h3>Community nights</h3>
+              <p>
+                Jump into casual lobbies, meet other players, and get games in
+                between league weeks.
+              </p>
+            </article>
+            <article class="card">
+              <span class="pill">Good vibes</span>
+              <div class="card-icon">✳</div>
+              <h3>Find your squad</h3>
+              <p>
+                Looking for teammates? Meet players, team up, and get involved
+                in the community.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section class="section league" id="standings">
+        <div class="wrap league-grid">
+          <div class="table-box">
+            <div class="table-title">
+              Season standings <small>EXAMPLE TEAMS</small>
+            </div>
+            <table class="standings">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Team</th>
+                  <th>W-L</th>
+                  <th>Pts</th>
+                </tr>
+              </thead>
+              <tbody id="standings-body">
+                <tr>
+                  <td>01</td>
+                  <td>Loading standings...</td>
+                  <td>—</td>
+                  <td>—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="league-copy">
+            <div class="kicker">The next match starts here</div>
+            <h2>Bring the <em>heat.</em><br />Keep it friendly.</h2>
+            <p>
+              Frontline is a player-first community league: close games, clutch
+              plays, and good people. Season details and official standings will
+              be shared in Discord.
+            </p>
+            <div class="steps">
+              <div><strong>01</strong><small>Join Discord</small></div>
+              <div><strong>02</strong><small>Meet your team</small></div>
+              <div><strong>03</strong><small>Play your season</small></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="join" id="join">
+        <div class="wrap join-box">
+          <div>
+            <div class="kicker">Tactical Recruitment Terminal</div>
+            <h2>Ready to drop in?</h2>
+            <p>
+              Sign up as an unassigned Free Agent or register an official Team / Organization Franchise ($25 Buy-In) to compete in the Frontline League.
+            </p>
+          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <a class="button" href="signup.html">Solo Free Agent (Free) ↗</a>
+            <a class="button" style="background:#ffc439; color:#003087; font-weight:800; border:none;" href="signup.html#team">Register Franchise ($25) ↗</a>
+            <a
+              class="button"
+              style="background: transparent; border: 1px solid var(--line); color: var(--text);"
+              href="https://discord.com/"
+              target="_blank"
+              rel="noopener"
+              >Join Discord ↗</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <strong>FRONTLINE · COMMUNITY LEAGUE</strong
+        ><span
+          >Unofficial community league. Not affiliated with or endorsed by
+          Activision.</span
+        >
+        <div class="footer-links">
+          <a href="#league">League</a>
+          <a href="#standings">Standings</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Supabase JS Client & Data Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script>
+      async function renderStandings() {
+        const tbody = document.getElementById("standings-body");
+        if (!tbody) return;
+        try {
+          const teams = await window.LeagueDB.getStandings();
+          if (teams && teams.length > 0) {
+            tbody.innerHTML = teams.map((team, idx) => `
+              <tr>
+                <td>${String(idx + 1).padStart(2, "0")}</td>
+                <td><strong>${team.name}</strong> <small style="color:var(--muted); margin-left:4px;">[${team.tag || ''}]</small></td>
+                <td>${team.wins ?? 0}-${team.losses ?? 0}</td>
+                <td>${team.points ?? 0}</td>
+              </tr>
+            `).join("");
+          }
+        } catch (e) {
+          console.error("Failed to render standings:", e);
+        }
+      }
+      renderStandings();
+    </script>
+  </body>
+</html>

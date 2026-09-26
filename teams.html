@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline — Teams & Rosters</title>
+    <style>
+      .teams-header {
+        padding: 48px 0 24px;
+        border-bottom: 1px solid #ffffff12;
+      }
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 28px 0 36px;
+      }
+      .search-box {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        color: var(--text);
+        padding: 10px 16px;
+        font-size: 13px;
+        outline: none;
+        width: min(320px, 100%);
+      }
+      .search-box:focus {
+        border-color: var(--lime);
+      }
+      .teams-list {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+      .team-box {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 24px;
+        transition: border-color 0.25s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+      }
+      .team-box:hover {
+        border-color: #596138;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 16px rgba(213, 244, 91, 0.08);
+      }
+      .team-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #ffffff0c;
+        margin-bottom: 20px;
+      }
+      .team-identity {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .team-tag-badge {
+        background: var(--lime);
+        color: #171811;
+        font: 900 16px/1 var(--display);
+        padding: 8px 12px;
+        letter-spacing: 1px;
+      }
+      .team-name {
+        font: 800 32px/1 var(--display);
+        text-transform: uppercase;
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+      .team-stats-banner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .team-record-badge {
+        background: #141511;
+        border: 1px solid #ffffff14;
+        padding: 8px 14px;
+        font: 700 13px var(--display);
+        color: var(--lime);
+        letter-spacing: 1px;
+      }
+      .roster-title {
+        font: 700 11px var(--display);
+        color: var(--muted);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .roster-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .player-mini-card {
+        background: #141511;
+        border: 1px solid var(--line);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+      .player-mini-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--lime);
+      }
+      .player-mini-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .player-mini-gamertag {
+        font: 800 20px/1 var(--display);
+        text-transform: uppercase;
+        margin: 0 0 12px;
+      }
+      .player-mini-stats {
+        display: flex;
+        justify-content: space-between;
+        background: #1a1b17;
+        padding: 8px 10px;
+        border: 1px solid #ffffff08;
+        font-size: 10px;
+      }
+      .player-mini-stats span {
+        color: var(--muted);
+      }
+      .player-mini-stats strong {
+        color: var(--lime);
+      }
+      .empty-roster {
+        grid-column: 1 / -1;
+        padding: 24px;
+        text-align: center;
+        color: var(--muted);
+        background: #141511;
+        border: 1px dashed var(--line);
+        font-size: 12px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+      }
+      @media (max-width: 900px) {
+        .roster-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 550px) {
+        .roster-grid {
+          grid-template-columns: 1fr;
+        }
+        .team-top {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="main.html#home">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          FRONTLINE<small>COMMUNITY LEAGUE</small>
+        </a>
+        <h1>TEAMS & SQUADS</h1>
+        <a
+          class="cta"
+          href="https://discord.com/"
+          target="_blank"
+          rel="noopener"
+          >Join Discord ↗</a
+        >
+        <div class="menu-toggle">
+          <input type="checkbox" id="menu-toggle" />
+          <label for="menu-toggle">Menu</label>
+          <nav class="links" aria-label="Main navigation">
+            <a href="main.html#league">THE LEAGUE</a>
+            <a href="main.html#standings">STANDINGS</a>
+            <a href="teams.html" style="color:var(--lime);">TEAMS</a>
+            <a href="players.html">PLAYERS</a>
+            <a href="livestreams.html">LIVESTREAMS</a>
+            <a href="vods.html">VODS</a>
+            <a href="signup.html">SIGN UP</a>
+            <a
+              class="cta"
+              href="https://discord.com/"
+              target="_blank"
+              rel="noopener"
+              >Join Discord ↗</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="teams-header">
+        <div class="kicker">Official Lineups</div>
+        <h2 style="font: 800 48px/0.9 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
+          League <span style="color:var(--lime);">Teams & Rosters</span>
+        </h2>
+        <p class="intro">
+          Full lineups for every competing squad, active starting rosters, and current season points.
+        </p>
+        <div style="margin-top: 16px;">
+          <a href="signup.html#team" class="cta" style="display:inline-flex; align-items:center; gap:8px;">
+            <span>Register a Team / Franchise ($25 Buy-In)</span>
+            <span style="font-size:14px;">↗</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Search Bar -->
+      <div class="filter-bar">
+        <div class="kicker" id="team-count">Loading teams...</div>
+        <input
+          type="text"
+          id="team-search"
+          class="search-box"
+          placeholder="Search teams or players..."
+        />
+      </div>
+
+      <!-- Teams & Rosters List -->
+      <section class="teams-list" id="teams-container">
+        <div class="empty-state">Loading teams and squad rosters from database...</div>
+      </section>
+    </main>
+
+    <footer class="footer" style="margin-top: 60px;">
+      <div class="wrap footer-inner">
+        <strong>FRONTLINE · COMMUNITY LEAGUE</strong
+        ><span
+          >Unofficial community league. Not affiliated with or endorsed by
+          Activision.</span
+        >
+        <div class="footer-links">
+          <a href="main.html#league">League</a>
+          <a href="main.html#standings">Standings</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Supabase JS Client, Data Loader & Player Modal -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./player-modal.js"></script>
+    <script>
+      let allTeams = [];
+
+      async function initTeams() {
+        const container = document.getElementById("teams-container");
+        try {
+          allTeams = await window.LeagueDB.getTeamsWithPlayers();
+          renderTeams();
+        } catch (err) {
+          console.error("Error loading teams with players:", err);
+          container.innerHTML = '<div class="empty-state">Unable to load team rosters.</div>';
+        }
+      }
+
+      function renderTeams() {
+        const container = document.getElementById("teams-container");
+        const countLabel = document.getElementById("team-count");
+        const query = document.getElementById("team-search").value.toLowerCase().trim();
+
+        const filtered = allTeams.filter(team => {
+          const name = (team.name || '').toLowerCase();
+          const tag = (team.tag || '').toLowerCase();
+          const playerMatch = (team.players || []).some(p => 
+            (p.gamertag || '').toLowerCase().includes(query) ||
+            (p.role || '').toLowerCase().includes(query)
+          );
+          return !query || name.includes(query) || tag.includes(query) || playerMatch;
+        });
+
+        countLabel.textContent = `${filtered.length} TEAMS ACTIVE`;
+
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="empty-state">No teams found matching your search.</div>';
+          return;
+        }
+
+        container.innerHTML = filtered.map(team => {
+          const players = team.players || [];
+          const winRate = (team.wins + team.losses) > 0 
+            ? Math.round((team.wins / (team.wins + team.losses)) * 100) 
+            : 0;
+
+          const playerCardsHtml = players.length > 0
+            ? players.map(p => `
+                <div class="player-mini-card clickable-player" data-player-id="${p.id}" title="Click to view combat records & map stats">
+                  <div class="player-mini-top">
+                    <span class="pill">${p.role || 'Flex'}</span>
+                    <span style="font-size:9px; color:var(--muted); font-weight:bold;">${p.real_name || ''}</span>
+                  </div>
+                  <h4 class="player-mini-gamertag">${p.gamertag}</h4>
+                  <div class="player-mini-stats">
+                    <div><span>K/D: </span><strong>${Number(p.kdr || 1.0).toFixed(2)}</strong></div>
+                    <div><span>Kills: </span><strong>${p.total_kills ?? 0}</strong></div>
+                  </div>
+                  <div style="margin-top:8px; text-align:right; font-size:9px; color:var(--lime); font-weight:bold;">MAP STATS ↗</div>
+                </div>
+              `).join('')
+            : '<div class="empty-roster">No players signed to this roster yet.</div>';
+
+          return `
+            <article class="team-box">
+              <div class="team-top">
+                <div class="team-identity">
+                  <span class="team-tag-badge">${team.tag || 'TAG'}</span>
+                  <div>
+                    <h3 class="team-name">${team.name}</h3>
+                  </div>
+                </div>
+                <div class="team-stats-banner">
+                  <div class="team-record-badge">
+                    RECORD: ${team.wins ?? 0}W - ${team.losses ?? 0}L &nbsp;|&nbsp; ${team.points ?? 0} PTS
+                  </div>
+                  <span class="pill" style="float:none;">${winRate}% WIN RATE</span>
+                </div>
+              </div>
+
+              <div>
+                <div class="roster-title">
+                  <span>ACTIVE SQUAD LINEUP (${players.length})</span>
+                  <span>4v4 COMPETITIVE</span>
+                </div>
+                <div class="roster-grid">
+                  ${playerCardsHtml}
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('team-search').addEventListener('input', renderTeams);
+
+      initTeams();
+    </script>
+  </body>
+</html>
