@@ -131,7 +131,7 @@
         <div class="wrap league-grid">
           <div class="table-box">
             <div class="table-title">
-              Season standings <small>EXAMPLE TEAMS</small>
+              Season standings <small style="color:var(--lime);">CLICK TEAM FOR MAP STATS ↗</small>
             </div>
             <table class="standings">
               <thead>
@@ -211,9 +211,11 @@
       </div>
     </footer>
 
-    <!-- Supabase JS Client & Data Loader -->
+    <!-- Supabase JS Client, Data Loader, Player Modal & Team Modal -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabase.js"></script>
+    <script src="./player-modal.js"></script>
+    <script src="./team-modal.js"></script>
     <script>
       async function renderStandings() {
         const tbody = document.getElementById("standings-body");
@@ -222,11 +224,14 @@
           const teams = await window.LeagueDB.getStandings();
           if (teams && teams.length > 0) {
             tbody.innerHTML = teams.map((team, idx) => `
-              <tr>
-                <td>${String(idx + 1).padStart(2, "0")}</td>
-                <td><strong>${team.name}</strong> <small style="color:var(--muted); margin-left:4px;">[${team.tag || ''}]</small></td>
-                <td>${team.wins ?? 0}-${team.losses ?? 0}</td>
-                <td>${team.points ?? 0}</td>
+              <tr class="clickable-team" data-team-id="${team.id}" title="Click to view ${team.name} win/loss records & map stats">
+                <td style="color:var(--muted); font-weight:bold;">${String(idx + 1).padStart(2, "0")}</td>
+                <td>
+                  <strong style="color:var(--text);">${team.name}</strong> 
+                  <small style="color:var(--lime); margin-left:4px; font-weight:bold;">[${team.tag || ''}]</small>
+                </td>
+                <td style="font-weight:bold;">${team.wins ?? 0}-${team.losses ?? 0}</td>
+                <td style="color:var(--lime); font-weight:bold;">${team.points ?? 0}</td>
               </tr>
             `).join("");
           }

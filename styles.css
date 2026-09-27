@@ -1154,23 +1154,26 @@ textarea.form-control {
     padding-left: 4px;
     padding-right: 4px;
   }
+}
+
 /* ==============================================================================
-   PLAYER COMBAT DOSSIER MODAL (<dialog>)
+   PLAYER COMBAT DOSSIER MODAL (<dialog>) - MATCHING WEBSITE THEME
    ============================================================================== */
 dialog.player-modal {
-  border: 1px solid #596138;
-  background: var(--panel);
+  border: 1px solid var(--line);
+  background: var(--bg); /* Exactly matches website background #11120f */
   color: var(--text);
   padding: 0;
   width: min(840px, calc(100% - 32px));
   max-height: 88vh;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(213, 244, 91, 0.15);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 24px rgba(213, 244, 91, 0.08);
   position: fixed;
   inset: 0;
   margin: auto;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  outline: none;
 }
 
 dialog.player-modal:not([open]) {
@@ -1178,44 +1181,113 @@ dialog.player-modal:not([open]) {
 }
 
 dialog.player-modal::backdrop {
-  background-color: rgba(10, 11, 8, 0.85);
+  background-color: rgba(17, 18, 15, 0.85);
   backdrop-filter: blur(8px);
 }
 
+/* Modal Header Bar */
 .modal-header {
-  background: #141511;
+  background: var(--bg); /* Same color as website background */
   border-bottom: 1px solid var(--line);
-  padding: 18px 24px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   position: sticky;
   top: 0;
   z-index: 10;
+  gap: 16px;
+}
+
+.modal-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.modal-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modal-kicker {
+  color: var(--lime);
+  font: 700 10px var(--display);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.modal-status-badge {
+  font: 700 8px var(--display);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  background: #d5f45b14;
+  color: var(--lime);
+  border: 1px solid rgba(213, 244, 91, 0.3);
+}
+
+.modal-status-badge.status-fa {
+  background: rgba(255, 179, 0, 0.12);
+  color: #ffb300;
+  border-color: rgba(255, 179, 0, 0.35);
 }
 
 .modal-title-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-top: 2px;
 }
 
 .modal-gamertag {
-  font: 900 34px/1 var(--display);
+  font: 800 28px/1 var(--display);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   margin: 0;
+  color: var(--text);
+}
+
+.modal-header .pill {
+  color: var(--lime);
+  background: #d5f45b12;
+  padding: 4px 8px;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  float: none;
+  border: 1px solid rgba(213, 244, 91, 0.25);
 }
 
 .modal-team-tag {
   color: var(--lime);
-  font: 700 13px var(--display);
+  font: 700 11px var(--display);
   letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
+.modal-player-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.modal-player-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Modal Close Button */
 .modal-close-btn {
-  background: #252620;
+  background: var(--panel);
   border: 1px solid var(--line);
   color: var(--text);
   font: 800 16px var(--display);
@@ -1225,6 +1297,7 @@ dialog.player-modal::backdrop {
   place-items: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .modal-close-btn:hover {
@@ -1233,51 +1306,90 @@ dialog.player-modal::backdrop {
   border-color: var(--lime);
 }
 
+/* Modal Body */
 .modal-body {
+  background: var(--bg); /* Same color as website background */
   padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
 
+/* Section Title */
 .modal-section-title {
-  font: 800 11px var(--display);
+  font: 700 10px var(--display);
   color: var(--lime);
   letter-spacing: 2px;
   text-transform: uppercase;
   margin: 0 0 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.modal-section-title .section-title-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-section-title .title-accent {
+  color: var(--lime);
+}
+
+.modal-section-title .title-count {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+/* Overall Stats HUD Cards */
 .overall-stats-hud {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 30px;
+  gap: 10px;
+  margin-bottom: 26px;
 }
 
 .hud-item {
-  background: #141511;
-  border: 1px solid #ffffff0f;
-  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 16px 12px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-.hud-item strong {
-  display: block;
-  font: 800 28px/1 var(--display);
-  color: var(--lime);
-  margin-bottom: 6px;
+.hud-item:hover {
+  border-color: #596138;
+  transform: translateY(-2px);
 }
 
-.hud-item small {
+.hud-label {
   color: var(--muted);
-  font-size: 8px;
+  font: 700 8px var(--display);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
+.hud-value {
+  font: 800 26px/1 var(--display);
+  color: var(--lime);
+  margin: 4px 0 2px;
+}
+
+.hud-sub {
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Map Mode Filter Tabs */
 .map-filter-tabs {
   display: flex;
   gap: 8px;
@@ -1286,11 +1398,11 @@ dialog.player-modal::backdrop {
 }
 
 .map-tab-btn {
-  background: #141511;
+  background: var(--panel);
   border: 1px solid var(--line);
   color: var(--muted);
-  padding: 6px 12px;
-  font: 700 10px var(--display);
+  padding: 8px 14px;
+  font: 700 11px var(--display);
   letter-spacing: 1px;
   cursor: pointer;
   text-transform: uppercase;
@@ -1304,9 +1416,10 @@ dialog.player-modal::backdrop {
   border-color: var(--lime);
 }
 
+/* Map Stats Table */
 .map-stats-table-wrapper {
-  background: #141511;
-  border: 1px solid #ffffff0f;
+  background: var(--panel);
+  border: 1px solid var(--line);
   overflow-x: auto;
 }
 
@@ -1318,30 +1431,60 @@ dialog.player-modal::backdrop {
 }
 
 .map-stats-table th {
-  padding: 12px 14px;
-  color: #88897e;
-  font-size: 8px;
+  padding: 10px 14px;
+  color: var(--muted);
+  font: 700 8px var(--display);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   border-bottom: 1px solid var(--line);
-  background: #1a1b16;
+  background: #141511;
+  white-space: nowrap;
 }
 
 .map-stats-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid #ffffff08;
-  color: #ddd;
+  border-bottom: 1px solid #ffffff0a;
+  color: var(--text);
 }
 
-.map-stats-table tr:hover td {
-  background: rgba(213, 244, 91, 0.04);
+.map-stats-table tbody tr:hover td {
+  background: #ffffff05;
 }
 
+.map-stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.map-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.map-name-cell strong {
+  font: 800 13px var(--display);
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.mode-badge {
+  font-size: 8px;
+  color: var(--muted);
+  background: #141511;
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+/* Win / Loss Badges */
 .badge-w {
   color: #5bf488;
   background: rgba(91, 244, 136, 0.12);
   padding: 3px 6px;
   font: 800 10px var(--display);
+  letter-spacing: 0.5px;
 }
 
 .badge-l {
@@ -1349,15 +1492,6 @@ dialog.player-modal::backdrop {
   background: rgba(255, 91, 91, 0.12);
   padding: 3px 6px;
   font: 800 10px var(--display);
-}
-
-.mode-badge {
-  font-size: 8px;
-  color: var(--muted);
-  background: #252620;
-  padding: 2px 6px;
-  border-radius: 2px;
-  margin-left: 6px;
   letter-spacing: 0.5px;
 }
 
@@ -1381,6 +1515,147 @@ dialog.player-modal::backdrop {
   }
   .modal-body {
     padding: 16px;
+  }
+  .modal-gamertag {
+    font-size: 24px;
+  }
+}
+
+/* ==============================================================================
+   TEAM DOSSIER & MAP TELEMETRY MODAL (<dialog>) - MATCHING WEBSITE THEME
+   ============================================================================== */
+dialog.team-modal {
+  border: 1px solid var(--line);
+  background: var(--bg); /* Exactly matches website background #11120f */
+  color: var(--text);
+  padding: 0;
+  width: min(880px, calc(100% - 32px));
+  max-height: 90vh;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 24px rgba(213, 244, 91, 0.08);
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  z-index: 1000;
+}
+
+dialog.team-modal:not([open]) {
+  display: none;
+}
+
+dialog.team-modal::backdrop {
+  background-color: rgba(17, 18, 15, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.team-modal .modal-header {
+  background: var(--bg); /* Matches website background #11120f */
+  border-bottom: 1px solid var(--line);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 16px;
+}
+
+.team-modal .modal-body {
+  background: var(--bg); /* Matches website background #11120f */
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.team-modal-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.team-modal-player-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.team-modal-player-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--lime);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(213, 244, 91, 0.1);
+}
+
+.player-modal-gt {
+  font: 800 18px/1 var(--display);
+  text-transform: uppercase;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.hud-item.highlight-card {
+  border-color: rgba(213, 244, 91, 0.4);
+  background: linear-gradient(180deg, #1f211c 0%, #171813 100%);
+}
+
+.clickable-team {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-team:hover .team-name {
+  color: var(--lime);
+}
+
+tr.clickable-team:hover td {
+  background: rgba(213, 244, 91, 0.08) !important;
+}
+
+tr.clickable-team {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.team-banner-action {
+  font: 800 11px var(--display);
+  color: var(--lime);
+  background: #d5f45b14;
+  border: 1px solid rgba(213, 244, 91, 0.3);
+  padding: 6px 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.team-banner-action:hover,
+.team-top:hover .team-banner-action {
+  background: var(--lime);
+  color: #171811;
+  border-color: var(--lime);
+}
+
+@media (max-width: 768px) {
+  .team-modal-roster-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .team-modal-roster-grid {
+    grid-template-columns: 1fr;
   }
 }
 

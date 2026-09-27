@@ -114,6 +114,79 @@ const MOCK_DATA = {
       { id: 15, map_name: "Rio", game_mode: "Search & Destroy", opponent_team: "Night Shift", kills: 6, deaths: 7, damage: 980, kdr: 0.86, result: "L", score: "2 - 6", match_date: "2026-09-18" },
       { id: 16, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Static", kills: 31, deaths: 20, damage: 4750, kdr: 1.55, result: "W", score: "250 - 220", match_date: "2026-09-11" }
     ]
+  },
+  team_map_records: {
+    1: { // Night Shift (NSH) - 5W-1L, 50 PTS
+      overall: { wins: 5, losses: 1, points: 50, map_wins: 16, map_losses: 6, map_win_rate: 73 },
+      modes: {
+        hardpoint: { wins: 7, losses: 2, win_rate: 78, avg_score: "248 - 208" },
+        snd: { wins: 5, losses: 1, win_rate: 83, avg_score: "5.8 - 3.5" },
+        control: { wins: 4, losses: 3, win_rate: 57, avg_score: "2.7 - 2.1" }
+      },
+      maps: [
+        { map_name: "Karachi", game_mode: "Hardpoint", wins: 3, losses: 0, win_rate: 100, streak: "3W", recent_score: "250 - 210 vs Vantage", recent_result: "W" },
+        { map_name: "Sub Base", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "250 - 195 vs Redline", recent_result: "W" },
+        { map_name: "Rio", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "2W", recent_score: "250 - 225 vs Static", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 3, losses: 0, win_rate: 100, streak: "3W", recent_score: "6 - 4 vs Vantage", recent_result: "W" },
+        { map_name: "Rio", game_mode: "Search & Destroy", wins: 2, losses: 0, win_rate: 100, streak: "2W", recent_score: "6 - 2 vs Redline", recent_result: "W" },
+        { map_name: "Karachi", game_mode: "Search & Destroy", wins: 0, losses: 1, win_rate: 0, streak: "1L", recent_score: "4 - 6 vs Vantage", recent_result: "L" },
+        { map_name: "Invasion", game_mode: "Control", wins: 2, losses: 2, win_rate: 50, streak: "1L", recent_score: "2 - 3 vs Vantage", recent_result: "L" },
+        { map_name: "Highrise", game_mode: "Control", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "3 - 1 vs Redline", recent_result: "W" }
+      ]
+    },
+    2: { // Vantage (VTG) - 4W-2L, 40 PTS
+      overall: { wins: 4, losses: 2, points: 40, map_wins: 14, map_losses: 9, map_win_rate: 61 },
+      modes: {
+        hardpoint: { wins: 5, losses: 4, win_rate: 56, avg_score: "235 - 220" },
+        snd: { wins: 5, losses: 3, win_rate: 63, avg_score: "5.4 - 4.1" },
+        control: { wins: 4, losses: 2, win_rate: 67, avg_score: "2.8 - 2.0" }
+      },
+      maps: [
+        { map_name: "Karachi", game_mode: "Hardpoint", wins: 2, losses: 2, win_rate: 50, streak: "1L", recent_score: "210 - 250 vs Night Shift", recent_result: "L" },
+        { map_name: "6 Star", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "2W", recent_score: "250 - 180 vs Static", recent_result: "W" },
+        { map_name: "Vista", game_mode: "Hardpoint", wins: 1, losses: 1, win_rate: 50, streak: "1W", recent_score: "250 - 220 vs Redline", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 2, losses: 2, win_rate: 50, streak: "1L", recent_score: "4 - 6 vs Night Shift", recent_result: "L" },
+        { map_name: "Karachi", game_mode: "Search & Destroy", wins: 2, losses: 0, win_rate: 100, streak: "2W", recent_score: "6 - 4 vs Night Shift", recent_result: "W" },
+        { map_name: "Terminal", game_mode: "Search & Destroy", wins: 1, losses: 1, win_rate: 50, streak: "1W", recent_score: "6 - 3 vs Redline", recent_result: "W" },
+        { map_name: "Invasion", game_mode: "Control", wins: 3, losses: 1, win_rate: 75, streak: "2W", recent_score: "3 - 2 vs Night Shift", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Control", wins: 1, losses: 1, win_rate: 50, streak: "1L", recent_score: "1 - 3 vs Redline", recent_result: "L" }
+      ]
+    },
+    3: { // Redline (RED) - 3W-3L, 30 PTS
+      overall: { wins: 3, losses: 3, points: 30, map_wins: 11, map_losses: 12, map_win_rate: 48 },
+      modes: {
+        hardpoint: { wins: 4, losses: 5, win_rate: 44, avg_score: "228 - 236" },
+        snd: { wins: 4, losses: 4, win_rate: 50, avg_score: "4.8 - 4.9" },
+        control: { wins: 3, losses: 3, win_rate: 50, avg_score: "2.3 - 2.5" }
+      },
+      maps: [
+        { map_name: "Sub Base", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "195 - 250 vs Night Shift", recent_result: "L" },
+        { map_name: "Karachi", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "250 - 220 vs Static", recent_result: "W" },
+        { map_name: "Rio", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "215 - 250 vs Vantage", recent_result: "L" },
+        { map_name: "Rio", game_mode: "Search & Destroy", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "2 - 6 vs Night Shift", recent_result: "L" },
+        { map_name: "Karachi", game_mode: "Search & Destroy", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "6 - 4 vs Night Shift", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 1, losses: 1, win_rate: 50, streak: "1W", recent_score: "6 - 5 vs Static", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Control", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "3 - 1 vs Vantage", recent_result: "W" },
+        { map_name: "Invasion", game_mode: "Control", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "1 - 3 vs Night Shift", recent_result: "L" }
+      ]
+    },
+    4: { // Static (STC) - 1W-5L, 10 PTS
+      overall: { wins: 1, losses: 5, points: 10, map_wins: 7, map_losses: 16, map_win_rate: 30 },
+      modes: {
+        hardpoint: { wins: 3, losses: 6, win_rate: 33, avg_score: "210 - 245" },
+        snd: { wins: 2, losses: 5, win_rate: 29, avg_score: "3.7 - 5.6" },
+        control: { wins: 2, losses: 5, win_rate: 29, avg_score: "1.8 - 2.8" }
+      },
+      maps: [
+        { map_name: "6 Star", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "180 - 250 vs Vantage", recent_result: "L" },
+        { map_name: "Karachi", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "220 - 250 vs Redline", recent_result: "L" },
+        { map_name: "Sub Base", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1W", recent_score: "250 - 235 vs Redline", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "5 - 6 vs Redline", recent_result: "L" },
+        { map_name: "Terminal", game_mode: "Search & Destroy", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "3 - 6 vs Vantage", recent_result: "L" },
+        { map_name: "Invasion", game_mode: "Control", wins: 1, losses: 2, win_rate: 33, streak: "1W", recent_score: "3 - 2 vs Redline", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Control", wins: 1, losses: 3, win_rate: 25, streak: "2L", recent_score: "0 - 3 vs Night Shift", recent_result: "L" }
+      ]
+    }
   }
 };
 
@@ -366,6 +439,131 @@ window.LeagueDB = {
       { id: 103, map_name: "Invasion", game_mode: "Control", opponent_team: "Opponent", kills: Math.round(21 * baseKd), deaths: 19, damage: Math.round(3200 * baseKd), kdr: Number((21 * baseKd / 19).toFixed(2)), result: "L", score: "2 - 3", match_date: "2026-09-18" },
       { id: 104, map_name: "Sub Base", game_mode: "Hardpoint", opponent_team: "Opponent", kills: Math.round(28 * baseKd), deaths: 22, damage: Math.round(4200 * baseKd), kdr: Number((28 * baseKd / 22).toFixed(2)), result: "W", score: "250 - 190", match_date: "2026-09-18" }
     ];
+  },
+
+  // 7b. Fetch Single Team Details with Players
+  async getTeamById(teamId) {
+    if (dbClient) {
+      try {
+        if (/^\d+$/.test(String(teamId))) {
+          const { data, error } = await dbClient
+            .from("teams")
+            .select("*, players(*)")
+            .eq("id", teamId)
+            .single();
+          if (!error && data) return data;
+        }
+      } catch (err) {
+        console.error("Supabase getTeamById error:", err);
+      }
+    }
+    const team = MOCK_DATA.teams.find(t => String(t.id) === String(teamId) || (t.tag && t.tag.toLowerCase() === String(teamId).toLowerCase()));
+    if (team) {
+      return {
+        ...team,
+        players: MOCK_DATA.players.filter(p => p.teams?.name === team.name)
+      };
+    }
+    return null;
+  },
+
+  // 7c. Fetch Team Map Records & Mode Telemetry
+  async getTeamMapRecords(teamId) {
+    if (dbClient) {
+      try {
+        if (/^\d+$/.test(String(teamId))) {
+          const { data, error } = await dbClient
+            .from("team_map_records")
+            .select("*")
+            .eq("team_id", teamId);
+          if (!error && data && data.length > 0) {
+            // Calculate aggregations if database rows exist
+            const maps = data;
+            const hardpointMaps = maps.filter(m => m.game_mode === "Hardpoint");
+            const sndMaps = maps.filter(m => m.game_mode === "Search & Destroy");
+            const controlMaps = maps.filter(m => m.game_mode === "Control");
+            const calcMode = (arr) => {
+              const w = arr.reduce((acc, m) => acc + (m.wins || (m.result === 'W' ? 1 : 0)), 0);
+              const l = arr.reduce((acc, m) => acc + (m.losses || (m.result === 'L' ? 1 : 0)), 0);
+              const total = w + l;
+              return { wins: w, losses: l, win_rate: total > 0 ? Math.round((w / total) * 100) : 0 };
+            };
+            const totalWins = maps.reduce((acc, m) => acc + (m.wins || 0), 0);
+            const totalLosses = maps.reduce((acc, m) => acc + (m.losses || 0), 0);
+            return {
+              overall: {
+                map_wins: totalWins,
+                map_losses: totalLosses,
+                map_win_rate: (totalWins + totalLosses) > 0 ? Math.round((totalWins / (totalWins + totalLosses)) * 100) : 0
+              },
+              modes: {
+                hardpoint: calcMode(hardpointMaps),
+                snd: calcMode(sndMaps),
+                control: calcMode(controlMaps)
+              },
+              maps
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase team_map_records query fallback:", err);
+      }
+    }
+
+    // Lookup in MOCK_DATA
+    if (MOCK_DATA.team_map_records && MOCK_DATA.team_map_records[teamId]) {
+      return MOCK_DATA.team_map_records[teamId];
+    }
+    // Also lookup by team tag if teamId was passed as a tag like "NSH"
+    const matchedTeam = MOCK_DATA.teams.find(t => String(t.id) === String(teamId) || (t.tag && t.tag.toLowerCase() === String(teamId).toLowerCase()));
+    if (matchedTeam && MOCK_DATA.team_map_records && MOCK_DATA.team_map_records[matchedTeam.id]) {
+      return MOCK_DATA.team_map_records[matchedTeam.id];
+    }
+
+    // Dynamic generation fallback for any newly registered or custom team
+    const team = matchedTeam || (await this.getTeamById(teamId));
+    const w = team ? (team.wins || 0) : 3;
+    const l = team ? (team.losses || 0) : 2;
+    const total = (w + l) || 5;
+    const winRate = Math.round((w / total) * 100);
+
+    return {
+      overall: {
+        wins: w,
+        losses: l,
+        points: team ? (team.points || 0) : w * 10,
+        map_wins: Math.round(w * 2.6) || 6,
+        map_losses: Math.round(l * 2.2) || 4,
+        map_win_rate: winRate
+      },
+      modes: {
+        hardpoint: {
+          wins: Math.max(0, Math.round(w * 1.2)),
+          losses: Math.max(0, Math.round(l * 1.0)),
+          win_rate: winRate,
+          avg_score: "235 - 210"
+        },
+        snd: {
+          wins: Math.max(0, Math.round(w * 0.9)),
+          losses: Math.max(0, Math.round(l * 0.8)),
+          win_rate: winRate,
+          avg_score: "5.4 - 4.2"
+        },
+        control: {
+          wins: Math.max(0, Math.round(w * 0.5)),
+          losses: Math.max(0, Math.round(l * 0.4)),
+          win_rate: winRate,
+          avg_score: "2.6 - 2.1"
+        }
+      },
+      maps: [
+        { map_name: "Karachi", game_mode: "Hardpoint", wins: Math.max(1, Math.round(w * 0.5)), losses: Math.max(0, Math.round(l * 0.4)), win_rate: winRate, streak: w >= l ? "2W" : "1L", recent_score: "250 - 215", recent_result: w >= l ? "W" : "L" },
+        { map_name: "Sub Base", game_mode: "Hardpoint", wins: Math.max(1, Math.round(w * 0.4)), losses: Math.max(0, Math.round(l * 0.4)), win_rate: winRate, streak: "1W", recent_score: "250 - 230", recent_result: "W" },
+        { map_name: "Highrise", game_mode: "Search & Destroy", wins: Math.max(1, Math.round(w * 0.4)), losses: Math.max(0, Math.round(l * 0.3)), win_rate: winRate, streak: "1W", recent_score: "6 - 4", recent_result: "W" },
+        { map_name: "Rio", game_mode: "Search & Destroy", wins: Math.max(0, Math.round(w * 0.3)), losses: Math.max(1, Math.round(l * 0.4)), win_rate: Math.max(0, winRate - 10), streak: "1L", recent_score: "4 - 6", recent_result: "L" },
+        { map_name: "Invasion", game_mode: "Control", wins: Math.max(1, Math.round(w * 0.3)), losses: Math.max(0, Math.round(l * 0.3)), win_rate: winRate, streak: "1W", recent_score: "3 - 2", recent_result: "W" }
+      ]
+    };
   },
 
   // 8. Submit League Registration / Signup
