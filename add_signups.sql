@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS league_signups (
     gamertag TEXT NOT NULL,
     activision_id TEXT,
     discord_username TEXT NOT NULL,
+    discord_user_id TEXT UNIQUE,                   -- Unique Discord snowflake ID from Discord Bot
     role TEXT DEFAULT 'Flex',                      -- SMG, Main AR, Flex, Sniper
     platform TEXT DEFAULT 'PC',                    -- PC, PlayStation, Xbox
     registration_type TEXT DEFAULT 'Free Agent',   -- 'Free Agent' or 'Team Captain'
