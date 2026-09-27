@@ -51,8 +51,169 @@
     "#ff6622"  // Amber tail
   ];
 
+  // ============================================================================
+  // FRONTLINE CDL: BULLET IMPACT & RICOCHET AUDIO ENGINE
+  // Dual-layer system:
+  //   1. Preloaded HTML5 Audio Pool with 3 kinetic ricochet WAV variants
+  //      (Instant 0ms latency, pitch-randomized, reliable on all browsers & file://)
+  //   2. Procedural Web Audio API synthesizer as an active real-time fallback
+  // ============================================================================
+  const SOUND_VARIANTS = [
+    "./ricochet-0.wav",
+    "./ricochet-1.wav",
+    "./ricochet-2.wav"
+  ];
+
+  // Audio Pool: 9 pre-buffered channels (3 per variant) to allow rapid multi-click spam
+  const audioPool = [];
+  let poolIndex = 0;
+  let audioUnlocked = false;
+
+  function initAudioPool() {
+    if (audioPool.length > 0) return;
+    try {
+      for (let i = 0; i < 9; i++) {
+        const src = SOUND_VARIANTS[i % SOUND_VARIANTS.length];
+        const snd = new Audio(src);
+        snd.preload = "auto";
+        snd.volume = 0.75;
+        audioPool.push(snd);
+      }
+    } catch (e) {
+      // Audio element not supported in this environment
+    }
+  }
+
+  // Pre-initialize pool
+  initAudioPool();
+
+  // Procedural Web Audio API Synthesizer (Fallback / Ambient Synth)
+  let audioCtx = null;
+  let synthGain = null;
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        audioCtx = new AudioCtx();
+        synthGain = audioCtx.createGain();
+        synthGain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+        synthGain.connect(audioCtx.destination);
+      }
+    }
+    return audioCtx;
+  }
+
+  function playProceduralRicochet() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const runSynth = () => {
+        const now = ctx.currentTime;
+
+        // 1. Kinetic crack noise burst
+        const bufferSize = Math.floor(ctx.sampleRate * 0.035);
+        const noiseBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const out = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          out[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.22));
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.85, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        noise.connect(noiseGain);
+        noiseGain.connect(synthGain);
+        noise.start(now);
+        noise.stop(now + 0.04);
+
+        // 2. High-speed ricochet whine oscillator
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.type = "sawtooth";
+        const startF = 3200 + Math.random() * 1200;
+        const endF = 450 + Math.random() * 300;
+        const dur = 0.32;
+        osc.frequency.setValueAtTime(startF, now);
+        osc.frequency.exponentialRampToValueAtTime(endF, now + dur);
+
+        oscGain.gain.setValueAtTime(0.001, now);
+        oscGain.gain.linearRampToValueAtTime(0.65, now + 0.015);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        osc.connect(oscGain);
+        oscGain.connect(synthGain);
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+        console.log("🔊 [CDL Audio] Web Audio procedural ricochet synthesized");
+      };
+
+      if (ctx.state === "suspended") {
+        ctx.resume().then(runSynth).catch(() => {});
+      } else {
+        runSynth();
+      }
+    } catch (e) {
+      // Synth failsafe
+    }
+  }
+
+  function playRicochetSound() {
+    initAudioPool();
+
+    let played = false;
+    // 1. Try playing from preloaded audio pool
+    if (audioPool.length > 0) {
+      const sound = audioPool[poolIndex];
+      poolIndex = (poolIndex + 1) % audioPool.length;
+
+      try {
+        sound.currentTime = 0;
+        // Pitch variation (0.90x to 1.15x) creates unique dynamic acoustics for every shot
+        sound.playbackRate = 0.90 + Math.random() * 0.22;
+        sound.volume = 0.85;
+        const promise = sound.play();
+        if (promise !== undefined) {
+          promise.then(() => {
+            console.log("🔊 [CDL Audio] Ricochet sound played successfully");
+          }).catch((err) => {
+            console.warn("🔊 [CDL Audio] Audio element play failed, falling back to Web Audio synth:", err.message);
+            playProceduralRicochet();
+          });
+        }
+        played = true;
+      } catch (e) {
+        // Fallback to procedural synthesis below
+      }
+    }
+
+    if (!played) {
+      playProceduralRicochet();
+    }
+  }
+
+  // Unlock audio system on first user gesture
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+
+    // Wake Web Audio Context if present
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+  }
+
+  window.addEventListener("pointerdown", unlockAudio, { capture: true, once: true });
+  window.addEventListener("mousedown", unlockAudio, { capture: true, once: true });
+  window.addEventListener("keydown", unlockAudio, { capture: true, once: true });
+
   function triggerBulletImpact(x, y) {
     if (!canvas) initCanvas();
+
+    // Play kinetic ricochet sound
+    playRicochetSound();
 
     // 1. Instant Impact Flash / Kinetic Shockwave Ring
     shockwaves.push({
@@ -201,10 +362,20 @@
     }
   }
 
-  // Instant trigger on pointerdown for immediate tactile feedback
-  window.addEventListener("pointerdown", (e) => {
-    triggerBulletImpact(e.clientX, e.clientY);
-  }, { passive: true });
+  // Universal trigger on pointerdown and mousedown with 25ms deduplication
+  let lastImpactTime = 0;
+  function onImpactEvent(e) {
+    const now = performance.now ? performance.now() : Date.now();
+    if (now - lastImpactTime < 25) return;
+    lastImpactTime = now;
+
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth / 2);
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : window.innerHeight / 2);
+    triggerBulletImpact(clientX, clientY);
+  }
+
+  window.addEventListener("pointerdown", onImpactEvent, { passive: true });
+  window.addEventListener("mousedown", onImpactEvent, { passive: true });
 
   // Initialize on load
   if (document.readyState === "loading") {
