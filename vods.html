@@ -198,11 +198,10 @@
 
     <footer class="footer" style="margin-top: 60px;">
       <div class="wrap footer-inner">
-        <strong>FRONTLINE · COMMUNITY LEAGUE</strong
-        ><span
-          >Unofficial community league. Not affiliated with or endorsed by
-          Activision.</span
-        >
+        <div class="footer-info">
+          <strong>FRONTLINE · COMMUNITY LEAGUE</strong>
+          <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
+        </div>
         <div class="footer-links">
           <a href="index.html#league">League</a>
           <a href="index.html#standings">Standings</a>
@@ -215,9 +214,10 @@
       </div>
     </footer>
 
-    <!-- Supabase JS Client & Data Loader -->
+    <!-- Supabase JS Client, Data Loader & Bullet Impact Sparks -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabase.js"></script>
+    <script src="./bullet-sparks.js"></script>
     <script>
       let allVods = [];
       let activeStage = 'all';
