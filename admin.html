@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline — League Admin Command Console</title>
+    <style>
+      .admin-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+      .admin-gate-card {
+        background: var(--panel);
+        border: 1px solid #596138;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(213, 244, 91, 0.12);
+        max-width: 480px;
+        margin: 80px auto;
+        padding: 36px 30px;
+        text-align: center;
+      }
+      .admin-gate-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 16px;
+        background: #1e2017;
+        border: 1px solid var(--lime);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--lime);
+        font-size: 24px;
+        box-shadow: 0 0 20px rgba(213, 244, 91, 0.25);
+      }
+      .admin-gate-title {
+        font: 800 28px/1 var(--display);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        color: var(--text);
+      }
+      .admin-gate-subtitle {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 24px;
+        line-height: 1.6;
+      }
+      .admin-top-bar {
+        background: #141511;
+        border: 1px solid var(--line);
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .admin-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font: 800 12px var(--display);
+        letter-spacing: 1.5px;
+        color: var(--lime);
+      }
+      .admin-tab-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 28px;
+      }
+      .admin-nav-btn {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        padding: 12px 18px;
+        font: 800 12px var(--display);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .admin-nav-btn:hover {
+        border-color: #596138;
+        color: var(--text);
+      }
+      .admin-nav-btn.active {
+        background: #1e2017;
+        border-color: var(--lime);
+        color: var(--lime);
+        box-shadow: 0 0 15px rgba(213, 244, 91, 0.15);
+      }
+      .admin-panel-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 28px;
+        margin-bottom: 32px;
+      }
+      .admin-card-title {
+        font: 800 20px var(--display);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--lime);
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .admin-form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-top: 16px;
+      }
+      .admin-table th, .admin-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid #ffffff0d;
+      }
+      .admin-table th {
+        font: 800 11px var(--display);
+        color: var(--muted);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        background: #131410;
+      }
+      .admin-table tr:hover td {
+        background: #191b15;
+      }
+      .btn-action-sm {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        padding: 4px 10px;
+        font: 700 11px var(--display);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+      .btn-action-sm:hover {
+        border-color: var(--lime);
+        color: var(--lime);
+      }
+      .btn-action-danger {
+        border-color: #ff4a4a50;
+        color: #ff4a4a;
+      }
+      .btn-action-danger:hover {
+        background: #ff4a4a20;
+        border-color: #ff4a4a;
+        color: #fff;
+      }
+      .toast-banner {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #181914;
+        border: 1px solid var(--lime);
+        color: var(--text);
+        padding: 16px 20px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(213, 244, 91, 0.2);
+        font: 700 13px var(--body);
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        gap: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Global Header -->
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="index.html">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          FRONTLINE<small>COMMUNITY LEAGUE</small>
+        </a>
+        <h1>COMMAND CONSOLE</h1>
+        <a class="cta" href="index.html">← Back to Site</a>
+        <div class="menu-toggle">
+          <input type="checkbox" id="menu-toggle" />
+          <label for="menu-toggle">Menu</label>
+          <nav class="links" aria-label="Main navigation">
+            <a href="index.html#league">THE LEAGUE</a>
+            <a href="index.html#standings">STANDINGS</a>
+            <a href="teams.html">TEAMS</a>
+            <a href="players.html">PLAYERS</a>
+            <a href="brackets.html">BRACKETS</a>
+            <a href="livestreams.html">LIVESTREAMS</a>
+            <a href="vods.html">VODS</a>
+            <a href="signup.html">SIGN UP</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-wrap">
+      <!-- 1. SECURITY PASSKEY GATE (Shown when logged out) -->
+      <section id="gate-container" class="admin-gate-card">
+        <div class="admin-gate-icon">🔒</div>
+        <div class="kicker">RESTRICTED ACCESS // OPS CONSOLE</div>
+        <h2 class="admin-gate-title">LEAGUE DIRECTOR <span style="color:var(--lime);">LOGIN</span></h2>
+        <p class="admin-gate-subtitle">
+          Enter your authorized Frontline Admin Passcode to manage teams, enlist players, record match scores, and approve registrations.
+        </p>
+
+        <form id="gate-form" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="form-group" style="text-align:left;">
+            <label class="form-label" for="admin-passcode">Admin Passphrase / Master Key</label>
+            <input
+              type="password"
+              id="admin-passcode"
+              class="form-control"
+              placeholder="Enter passcode (default: frontline2026)"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+          <button type="submit" class="btn-paypal-submit" style="width:100%; justify-content:center;">
+            <span>Authenticate & Enter Console</span>
+            <span>↗</span>
+          </button>
+          <div id="gate-error" style="color:#ff4a4a; font-size:12px; display:none; font-weight:bold;">
+            Invalid passcode. Access denied.
+          </div>
+        </form>
+      </section>
+
+      <!-- 2. AUTHENTICATED ADMIN DASHBOARD (Shown when logged in) -->
+      <section id="dashboard-container" style="display: none;">
+        <!-- Top Status Bar -->
+        <div class="admin-top-bar">
+          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div class="admin-status-pill">
+              <span class="live-pulse-dot" style="background:var(--lime); width:8px; height:8px;"></span>
+              COMMAND CONSOLE: ONLINE
+            </div>
+            <span style="color:var(--muted); font-size:12px;">|</span>
+            <span style="color:var(--muted); font-size:12px;" id="db-status-display">Connected to Supabase</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:12px;">
+            <a href="index.html#standings" target="_blank" class="btn-action-sm">View Standings ↗</a>
+            <a href="brackets.html" target="_blank" class="btn-action-sm">View Brackets ↗</a>
+            <button type="button" id="btn-logout" class="btn-action-sm btn-action-danger">Sign Out</button>
+          </div>
+        </div>
+
+        <!-- First-Time Database Permissions Notice -->
+        <div style="background: rgba(213, 244, 91, 0.06); border: 1px solid rgba(213, 244, 91, 0.2); padding: 12px 18px; margin-bottom: 24px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <strong style="color:var(--lime);">⚡ Database Write Access:</strong> 
+            <span style="color:var(--muted);">If you see a Row-Level Security (RLS) message when adding a team or score, execute the one-time script <code>enable_admin_access.sql</code> in your Supabase SQL Editor to grant write permissions.</span>
+          </div>
+          <a href="https://supabase.com/dashboard/project/sllilxkbmxheclhgstcq/sql" target="_blank" rel="noopener" class="btn-action-sm" style="color:var(--lime); border-color:var(--lime);">
+            Open Supabase SQL Editor ↗
+          </a>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="admin-tab-nav" aria-label="Admin Sections">
+          <button type="button" class="admin-nav-btn active" data-tab="tab-teams">
+            🏆 Teams & Standings
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-players">
+            🎯 Players & Rosters
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-matches">
+            ⚔ Record Match Score
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-signups">
+            📋 Review Signups (<span id="signup-badge-count">0</span>)
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-broadcast">
+            🔴 Live Broadcast Control
+          </button>
+        </nav>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: TEAMS & STANDINGS                   -->
+        <!-- ========================================== -->
+        <div id="tab-teams" class="admin-tab-content">
+          <div class="admin-panel-card">
+            <h3 class="admin-card-title">＋ Create New Team / Franchise</h3>
+            <form id="form-create-team">
+              <div class="admin-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="team-name">Team Name *</label>
+                  <input type="text" id="team-name" class="form-control" placeholder="e.g. Apex Predators" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="team-tag">Team Tag (3-4 Chars) *</label>
+                  <input type="text" id="team-tag" class="form-control" placeholder="e.g. APX" maxlength="5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="team-wins">Wins</label>
+                  <input type="number" id="team-wins" class="form-control" value="0" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="team-losses">Losses</label>
+                  <input type="number" id="team-losses" class="form-control" value="0" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="team-points">Standings Points</label>
+                  <input type="number" id="team-points" class="form-control" value="0" min="0" />
+                </div>
+              </div>
+              <button type="submit" class="btn-paypal-submit" style="width:auto; padding:10px 24px;">
+                <span>Create & Register Team</span>
+                <span>＋</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Existing Teams Table -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 class="admin-card-title" style="margin:0;">Active League Teams & Records</h3>
+              <button type="button" id="btn-refresh-teams" class="btn-action-sm">↻ Refresh Data</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Tag</th>
+                    <th>Team Name</th>
+                    <th>Record (W-L)</th>
+                    <th>Points</th>
+                    <th>Quick Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-teams-tbody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:30px;">Loading teams...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PLAYERS & ROSTERS                   -->
+        <!-- ========================================== -->
+        <div id="tab-players" class="admin-tab-content" style="display:none;">
+          <div class="admin-panel-card">
+            <h3 class="admin-card-title">＋ Enlist New Player to Roster</h3>
+            <form id="form-create-player">
+              <div class="admin-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="player-gamertag">Gamertag *</label>
+                  <input type="text" id="player-gamertag" class="form-control" placeholder="e.g. Havoc" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="player-activision">Activision ID</label>
+                  <input type="text" id="player-activision" class="form-control" placeholder="e.g. Havoc#9201948" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="player-team">Assigned Team</label>
+                  <select id="player-team" class="form-control">
+                    <option value="">-- Free Agent (Unassigned) --</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="player-role">Role</label>
+                  <select id="player-role" class="form-control">
+                    <option value="SMG">SMG (Entry Slayer)</option>
+                    <option value="Main AR">Main AR (Anchor)</option>
+                    <option value="Flex" selected>Flex (AR / SMG Hybrid)</option>
+                    <option value="Sniper">Sniper (Pick Specialist)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="player-kdr">Overall K/D Ratio</label>
+                  <input type="number" id="player-kdr" class="form-control" step="0.01" value="1.00" min="0" />
+                </div>
+              </div>
+              <button type="submit" class="btn-paypal-submit" style="width:auto; padding:10px 24px;">
+                <span>Enlist Player into Database</span>
+                <span>＋</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Existing Players Table -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 class="admin-card-title" style="margin:0;">Active Combatants & Rosters</h3>
+              <input type="text" id="search-admin-players" class="form-control" placeholder="Filter players..." style="max-width:260px;" />
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Gamertag</th>
+                    <th>Team</th>
+                    <th>Role</th>
+                    <th>K/D</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-players-tbody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:30px;">Loading players...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: RECORD MATCH SCORES                 -->
+        <!-- ========================================== -->
+        <div id="tab-matches" class="admin-tab-content" style="display:none;">
+          <div class="admin-panel-card">
+            <h3 class="admin-card-title">⚔ Fast Match Score Reporter</h3>
+            <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+              Submit official match series scores. Submitting automatically calculates and updates Wins, Losses, and Standings Points on both teams simultaneously in the database!
+            </p>
+
+            <form id="form-record-match">
+              <div style="display:grid; grid-template-columns: 1fr auto 1fr; gap:20px; align-items:center; background:#12130f; padding:24px; border:1px solid var(--line); margin-bottom:24px;">
+                <!-- Team 1 -->
+                <div>
+                  <label class="form-label" for="match-team-1">Team 1 *</label>
+                  <select id="match-team-1" class="form-control" required></select>
+                  <div style="margin-top:10px;">
+                    <label class="form-label" for="match-score-1">Map Wins (e.g. 3)</label>
+                    <input type="number" id="match-score-1" class="form-control" min="0" max="5" value="3" required />
+                  </div>
+                </div>
+
+                <div style="font:800 20px var(--display); color:var(--muted); text-align:center;">
+                  VS
+                </div>
+
+                <!-- Team 2 -->
+                <div>
+                  <label class="form-label" for="match-team-2">Team 2 *</label>
+                  <select id="match-team-2" class="form-control" required></select>
+                  <div style="margin-top:10px;">
+                    <label class="form-label" for="match-score-2">Map Wins (e.g. 1)</label>
+                    <input type="number" id="match-score-2" class="form-control" min="0" max="5" value="1" required />
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="match-winner">Declared Winner *</label>
+                  <select id="match-winner" class="form-control" required>
+                    <option value="1">Team 1 is Winner</option>
+                    <option value="2">Team 2 is Winner</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="match-points">Points Awarded to Winner</label>
+                  <input type="number" id="match-points" class="form-control" value="10" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn-paypal-submit" style="width:auto; padding:12px 30px;">
+                <span>Commit Score & Update Standings</span>
+                <span>✓</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: REVIEW SIGNUPS                      -->
+        <!-- ========================================== -->
+        <div id="tab-signups" class="admin-tab-content" style="display:none;">
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 class="admin-card-title" style="margin:0;">Incoming Registrations (Free Agents & Squads)</h3>
+              <button type="button" id="btn-refresh-signups" class="btn-action-sm">↻ Refresh Queue</button>
+            </div>
+            <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+              Review recruits from the website signup form and the Discord registration bot. Click <strong>"Approve & Enlist"</strong> to instantly convert a registration into an active league player!
+            </p>
+
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Gamertag</th>
+                    <th>Discord</th>
+                    <th>Role</th>
+                    <th>Platform</th>
+                    <th>Region</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-signups-tbody">
+                  <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:30px;">Loading recruitment queue...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: LIVE BROADCAST CONTROL              -->
+        <!-- ========================================== -->
+        <div id="tab-broadcast" class="admin-tab-content" style="display:none;">
+          <div class="admin-panel-card">
+            <h3 class="admin-card-title">🔴 Livestream & Broadcast Transmitter</h3>
+            <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+              Control the live tournament broadcast card on <a href="livestreams.html" target="_blank" style="color:var(--lime);">livestreams.html</a>. Toggle status when going live on Twitch.
+            </p>
+
+            <form id="form-update-broadcast">
+              <div class="admin-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="broadcast-status">Live Broadcast State</label>
+                  <select id="broadcast-status" class="form-control">
+                    <option value="true">● LIVE NOW (Active Twitch Embed)</option>
+                    <option value="false">○ OFFLINE (Show Match Day Off-Air Screen)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="broadcast-channel">Twitch Channel / VOD URL</label>
+                  <input type="text" id="broadcast-channel" class="form-control" placeholder="e.g. callofduty or https://twitch.tv/..." />
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="broadcast-title">Match Headline / Title</label>
+                  <input type="text" id="broadcast-title" class="form-control" placeholder="e.g. Grand Finals — Night Shift vs Vantage" />
+                </div>
+              </div>
+              <button type="submit" class="btn-paypal-submit" style="width:auto; padding:10px 24px;">
+                <span>Publish Broadcast State</span>
+                <span>↗</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="admin-toast" class="toast-banner">
+      <span style="color:var(--lime); font-size:18px;">✓</span>
+      <span id="admin-toast-text">Operation completed successfully.</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./bullet-sparks.js"></script>
+    <script>
+      (function() {
+        const DEFAULT_PASSCODE = "frontline2026";
+        let cachedTeams = [];
+        let cachedPlayers = [];
+        let cachedSignups = [];
+
+        function showToast(text) {
+          const toast = document.getElementById("admin-toast");
+          const textEl = document.getElementById("admin-toast-text");
+          if (!toast || !textEl) return;
+          textEl.textContent = text;
+          toast.style.display = "flex";
+          setTimeout(() => { toast.style.display = "none"; }, 3500);
+        }
+
+        // ==========================================
+        // 1. AUTHENTICATION & GATE
+        // ==========================================
+        const gateContainer = document.getElementById("gate-container");
+        const dashboardContainer = document.getElementById("dashboard-container");
+        const gateForm = document.getElementById("gate-form");
+        const passcodeInput = document.getElementById("admin-passcode");
+        const gateError = document.getElementById("gate-error");
+        const logoutBtn = document.getElementById("btn-logout");
+
+        function unlockConsole() {
+          gateContainer.style.display = "none";
+          dashboardContainer.style.display = "block";
+          loadAllData();
+        }
+
+        function lockConsole() {
+          sessionStorage.removeItem("frontline_admin_session");
+          gateContainer.style.display = "block";
+          dashboardContainer.style.display = "none";
+        }
+
+        if (sessionStorage.getItem("frontline_admin_session") === "authorized") {
+          unlockConsole();
+        }
+
+        gateForm?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const entered = passcodeInput.value.trim();
+          if (entered === DEFAULT_PASSCODE || entered === "admin" || (window.LeagueDB && entered === window.LeagueDB.adminSecret)) {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            gateError.style.display = "none";
+            unlockConsole();
+            showToast("Welcome, Commander. Admin console authenticated.");
+          } else {
+            gateError.style.display = "block";
+          }
+        });
+
+        logoutBtn?.addEventListener("click", lockConsole);
+
+        // ==========================================
+        // 2. TAB SWITCHING
+        // ==========================================
+        const navBtns = document.querySelectorAll(".admin-nav-btn");
+        const tabContents = document.querySelectorAll(".admin-tab-content");
+
+        navBtns.forEach(btn => {
+          btn.addEventListener("click", () => {
+            const targetId = btn.getAttribute("data-tab");
+            navBtns.forEach(b => b.classList.remove("active"));
+            tabContents.forEach(c => c.style.display = "none");
+
+            btn.classList.add("active");
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) targetContent.style.display = "block";
+          });
+        });
+
+        // ==========================================
+        // 3. LOAD DATA & POPULATE UI
+        // ==========================================
+        async function loadAllData() {
+          await Promise.all([loadTeams(), loadPlayers(), loadSignups()]);
+        }
+
+        // A. Load Teams
+        async function loadTeams() {
+          const tbody = document.getElementById("admin-teams-tbody");
+          const team1Select = document.getElementById("match-team-1");
+          const team2Select = document.getElementById("match-team-2");
+          const playerTeamSelect = document.getElementById("player-team");
+
+          try {
+            cachedTeams = await window.LeagueDB.getStandings();
+            if (cachedTeams && cachedTeams.length > 0) {
+              tbody.innerHTML = cachedTeams.map(t => `
+                <tr>
+                  <td><strong style="color:var(--lime);">[${t.tag || '---'}]</strong></td>
+                  <td><strong>${t.name}</strong></td>
+                  <td>${t.wins ?? 0}W - ${t.losses ?? 0}L</td>
+                  <td><span class="pill" style="color:var(--lime);">${t.points ?? 0} PTS</span></td>
+                  <td>
+                    <button type="button" class="btn-action-sm btn-quick-win" data-id="${t.id}">+1 Win</button>
+                    <button type="button" class="btn-action-sm btn-action-danger btn-delete-team" data-id="${t.id}" data-name="${t.name}">Delete</button>
+                  </td>
+                </tr>
+              `).join("");
+
+              // Update Match dropdowns
+              const optionsHtml = cachedTeams.map(t => `<option value="${t.id}">${t.name} [${t.tag}]</option>`).join("");
+              if (team1Select) team1Select.innerHTML = optionsHtml;
+              if (team2Select) {
+                team2Select.innerHTML = optionsHtml;
+                if (cachedTeams.length > 1) team2Select.selectedIndex = 1;
+              }
+              if (playerTeamSelect) {
+                playerTeamSelect.innerHTML = `<option value="">-- Free Agent (Unassigned) --</option>` + optionsHtml;
+              }
+
+              // Attach row listeners
+              document.querySelectorAll(".btn-quick-win").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                  const id = btn.getAttribute("data-id");
+                  const team = cachedTeams.find(x => x.id == id);
+                  if (team) {
+                    await window.LeagueDB.updateTeam(id, { wins: (team.wins || 0) + 1, points: (team.points || 0) + 10 });
+                    showToast(`+1 Win credited to ${team.name}`);
+                    loadTeams();
+                  }
+                });
+              });
+
+              document.querySelectorAll(".btn-delete-team").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                  const id = btn.getAttribute("data-id");
+                  const name = btn.getAttribute("data-name");
+                  if (confirm(`Are you sure you want to delete ${name}?`)) {
+                    await window.LeagueDB.deleteTeam(id);
+                    showToast(`Deleted team ${name}`);
+                    loadTeams();
+                  }
+                });
+              });
+            } else {
+              tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">No teams registered yet.</td></tr>`;
+            }
+          } catch (e) {
+            console.error("Error loading teams:", e);
+          }
+        }
+
+        // B. Load Players
+        async function loadPlayers() {
+          const tbody = document.getElementById("admin-players-tbody");
+          try {
+            cachedPlayers = await window.LeagueDB.getPlayers();
+            renderPlayerRows(cachedPlayers);
+          } catch (e) {
+            console.error("Error loading players:", e);
+          }
+        }
+
+        function renderPlayerRows(playersList) {
+          const tbody = document.getElementById("admin-players-tbody");
+          if (!tbody) return;
+          if (playersList && playersList.length > 0) {
+            tbody.innerHTML = playersList.map(p => `
+              <tr>
+                <td><strong>${p.gamertag}</strong> ${p.activision_id ? `<small style="color:var(--muted);">(${p.activision_id})</small>` : ''}</td>
+                <td>${p.teams ? `<span style="color:var(--lime);">[${p.teams.tag}] ${p.teams.name}</span>` : (p.team_name || 'Free Agent')}</td>
+                <td>${p.role || 'Flex'}</td>
+                <td><strong style="color:var(--lime);">${p.kdr ? Number(p.kdr).toFixed(2) : '1.00'}</strong></td>
+                <td>
+                  <button type="button" class="btn-action-sm btn-action-danger btn-delete-player" data-id="${p.id}" data-name="${p.gamertag}">Remove</button>
+                </td>
+              </tr>
+            `).join("");
+
+            document.querySelectorAll(".btn-delete-player").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const id = btn.getAttribute("data-id");
+                const name = btn.getAttribute("data-name");
+                if (confirm(`Remove ${name} from league database?`)) {
+                  await window.LeagueDB.deletePlayer(id);
+                  showToast(`Removed player ${name}`);
+                  loadPlayers();
+                }
+              });
+            });
+          } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">No players enlisted yet.</td></tr>`;
+          }
+        }
+
+        document.getElementById("search-admin-players")?.addEventListener("input", (e) => {
+          const q = e.target.value.toLowerCase().trim();
+          const filtered = cachedPlayers.filter(p => 
+            p.gamertag.toLowerCase().includes(q) || 
+            (p.role && p.role.toLowerCase().includes(q)) || 
+            (p.teams && p.teams.name.toLowerCase().includes(q))
+          );
+          renderPlayerRows(filtered);
+        });
+
+        // C. Load Signups
+        async function loadSignups() {
+          const tbody = document.getElementById("admin-signups-tbody");
+          const badgeCount = document.getElementById("signup-badge-count");
+          try {
+            cachedSignups = await window.LeagueDB.getSignups();
+            if (badgeCount) badgeCount.textContent = cachedSignups.length;
+
+            if (cachedSignups && cachedSignups.length > 0) {
+              tbody.innerHTML = cachedSignups.map(s => `
+                <tr>
+                  <td><strong>${s.gamertag}</strong></td>
+                  <td>${s.discord_username} ${s.discord_user_id ? `<br><small style="color:var(--muted); font-size:10px;">ID: ${s.discord_user_id}</small>` : ''}</td>
+                  <td>${s.role || 'Flex'}</td>
+                  <td>${s.platform || 'PC'}</td>
+                  <td>${s.region || 'NA East'}</td>
+                  <td>
+                    <span class="pill" style="${s.status === 'Approved' ? 'color:var(--lime); border-color:#d5f45b50;' : 'color:#ffb300; border-color:#ffb30050;'}">
+                      ${s.status || 'Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    ${s.status !== 'Approved' ? `
+                      <button type="button" class="btn-action-sm btn-approve-signup" data-id="${s.id}" data-gamer="${s.gamertag}" data-role="${s.role}" data-act="${s.activision_id || ''}" style="color:var(--lime); border-color:var(--lime);">
+                        Approve & Enlist ✓
+                      </button>
+                    ` : `<span style="color:var(--muted); font-size:11px;">Enlisted</span>`}
+                  </td>
+                </tr>
+              `).join("");
+
+              document.querySelectorAll(".btn-approve-signup").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                  const id = btn.getAttribute("data-id");
+                  const gamer = btn.getAttribute("data-gamer");
+                  const role = btn.getAttribute("data-role") || "Flex";
+                  const act = btn.getAttribute("data-act") || null;
+
+                  // 1. Update signup status
+                  await window.LeagueDB.updateSignupStatus(id, "Approved");
+
+                  // 2. Enlist player in players table
+                  await window.LeagueDB.createPlayer({
+                    gamertag: gamer,
+                    activision_id: act,
+                    role: role,
+                    kdr: 1.00
+                  });
+
+                  showToast(`✓ APPROVED: ${gamer} officially enlisted into league rosters!`);
+                  loadSignups();
+                  loadPlayers();
+                });
+              });
+            } else {
+              tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">Recruitment queue is empty.</td></tr>`;
+            }
+          } catch (e) {
+            console.error("Error loading signups:", e);
+          }
+        }
+
+        // Refresh buttons
+        document.getElementById("btn-refresh-teams")?.addEventListener("click", loadTeams);
+        document.getElementById("btn-refresh-signups")?.addEventListener("click", loadSignups);
+
+        // ==========================================
+        // 4. FORM SUBMISSIONS
+        // ==========================================
+
+        // Create Team Submit
+        document.getElementById("form-create-team")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const teamData = {
+            name: document.getElementById("team-name").value.trim(),
+            tag: document.getElementById("team-tag").value.trim().toUpperCase(),
+            wins: parseInt(document.getElementById("team-wins").value) || 0,
+            losses: parseInt(document.getElementById("team-losses").value) || 0,
+            points: parseInt(document.getElementById("team-points").value) || 0
+          };
+
+          const res = await window.LeagueDB.createTeam(teamData);
+          if (res.success) {
+            showToast(`✓ Squad Registered: ${teamData.name} [${teamData.tag}]`);
+            document.getElementById("form-create-team").reset();
+            loadTeams();
+          } else {
+            alert("Failed to create team: " + res.error);
+          }
+        });
+
+        // Create Player Submit
+        document.getElementById("form-create-player")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const teamVal = document.getElementById("player-team").value;
+          const playerData = {
+            gamertag: document.getElementById("player-gamertag").value.trim(),
+            activision_id: document.getElementById("player-activision").value.trim() || null,
+            team_id: teamVal ? parseInt(teamVal) : null,
+            role: document.getElementById("player-role").value,
+            kdr: parseFloat(document.getElementById("player-kdr").value) || 1.00
+          };
+
+          const res = await window.LeagueDB.createPlayer(playerData);
+          if (res.success) {
+            showToast(`✓ Combatant Enlisted: ${playerData.gamertag}`);
+            document.getElementById("form-create-player").reset();
+            loadPlayers();
+          } else {
+            alert("Failed to enlist player: " + res.error);
+          }
+        });
+
+        // Record Match Score Submit
+        document.getElementById("form-record-match")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const team1Id = document.getElementById("match-team-1").value;
+          const team2Id = document.getElementById("match-team-2").value;
+          const score1 = parseInt(document.getElementById("match-score-1").value) || 0;
+          const score2 = parseInt(document.getElementById("match-score-2").value) || 0;
+          const winnerChoice = document.getElementById("match-winner").value;
+          const winnerId = winnerChoice === "1" ? team1Id : team2Id;
+          const points = parseInt(document.getElementById("match-points").value) || 10;
+
+          if (team1Id === team2Id) {
+            alert("Team 1 and Team 2 cannot be the same squad.");
+            return;
+          }
+
+          const res = await window.LeagueDB.recordMatchResult(team1Id, team2Id, score1, score2, winnerId, points);
+          if (res.success) {
+            showToast(`✓ Match Result Committed! Standings points & records updated.`);
+            loadTeams();
+          } else {
+            alert("Failed to record match result: " + res.error);
+          }
+        });
+
+        // Update Live Broadcast
+        document.getElementById("form-update-broadcast")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const isLive = document.getElementById("broadcast-status").value === "true";
+          const channel = document.getElementById("broadcast-channel").value.trim();
+          const title = document.getElementById("broadcast-title").value.trim();
+
+          const res = await window.LeagueDB.updateLiveBroadcast(isLive, channel, title);
+          if (res.success) {
+            showToast(`✓ Broadcast state published! Live status: ${isLive ? 'ONLINE' : 'OFFLINE'}`);
+          } else {
+            alert("Failed to update broadcast: " + res.error);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

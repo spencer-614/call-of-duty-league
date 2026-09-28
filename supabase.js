@@ -695,6 +695,239 @@ window.LeagueDB = {
     return null;
   },
 
+  // ============================================================================
+  // ADMIN PORTAL MUTATIONS & ACTIONS
+  // ============================================================================
+
+  // Admin: Create Team
+  async createTeam(teamData) {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("teams")
+          .insert([teamData])
+          .select();
+        if (error) throw error;
+        return { success: true, data: data[0] };
+      } catch (err) {
+        console.error("Supabase createTeam error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    // Fallback in-memory
+    const newId = Date.now();
+    const mockTeam = { id: newId, ...teamData };
+    MOCK_DATA.teams.push(mockTeam);
+    return { success: true, data: mockTeam, mock: true };
+  },
+
+  // Admin: Update Team
+  async updateTeam(teamId, updates) {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("teams")
+          .update(updates)
+          .eq("id", teamId)
+          .select();
+        if (error) throw error;
+        return { success: true, data: data[0] };
+      } catch (err) {
+        console.error("Supabase updateTeam error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    const t = MOCK_DATA.teams.find(x => x.id == teamId);
+    if (t) Object.assign(t, updates);
+    return { success: true, data: t, mock: true };
+  },
+
+  // Admin: Delete Team
+  async deleteTeam(teamId) {
+    if (dbClient) {
+      try {
+        const { error } = await dbClient
+          .from("teams")
+          .delete()
+          .eq("id", teamId);
+        if (error) throw error;
+        return { success: true };
+      } catch (err) {
+        console.error("Supabase deleteTeam error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    const idx = MOCK_DATA.teams.findIndex(x => x.id == teamId);
+    if (idx !== -1) MOCK_DATA.teams.splice(idx, 1);
+    return { success: true, mock: true };
+  },
+
+  // Admin: Create Player
+  async createPlayer(playerData) {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("players")
+          .insert([playerData])
+          .select();
+        if (error) throw error;
+        return { success: true, data: data[0] };
+      } catch (err) {
+        console.error("Supabase createPlayer error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    const newId = Date.now();
+    const mockPlayer = { id: newId, ...playerData };
+    MOCK_DATA.players.push(mockPlayer);
+    return { success: true, data: mockPlayer, mock: true };
+  },
+
+  // Admin: Update Player
+  async updatePlayer(playerId, updates) {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("players")
+          .update(updates)
+          .eq("id", playerId)
+          .select();
+        if (error) throw error;
+        return { success: true, data: data[0] };
+      } catch (err) {
+        console.error("Supabase updatePlayer error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    const p = MOCK_DATA.players.find(x => x.id == playerId);
+    if (p) Object.assign(p, updates);
+    return { success: true, data: p, mock: true };
+  },
+
+  // Admin: Delete Player
+  async deletePlayer(playerId) {
+    if (dbClient) {
+      try {
+        const { error } = await dbClient
+          .from("players")
+          .delete()
+          .eq("id", playerId);
+        if (error) throw error;
+        return { success: true };
+      } catch (err) {
+        console.error("Supabase deletePlayer error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    const idx = MOCK_DATA.players.findIndex(x => x.id == playerId);
+    if (idx !== -1) MOCK_DATA.players.splice(idx, 1);
+    return { success: true, mock: true };
+  },
+
+  // Admin: Record Match Result & Auto-Update Standings
+  async recordMatchResult(team1Id, team2Id, team1Score, team2Score, winnerId, pointsDelta = 10) {
+    const isTeam1Winner = winnerId == team1Id;
+    const isTeam2Winner = winnerId == team2Id;
+
+    if (dbClient) {
+      try {
+        // Fetch current records
+        const { data: teams, error: fetchErr } = await dbClient
+          .from("teams")
+          .select("id, wins, losses, points")
+          .in("id", [team1Id, team2Id]);
+
+        if (fetchErr) throw fetchErr;
+
+        const t1 = teams.find(t => t.id == team1Id) || { wins: 0, losses: 0, points: 0 };
+        const t2 = teams.find(t => t.id == team2Id) || { wins: 0, losses: 0, points: 0 };
+
+        // Update Team 1
+        await dbClient.from("teams").update({
+          wins: isTeam1Winner ? (t1.wins + 1) : t1.wins,
+          losses: isTeam1Winner ? t1.losses : (t1.losses + 1),
+          points: isTeam1Winner ? (t1.points + pointsDelta) : t1.points
+        }).eq("id", team1Id);
+
+        // Update Team 2
+        await dbClient.from("teams").update({
+          wins: isTeam2Winner ? (t2.wins + 1) : t2.wins,
+          losses: isTeam2Winner ? t2.losses : (t2.losses + 1),
+          points: isTeam2Winner ? (t2.points + pointsDelta) : t2.points
+        }).eq("id", team2Id);
+
+        return { success: true };
+      } catch (err) {
+        console.error("Supabase recordMatchResult error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+
+    // In-memory mock fallback
+    const t1 = MOCK_DATA.teams.find(t => t.id == team1Id);
+    const t2 = MOCK_DATA.teams.find(t => t.id == team2Id);
+    if (t1 && t2) {
+      if (isTeam1Winner) {
+        t1.wins += 1;
+        t1.points += pointsDelta;
+        t2.losses += 1;
+      } else {
+        t2.wins += 1;
+        t2.points += pointsDelta;
+        t1.losses += 1;
+      }
+    }
+    return { success: true, mock: true };
+  },
+
+  // Admin: Update Signup Status (Approve / Reject / Waitlist)
+  async updateSignupStatus(signupId, status) {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_signups")
+          .update({ status })
+          .eq("id", signupId)
+          .select();
+        if (error) throw error;
+        return { success: true, data: data[0] };
+      } catch (err) {
+        console.error("Supabase updateSignupStatus error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    return { success: true, mock: true };
+  },
+
+  // Admin: Update Livestream / Broadcast State
+  async updateLiveBroadcast(isLive, vodUrl, title) {
+    if (dbClient) {
+      try {
+        const updates = { is_live: isLive };
+        if (vodUrl) updates.vod_url = vodUrl;
+        if (title) updates.title = title;
+
+        const { data, error } = await dbClient
+          .from("vods")
+          .update(updates)
+          .order("id", { ascending: true })
+          .limit(1)
+          .select();
+        if (error) throw error;
+        return { success: true, data: data[0] };
+      } catch (err) {
+        console.error("Supabase updateLiveBroadcast error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+    if (MOCK_DATA.vods.length > 0) {
+      MOCK_DATA.vods[0].is_live = isLive;
+      if (vodUrl) MOCK_DATA.vods[0].vod_url = vodUrl;
+      if (title) MOCK_DATA.vods[0].title = title;
+    }
+    return { success: true, mock: true };
+  },
+
   paypalConfig: PAYPAL_CONFIG,
   isConfigured: isSupabaseConfigured
 };
