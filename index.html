@@ -12,36 +12,77 @@
       <div class="wrap nav">
         <a class="brand" href="index.html">
           <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
-          FRONTLINE<small>COMMUNITY LEAGUE</small>
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">COMMUNITY LEAGUE</small>
+            <div class="brand-status">
+              <span class="nav-beacon"></span>
+              <span>SEASON 1 ACTIVE</span>
+            </div>
+            <script>
+              (function(){
+                try {
+                  var s = JSON.parse(localStorage.getItem('frontline_season_settings'));
+                  if (s) {
+                    var el = document.currentScript.previousElementSibling;
+                    if (el && el.classList.contains('brand-status')) {
+                      el.className = 'brand-status' + (s.status_state === 'coming_soon' ? ' status-coming-soon' : ' status-active');
+                      var t = s.status_text || ('SEASON ' + (s.season_number || 1) + (s.status_state === 'coming_soon' ? ' COMING SOON' : ' ACTIVE'));
+                      el.innerHTML = '<span class="nav-beacon"></span><span>' + t + '</span>';
+                    }
+                  }
+                } catch(e){}
+              })();
+            </script>
+          </div>
         </a>
-        <h1>WELCOME TO THE FRONTLINE</h1>
-        <a
-          class="cta"
-          href="https://discord.com/"
-          target="_blank"
-          rel="noopener"
-          >Join Discord ↗</a
-        >
-        <div class="menu-toggle">
-          <input type="checkbox" id="menu-toggle" />
-          <label for="menu-toggle">Menu</label>
-          <nav class="links" aria-label="Main navigation">
-            <a href="#league">THE LEAGUE</a>
-            <a href="#standings">STANDINGS</a>
-            <a href="teams.html">TEAMS</a>
-            <a href="players.html">PLAYERS</a>
-            <a href="brackets.html">BRACKETS</a>
-            <a href="livestreams.html">LIVESTREAMS</a>
-            <a href="vods.html">VODS</a>
-            <a href="signup.html" style="color:var(--lime);">SIGN UP</a>
-            <a
-              class="cta"
-              href="https://discord.com/"
-              target="_blank"
-              rel="noopener"
-              >Join Discord ↗</a
-            >
-          </nav>
+
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Competition</div>
+                  <a href="#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="admin.html"><span class="nav-icon">⚙</span> Admin Console</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.com/"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <svg class="discord-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+            <span>Join Discord</span>
+            <span style="font-size:11px;">↗</span>
+          </a>
         </div>
       </div>
     </header>
@@ -209,6 +250,7 @@
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
           <a href="brackets.html">Brackets</a>
+          <a href="draft.html">Draft HQ</a>
           <a href="livestreams.html">Livestreams</a>
           <a href="vods.html">VODs</a>
           <a href="signup.html">Sign Up</a>
@@ -310,6 +352,21 @@
 
       renderAnnouncements();
       renderStandings();
+
+      // User-Centered Navigation: Close dropdown on outside click or Escape key
+      document.addEventListener("click", (e) => {
+        const toggle = document.getElementById("menu-toggle");
+        const menuWrap = document.querySelector(".menu-toggle");
+        if (toggle && toggle.checked && menuWrap && !menuWrap.contains(e.target)) {
+          toggle.checked = false;
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const toggle = document.getElementById("menu-toggle");
+          if (toggle) toggle.checked = false;
+        }
+      });
     </script>
   </body>
 </html>

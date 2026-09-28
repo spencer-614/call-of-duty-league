@@ -81,6 +81,11 @@ const MOCK_DATA = {
       created_at: new Date().toISOString()
     }
   ],
+  seasonSettings: {
+    season_number: 1,
+    status_state: "active",
+    status_text: "SEASON 1 ACTIVE"
+  },
   announcements: [
     {
       id: 1,
@@ -1682,7 +1687,381 @@ window.LeagueDB = {
     return { success: true, mock: true };
   },
 
+  // ==========================================
+  // SEASON STATUS & LIFECYCLE SETTINGS
+  // ==========================================
+  async getSeasonSettings() {
+    let cached = null;
+    try {
+      const saved = localStorage.getItem("frontline_season_settings");
+      if (saved) cached = JSON.parse(saved);
+    } catch (e) {
+      console.warn("Error reading season settings from localStorage:", e);
+    }
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", "season")
+          .limit(1);
+
+        const row = Array.isArray(data) ? data[0] : data;
+
+        if (!error && row) {
+          const settings = {
+            season_number: parseInt(row.season_number, 10) || 1,
+            status_state: row.status_state || "active",
+            status_text: row.status_text || (row.status_state === "coming_soon" ? `SEASON ${row.season_number || 1} COMING SOON` : `SEASON ${row.season_number || 1} ACTIVE`)
+          };
+          try {
+            localStorage.setItem("frontline_season_settings", JSON.stringify(settings));
+          } catch (e) {}
+          return settings;
+        }
+      } catch (err) {
+        console.warn("Supabase getSeasonSettings query error, using local/fallback:", err);
+      }
+    }
+
+    if (cached) return cached;
+    return { ...MOCK_DATA.seasonSettings };
+  },
+
+  async updateSeasonSettings(newSettings) {
+    const seasonNumber = parseInt(newSettings.season_number, 10) || 1;
+    const statusState = newSettings.status_state === "coming_soon" ? "coming_soon" : "active";
+    const statusText = newSettings.status_text || (statusState === "coming_soon" 
+      ? `SEASON ${seasonNumber} COMING SOON` 
+      : `SEASON ${seasonNumber} ACTIVE`);
+
+    const record = {
+      id: "season",
+      season_number: seasonNumber,
+      status_state: statusState,
+      status_text: statusText,
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Immediately cache to localStorage for instantaneous sync
+    try {
+      localStorage.setItem("frontline_season_settings", JSON.stringify(record));
+    } catch (e) {}
+
+    // 2. In-memory update
+    MOCK_DATA.seasonSettings = { ...record };
+
+    // 3. Immediately apply to current page DOM
+    this.applySeasonBadge(record);
+
+    // 4. Persist to Supabase if configured
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .upsert(record)
+          .select();
+
+        if (error) {
+          console.error("Supabase upsert league_settings error:", error);
+          return { success: false, data: record, error: error.message || String(error) };
+        }
+        return { success: true, data: data?.[0] || record };
+      } catch (err) {
+        console.error("Supabase updateSeasonSettings network error:", err);
+        return { success: false, data: record, error: err.message || String(err) };
+      }
+    }
+
+    return { success: true, data: record, mock: true };
+  },
+
+  applySeasonBadge(settings) {
+    if (!settings) return;
+    const seasonNum = settings.season_number || 1;
+    const isComingSoon = settings.status_state === "coming_soon";
+    const labelText = settings.status_text || (isComingSoon ? `SEASON ${seasonNum} COMING SOON` : `SEASON ${seasonNum} ACTIVE`);
+
+    const badges = document.querySelectorAll(".brand-status");
+    badges.forEach(badge => {
+      if (isComingSoon) {
+        badge.classList.add("status-coming-soon");
+        badge.classList.remove("status-active");
+      } else {
+        badge.classList.add("status-active");
+        badge.classList.remove("status-coming-soon");
+      }
+      badge.innerHTML = `
+        <span class="nav-beacon"></span>
+        <span>${labelText}</span>
+      `;
+    });
+  },
+
+  // ==============================================================================
+  // GENERAL DRAFT SYSTEM (WHEEL LOTTERY, GM SCOUTING, & DRAFT ANNOUNCEMENTS)
+  // ==============================================================================
+  async getDraftState(divisionId = "div-1") {
+    const divKey = divisionId || "div-1";
+    // 1. Try Supabase cloud sync first if configured
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", `draft_${divKey}`)
+          .maybeSingle();
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            return parsed;
+          } catch(e) {}
+        }
+      } catch (err) {
+        console.warn("Supabase getDraftState query error:", err);
+      }
+    }
+
+    // 2. Local storage fallback
+    try {
+      const local = localStorage.getItem(`frontline_draft_state_${divKey}`) || (divKey === "div-1" ? localStorage.getItem("frontline_draft_state") : null);
+      if (local) return JSON.parse(local);
+    } catch (e) {}
+
+    // 3. Default Initial Draft State
+    return {
+      division: divKey,
+      draftOrder: [],
+      currentRound: 1,
+      currentPick: 1,
+      onTheClock: null,
+      timerSeconds: 120,
+      status: "Lottery", // "Lottery", "Live", "Paused", "Completed"
+      picks: []
+    };
+  },
+
+  async saveDraftState(state, divisionId = "div-1") {
+    if (!state) return { success: false, error: "Empty state" };
+    const divKey = divisionId || state.division || "div-1";
+    state.division = divKey;
+
+    // 1. Local persistence
+    try {
+      localStorage.setItem(`frontline_draft_state_${divKey}`, JSON.stringify(state));
+      if (divKey === "div-1") {
+        localStorage.setItem("frontline_draft_state", JSON.stringify(state));
+      }
+    } catch (e) {}
+
+    // 2. Cloud persistence in league_settings if table exists
+    if (dbClient) {
+      try {
+        await dbClient
+          .from("league_settings")
+          .upsert({
+            id: `draft_${divKey}`,
+            status_state: state.status || "active",
+            status_text: JSON.stringify(state),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+      } catch (err) {
+        console.warn("Cloud saveDraftState note:", err.message || err);
+      }
+    }
+
+    return { success: true, data: state };
+  },
+
+  async getFreeAgents(divisionId = "div-1") {
+    const players = await this.getPlayers();
+    let signups = [];
+    try {
+      signups = await this.getSignups();
+    } catch(e) {}
+
+    // Filter free agents from players table
+    const faPlayers = (players || []).filter(p => {
+      const team = (p.teams?.name || p.team_name || "").toLowerCase();
+      const status = (p.status || "").toLowerCase();
+      return !p.teams || team === "free agent" || team === "unassigned" || status === "free agent";
+    }).map(p => ({
+      ...p,
+      source: "player",
+      isDrafted: false
+    }));
+
+    // Filter free agents from signups table
+    const faSignups = (signups || []).filter(s => {
+      const regType = (s.registration_type || "").toLowerCase();
+      return regType.includes("free agent") || !s.team_name;
+    }).map(s => ({
+      id: `signup-${s.id}`,
+      gamertag: s.gamertag,
+      discord_name: s.discord_username || s.discord_name || s.gamertag,
+      activision_id: s.activision_id || `${s.gamertag}#0000`,
+      role: s.role || "Flex",
+      platform: s.platform || "PC",
+      region: s.region || "NA East",
+      notes: s.notes || "Registered via Recruitment Portal",
+      rank: "1.0",
+      status: "Free Agent",
+      kdr: null,
+      total_kills: 0,
+      total_deaths: 0,
+      team_name: "Free Agent",
+      source: "signup",
+      isDrafted: false
+    }));
+
+    // Deduplicate by gamertag
+    const seenTags = new Set();
+    const merged = [];
+
+    [...faPlayers, ...faSignups].forEach(p => {
+      const lower = (p.gamertag || "").toLowerCase().trim();
+      if (!lower || seenTags.has(lower)) return;
+      seenTags.add(lower);
+      merged.push(p);
+    });
+
+    // Check draft state for any drafted players in this division
+    try {
+      const state = await this.getDraftState(divisionId);
+      const draftedPicks = state?.picks || [];
+      const draftedTags = new Map();
+      draftedPicks.forEach(pick => {
+        if (pick.player_gamertag) {
+          draftedTags.set(pick.player_gamertag.toLowerCase(), pick);
+        }
+      });
+
+      merged.forEach(p => {
+        const tagLower = (p.gamertag || "").toLowerCase();
+        if (draftedTags.has(tagLower)) {
+          const match = draftedTags.get(tagLower);
+          p.isDrafted = true;
+          p.draftedBy = match.team_name;
+          p.draftRound = match.round;
+          p.draftPick = match.pick;
+          p.is_autodraft = !!match.is_autodraft;
+        }
+      });
+    } catch(e) {}
+
+    return merged;
+  },
+
+  async recordDraftPick(pickData, divisionId = "div-1") {
+    const divKey = divisionId || pickData.division || "div-1";
+    const state = await this.getDraftState(divKey);
+    if (!state.picks) state.picks = [];
+
+    const isAuto = !!pickData.is_autodraft;
+    const newPick = {
+      id: `pick-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      division: divKey,
+      round: pickData.round || state.currentRound || 1,
+      pick: pickData.pick || state.currentPick || (state.picks.length + 1),
+      team_name: pickData.team_name,
+      team_tag: pickData.team_tag || "",
+      player_gamertag: pickData.player_gamertag,
+      player_role: pickData.player_role || "Flex",
+      player_kdr: pickData.player_kdr || null,
+      notes: pickData.notes || "",
+      is_autodraft: isAuto,
+      timestamp: new Date().toISOString()
+    };
+
+    state.picks.push(newPick);
+
+    // Calculate next onTheClock team if draftOrder exists
+    const order = state.draftOrder || [];
+    if (order.length > 0) {
+      const nextOverallPick = state.picks.length + 1;
+      const numTeams = order.length;
+      const roundIndex = Math.floor((nextOverallPick - 1) / numTeams);
+      const pickInRound = (nextOverallPick - 1) % numTeams;
+      
+      // Snake draft logic: odd rounds forward, even rounds backward
+      const teamIdx = roundIndex % 2 === 0 ? pickInRound : (numTeams - 1 - pickInRound);
+      const nextTeam = order[teamIdx];
+
+      state.currentRound = roundIndex + 1;
+      state.currentPick = nextOverallPick;
+      state.onTheClock = nextTeam ? nextTeam.name : null;
+    } else {
+      state.currentPick = (state.currentPick || 1) + 1;
+    }
+
+    await this.saveDraftState(state, divKey);
+
+    // Broadcast pick to league_announcements as an official update!
+    try {
+      const divLabel = divKey === "div-2" ? "Division 2" : (divKey === "div-3" ? "Division 3" : "Division 1");
+      const autoBadge = isAuto ? " [AUTO-DRAFT: CLOCK EXPIRED]" : "";
+      await this.addAnnouncement({
+        title: `DRAFT PICK: [${divLabel}] Round ${newPick.round} Pick #${newPick.pick} - ${newPick.team_name}${autoBadge}`,
+        message: `${newPick.team_name} selects ${newPick.player_gamertag} (${newPick.player_role})${isAuto ? ' via automatic system selection' : ''}${newPick.notes ? ` · "${newPick.notes}"` : ""}.`,
+        tag: isAuto ? "Auto-Draft" : "Draft Pick",
+        tag_color: isAuto ? "amber" : "lime",
+        link_url: "draft.html",
+        link_text: "View Live Draft HQ ↗",
+        pinned: false,
+        is_active: true
+      });
+    } catch (annErr) {
+      console.warn("Could not post draft announcement to main board:", annErr);
+    }
+
+    return { success: true, pick: newPick, state };
+  },
+
   paypalConfig: PAYPAL_CONFIG,
   isConfigured: isSupabaseConfigured
 };
+
+// ==============================================================================
+// AUTO-INITIALIZE GLOBAL SEASON BADGE ACROSS ALL PAGES
+// ==============================================================================
+(function initGlobalSeasonBadge() {
+  function updateBadge() {
+    // 1. Instant check from localStorage (synchronous)
+    try {
+      const saved = localStorage.getItem("frontline_season_settings");
+      if (saved) {
+        window.LeagueDB.applySeasonBadge(JSON.parse(saved));
+      }
+    } catch (e) {}
+
+    // 2. Asynchronous cloud sync from Supabase
+    if (window.LeagueDB && typeof window.LeagueDB.getSeasonSettings === "function") {
+      window.LeagueDB.getSeasonSettings().then(settings => {
+        if (settings) {
+          window.LeagueDB.applySeasonBadge(settings);
+          try {
+            localStorage.setItem("frontline_season_settings", JSON.stringify(settings));
+          } catch (e) {}
+        }
+      }).catch(() => {});
+    }
+  }
+
+  // Execute immediately without waiting for DOMContentLoaded if elements exist
+  updateBadge();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", updateBadge);
+  }
+
+  // Cross-tab real-time sync when admin saves in another tab
+  window.addEventListener("storage", (e) => {
+    if (e.key === "frontline_season_settings" && e.newValue) {
+      try {
+        window.LeagueDB.applySeasonBadge(JSON.parse(e.newValue));
+      } catch (err) {}
+    }
+  });
+})();
 

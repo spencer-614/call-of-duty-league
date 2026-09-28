@@ -1,0 +1,2072 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>General Draft HQ — Call of Duty Community League</title>
+  </head>
+  <body>
+    <!-- Tactical Navigation Header -->
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="index.html">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">COMMUNITY LEAGUE</small>
+            <div class="brand-status">
+              <span class="nav-beacon"></span>
+              <span>SEASON 1 ACTIVE</span>
+            </div>
+            <script>
+              (function(){
+                try {
+                  var s = JSON.parse(localStorage.getItem('frontline_season_settings'));
+                  if (s) {
+                    var el = document.currentScript.previousElementSibling;
+                    if (el && el.classList.contains('brand-status')) {
+                      el.className = 'brand-status' + (s.status_state === 'coming_soon' ? ' status-coming-soon' : ' status-active');
+                      var t = s.status_text || ('SEASON ' + (s.season_number || 1) + (s.status_state === 'coming_soon' ? ' COMING SOON' : ' ACTIVE'));
+                      el.innerHTML = '<span class="nav-beacon"></span><span>' + t + '</span>';
+                    }
+                  }
+                } catch(e){}
+              })();
+            </script>
+          </div>
+        </a>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Competition</div>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
+                  <a href="draft.html" style="color:var(--lime);"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="admin.html"><span class="nav-icon">⚙</span> Admin Console</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.com/"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <svg class="discord-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+            <span>Join Discord</span>
+            <span style="font-size:11px;">↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap" style="padding: 40px 0 80px;">
+      <!-- Page Title & Header Eyebrow -->
+      <div class="signup-header" style="margin-bottom: 20px;">
+        <div class="eyebrow">OFFICIAL FRONTLINE CDL COMBAT DRAFT</div>
+        <h2 style="font-size: clamp(32px, 5vw, 48px); margin: 6px 0 10px;">
+          GENERAL DRAFT <em style="color:var(--lime); font-style:normal;">HQ</em>
+        </h2>
+        <p style="max-width: 720px; font-size: 14px; color: var(--muted); line-height: 1.6;">
+          Wheel spin lottery for draft order, GM scouting war room for available free agents, and live real-time draft pick announcements for the entire league.
+        </p>
+      </div>
+
+      <!-- Real-Time Draft HUD Bar -->
+      <section class="draft-hud-banner" aria-label="Draft Live HUD">
+        <div class="draft-hud-left">
+          <div class="draft-live-pill" id="draft-live-indicator">
+            <span class="nav-beacon"></span>
+            <span id="draft-status-text">LOTTERY ORDER SEEDING</span>
+          </div>
+
+          <!-- Active Division Tag -->
+          <div class="draft-hud-div-badge" id="hud-division-badge">
+            <span>★ DIV 1 · PREMIER</span>
+          </div>
+
+          <div class="draft-on-clock-card">
+            <div class="draft-clock-label">ON THE CLOCK</div>
+            <div class="draft-clock-team" id="hud-on-the-clock">
+              <span style="color:var(--lime);">TBD (SPIN WHEEL)</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+          <!-- Master Draft Action Controls (Start Draft / Force Auto-Pick) -->
+          <div class="draft-action-cluster">
+            <button class="btn-start-draft" id="btn-start-draft" title="Start draft countdown clock for first GM and auto-start for each subsequent GM">
+              <span id="start-draft-icon">🟢</span>
+              <span id="start-draft-label">START OFFICIAL DRAFT</span>
+            </button>
+            <button class="btn-force-autopick" id="btn-force-autopick" title="Commissioner: Force immediate auto-pick for current team on clock" style="display:none;">
+              ⚡ Force Auto-Pick
+            </button>
+          </div>
+
+          <!-- Pick Timer / Clock -->
+          <div class="draft-clock-box">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px;">
+                <span style="font-size:8px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">PICK CLOCK</span>
+                <select id="select-timer-limit" class="timer-select-dropdown" title="Turn time limit per GM">
+                  <option value="45">45s</option>
+                  <option value="60">60s</option>
+                  <option value="90">90s</option>
+                  <option value="120" selected>2:00</option>
+                  <option value="180">3:00</option>
+                </select>
+              </div>
+              <div class="draft-timer-digits" id="draft-timer-display">02:00</div>
+            </div>
+            <div class="draft-clock-controls">
+              <button class="btn-clock-ctrl" id="btn-timer-toggle" title="Start / Pause Timer">▶</button>
+              <button class="btn-clock-ctrl" id="btn-timer-reset" title="Reset Timer to limit">🔄</button>
+              <button class="btn-clock-ctrl" id="btn-timer-plus" title="+30 Seconds">+30s</button>
+            </div>
+          </div>
+
+          <!-- Stats Cluster -->
+          <div class="draft-stats-cluster">
+            <div class="draft-stat-chip">
+              <strong id="stat-round-display">RD 1 · PK 1</strong>
+              <small>ACTIVE SELECTION</small>
+            </div>
+            <div class="draft-stat-chip">
+              <strong id="stat-free-agents-count">--</strong>
+              <small>FREE AGENTS</small>
+            </div>
+            <div class="draft-stat-chip">
+              <strong id="stat-picks-made">0</strong>
+              <small>PICKS LOCKED</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Three Draft Tabs Navigation -->
+      <nav class="draft-tab-nav" aria-label="Draft Navigation Tabs">
+        <button class="draft-tab-btn active" data-tab="wheel">
+          <span>🎡</span>
+          <span>Wheel Spin (Draft Order)</span>
+        </button>
+        <button class="draft-tab-btn" data-tab="freeagents">
+          <span>📋</span>
+          <span>GM Free Agents War Room</span>
+        </button>
+        <button class="draft-tab-btn" data-tab="announcements">
+          <span>📢</span>
+          <span>Draft Announcements &amp; Board</span>
+        </button>
+      </nav>
+
+      <!-- ==============================================================================
+           TAB 1: WHEEL SPIN FOR DRAFT ORDER
+           ============================================================================== -->
+      <section id="tab-wheel" class="draft-tab-content">
+        <!-- Division Lottery Selector Bar -->
+        <div class="draft-division-selector-bar">
+          <div class="div-selector-label">
+            <span class="div-selector-icon">🎯</span>
+            <div>
+              <span class="div-selector-kicker">TOURNAMENT DIVISION LOTTERY</span>
+              <strong class="div-selector-title">Select Division for Draft Order &amp; Board:</strong>
+            </div>
+          </div>
+          <div class="div-selector-control">
+            <select id="wheel-division-select" class="division-select-box" aria-label="Select Division for draft spin">
+              <option value="div-1" selected>★ Division 1 · Premier Championship (Pro Tier)</option>
+              <option value="div-2">⚔ Division 2 · Challengers Tier</option>
+              <option value="div-3">⊕ Division 3 · Open Recruit Cup</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="wheel-layout-grid">
+          <!-- Canvas Wheel Stage -->
+          <div class="wheel-stage-card">
+            <div style="text-align:center; margin-bottom: 8px;">
+              <span class="pill" style="margin-bottom:6px;" id="wheel-stage-pill">DIVISION 1 · LOTTERY RANDOMIZER</span>
+              <h3 style="font: 800 24px var(--display); letter-spacing: 1px; margin: 4px 0; text-transform:uppercase;" id="wheel-stage-title">
+                DRAFT ORDER SEEDING WHEEL
+              </h3>
+              <p style="font-size:12px; color:var(--muted); max-width:440px; margin: 4px auto 0;" id="wheel-stage-desc">
+                Spin the wheel to determine which franchise lands Pick #1, Pick #2, and so on. Landed teams are automatically locked into the draft board.
+              </p>
+            </div>
+
+            <!-- Canvas Wheel Stage Container -->
+            <div class="wheel-canvas-container">
+              <div class="wheel-pointer" id="wheel-pointer"></div>
+              <canvas id="draft-wheel-canvas" width="440" height="440"></canvas>
+            </div>
+
+            <!-- Wheel Controls -->
+            <div class="wheel-controls">
+              <button class="btn-spin-wheel" id="btn-spin-wheel">
+                <span>⚡</span>
+                <span id="spin-btn-label">SPIN FOR PICK #1</span>
+              </button>
+
+              <div class="wheel-secondary-actions">
+                <button class="btn-wheel-sub" id="btn-quick-lottery" title="Instantly randomize all remaining slots">
+                  🎲 Quick Auto-Lottery
+                </button>
+                <button class="btn-wheel-sub" id="btn-reset-wheel" title="Reset draft order and refill wheel">
+                  🔄 Reset Lottery
+                </button>
+              </div>
+
+              <div class="draft-options-row">
+                <label class="draft-option-toggle">
+                  <input type="checkbox" id="chk-remove-landed" checked />
+                  <span>Remove landed team from wheel after spin (assigns next pick)</span>
+                </label>
+                <label class="draft-option-toggle">
+                  <input type="checkbox" id="chk-autodraft-enabled" checked />
+                  <span>Auto-Draft on clock expiry (picks top available slayer or shortlist)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Winner Callout Banner -->
+            <div id="wheel-result-banner" style="display:none; margin-top:20px; width:100%; background:#192013; border:2px solid var(--lime); padding:16px; text-align:center; box-shadow:0 0 20px rgba(213,244,91,0.25);">
+              <span style="font-size:11px; font-weight:800; color:var(--lime); letter-spacing:1px; text-transform:uppercase;">OFFICIAL LOTTERY RESULT</span>
+              <h2 id="wheel-result-text" style="font:900 28px/1.1 var(--display); color:#ffffff; margin:6px 0; text-transform:uppercase;">
+                PICK #1 AWARDED TO OPTIC TEXAS
+              </h2>
+              <button class="btn-wheel-sub" style="margin-top:8px; background:var(--lime); color:#11120f; font-weight:800;" onclick="document.getElementById('wheel-result-banner').style.display='none';">
+                Confirm &amp; Proceed ➔
+              </button>
+            </div>
+          </div>
+
+          <!-- Draft Order Sidebar Board -->
+          <div class="draft-order-board">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:12px;">
+              <div>
+                <h4 style="font:800 16px var(--display); letter-spacing:1px; margin:0; text-transform:uppercase; color:#ffffff;" id="order-board-title">
+                  OFFICIAL DRAFT ORDER
+                </h4>
+                <small style="font-size:10px; color:var(--muted);" id="order-board-subtitle">Determined via Division 1 Lottery</small>
+              </div>
+              <span class="pill" id="order-locked-badge">0 / 8 LOCKED</span>
+            </div>
+
+            <div class="draft-order-list" id="draft-order-list">
+              <!-- Dynamically Populated Slots -->
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; border-top:1px solid var(--line); padding-top:16px;">
+              <button class="button" id="btn-sidebar-start-draft" style="width:100%; justify-content:center; background:var(--lime); color:#11120f; font-weight:900; letter-spacing:0.5px;">
+                🟢 Start Draft with this Order ➔
+              </button>
+              <button class="btn-wheel-sub" id="btn-broadcast-order" style="width:100%; justify-content:center;">
+                📢 Broadcast Order to League ↗
+              </button>
+              
+              <!-- Quick Team Pool Editor Toggle -->
+              <details style="font-size:11px; color:var(--muted); background:#12140e; border:1px solid #24291a; padding:10px 14px;">
+                <summary style="cursor:pointer; font-weight:bold; color:var(--text);">Manage Wheel Teams Pool (Add / Remove) ▾</summary>
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;" id="team-pool-editor">
+                  <div style="display:flex; gap:6px;">
+                    <input type="text" id="input-new-team" class="search-box" style="flex:1; font-size:11px;" placeholder="Add custom team..." />
+                    <input type="text" id="input-new-tag" class="search-box" style="width:65px; font-size:11px;" placeholder="TAG" maxlength="4" />
+                    <button class="btn-wheel-sub" id="btn-add-team-pool" style="padding:6px 12px;">+ Add</button>
+                  </div>
+                  <div id="team-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
+                    <!-- Rendered team chips -->
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================================
+           TAB 2: GM SCOUTING WAR ROOM (FREE AGENTS)
+           ============================================================================== */ -->
+      <section id="tab-freeagents" class="draft-tab-content" style="display:none;">
+        <!-- GM Toolbar: Search, Filters, Role, Platform, Sorting -->
+        <div class="gm-toolbar">
+          <div class="gm-search-wrap">
+            <input
+              type="text"
+              id="fa-search-input"
+              class="search-box"
+              placeholder="Search gamertag, Discord handle, notes, or Activision ID..."
+              style="width:100%;"
+            />
+          </div>
+
+          <div class="gm-filter-group">
+            <!-- Role Pills -->
+            <div class="filter-buttons" id="fa-role-filters">
+              <button class="filter-btn active" data-role="all">All Roles</button>
+              <button class="filter-btn" data-role="SMG">SMG</button>
+              <button class="filter-btn" data-role="Main AR">Main AR</button>
+              <button class="filter-btn" data-role="Flex">Flex</button>
+              <button class="filter-btn" data-role="Sniper">Sniper</button>
+            </div>
+
+            <!-- Platform Filter -->
+            <select id="fa-platform-filter" class="form-control" style="background:#141511; border:1px solid var(--line); color:var(--text); padding:8px 12px; font-size:11px; text-transform:uppercase; font-weight:bold; height:36px;">
+              <option value="all">All Platforms</option>
+              <option value="PC">PC</option>
+              <option value="PlayStation">PlayStation</option>
+              <option value="Xbox">Xbox</option>
+            </select>
+
+            <!-- Availability Filter -->
+            <select id="fa-avail-filter" class="form-control" style="background:#141511; border:1px solid var(--line); color:var(--text); padding:8px 12px; font-size:11px; text-transform:uppercase; font-weight:bold; height:36px;">
+              <option value="available">Available Only</option>
+              <option value="shortlist">⭐ Starred Only</option>
+              <option value="all">All (Inc. Drafted)</option>
+            </select>
+
+            <!-- Sort Select -->
+            <select id="fa-sort-select" class="form-control" style="background:#141511; border:1px solid var(--line); color:var(--text); padding:8px 12px; font-size:11px; text-transform:uppercase; font-weight:bold; height:36px;">
+              <option value="kd-desc">Sort: Highest K/D</option>
+              <option value="kills-desc">Sort: Most Kills</option>
+              <option value="tag-asc">Sort: Gamertag (A-Z)</option>
+              <option value="recent">Sort: Newest First</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Free Agent Cards Grid -->
+        <div class="free-agent-grid" id="free-agents-container">
+          <div class="empty-state" style="grid-column:1/-1;">Loading free agent prospects from database...</div>
+        </div>
+      </section>
+
+      <!-- ==============================================================================
+           TAB 3: DRAFT ANNOUNCEMENTS & LIVE SELECTION BOARD
+           ============================================================================== -->
+      <section id="tab-announcements" class="draft-tab-content" style="display:none;">
+        <div class="announcements-head-bar">
+          <div>
+            <span class="pill" style="margin-bottom:4px;">REAL-TIME BROADCAST</span>
+            <h3 style="font:800 22px var(--display); letter-spacing:1px; margin:2px 0; text-transform:uppercase; color:#ffffff;">
+              OFFICIAL DRAFT ANNOUNCEMENTS &amp; BOARD
+            </h3>
+            <small style="font-size:11px; color:var(--muted);">All selections and trade intel broadcasted live across the league.</small>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <!-- View Mode Switch -->
+            <div style="display:inline-flex; border:1px solid var(--line); background:#12140e; padding:3px;">
+              <button class="filter-btn active" id="btn-view-feed" style="padding:6px 12px; font-size:10px;">📋 Feed View</button>
+              <button class="filter-btn" id="btn-view-matrix" style="padding:6px 12px; font-size:10px;">📊 Matrix Board</button>
+            </div>
+
+            <!-- Action Buttons -->
+            <button class="btn-spin-wheel" id="btn-open-draft-modal" style="padding:10px 20px; font-size:12px;">
+              <span>🎯</span>
+              <span>+ Make / Announce Pick</span>
+            </button>
+            <button class="btn-wheel-sub" id="btn-open-trade-modal" style="padding:10px 16px;">
+              <span>📢</span>
+              <span>Post Trade Intel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Round Filter Tabs -->
+        <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;" id="draft-round-pills">
+          <button class="filter-btn active" data-round="all">All Rounds</button>
+          <button class="filter-btn" data-round="1">Round 1</button>
+          <button class="filter-btn" data-round="2">Round 2</button>
+          <button class="filter-btn" data-round="3">Round 3</button>
+          <button class="filter-btn" data-round="4">Round 4</button>
+        </div>
+
+        <!-- 1. Chronological Feed View -->
+        <div id="draft-feed-wrap" class="draft-feed-container">
+          <div class="empty-state">No draft picks recorded yet. Spin the wheel and start drafting!</div>
+        </div>
+
+        <!-- 2. Matrix Table View -->
+        <div id="draft-matrix-wrap" class="draft-matrix-wrapper" style="display:none; margin-top:10px;">
+          <table class="draft-matrix-table" id="draft-matrix-table">
+            <thead>
+              <tr>
+                <th>Draft Pick #</th>
+                <th>Team Franchise</th>
+                <th>Round 1</th>
+                <th>Round 2</th>
+                <th>Round 3</th>
+                <th>Round 4</th>
+              </tr>
+            </thead>
+            <tbody id="draft-matrix-body">
+              <!-- Matrix rows dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal 1: Make / Announce Draft Pick -->
+    <dialog id="modal-make-pick" class="player-modal" style="max-width:540px;">
+      <div class="modal-header">
+        <div>
+          <span class="pill" style="background:var(--lime); color:#11120f;">COMMISH DRAFT DESK</span>
+          <h3 style="font:800 24px var(--display); margin:6px 0 0; text-transform:uppercase; color:#ffffff;">
+            BROADCAST DRAFT SELECTION
+          </h3>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modal-make-pick').close();">✕</button>
+      </div>
+
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:16px; padding:24px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">DRAFT ROUND</label>
+            <select id="pick-input-round" class="form-control" style="width:100%; background:#141511; border:1px solid var(--line); color:var(--text); padding:10px; font-weight:bold;">
+              <option value="1">Round 1</option>
+              <option value="2">Round 2</option>
+              <option value="3">Round 3</option>
+              <option value="4">Round 4</option>
+              <option value="5">Round 5</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">OVERALL PICK #</label>
+            <input type="number" id="pick-input-number" class="search-box" style="width:100%; padding:10px;" min="1" value="1" />
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">DRAFTING TEAM</label>
+          <select id="pick-input-team" class="form-control" style="width:100%; background:#141511; border:1px solid var(--line); color:var(--text); padding:10px; font-weight:bold;">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">SELECTED FREE AGENT</label>
+          <select id="pick-input-player" class="form-control" style="width:100%; background:#141511; border:1px solid var(--line); color:var(--text); padding:10px; font-weight:bold;">
+            <!-- Populated dynamically from available free agents -->
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">GM / COMMISH SCOUTING NOTE (OPTIONAL)</label>
+          <input type="text" id="pick-input-notes" class="search-box" style="width:100%; padding:10px;" placeholder="e.g. Selected as starting Main AR for Season 1 campaign." />
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+          <button class="btn-wheel-sub" onclick="document.getElementById('modal-make-pick').close();">Cancel</button>
+          <button class="button" id="btn-confirm-draft-pick" style="border:none;">
+            <span>📢 Confirm &amp; Broadcast Pick ↗</span>
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Modal 2: Post Trade / Custom Intel -->
+    <dialog id="modal-post-intel" class="player-modal" style="max-width:500px;">
+      <div class="modal-header">
+        <div>
+          <span class="pill" style="background:#ffb300; color:#11120f;">WAR ROOM WIRE</span>
+          <h3 style="font:800 22px var(--display); margin:6px 0 0; text-transform:uppercase; color:#ffffff;">
+            POST DRAFT TRADE / INTEL
+          </h3>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modal-post-intel').close();">✕</button>
+      </div>
+
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:14px; padding:20px;">
+        <div>
+          <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">HEADLINE</label>
+          <input type="text" id="intel-input-title" class="search-box" style="width:100%;" placeholder="e.g. TRADE ALERT: Boston Breach acquires Pick #2" />
+        </div>
+        <div>
+          <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">INTEL / DETAILS</label>
+          <textarea id="intel-input-body" class="search-box" style="width:100%; min-height:80px;" placeholder="Describe trade conditions, player rights, or draft room updates..."></textarea>
+        </div>
+        <div>
+          <label style="display:block; font-size:10px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">TAG BADGE</label>
+          <select id="intel-input-tag" class="form-control" style="width:100%; background:#141511; border:1px solid var(--line); color:var(--text); padding:8px;">
+            <option value="Trade Alert">Trade Alert</option>
+            <option value="Breaking Intel">Breaking Intel</option>
+            <option value="Draft Notice">Draft Notice</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
+          <button class="btn-wheel-sub" onclick="document.getElementById('modal-post-intel').close();">Cancel</button>
+          <button class="button" id="btn-confirm-post-intel">Broadcast Wire ↗</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Toast Notification for Auto-Draft and Important Draft Events -->
+    <div id="draft-autodraft-toast" class="autodraft-toast" style="display:none;" role="alert">
+      <div class="autodraft-toast-icon">⏰</div>
+      <div>
+        <div class="autodraft-toast-title" id="toast-title">AUTO-DRAFT EXECUTED</div>
+        <div class="autodraft-toast-msg" id="toast-message">Player assigned to franchise</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" style="margin-top: 60px;">
+      <div class="wrap footer-inner">
+        <div class="footer-info">
+          <strong>FRONTLINE · COMMUNITY LEAGUE</strong>
+          <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
+        </div>
+        <div class="footer-links">
+          <a href="index.html#league">League</a>
+          <a href="index.html#standings">Standings</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="brackets.html">Brackets</a>
+          <a href="draft.html" style="color:var(--lime);">Draft HQ</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+          <a href="admin.html">Admin Console</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts: Supabase, Modals, Draft Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./player-modal.js"></script>
+    <script src="./team-modal.js"></script>
+    <script src="./bullet-sparks.js"></script>
+
+    <script>
+      // ==============================================================================
+      // FRONTLINE GENERAL DRAFT HQ ENGINE
+      // ==============================================================================
+      (function() {
+        // --- Competitive Divisions Definition ---
+        const DIVISIONS = {
+          "div-1": {
+            id: "div-1",
+            name: "Division 1 · Premier Championship",
+            shortName: "DIV 1 · PREMIER",
+            badge: "★",
+            teams: [
+              { name: "Atlanta FaZe", tag: "ATL", color: "#e11b22" },
+              { name: "OpTic Texas", tag: "OPT", color: "#95c93d" },
+              { name: "Boston Breach", tag: "BOS", color: "#00ec96" },
+              { name: "New York Subliners", tag: "NYS", color: "#ffe600" },
+              { name: "Toronto Ultra", tag: "TOR", color: "#773dbd" },
+              { name: "LA Thieves", tag: "LAT", color: "#ff1839" },
+              { name: "Miami Heretics", tag: "MIA", color: "#f26522" },
+              { name: "Las Vegas Legion", tag: "LVL", color: "#ff5e00" }
+            ]
+          },
+          "div-2": {
+            id: "div-2",
+            name: "Division 2 · Challengers Tier",
+            shortName: "DIV 2 · CHALLENGERS",
+            badge: "⚔",
+            teams: [
+              { name: "Night Shift", tag: "NSH", color: "#38bdf8" },
+              { name: "Vantage", tag: "VTG", color: "#a855f7" },
+              { name: "Redline", tag: "RED", color: "#ef4444" },
+              { name: "Static", tag: "STC", color: "#eab308" },
+              { name: "Sub-Zero", tag: "SBZ", color: "#06b6d4" },
+              { name: "Dark Matter", tag: "DKM", color: "#ec4899" },
+              { name: "Outlaws", tag: "OTL", color: "#f97316" },
+              { name: "Ironclad", tag: "IRN", color: "#10b981" }
+            ]
+          },
+          "div-3": {
+            id: "div-3",
+            name: "Division 3 · Open Recruit Cup",
+            shortName: "DIV 3 · OPEN RECRUIT",
+            badge: "⊕",
+            teams: [
+              { name: "Apex Recruits", tag: "ARX", color: "#22c55e" },
+              { name: "Bravo Squad", tag: "BRV", color: "#3b82f6" },
+              { name: "Charlie 4", tag: "CH4", color: "#f59e0b" },
+              { name: "Delta Force", tag: "DLT", color: "#84cc16" },
+              { name: "Echo Recon", tag: "ECH", color: "#14b8a6" },
+              { name: "Foxtrot Fire", tag: "FXT", color: "#f43f5e" },
+              { name: "Ghost Protocol", tag: "GST", color: "#6366f1" },
+              { name: "Hazard Squad", tag: "HZD", color: "#d946ef" }
+            ]
+          }
+        };
+
+        // --- State ---
+        let currentTab = 'wheel';
+        let currentDivision = localStorage.getItem('frontline_draft_active_division') || 'div-1';
+        if (!DIVISIONS[currentDivision]) currentDivision = 'div-1';
+
+        let teamsPool = [...DIVISIONS[currentDivision].teams];
+        let activeWheelTeams = [...teamsPool];
+        let draftOrder = [];
+        let allFreeAgents = [];
+        let draftPicks = [];
+        let draftState = {
+          division: currentDivision,
+          currentRound: 1,
+          currentPick: 1,
+          onTheClock: null,
+          status: "Lottery",
+          picks: []
+        };
+
+        // Timer & Draft Flow State
+        let timerLimitSeconds = parseInt(localStorage.getItem('frontline_draft_timer_limit') || "120", 10);
+        let timerSeconds = timerLimitSeconds;
+        let timerInterval = null;
+        let isTimerRunning = false;
+        let isDraftLive = false;
+        let isDraftingAuto = false;
+
+        // Wheel Physics
+        let wheelAngle = 0;
+        let isSpinning = false;
+        let spinSpeed = 0;
+        let spinDecel = 0.985;
+        let animId = null;
+
+        // Toast Notification System
+        let toastTimeout = null;
+        function showAutoDraftToast(title, msg, icon = "⏰") {
+          const toast = document.getElementById("draft-autodraft-toast");
+          const titleEl = document.getElementById("toast-title");
+          const msgEl = document.getElementById("toast-message");
+          if (!toast) return;
+
+          if (titleEl) titleEl.textContent = title;
+          if (msgEl) msgEl.innerHTML = msg;
+          const iconEl = toast.querySelector(".autodraft-toast-icon");
+          if (iconEl) iconEl.textContent = icon;
+
+          toast.style.display = "flex";
+          if (toastTimeout) clearTimeout(toastTimeout);
+          toastTimeout = setTimeout(() => {
+            toast.style.display = "none";
+          }, 4500);
+        }
+
+        // Shortlisted Free Agents in localStorage
+        function getShortlist() {
+          try {
+            return JSON.parse(localStorage.getItem('frontline_gm_shortlist') || '[]');
+          } catch(e) { return []; }
+        }
+        function toggleShortlist(id) {
+          let list = getShortlist();
+          const strId = String(id);
+          if (list.includes(strId)) {
+            list = list.filter(x => x !== strId);
+          } else {
+            list.push(strId);
+          }
+          localStorage.setItem('frontline_gm_shortlist', JSON.stringify(list));
+          renderFreeAgents();
+        }
+
+        // --- Init ---
+        async function init() {
+          setupTabs();
+          setupTimer();
+          updateDivisionUI();
+          await loadDivisionTeams(currentDivision);
+          await loadDraftState();
+          await loadFreeAgents();
+          renderWheel();
+          renderOrderBoard();
+          renderDraftAnnouncements();
+          setupEventHandlers();
+          updateStartDraftButton();
+        }
+
+        // --- 1. Division UI & Loading ---
+        function updateDivisionUI() {
+          const info = DIVISIONS[currentDivision] || DIVISIONS["div-1"];
+          const badge = document.getElementById("hud-division-badge");
+          if (badge) {
+            badge.innerHTML = `<span>${info.badge} ${info.shortName}</span>`;
+          }
+
+          const stagePill = document.getElementById("wheel-stage-pill");
+          if (stagePill) stagePill.textContent = `${info.name.toUpperCase()} · LOTTERY RANDOMIZER`;
+
+          const stageDesc = document.getElementById("wheel-stage-desc");
+          if (stageDesc) {
+            stageDesc.textContent = `Spin the wheel to determine draft order for ${info.name}. Landed teams are automatically locked in.`;
+          }
+
+          const orderTitle = document.getElementById("order-board-title");
+          if (orderTitle) orderTitle.textContent = `${info.shortName} DRAFT ORDER`;
+
+          const orderSubtitle = document.getElementById("order-board-subtitle");
+          if (orderSubtitle) orderSubtitle.textContent = `Determined via ${info.name} Lottery`;
+
+          const divSelect = document.getElementById("wheel-division-select");
+          if (divSelect && divSelect.value !== currentDivision) {
+            divSelect.value = currentDivision;
+          }
+        }
+
+        async function switchDivision(newDivId) {
+          if (!DIVISIONS[newDivId]) return;
+          currentDivision = newDivId;
+          localStorage.setItem('frontline_draft_active_division', newDivId);
+
+          // Pause timer if running
+          if (isTimerRunning) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+          }
+          isDraftLive = false;
+
+          updateDivisionUI();
+          await loadDivisionTeams(newDivId);
+          await loadDraftState();
+          await loadFreeAgents();
+
+          renderWheel();
+          renderOrderBoard();
+          renderDraftAnnouncements();
+          updateStartDraftButton();
+          updateHudBanner();
+
+          showAutoDraftToast("DIVISION SWITCHED", `Active Draft: <strong>${DIVISIONS[newDivId].name}</strong>`, "🎯");
+        }
+
+        async function loadDivisionTeams(divKey) {
+          const divInfo = DIVISIONS[divKey] || DIVISIONS["div-1"];
+          const defaultTeams = [...divInfo.teams];
+
+          // Check if custom saved pool exists for this division
+          const savedPool = localStorage.getItem(`frontline_wheel_teams_pool_${divKey}`);
+          if (savedPool) {
+            try {
+              teamsPool = JSON.parse(savedPool);
+            } catch(e) {
+              teamsPool = defaultTeams;
+            }
+          } else {
+            teamsPool = defaultTeams;
+          }
+
+          recomputeActiveWheelTeams();
+          renderTeamPoolEditor();
+        }
+
+        function recomputeActiveWheelTeams() {
+          const lockedNames = new Set(draftOrder.map(o => o.name.toLowerCase()));
+          activeWheelTeams = teamsPool.filter(t => !lockedNames.has(t.name.toLowerCase()));
+          if (activeWheelTeams.length === 0) {
+            activeWheelTeams = [...teamsPool];
+          }
+        }
+
+        // --- 2. Load Draft State ---
+        async function loadDraftState() {
+          if (window.LeagueDB && typeof window.LeagueDB.getDraftState === 'function') {
+            try {
+              draftState = await window.LeagueDB.getDraftState(currentDivision);
+              draftOrder = draftState.draftOrder || [];
+              draftPicks = draftState.picks || [];
+              isDraftLive = draftState.status === "Live";
+            } catch (e) {
+              console.warn("Could not load draft state:", e);
+              draftOrder = [];
+              draftPicks = [];
+              isDraftLive = false;
+            }
+          }
+          recomputeActiveWheelTeams();
+          updateHudBanner();
+          updateStartDraftButton();
+        }
+
+        // --- 3. Load Free Agents ---
+        async function loadFreeAgents() {
+          const container = document.getElementById("free-agents-container");
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.getFreeAgents === 'function') {
+              allFreeAgents = await window.LeagueDB.getFreeAgents(currentDivision);
+            } else {
+              allFreeAgents = [];
+            }
+            document.getElementById("stat-free-agents-count").textContent = allFreeAgents.filter(fa => !fa.isDrafted).length;
+            renderFreeAgents();
+            populateDraftModalPlayerSelect();
+          } catch (e) {
+            console.error("Error loading free agents:", e);
+            container.innerHTML = '<div class="empty-state">Unable to load free agents right now.</div>';
+          }
+        }
+
+        // --- 4. Tabs Setup ---
+        function setupTabs() {
+          const buttons = document.querySelectorAll(".draft-tab-btn");
+          buttons.forEach(btn => {
+            btn.addEventListener("click", () => {
+              buttons.forEach(b => b.classList.remove("active"));
+              btn.classList.add("active");
+              currentTab = btn.getAttribute("data-tab");
+
+              document.querySelectorAll(".draft-tab-content").forEach(c => c.style.display = "none");
+              const target = document.getElementById(`tab-${currentTab}`);
+              if (target) target.style.display = "block";
+
+              if (currentTab === 'wheel') {
+                renderWheel();
+              } else if (currentTab === 'freeagents') {
+                renderFreeAgents();
+              } else if (currentTab === 'announcements') {
+                renderDraftAnnouncements();
+              }
+            });
+          });
+        }
+
+        // --- 5. Draft HUD, Start Draft & Continuous Timer Engine ---
+        function updateStartDraftButton() {
+          const btn = document.getElementById("btn-start-draft");
+          const icon = document.getElementById("start-draft-icon");
+          const label = document.getElementById("start-draft-label");
+          const forceBtn = document.getElementById("btn-force-autopick");
+          const sidebarBtn = document.getElementById("btn-sidebar-start-draft");
+
+          if (!btn) return;
+
+          if (isDraftLive) {
+            btn.classList.add("draft-live");
+            if (icon) icon.textContent = "⏸";
+            if (label) label.textContent = "PAUSE DRAFT";
+            if (forceBtn) forceBtn.style.display = "inline-flex";
+            if (sidebarBtn) {
+              sidebarBtn.textContent = "⏸ Pause Draft in Progress";
+              sidebarBtn.style.background = "#2b331c";
+              sidebarBtn.style.color = "var(--lime)";
+            }
+          } else {
+            btn.classList.remove("draft-live");
+            if (icon) icon.textContent = "🟢";
+            const isPaused = draftPicks.length > 0 && draftState.status === "Paused";
+            if (label) {
+              label.textContent = isPaused ? "RESUME DRAFT" : "START OFFICIAL DRAFT";
+            }
+            if (forceBtn) forceBtn.style.display = isTimerRunning ? "inline-flex" : "none";
+            if (sidebarBtn) {
+              sidebarBtn.textContent = isPaused ? "▶ Resume Draft ➔" : "🟢 Start Draft with this Order ➔";
+              sidebarBtn.style.background = "var(--lime)";
+              sidebarBtn.style.color = "#11120f";
+            }
+          }
+        }
+
+        function handleStartDraftClick() {
+          if (isDraftLive) {
+            pauseDraft();
+          } else {
+            if (draftOrder.length < 2) {
+              alert("Please determine the draft order first by spinning the wheel or clicking 'Quick Auto-Lottery'!");
+              return;
+            }
+            startDraft();
+          }
+        }
+
+        async function startDraft() {
+          isDraftLive = true;
+          draftState.status = "Live";
+          if (!draftState.onTheClock) {
+            draftState.onTheClock = draftOrder[0].name;
+            draftState.currentRound = 1;
+            draftState.currentPick = 1;
+          }
+
+          updateStartDraftButton();
+          updateHudBanner();
+
+          // Reset and start pick countdown for first GM!
+          resetAndStartTimerForNextGm();
+
+          // Save draft state
+          if (window.LeagueDB && typeof window.LeagueDB.saveDraftState === 'function') {
+            await window.LeagueDB.saveDraftState(draftState, currentDivision);
+          }
+
+          const divInfo = DIVISIONS[currentDivision];
+          window.LeagueDB?.addAnnouncement?.({
+            title: `🚨 ${divInfo.name.toUpperCase()} DRAFT HAS BEGUN`,
+            message: `The official draft is now live! ${draftState.onTheClock} is ON THE CLOCK (${formatTime(timerLimitSeconds)})!`,
+            tag: "Draft Live",
+            tag_color: "lime",
+            link_url: "draft.html",
+            link_text: "Join Live Draft HQ ↗",
+            pinned: true,
+            is_active: true
+          });
+
+          showAutoDraftToast("DRAFT COMMENCED", `${draftState.onTheClock} is ON THE CLOCK (${formatTime(timerLimitSeconds)})!`, "🎯");
+        }
+
+        async function pauseDraft() {
+          isDraftLive = false;
+          draftState.status = "Paused";
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+
+          const toggleBtn = document.getElementById("btn-timer-toggle");
+          if (toggleBtn) toggleBtn.textContent = "▶";
+
+          updateStartDraftButton();
+          updateHudBanner();
+
+          if (window.LeagueDB && typeof window.LeagueDB.saveDraftState === 'function') {
+            await window.LeagueDB.saveDraftState(draftState, currentDivision);
+          }
+
+          showAutoDraftToast("DRAFT PAUSED", "Draft clock paused by commissioner.", "⏸");
+        }
+
+        function updateHudBanner() {
+          const onClockEl = document.getElementById("hud-on-the-clock");
+          const statusText = document.getElementById("draft-status-text");
+          const roundEl = document.getElementById("stat-round-display");
+          const picksEl = document.getElementById("stat-picks-made");
+          const spinLabel = document.getElementById("spin-btn-label");
+
+          const nextPickNum = draftOrder.length + 1;
+          if (spinLabel) {
+            spinLabel.textContent = `SPIN FOR PICK #${nextPickNum}`;
+          }
+
+          if (draftOrder.length === 0) {
+            statusText.textContent = "LOTTERY ORDER SEEDING";
+            onClockEl.innerHTML = '<span style="color:var(--lime);">TBD (SPIN WHEEL)</span>';
+          } else if (isDraftLive) {
+            statusText.textContent = "DRAFT LIVE (ACTIVE)";
+            const onClockName = draftState.onTheClock || draftOrder[0]?.name || "TBD";
+            const currentRound = draftState.currentRound || 1;
+            const currentPick = draftState.currentPick || (draftPicks.length + 1);
+
+            roundEl.textContent = `RD ${currentRound} · PK ${currentPick}`;
+            onClockEl.innerHTML = `<span style="color:var(--lime);">${escapeHtml(onClockName)}</span>`;
+          } else {
+            statusText.textContent = draftPicks.length > 0 ? "DRAFT PAUSED" : "ORDER SEEDED · READY TO START";
+            const onClockName = draftState.onTheClock || draftOrder[0]?.name || "TBD";
+            const currentRound = draftState.currentRound || 1;
+            const currentPick = draftState.currentPick || (draftPicks.length + 1);
+
+            roundEl.textContent = `RD ${currentRound} · PK ${currentPick}`;
+            onClockEl.innerHTML = `<span style="color:var(--lime);">${escapeHtml(onClockName)}</span>`;
+          }
+
+          picksEl.textContent = draftPicks.length;
+          document.getElementById("order-locked-badge").textContent = `${draftOrder.length} / ${teamsPool.length} LOCKED`;
+        }
+
+        function formatTime(sec) {
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function startTimerCountdown() {
+          if (isTimerRunning) return;
+          isTimerRunning = true;
+          const toggleBtn = document.getElementById("btn-timer-toggle");
+          if (toggleBtn) toggleBtn.textContent = "⏸";
+
+          clearInterval(timerInterval);
+          timerInterval = setInterval(tick, 1000);
+        }
+
+        function pauseTimerCountdown() {
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+          const toggleBtn = document.getElementById("btn-timer-toggle");
+          if (toggleBtn) toggleBtn.textContent = "▶";
+        }
+
+        function resetAndStartTimerForNextGm() {
+          clearInterval(timerInterval);
+          timerSeconds = timerLimitSeconds;
+          const display = document.getElementById("draft-timer-display");
+          if (display) {
+            display.textContent = formatTime(timerSeconds);
+            display.style.color = "var(--lime)";
+          }
+
+          // Auto-start for next GM if draft is active!
+          if (isDraftLive) {
+            startTimerCountdown();
+          } else {
+            isTimerRunning = false;
+            const toggleBtn = document.getElementById("btn-timer-toggle");
+            if (toggleBtn) toggleBtn.textContent = "▶";
+          }
+        }
+
+        function tick() {
+          const display = document.getElementById("draft-timer-display");
+          const toggleBtn = document.getElementById("btn-timer-toggle");
+
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            if (display) {
+              display.textContent = formatTime(timerSeconds);
+              if (timerSeconds <= 15) {
+                display.style.color = "#ff4444";
+              } else {
+                display.style.color = "var(--lime)";
+              }
+            }
+          } else {
+            // Timer expired at 00:00!
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            if (toggleBtn) toggleBtn.textContent = "▶";
+            if (display) {
+              display.textContent = "00:00";
+              display.style.color = "#ff4444";
+            }
+
+            // Execute Auto-Draft if enabled
+            const autoEnabled = document.getElementById("chk-autodraft-enabled")?.checked ?? true;
+            if (isDraftLive && autoEnabled) {
+              triggerAutoDraft("CLOCK EXPIRED");
+            } else {
+              showAutoDraftToast("TIME EXPIRED", "Pick clock reached 00:00. Waiting for GM selection...", "⏰");
+            }
+          }
+        }
+
+        function setupTimer() {
+          const toggleBtn = document.getElementById("btn-timer-toggle");
+          const resetBtn = document.getElementById("btn-timer-reset");
+          const plusBtn = document.getElementById("btn-timer-plus");
+          const limitSelect = document.getElementById("select-timer-limit");
+
+          if (limitSelect) {
+            limitSelect.value = String(timerLimitSeconds);
+            limitSelect.addEventListener("change", () => {
+              timerLimitSeconds = parseInt(limitSelect.value, 10) || 120;
+              localStorage.setItem('frontline_draft_timer_limit', String(timerLimitSeconds));
+              if (!isTimerRunning) {
+                timerSeconds = timerLimitSeconds;
+                const display = document.getElementById("draft-timer-display");
+                if (display) display.textContent = formatTime(timerSeconds);
+              }
+            });
+          }
+
+          toggleBtn?.addEventListener("click", () => {
+            if (isTimerRunning) {
+              pauseTimerCountdown();
+            } else {
+              startTimerCountdown();
+            }
+          });
+
+          resetBtn?.addEventListener("click", () => {
+            pauseTimerCountdown();
+            timerSeconds = timerLimitSeconds;
+            const display = document.getElementById("draft-timer-display");
+            if (display) {
+              display.textContent = formatTime(timerSeconds);
+              display.style.color = "var(--lime)";
+            }
+          });
+
+          plusBtn?.addEventListener("click", () => {
+            timerSeconds += 30;
+            const display = document.getElementById("draft-timer-display");
+            if (display) display.textContent = formatTime(timerSeconds);
+          });
+        }
+
+        // --- Auto-Draft Engine ---
+        async function triggerAutoDraft(reason = "CLOCK EXPIRED") {
+          if (isDraftingAuto) return;
+          isDraftingAuto = true;
+
+          const currentTeam = draftState.onTheClock || (draftOrder[0] ? draftOrder[0].name : null);
+          if (!currentTeam) {
+            isDraftingAuto = false;
+            return;
+          }
+
+          const available = allFreeAgents.filter(fa => !fa.isDrafted);
+          if (available.length === 0) {
+            showAutoDraftToast("POOL EMPTY", "No free agents remaining to auto-draft.", "⚠️");
+            pauseDraft();
+            isDraftingAuto = false;
+            return;
+          }
+
+          // 1. Check if GM has any shortlisted players still available
+          const shortlist = getShortlist();
+          let chosen = null;
+          if (shortlist && shortlist.length > 0) {
+            chosen = available.find(fa => shortlist.includes(String(fa.id)) || shortlist.includes(String(fa.gamertag)));
+          }
+
+          // 2. Otherwise pick best available slayer by K/D ratio, then total kills
+          if (!chosen) {
+            const sorted = [...available].sort((a, b) => {
+              const kdA = parseFloat(a.kdr) || 0;
+              const kdB = parseFloat(b.kdr) || 0;
+              if (kdB !== kdA) return kdB - kdA;
+              return (b.total_kills || 0) - (a.total_kills || 0);
+            });
+            chosen = sorted[0];
+          }
+
+          if (!chosen) chosen = available[0];
+
+          showAutoDraftToast(
+            `⏰ ${reason}!`,
+            `Auto-drafted <strong>${escapeHtml(chosen.gamertag)}</strong> (${escapeHtml(chosen.role || 'Flex')}${chosen.kdr ? ', ' + Number(chosen.kdr).toFixed(2) + ' K/D' : ''}) to <strong>${escapeHtml(currentTeam)}</strong>.`
+          );
+
+          try {
+            await submitPickCore({
+              round: draftState.currentRound || 1,
+              pick: draftState.currentPick || (draftPicks.length + 1),
+              teamName: currentTeam,
+              playerGamertag: chosen.gamertag,
+              playerRole: chosen.role || "Flex",
+              playerKd: chosen.kdr ? parseFloat(chosen.kdr) : null,
+              notes: `[AUTO-DRAFT: ${reason}]`,
+              isAutoDraft: true
+            });
+          } catch (e) {
+            console.error("Auto draft execution error:", e);
+          } finally {
+            isDraftingAuto = false;
+          }
+        }
+
+        // --- 6. Wheel Canvas Renderer & Animation Physics ---
+        function renderWheel() {
+          const canvas = document.getElementById("draft-wheel-canvas");
+          if (!canvas) return;
+          const ctx = canvas.getContext("2d");
+          const dpr = window.devicePixelRatio || 1;
+          const size = 440;
+
+          canvas.width = size * dpr;
+          canvas.height = size * dpr;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.scale(dpr, dpr);
+
+          const centerX = size / 2;
+          const centerY = size / 2;
+          const radius = size / 2 - 10;
+          const numSlices = activeWheelTeams.length;
+
+          ctx.clearRect(0, 0, size, size);
+
+          if (numSlices === 0) {
+            ctx.fillStyle = "#1e2119";
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "800 16px Impact, Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("ALL TEAMS DRAFTED", centerX, centerY);
+            return;
+          }
+
+          const sliceAngle = (Math.PI * 2) / numSlices;
+
+          // Outer Metal Ring / Housing
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = "#383f27";
+          ctx.lineWidth = 8;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = "#d5f45b";
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+
+          // Slices
+          for (let i = 0; i < numSlices; i++) {
+            const startAngle = wheelAngle + i * sliceAngle;
+            const endAngle = startAngle + sliceAngle;
+            const team = activeWheelTeams[i];
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius - 2, startAngle, endAngle);
+            ctx.closePath();
+
+            // Alternating tactical sector colors
+            const isAlt = i % 2 === 0;
+            ctx.fillStyle = isAlt ? "#161912" : "#202518";
+            ctx.fill();
+
+            // Accent sector border line
+            ctx.strokeStyle = "#2e3621";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Outer rim accent dot
+            const midAngle = startAngle + sliceAngle / 2;
+            const dotX = centerX + Math.cos(midAngle) * (radius - 12);
+            const dotY = centerY + Math.sin(midAngle) * (radius - 12);
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = team.color || "#d5f45b";
+            ctx.fill();
+
+            // Team Name Text rotated along slice
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(midAngle);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "800 13px Impact, Arial, sans-serif";
+            ctx.letterSpacing = "0.5px";
+
+            // Draw tag & name
+            const label = team.name.length > 15 ? (team.tag || team.name.substring(0, 12)) : team.name;
+            ctx.fillText(label.toUpperCase(), radius - 26, 4);
+
+            // Colored team tag pill
+            if (team.tag) {
+              ctx.fillStyle = team.color || "var(--lime)";
+              ctx.font = "900 10px monospace";
+              ctx.fillText(`[${team.tag}]`, radius - 140, 4);
+            }
+
+            ctx.restore();
+            ctx.restore();
+          }
+
+          // Center Hub Cap (Frontline Emblem)
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 42, 0, Math.PI * 2);
+          ctx.fillStyle = "#11120f";
+          ctx.fill();
+          ctx.strokeStyle = "#d5f45b";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 34, 0, Math.PI * 2);
+          ctx.fillStyle = "#1e2217";
+          ctx.fill();
+
+          ctx.fillStyle = "#d5f45b";
+          ctx.font = "900 12px Impact, Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("CDL", centerX, centerY - 4);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "800 8.5px Arial";
+          ctx.fillText("DRAFT", centerX, centerY + 8);
+          ctx.restore();
+        }
+
+        function spinWheel() {
+          if (isSpinning || activeWheelTeams.length === 0) return;
+          isSpinning = true;
+
+          const spinBtn = document.getElementById("btn-spin-wheel");
+          spinBtn.disabled = true;
+
+          // Pick random target rotations (4 to 7 full circles + random slice offset)
+          spinSpeed = 0.35 + Math.random() * 0.25;
+          spinDecel = 0.984 + Math.random() * 0.006;
+
+          let lastTickSlice = -1;
+          const pointer = document.getElementById("wheel-pointer");
+
+          function animate() {
+            wheelAngle += spinSpeed;
+            spinSpeed *= spinDecel;
+
+            // Tick effect calculation (when pointer passes a slice border)
+            const numSlices = activeWheelTeams.length;
+            const sliceAngle = (Math.PI * 2) / numSlices;
+            // Pointer is at -PI/2 (top)
+            const normalized = ((Math.PI * 1.5 - wheelAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            const currentSlice = Math.floor(normalized / sliceAngle);
+
+            if (currentSlice !== lastTickSlice) {
+              lastTickSlice = currentSlice;
+              pointer.classList.add("tick");
+              setTimeout(() => pointer.classList.remove("tick"), 60);
+            }
+
+            renderWheel();
+
+            if (spinSpeed > 0.0018) {
+              animId = requestAnimationFrame(animate);
+            } else {
+              isSpinning = false;
+              spinBtn.disabled = false;
+              onWheelStopped();
+            }
+          }
+
+          animId = requestAnimationFrame(animate);
+        }
+
+        function onWheelStopped() {
+          const numSlices = activeWheelTeams.length;
+          if (numSlices === 0) return;
+
+          const sliceAngle = (Math.PI * 2) / numSlices;
+          const normalized = ((Math.PI * 1.5 - wheelAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+          const winningIndex = Math.floor(normalized / sliceAngle) % numSlices;
+          const winningTeam = activeWheelTeams[winningIndex];
+
+          const pickNumber = draftOrder.length + 1;
+
+          // Add to official draft order
+          draftOrder.push({
+            pick: pickNumber,
+            name: winningTeam.name,
+            tag: winningTeam.tag || "",
+            color: winningTeam.color || "#d5f45b",
+            lockedAt: new Date().toLocaleTimeString()
+          });
+
+          // Show winning callout banner
+          const banner = document.getElementById("wheel-result-banner");
+          const bannerText = document.getElementById("wheel-result-text");
+          bannerText.textContent = `PICK #${pickNumber} AWARDED TO ${winningTeam.name.toUpperCase()}!`;
+          banner.style.display = "block";
+
+          // If checkbox enabled, remove landed team from remaining sectors
+          const removeLanded = document.getElementById("chk-remove-landed").checked;
+          if (removeLanded) {
+            activeWheelTeams.splice(winningIndex, 1);
+          }
+
+          // Save and render
+          saveDraftOrder();
+          renderWheel();
+          renderOrderBoard();
+          updateHudBanner();
+          populateDraftModalTeamsSelect();
+        }
+
+        function quickAutoLottery() {
+          if (confirm("Run Instant Auto-Lottery to randomize all remaining draft picks?")) {
+            // Shuffle remaining teams
+            const shuffled = [...activeWheelTeams].sort(() => Math.random() - 0.5);
+            shuffled.forEach(team => {
+              draftOrder.push({
+                pick: draftOrder.length + 1,
+                name: team.name,
+                tag: team.tag || "",
+                color: team.color || "#d5f45b",
+                lockedAt: new Date().toLocaleTimeString()
+              });
+            });
+            activeWheelTeams = [];
+            saveDraftOrder();
+            renderWheel();
+            renderOrderBoard();
+            updateHudBanner();
+            populateDraftModalTeamsSelect();
+          }
+        }
+
+        function resetLottery() {
+          if (confirm("Reset the entire draft order and refill the wheel?")) {
+            draftOrder = [];
+            recomputeActiveWheelTeams();
+            saveDraftOrder();
+            renderWheel();
+            renderOrderBoard();
+            updateHudBanner();
+            document.getElementById("wheel-result-banner").style.display = "none";
+          }
+        }
+
+        async function saveDraftOrder() {
+          draftState.division = currentDivision;
+          draftState.draftOrder = draftOrder;
+          if (draftOrder.length > 0 && !draftState.onTheClock) {
+            draftState.onTheClock = draftOrder[0].name;
+          }
+          if (window.LeagueDB && typeof window.LeagueDB.saveDraftState === 'function') {
+            await window.LeagueDB.saveDraftState(draftState, currentDivision);
+          }
+        }
+
+        function renderOrderBoard() {
+          const container = document.getElementById("draft-order-list");
+          const totalSlots = Math.max(teamsPool.length, draftOrder.length, 8);
+
+          let html = "";
+          for (let i = 1; i <= totalSlots; i++) {
+            const assigned = draftOrder[i - 1];
+            const isNext = !assigned && (i === draftOrder.length + 1);
+
+            html += `
+              <div class="draft-order-item ${isNext ? 'active-slot' : ''}">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span class="draft-slot-badge">PICK #${i}</span>
+                  ${assigned 
+                    ? `<div>
+                         <span class="draft-slot-team" style="color:${assigned.color || '#fff'};">${escapeHtml(assigned.name)}</span>
+                         ${assigned.tag ? `<small style="color:var(--muted); margin-left:6px;">[${assigned.tag}]</small>` : ''}
+                       </div>`
+                    : `<span class="draft-slot-empty">${isNext ? '⚡ Next to Spin...' : 'Unassigned Slot'}</span>`
+                  }
+                </div>
+                <div>
+                  ${assigned 
+                    ? `<span style="font-size:9.5px; font-weight:800; color:var(--lime); text-transform:uppercase;">LOCKED</span>` 
+                    : isNext ? `<span style="font-size:9px; color:var(--lime);">PENDING</span>` : ''
+                  }
+                </div>
+              </div>
+            `;
+          }
+
+          container.innerHTML = html;
+        }
+
+        function renderTeamPoolEditor() {
+          const container = document.getElementById("team-tags-container");
+          if (!container) return;
+
+          container.innerHTML = teamsPool.map((team, idx) => `
+            <span style="display:inline-flex; align-items:center; gap:6px; background:#1b1f14; border:1px solid #333d22; padding:3px 8px; border-radius:3px; font-size:10px; color:#fff;">
+              <span>${escapeHtml(team.name)}</span>
+              <button type="button" style="background:none; border:none; color:#ff5b5b; cursor:pointer; font-weight:bold; padding:0 2px;" data-remove-idx="${idx}" title="Remove team">×</button>
+            </span>
+          `).join("");
+
+          container.querySelectorAll("[data-remove-idx]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const idx = parseInt(btn.getAttribute("data-remove-idx"), 10);
+              teamsPool.splice(idx, 1);
+              localStorage.setItem('frontline_wheel_teams_pool', JSON.stringify(teamsPool));
+              recomputeActiveWheelTeams();
+              renderWheel();
+              renderTeamPoolEditor();
+              renderOrderBoard();
+              populateDraftModalTeamsSelect();
+            });
+          });
+        }
+
+        // --- 7. GM Free Agents War Room Renderer ---
+        function renderFreeAgents() {
+          const container = document.getElementById("free-agents-container");
+          const searchVal = document.getElementById("fa-search-input").value.toLowerCase().trim();
+          const activeRoleBtn = document.querySelector("#fa-role-filters .active");
+          const roleFilter = activeRoleBtn ? activeRoleBtn.getAttribute("data-role") : "all";
+          const platformFilter = document.getElementById("fa-platform-filter").value;
+          const availFilter = document.getElementById("fa-avail-filter").value;
+          const sortVal = document.getElementById("fa-sort-select").value;
+
+          const shortlist = getShortlist();
+
+          let filtered = allFreeAgents.filter(fa => {
+            // Search
+            const tagMatch = !searchVal || 
+              (fa.gamertag && fa.gamertag.toLowerCase().includes(searchVal)) ||
+              (fa.discord_name && fa.discord_name.toLowerCase().includes(searchVal)) ||
+              (fa.activision_id && fa.activision_id.toLowerCase().includes(searchVal)) ||
+              (fa.notes && fa.notes.toLowerCase().includes(searchVal));
+
+            // Role
+            const roleMatch = roleFilter === 'all' || (fa.role && fa.role.toLowerCase() === roleFilter.toLowerCase());
+
+            // Platform
+            const platMatch = platformFilter === 'all' || (fa.platform && fa.platform.toLowerCase() === platformFilter.toLowerCase());
+
+            // Avail
+            let availMatch = true;
+            if (availFilter === 'available') availMatch = !fa.isDrafted;
+            if (availFilter === 'shortlist') availMatch = shortlist.includes(String(fa.id));
+
+            return tagMatch && roleMatch && platMatch && availMatch;
+          });
+
+          // Sorting
+          filtered.sort((a, b) => {
+            if (sortVal === 'kd-desc') return (Number(b.kdr) || 0) - (Number(a.kdr) || 0);
+            if (sortVal === 'kills-desc') return (b.total_kills || 0) - (a.total_kills || 0);
+            if (sortVal === 'tag-asc') return (a.gamertag || '').localeCompare(b.gamertag || '');
+            return 0; // Default recent
+          });
+
+          if (filtered.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No free agents match your filter criteria.</div>';
+            return;
+          }
+
+          container.innerHTML = filtered.map(fa => {
+            const isDrafted = fa.isDrafted;
+            const isStarred = shortlist.includes(String(fa.id));
+            const kd = fa.kdr != null ? Number(fa.kdr).toFixed(2) : "—";
+            const kills = fa.total_kills ?? 0;
+            const deaths = fa.total_deaths ?? 0;
+
+            return `
+              <div class="fa-card ${isDrafted ? 'is-drafted' : ''}">
+                <div>
+                  <div class="fa-card-top">
+                    <div>
+                      <span class="pill">${escapeHtml(fa.role || 'Flex')}</span>
+                      ${fa.platform ? `<span class="slot-tag" style="background:#1d2216; color:#95c93d; font-size:9px; padding:2px 6px; margin-left:4px; text-transform:uppercase; font-weight:bold;">${escapeHtml(fa.platform)}</span>` : ''}
+                    </div>
+                    <div>
+                      ${isDrafted 
+                        ? `<span style="font-size:9.5px; font-weight:800; color:#ffb300; background:rgba(255,179,0,0.12); padding:3px 6px; border:1px solid #ffb300;">DRAFTED: ${escapeHtml(fa.draftedBy || 'TEAM')}</span>`
+                        : `<span style="font-size:9.5px; font-weight:800; color:var(--lime); background:rgba(213,244,91,0.12); padding:3px 6px; border:1px solid var(--lime); display:inline-flex; align-items:center; gap:4px;"><span class="nav-beacon" style="width:6px; height:6px;"></span>AVAILABLE</span>`
+                      }
+                    </div>
+                  </div>
+
+                  <h3 class="fa-gamertag">${escapeHtml(fa.gamertag)}</h3>
+                  
+                  <div class="fa-meta-row">
+                    ${fa.region ? `<span style="font-size:10px; color:var(--muted);">📍 ${escapeHtml(fa.region)}</span>` : ''}
+                  </div>
+                </div>
+
+                <!-- Combat HUD -->
+                <div class="fa-stat-strip">
+                  <div class="fa-stat-box">
+                    <strong style="${fa.kdr >= 1.1 ? 'color:var(--lime);' : ''}">${kd}</strong>
+                    <small>K/D RATIO</small>
+                  </div>
+                  <div class="fa-stat-box">
+                    <strong>${kills}</strong>
+                    <small>KILLS</small>
+                  </div>
+                  <div class="fa-stat-box">
+                    <strong>${deaths}</strong>
+                    <small>DEATHS</small>
+                  </div>
+                </div>
+
+                <!-- Activision & Discord IDs with Copy -->
+                <div class="fa-contacts-box">
+                  <div class="fa-contact-item">
+                    <span>Acti: <strong style="color:#ffffff;">${escapeHtml(fa.activision_id || 'N/A')}</strong></span>
+                    ${fa.activision_id ? `<button type="button" class="btn-copy-tag" data-copy="${escapeHtml(fa.activision_id)}">COPY</button>` : ''}
+                  </div>
+                  <div class="fa-contact-item">
+                    <span>Discord: <strong style="color:var(--lime);">${escapeHtml(fa.discord_name || 'N/A')}</strong></span>
+                    ${fa.discord_name ? `<button type="button" class="btn-copy-tag" data-copy="${escapeHtml(fa.discord_name)}">COPY</button>` : ''}
+                  </div>
+                </div>
+
+                <!-- Bio / Notes -->
+                ${fa.notes ? `<div style="font-size:11px; color:var(--muted); line-height:1.4; max-height:48px; overflow:hidden; font-style:italic;">"${escapeHtml(fa.notes)}"</div>` : ''}
+
+                <!-- GM Actions -->
+                <div class="fa-actions-row">
+                  <button 
+                    type="button"
+                    class="btn-draft-player" 
+                    data-draft-id="${escapeHtml(fa.id)}" 
+                    data-draft-tag="${escapeHtml(fa.gamertag)}"
+                    ${isDrafted ? 'disabled' : ''}
+                  >
+                    <span>${isDrafted ? 'Already Drafted' : '🎯 Draft Player'}</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    class="btn-fa-star ${isStarred ? 'active' : ''}" 
+                    data-star-id="${escapeHtml(fa.id)}" 
+                    title="${isStarred ? 'Remove from shortlist' : 'Add to GM shortlist'}"
+                  >
+                    ★
+                  </button>
+
+                  <button 
+                    type="button" 
+                    class="btn-wheel-sub clickable-player" 
+                    data-player-id="${escapeHtml(fa.id)}" 
+                    style="padding:8px 12px; font-size:10px;"
+                    title="View match dossier & individual map records"
+                  >
+                    Stats ↗
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          // Event Listeners on cards
+          container.querySelectorAll(".btn-copy-tag").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const text = btn.getAttribute("data-copy");
+              navigator.clipboard.writeText(text).then(() => {
+                const old = btn.textContent;
+                btn.textContent = "COPIED!";
+                setTimeout(() => btn.textContent = old, 1500);
+              });
+            });
+          });
+
+          container.querySelectorAll(".btn-fa-star").forEach(btn => {
+            btn.addEventListener("click", () => {
+              toggleShortlist(btn.getAttribute("data-star-id"));
+            });
+          });
+
+          container.querySelectorAll(".btn-draft-player").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const gamertag = btn.getAttribute("data-draft-tag");
+              openDraftPickModal(gamertag);
+            });
+          });
+        }
+
+        // --- 8. Draft Announcements & Matrix Board Renderer ---
+        async function renderDraftAnnouncements() {
+          const feedContainer = document.getElementById("draft-feed-wrap");
+          const matrixBody = document.getElementById("draft-matrix-body");
+          const activeRoundBtn = document.querySelector("#draft-round-pills .active");
+          const selectedRound = activeRoundBtn ? activeRoundBtn.getAttribute("data-round") : "all";
+
+          let picksToRender = [...draftPicks];
+          if (selectedRound !== 'all') {
+            picksToRender = picksToRender.filter(p => String(p.round) === String(selectedRound));
+          }
+
+          // Sort newest first for feed view
+          picksToRender.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+          if (picksToRender.length === 0) {
+            feedContainer.innerHTML = `
+              <div class="empty-state">
+                No selections recorded yet for ${selectedRound === 'all' ? 'the draft' : 'Round ' + selectedRound}.
+                <br/><small style="color:var(--muted); margin-top:6px; display:inline-block;">Click "+ Make / Announce Pick" to broadcast the first selection!</small>
+              </div>`;
+          } else {
+            feedContainer.innerHTML = picksToRender.map(p => `
+              <article class="draft-pick-card">
+                <div class="draft-pick-header">
+                  <div class="draft-pick-title">
+                    <span class="draft-pick-badge">ROUND ${p.round} · PICK #${p.pick}</span>
+                    <span class="draft-pick-team">${escapeHtml(p.team_name)}</span>
+                    ${p.team_tag ? `<small style="color:var(--muted);">[${escapeHtml(p.team_tag)}]</small>` : ''}
+                    ${p.is_autodraft ? '<span class="autodraft-tag">AUTO-DRAFT</span>' : ''}
+                  </div>
+                  <span style="font-size:11px; color:var(--muted);">
+                    🕒 ${p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : 'Official Pick'}
+                  </span>
+                </div>
+
+                <div class="draft-pick-body">
+                  <div class="draft-player-info">
+                    <span class="pill">${escapeHtml(p.player_role || 'Flex')}</span>
+                    <div>
+                      <span class="draft-player-gt clickable-player" data-player-id="${escapeHtml(p.player_gamertag)}" title="Click to view player match stats">
+                        ${escapeHtml(p.player_gamertag)} ↗
+                      </span>
+                    </div>
+                  </div>
+
+                  ${p.player_kdr ? `
+                    <div style="text-align:right;">
+                      <strong style="font:800 16px var(--display); color:var(--lime);">${Number(p.player_kdr).toFixed(2)}</strong>
+                      <small style="display:block; font-size:9px; color:var(--muted);">COMBAT K/D</small>
+                    </div>
+                  ` : ''}
+                </div>
+
+                ${p.notes ? `
+                  <div style="font-size:12px; color:var(--muted); font-style:italic; padding:4px 2px;">
+                    "${escapeHtml(p.notes)}"
+                  </div>
+                ` : ''}
+              </article>
+            `).join("");
+          }
+
+          // Matrix View Render
+          const teamsToMap = draftOrder.length > 0 ? draftOrder : teamsPool;
+          matrixBody.innerHTML = teamsToMap.map((t, idx) => {
+            const r1 = draftPicks.find(p => p.round === 1 && p.team_name.toLowerCase() === t.name.toLowerCase());
+            const r2 = draftPicks.find(p => p.round === 2 && p.team_name.toLowerCase() === t.name.toLowerCase());
+            const r3 = draftPicks.find(p => p.round === 3 && p.team_name.toLowerCase() === t.name.toLowerCase());
+            const r4 = draftPicks.find(p => p.round === 4 && p.team_name.toLowerCase() === t.name.toLowerCase());
+
+            const formatCell = (pick) => {
+              if (!pick) return `<span style="color:#525648; font-size:11px;">Pending</span>`;
+              return `<strong>${escapeHtml(pick.player_gamertag)}</strong> <small style="color:var(--lime);">[${pick.player_role || 'Flex'}]</small>${pick.is_autodraft ? ' <span class="autodraft-tag" style="font-size:8px;">AUTO</span>' : ''}`;
+            };
+
+            return `
+              <tr>
+                <td><span class="draft-slot-badge">#${idx + 1}</span></td>
+                <td><strong>${escapeHtml(t.name)}</strong></td>
+                <td>${formatCell(r1)}</td>
+                <td>${formatCell(r2)}</td>
+                <td>${formatCell(r3)}</td>
+                <td>${formatCell(r4)}</td>
+              </tr>
+            `;
+          }).join("");
+        }
+
+        // --- 9. Modal Form Handlers & Populators ---
+        function populateDraftModalTeamsSelect() {
+          const select = document.getElementById("pick-input-team");
+          if (!select) return;
+          const teams = draftOrder.length > 0 ? draftOrder : teamsPool;
+          select.innerHTML = teams.map(t => `<option value="${escapeHtml(t.name)}">${escapeHtml(t.name)} ${t.tag ? `[${t.tag}]` : ''}</option>`).join("");
+          
+          if (draftState.onTheClock) {
+            select.value = draftState.onTheClock;
+          }
+        }
+
+        function populateDraftModalPlayerSelect() {
+          const select = document.getElementById("pick-input-player");
+          if (!select) return;
+          const undrafted = allFreeAgents.filter(fa => !fa.isDrafted);
+          if (undrafted.length === 0) {
+            select.innerHTML = `<option value="">No available free agents</option>`;
+            return;
+          }
+          select.innerHTML = undrafted.map(fa => `
+            <option value="${escapeHtml(fa.gamertag)}" data-role="${escapeHtml(fa.role || 'Flex')}" data-kd="${fa.kdr || ''}">
+              ${escapeHtml(fa.gamertag)} (${fa.role || 'Flex'}) ${fa.kdr ? `· ${Number(fa.kdr).toFixed(2)} K/D` : ''}
+            </option>
+          `).join("");
+        }
+
+        function openDraftPickModal(preselectedTag = null) {
+          populateDraftModalTeamsSelect();
+          populateDraftModalPlayerSelect();
+
+          const modal = document.getElementById("modal-make-pick");
+          const roundInput = document.getElementById("pick-input-round");
+          const pickInput = document.getElementById("pick-input-number");
+          const playerSelect = document.getElementById("pick-input-player");
+
+          roundInput.value = String(draftState.currentRound || 1);
+          pickInput.value = String(draftState.currentPick || (draftPicks.length + 1));
+
+          if (preselectedTag && playerSelect) {
+            playerSelect.value = preselectedTag;
+          }
+
+          modal.showModal();
+        }
+
+        async function submitPickCore({ round, pick, teamName, playerGamertag, playerRole = "Flex", playerKd = null, notes = "", isAutoDraft = false }) {
+          const teamObj = teamsPool.find(t => t.name.toLowerCase() === teamName.toLowerCase()) || {};
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.recordDraftPick === 'function') {
+              const res = await window.LeagueDB.recordDraftPick({
+                round,
+                pick,
+                team_name: teamName,
+                team_tag: teamObj.tag || "",
+                player_gamertag: playerGamertag,
+                player_role: playerRole,
+                player_kdr: playerKd,
+                notes,
+                is_autodraft: isAutoDraft
+              }, currentDivision);
+
+              if (res && res.state) {
+                draftState = res.state;
+                draftPicks = res.state.picks || [];
+              }
+            }
+
+            // Mark player as drafted locally
+            const fa = allFreeAgents.find(x => x.gamertag.toLowerCase() === playerGamertag.toLowerCase());
+            if (fa) {
+              fa.isDrafted = true;
+              fa.draftedBy = teamName;
+              fa.draftRound = round;
+              fa.draftPick = pick;
+              fa.is_autodraft = isAutoDraft;
+            }
+
+            // Close modal if open & refresh boards
+            const modal = document.getElementById("modal-make-pick");
+            if (modal && modal.open) modal.close();
+            const notesInput = document.getElementById("pick-input-notes");
+            if (notesInput) notesInput.value = "";
+
+            updateHudBanner();
+            renderFreeAgents();
+            renderDraftAnnouncements();
+
+            // Auto-start or reset timer for the next GM!
+            if (isDraftLive) {
+              resetAndStartTimerForNextGm();
+              showAutoDraftToast(
+                isAutoDraft ? "AUTO-DRAFT LOGGED" : "PICK BROADCASTED",
+                `Next on the clock: <strong>${escapeHtml(draftState.onTheClock || "TBD")}</strong> (${formatTime(timerLimitSeconds)})!`,
+                isAutoDraft ? "⏰" : "✓"
+              );
+            } else {
+              timerSeconds = timerLimitSeconds;
+              const display = document.getElementById("draft-timer-display");
+              if (display) {
+                display.textContent = formatTime(timerSeconds);
+                display.style.color = "var(--lime)";
+              }
+            }
+          } catch (e) {
+            console.error("Draft pick submit error:", e);
+            alert("Error broadcasting draft pick: " + (e.message || e));
+          }
+        }
+
+        async function submitDraftPick() {
+          const round = parseInt(document.getElementById("pick-input-round").value, 10) || 1;
+          const pick = parseInt(document.getElementById("pick-input-number").value, 10) || 1;
+          const teamName = document.getElementById("pick-input-team").value;
+          const playerSelect = document.getElementById("pick-input-player");
+          const playerGamertag = playerSelect.value;
+          const notes = document.getElementById("pick-input-notes").value.trim();
+
+          if (!teamName || !playerGamertag) {
+            alert("Please select both a drafting team and a player.");
+            return;
+          }
+
+          const selectedOption = playerSelect.selectedOptions[0];
+          const playerRole = selectedOption ? selectedOption.getAttribute("data-role") : "Flex";
+          const playerKd = selectedOption ? parseFloat(selectedOption.getAttribute("data-kd")) || null : null;
+
+          const confirmBtn = document.getElementById("btn-confirm-draft-pick");
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = "Broadcasting Selection...";
+
+          try {
+            await submitPickCore({
+              round,
+              pick,
+              teamName,
+              playerGamertag,
+              playerRole,
+              playerKd,
+              notes,
+              isAutoDraft: false
+            });
+          } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "📢 Confirm & Broadcast Pick ↗";
+          }
+        }
+
+        // --- 10. Event Handlers Setup ---
+        function setupEventHandlers() {
+          // Master Draft Control Buttons
+          document.getElementById("btn-start-draft")?.addEventListener("click", handleStartDraftClick);
+          document.getElementById("btn-sidebar-start-draft")?.addEventListener("click", handleStartDraftClick);
+          document.getElementById("btn-force-autopick")?.addEventListener("click", () => {
+            triggerAutoDraft("COMMISSIONER OVERRIDE");
+          });
+
+          // Division Selector Dropdown
+          document.getElementById("wheel-division-select")?.addEventListener("change", (e) => {
+            switchDivision(e.target.value);
+          });
+
+          // Wheel Spin Buttons
+          document.getElementById("btn-spin-wheel").addEventListener("click", spinWheel);
+          document.getElementById("btn-quick-lottery").addEventListener("click", quickAutoLottery);
+          document.getElementById("btn-reset-wheel").addEventListener("click", resetLottery);
+
+          // Add Team to Pool
+          document.getElementById("btn-add-team-pool").addEventListener("click", () => {
+            const nameInput = document.getElementById("input-new-team");
+            const tagInput = document.getElementById("input-new-tag");
+            const name = nameInput.value.trim();
+            const tag = tagInput.value.trim().toUpperCase();
+
+            if (!name) return;
+            teamsPool.push({
+              name,
+              tag: tag || name.substring(0, 3).toUpperCase(),
+              color: "#d5f45b"
+            });
+
+            localStorage.setItem(`frontline_wheel_teams_pool_${currentDivision}`, JSON.stringify(teamsPool));
+            nameInput.value = "";
+            tagInput.value = "";
+            recomputeActiveWheelTeams();
+            renderWheel();
+            renderTeamPoolEditor();
+            renderOrderBoard();
+            populateDraftModalTeamsSelect();
+          });
+
+          // Broadcast Order
+          document.getElementById("btn-broadcast-order").addEventListener("click", async () => {
+            if (draftOrder.length === 0) {
+              alert("Please spin the wheel to determine draft order first!");
+              return;
+            }
+            const divInfo = DIVISIONS[currentDivision];
+            const orderListText = draftOrder.map(o => `Pick #${o.pick}: ${o.name}`).join(" | ");
+            try {
+              if (window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+                await window.LeagueDB.addAnnouncement({
+                  title: `OFFICIAL DRAFT ORDER: ${divInfo.name.toUpperCase()}`,
+                  message: `The official ${divInfo.name} lottery has finalized: ${orderListText}`,
+                  tag: "Draft Order",
+                  tag_color: "lime",
+                  link_url: "draft.html",
+                  link_text: "View General Draft HQ ↗",
+                  pinned: true,
+                  is_active: true
+                });
+                alert(`${divInfo.name} draft order successfully broadcasted to the league!`);
+              }
+            } catch (e) {
+              alert("Draft order saved locally.");
+            }
+          });
+
+          // Free Agents Search & Filters
+          document.getElementById("fa-search-input").addEventListener("input", renderFreeAgents);
+          document.querySelectorAll("#fa-role-filters .filter-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              document.querySelectorAll("#fa-role-filters .filter-btn").forEach(b => b.classList.remove("active"));
+              btn.classList.add("active");
+              renderFreeAgents();
+            });
+          });
+          document.getElementById("fa-platform-filter").addEventListener("change", renderFreeAgents);
+          document.getElementById("fa-avail-filter").addEventListener("change", renderFreeAgents);
+          document.getElementById("fa-sort-select").addEventListener("change", renderFreeAgents);
+
+          // Announcements View Switcher & Round Filters
+          document.getElementById("btn-view-feed").addEventListener("click", () => {
+            document.getElementById("btn-view-feed").classList.add("active");
+            document.getElementById("btn-view-matrix").classList.remove("active");
+            document.getElementById("draft-feed-wrap").style.display = "flex";
+            document.getElementById("draft-matrix-wrap").style.display = "none";
+          });
+
+          document.getElementById("btn-view-matrix").addEventListener("click", () => {
+            document.getElementById("btn-view-matrix").classList.add("active");
+            document.getElementById("btn-view-feed").classList.remove("active");
+            document.getElementById("draft-feed-wrap").style.display = "none";
+            document.getElementById("draft-matrix-wrap").style.display = "block";
+            renderDraftAnnouncements();
+          });
+
+          document.querySelectorAll("#draft-round-pills .filter-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              document.querySelectorAll("#draft-round-pills .filter-btn").forEach(b => b.classList.remove("active"));
+              btn.classList.add("active");
+              renderDraftAnnouncements();
+            });
+          });
+
+          // Modals
+          document.getElementById("btn-open-draft-modal").addEventListener("click", () => openDraftPickModal());
+          document.getElementById("btn-confirm-draft-pick").addEventListener("click", submitDraftPick);
+
+          document.getElementById("btn-open-trade-modal").addEventListener("click", () => {
+            document.getElementById("modal-post-intel").showModal();
+          });
+
+          document.getElementById("btn-confirm-post-intel").addEventListener("click", async () => {
+            const title = document.getElementById("intel-input-title").value.trim();
+            const body = document.getElementById("intel-input-body").value.trim();
+            const tag = document.getElementById("intel-input-tag").value;
+
+            if (!title || !body) {
+              alert("Please enter both a title and intel message.");
+              return;
+            }
+
+            try {
+              if (window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+                await window.LeagueDB.addAnnouncement({
+                  title,
+                  message: body,
+                  tag,
+                  tag_color: "amber",
+                  link_url: "draft.html",
+                  link_text: "View Live Draft HQ ↗",
+                  is_active: true
+                });
+              }
+              document.getElementById("modal-post-intel").close();
+              document.getElementById("intel-input-title").value = "";
+              document.getElementById("intel-input-body").value = "";
+              alert("Trade Intel broadcasted successfully!");
+            } catch(e) {
+              alert("Posted intel locally.");
+            }
+          });
+        }
+
+        // Helper: HTML Escaping
+        function escapeHtml(str) {
+          if (!str) return "";
+          return String(str).replace(/[&<>"']/g, (m) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          })[m]);
+        }
+
+        // Run Init
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+  </body>
+</html>

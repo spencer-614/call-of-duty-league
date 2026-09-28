@@ -175,3 +175,39 @@ BEGIN
             FOR ALL USING (true) WITH CHECK (true);
     END IF;
 END $$;
+
+-- 8. Enable full write access on LEAGUE SETTINGS (Season lifecycle and phase)
+CREATE TABLE IF NOT EXISTS league_settings (
+    id TEXT PRIMARY KEY,
+    season_number INT DEFAULT 1,
+    status_state TEXT DEFAULT 'active',
+    status_text TEXT DEFAULT 'SEASON 1 ACTIVE',
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE league_settings ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'league_settings' 
+        AND policyname = 'Allow public read on league_settings'
+    ) THEN
+        CREATE POLICY "Allow public read on league_settings" ON league_settings
+            FOR SELECT USING (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'league_settings' 
+        AND policyname = 'Enable all access on league_settings'
+    ) THEN
+        CREATE POLICY "Enable all access on league_settings" ON league_settings
+            FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+END $$;
+
+INSERT INTO league_settings (id, season_number, status_state, status_text)
+VALUES ('season', 1, 'active', 'SEASON 1 ACTIVE')
+ON CONFLICT (id) DO NOTHING;
