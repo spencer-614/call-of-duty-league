@@ -65,6 +65,22 @@ const MOCK_DATA = {
     { id: 17, gamertag: "Vortex", discord_name: "Vortex", activision_id: "Vortex#8291034", role: "Flex", rank: "1.0", status: "Pending", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Unassigned" },
     { id: 18, gamertag: "Shadow", discord_name: "Shadow", activision_id: "Shadow#9102938", role: "Sniper", rank: "0.5", status: "Former", kdr: 1.12, total_kills: 410, total_deaths: 366, teams: null, team_name: "Retired" }
   ],
+  signups: [
+    {
+      id: 1,
+      gamertag: "Invictus",
+      activision_id: "Invictus#123456",
+      discord_username: "itzinvictus_",
+      role: "Flex",
+      platform: "PC",
+      registration_type: "Free Agent",
+      team_name: null,
+      region: "NA Central",
+      notes: null,
+      status: "Pending",
+      created_at: new Date().toISOString()
+    }
+  ],
   vods: [
     {
       id: 1,
@@ -239,47 +255,18 @@ window.LeagueDB = {
           .select("*, teams(name, tag)")
           .order("kdr", { ascending: false });
 
-        let signups = [];
-        try {
-          const { data: sData } = await dbClient
-            .from("league_signups")
-            .select("*")
-            .order("created_at", { ascending: false });
-          if (sData) signups = sData;
-        } catch (_) {}
-
-        if (!error && data && data.length > 0) {
-          const existingTags = new Set(data.map(p => (p.gamertag || "").toLowerCase()));
-          const signupEntries = signups
-            .filter(s => s.gamertag && !existingTags.has(s.gamertag.toLowerCase()))
-            .map((s, idx) => ({
-              id: `signup-${s.id || idx}`,
-              gamertag: s.gamertag,
-              discord_name: s.discord_username || s.gamertag,
-              activision_id: s.activision_id || "—",
-              role: s.role || "Flex",
-              rank: "0.5",
-              status: s.registration_type === "Free Agent" ? "Free Agent" : (s.status || "Pending"),
-              kdr: null,
-              total_kills: 0,
-              total_deaths: 0,
-              teams: s.team_name ? { name: s.team_name, tag: s.team_name.substring(0, 3).toUpperCase() } : null,
-              team_name: s.team_name || (s.registration_type === "Free Agent" ? "Free Agent" : "Unassigned")
-            }));
-
-          return [
-            ...data.map(p => ({
-              ...p,
-              discord_name: p.discord_name || p.gamertag,
-              activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
-              rank: p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5")),
-              status: p.status || (p.teams ? "Active" : "Free Agent"),
-              team_name: p.teams?.name || p.team_name || "Free Agent"
-            })),
-            ...signupEntries
-          ];
+        if (!error && data) {
+          if (data.length === 0) return [];
+          return data.map(p => ({
+            ...p,
+            discord_name: p.discord_name || p.gamertag,
+            activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
+            rank: p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5")),
+            status: p.status || (p.teams ? "Active" : "Free Agent"),
+            team_name: p.teams?.name || p.team_name || "Free Agent"
+          }));
         }
-        console.warn("Supabase fetch returned empty/error, using fallback:", error);
+        console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
@@ -418,8 +405,10 @@ window.LeagueDB = {
             .from("player_map_stats")
             .select("*")
             .eq("player_id", playerId)
-            .order("match_date", { ascending: false });
-          if (!error && data && data.length > 0) return data;
+            .order("match_date", { ascending: false })
+            .order("id", { ascending: false });
+          if (!error && data) return data;
+          if (error) console.error("Supabase map stats error:", error);
         }
       } catch (err) {
         console.error("Supabase map stats error:", err);
@@ -434,11 +423,205 @@ window.LeagueDB = {
     }
     const baseKd = Number(player.kdr || 1.0);
     return [
-      { id: 101, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Opponent", kills: Math.round(25 * baseKd), deaths: 20, damage: Math.round(3900 * baseKd), kdr: Number((25 * baseKd / 20).toFixed(2)), result: "W", score: "250 - 215", match_date: "2026-09-24" },
-      { id: 102, map_name: "Highrise", game_mode: "Search & Destroy", opponent_team: "Opponent", kills: Math.round(8 * baseKd), deaths: 6, damage: Math.round(1250 * baseKd), kdr: Number((8 * baseKd / 6).toFixed(2)), result: "W", score: "6 - 4", match_date: "2026-09-24" },
-      { id: 103, map_name: "Invasion", game_mode: "Control", opponent_team: "Opponent", kills: Math.round(21 * baseKd), deaths: 19, damage: Math.round(3200 * baseKd), kdr: Number((21 * baseKd / 19).toFixed(2)), result: "L", score: "2 - 3", match_date: "2026-09-18" },
-      { id: 104, map_name: "Sub Base", game_mode: "Hardpoint", opponent_team: "Opponent", kills: Math.round(28 * baseKd), deaths: 22, damage: Math.round(4200 * baseKd), kdr: Number((28 * baseKd / 22).toFixed(2)), result: "W", score: "250 - 190", match_date: "2026-09-18" }
+      { id: 101, player_id: Number(playerId), map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Opponent", kills: Math.round(25 * baseKd), deaths: 20, damage: Math.round(3900 * baseKd), kdr: Number((25 * baseKd / 20).toFixed(2)), result: "W", score: "250 - 215", match_date: "2026-09-24" },
+      { id: 102, player_id: Number(playerId), map_name: "Highrise", game_mode: "Search & Destroy", opponent_team: "Opponent", kills: Math.round(8 * baseKd), deaths: 6, damage: Math.round(1250 * baseKd), kdr: Number((8 * baseKd / 6).toFixed(2)), result: "W", score: "6 - 4", match_date: "2026-09-24" },
+      { id: 103, player_id: Number(playerId), map_name: "Invasion", game_mode: "Control", opponent_team: "Opponent", kills: Math.round(21 * baseKd), deaths: 19, damage: Math.round(3200 * baseKd), kdr: Number((21 * baseKd / 19).toFixed(2)), result: "L", score: "2 - 3", match_date: "2026-09-18" },
+      { id: 104, player_id: Number(playerId), map_name: "Sub Base", game_mode: "Hardpoint", opponent_team: "Opponent", kills: Math.round(28 * baseKd), deaths: 22, damage: Math.round(4200 * baseKd), kdr: Number((28 * baseKd / 22).toFixed(2)), result: "W", score: "250 - 190", match_date: "2026-09-18" }
     ];
+  },
+
+  // 7a. Comprehensive Player Telemetry Calculator
+  // Computes overall W/L & K/D, per mode W/L & K/D, and per map W/L & K/D
+  calculatePlayerTelemetry(player, mapStats = []) {
+    const isWin = (r) => {
+      const val = String(r || "").trim().toUpperCase();
+      return val === "W" || val === "VICTORY" || val === "WIN";
+    };
+
+    let totalKills = 0;
+    let totalDeaths = 0;
+    let totalDamage = 0;
+    let totalWins = 0;
+    let totalLosses = 0;
+
+    const modeStats = {};
+    const mapStatsByName = {};
+    const mapModeStats = {};
+
+    mapStats.forEach(m => {
+      const kills = Number(m.kills) || 0;
+      const deaths = Number(m.deaths) || 0;
+      const damage = Number(m.damage) || 0;
+      const win = isWin(m.result);
+
+      totalKills += kills;
+      totalDeaths += deaths;
+      totalDamage += damage;
+      if (win) totalWins++; else totalLosses++;
+
+      // Standardize game mode name
+      const rawMode = (m.game_mode || "Hardpoint").trim();
+      let mode = rawMode;
+      const lowerMode = rawMode.toLowerCase();
+      if (lowerMode.includes("hardpoint") || lowerMode === "hp") mode = "Hardpoint";
+      else if (lowerMode.includes("search") || lowerMode.includes("destroy") || lowerMode === "snd") mode = "Search & Destroy";
+      else if (lowerMode.includes("control") || lowerMode === "ctl") mode = "Control";
+
+      if (!modeStats[mode]) {
+        modeStats[mode] = { mode, wins: 0, losses: 0, kills: 0, deaths: 0, damage: 0, count: 0 };
+      }
+      modeStats[mode].count++;
+      if (win) modeStats[mode].wins++; else modeStats[mode].losses++;
+      modeStats[mode].kills += kills;
+      modeStats[mode].deaths += deaths;
+      modeStats[mode].damage += damage;
+
+      // Group per map
+      const mapName = (m.map_name || "Unknown").trim();
+      if (!mapStatsByName[mapName]) {
+        mapStatsByName[mapName] = { map_name: mapName, wins: 0, losses: 0, kills: 0, deaths: 0, damage: 0, count: 0, modes: new Set() };
+      }
+      mapStatsByName[mapName].count++;
+      if (win) mapStatsByName[mapName].wins++; else mapStatsByName[mapName].losses++;
+      mapStatsByName[mapName].kills += kills;
+      mapStatsByName[mapName].deaths += deaths;
+      mapStatsByName[mapName].damage += damage;
+      mapStatsByName[mapName].modes.add(mode);
+
+      // Group per map + mode combination
+      const mapModeKey = `${mapName} · ${mode}`;
+      if (!mapModeStats[mapModeKey]) {
+        mapModeStats[mapModeKey] = { key: mapModeKey, map_name: mapName, game_mode: mode, wins: 0, losses: 0, kills: 0, deaths: 0, damage: 0, count: 0 };
+      }
+      mapModeStats[mapModeKey].count++;
+      if (win) mapModeStats[mapModeKey].wins++; else mapModeStats[mapModeKey].losses++;
+      mapModeStats[mapModeKey].kills += kills;
+      mapModeStats[mapModeKey].deaths += deaths;
+      mapModeStats[mapModeKey].damage += damage;
+    });
+
+    // Fallback to player profile stats if no map records exist
+    if (mapStats.length === 0 && player) {
+      totalKills = player.total_kills || 0;
+      totalDeaths = player.total_deaths || 0;
+      totalWins = player.wins || 0;
+      totalLosses = player.losses || 0;
+    }
+
+    const totalMaps = totalWins + totalLosses;
+    const winRate = totalMaps > 0 ? Math.round((totalWins / totalMaps) * 100) : 0;
+    const overallKd = totalDeaths > 0
+      ? (totalKills / totalDeaths).toFixed(2)
+      : (totalKills > 0 ? totalKills.toFixed(2) : (player?.kdr ? Number(player.kdr).toFixed(2) : "1.00"));
+    const avgKillsPerMap = totalMaps > 0 ? (totalKills / totalMaps).toFixed(1) : (totalKills || 0);
+    const avgDamagePerMap = totalMaps > 0 ? Math.round(totalDamage / totalMaps) : 0;
+
+    // Standard modes summary (Hardpoint, Search & Destroy, Control)
+    const standardModes = ["Hardpoint", "Search & Destroy", "Control"];
+    const modesCalculated = {};
+    standardModes.forEach(stdMode => {
+      const s = modeStats[stdMode] || { mode: stdMode, wins: 0, losses: 0, kills: 0, deaths: 0, damage: 0, count: 0 };
+      const tot = s.wins + s.losses;
+      modesCalculated[stdMode] = {
+        mode: stdMode,
+        wins: s.wins,
+        losses: s.losses,
+        total: tot,
+        win_rate: tot > 0 ? Math.round((s.wins / tot) * 100) : 0,
+        kills: s.kills,
+        deaths: s.deaths,
+        damage: s.damage,
+        kdr: s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : (s.kills > 0 ? s.kills.toFixed(2) : "0.00"),
+        avg_kills: tot > 0 ? (s.kills / tot).toFixed(1) : "0.0",
+        avg_damage: tot > 0 ? Math.round(s.damage / tot) : 0
+      };
+    });
+    for (const [mName, s] of Object.entries(modeStats)) {
+      if (!modesCalculated[mName]) {
+        const tot = s.wins + s.losses;
+        modesCalculated[mName] = {
+          mode: mName,
+          wins: s.wins,
+          losses: s.losses,
+          total: tot,
+          win_rate: tot > 0 ? Math.round((s.wins / tot) * 100) : 0,
+          kills: s.kills,
+          deaths: s.deaths,
+          damage: s.damage,
+          kdr: s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : (s.kills > 0 ? s.kills.toFixed(2) : "0.00"),
+          avg_kills: tot > 0 ? (s.kills / tot).toFixed(1) : "0.0",
+          avg_damage: tot > 0 ? Math.round(s.damage / tot) : 0
+        };
+      }
+    }
+
+    // Per Map Telemetry
+    const mapsCalculated = Object.values(mapStatsByName).map(s => {
+      const tot = s.wins + s.losses;
+      return {
+        map_name: s.map_name,
+        wins: s.wins,
+        losses: s.losses,
+        total: tot,
+        win_rate: tot > 0 ? Math.round((s.wins / tot) * 100) : 0,
+        kills: s.kills,
+        deaths: s.deaths,
+        damage: s.damage,
+        kdr: s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : (s.kills > 0 ? s.kills.toFixed(2) : "0.00"),
+        avg_kills: tot > 0 ? (s.kills / tot).toFixed(1) : "0.0",
+        avg_damage: tot > 0 ? Math.round(s.damage / tot) : 0,
+        modes: Array.from(s.modes)
+      };
+    }).sort((a, b) => b.total - a.total || b.win_rate - a.win_rate);
+
+    // Per Map & Mode Telemetry
+    const mapModesCalculated = Object.values(mapModeStats).map(s => {
+      const tot = s.wins + s.losses;
+      return {
+        key: s.key,
+        map_name: s.map_name,
+        game_mode: s.game_mode,
+        wins: s.wins,
+        losses: s.losses,
+        total: tot,
+        win_rate: tot > 0 ? Math.round((s.wins / tot) * 100) : 0,
+        kills: s.kills,
+        deaths: s.deaths,
+        damage: s.damage,
+        kdr: s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : (s.kills > 0 ? s.kills.toFixed(2) : "0.00")
+      };
+    }).sort((a, b) => b.total - a.total || b.win_rate - a.win_rate);
+
+    return {
+      overall: {
+        wins: totalWins,
+        losses: totalLosses,
+        total_maps: totalMaps,
+        win_rate: winRate,
+        total_kills: totalKills,
+        total_deaths: totalDeaths,
+        total_damage: totalDamage,
+        kdr: overallKd,
+        avg_kills_per_map: avgKillsPerMap,
+        avg_damage_per_map: avgDamagePerMap
+      },
+      modes: modesCalculated,
+      maps: mapsCalculated,
+      map_modes: mapModesCalculated,
+      raw_maps: mapStats
+    };
+  },
+
+  // 7a-2. Fetch Full Player Telemetry (Player + calculated overall, mode, and map stats)
+  async getPlayerTelemetry(playerId) {
+    const [player, mapStats] = await Promise.all([
+      this.getPlayerById(playerId),
+      this.getPlayerMapStats(playerId)
+    ]);
+    return {
+      player,
+      ...this.calculatePlayerTelemetry(player, mapStats || [])
+    };
   },
 
   // 7b. Fetch Single Team Details with Players
@@ -586,7 +769,10 @@ window.LeagueDB = {
     }
     // Fallback simulation if dbClient is not ready
     console.log("Mock signup submission (no Supabase client active):", signupData);
-    return { success: true, mock: true, data: [signupData] };
+    if (!MOCK_DATA.signups) MOCK_DATA.signups = [];
+    const mockSignup = { id: Date.now(), ...signupData, created_at: new Date().toISOString() };
+    MOCK_DATA.signups.unshift(mockSignup);
+    return { success: true, mock: true, data: [mockSignup] };
   },
 
   // 9. Fetch All League Signups (for admin review)
@@ -597,12 +783,15 @@ window.LeagueDB = {
           .from("league_signups")
           .select("*")
           .order("created_at", { ascending: false });
-        if (!error && data) return data;
+        if (!error && data) {
+          // Return queue entries, excluding already enlisted/processed signups
+          return data.filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+        }
       } catch (err) {
         console.error("Supabase getSignups error:", err);
       }
     }
-    return [];
+    return (MOCK_DATA.signups || []).filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
   },
 
   // 10. Submit Organization / Team Buy-In Application ($25 entry)
@@ -766,12 +955,50 @@ window.LeagueDB = {
   async createPlayer(playerData) {
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
+        let payload = { ...playerData };
+        let { data, error } = await dbClient
           .from("players")
-          .insert([playerData])
+          .insert([payload])
           .select();
-        if (error) throw error;
-        return { success: true, data: data[0] };
+
+        // Handle unmigrated columns (like activision_id, discord_name) if schema cache lacks them
+        if (error && (error.code === "PGRST204" || (error.message && (error.message.includes("column") || error.message.includes("players"))))) {
+          console.warn("Retrying createPlayer with standard core columns:", error.message);
+          const safePayload = {
+            gamertag: payload.gamertag,
+            role: payload.role || "Flex",
+            kdr: payload.kdr != null ? parseFloat(payload.kdr) : 1.00,
+            team_id: payload.team_id || null,
+            total_kills: payload.total_kills || 0,
+            total_deaths: payload.total_deaths || 0,
+            wins: payload.wins || 0,
+            losses: payload.losses || 0
+          };
+          const retry = await dbClient
+            .from("players")
+            .insert([safePayload])
+            .select();
+
+          if (retry.error) {
+            // Check if player already exists by gamertag (unique violation)
+            if (retry.error.code === "23505" || (retry.error.message && retry.error.message.includes("unique"))) {
+              const { data: existing } = await dbClient.from("players").select("*").eq("gamertag", payload.gamertag).maybeSingle();
+              if (existing) return { success: true, data: existing, alreadyExisted: true };
+            }
+            throw retry.error;
+          }
+          data = retry.data;
+          error = null;
+        } else if (error) {
+          // Check if player already exists by gamertag (unique violation)
+          if (error.code === "23505" || (error.message && error.message.includes("unique"))) {
+            const { data: existing } = await dbClient.from("players").select("*").eq("gamertag", payload.gamertag).maybeSingle();
+            if (existing) return { success: true, data: existing, alreadyExisted: true };
+          }
+          throw error;
+        }
+
+        return { success: true, data: data ? data[0] : payload };
       } catch (err) {
         console.error("Supabase createPlayer error:", err);
         return { success: false, error: err.message || err };
@@ -804,24 +1031,300 @@ window.LeagueDB = {
     return { success: true, data: p, mock: true };
   },
 
-  // Admin: Delete Player
-  async deletePlayer(playerId) {
+  // Admin: Delete Player (permanently removes player from players table, player_map_stats, and league_signups)
+  async deletePlayer(playerId, gamertag = null) {
+    const idStr = String(playerId || "").trim();
+    const isSignupId = idStr.startsWith("signup-");
+    const numericId = !isSignupId && /^\d+$/.test(idStr) ? parseInt(idStr, 10) : null;
+    let targetGamertag = gamertag ? String(gamertag).trim() : (!numericId && !isSignupId ? idStr : null);
+
     if (dbClient) {
       try {
-        const { error } = await dbClient
-          .from("players")
-          .delete()
-          .eq("id", playerId);
-        if (error) throw error;
-        return { success: true };
+        let deletedRows = 0;
+
+        // 1. If it's a synthetic signup ID (e.g. "signup-1"), delete directly from league_signups
+        if (isSignupId) {
+          const rawSignupId = idStr.replace("signup-", "");
+          if (/^\d+$/.test(rawSignupId)) {
+            const { error: sErr, data: sData } = await dbClient
+              .from("league_signups")
+              .delete()
+              .eq("id", parseInt(rawSignupId, 10))
+              .select();
+            if (!sErr && sData && sData.length > 0) deletedRows += sData.length;
+          }
+        }
+
+        // 2. If it's a numeric player ID, fetch gamertag first if not provided, then delete stats and player
+        if (numericId) {
+          if (!targetGamertag) {
+            try {
+              const { data: pData } = await dbClient
+                .from("players")
+                .select("gamertag")
+                .eq("id", numericId)
+                .maybeSingle();
+              if (pData?.gamertag) targetGamertag = pData.gamertag;
+            } catch (_) {}
+          }
+
+          // Delete associated map stats first
+          try {
+            await dbClient
+              .from("player_map_stats")
+              .delete()
+              .eq("player_id", numericId);
+          } catch (mErr) {
+            console.warn("Could not delete associated map stats:", mErr);
+          }
+
+          // Delete from players table
+          const { error: pErr, data: pData } = await dbClient
+            .from("players")
+            .delete()
+            .eq("id", numericId)
+            .select();
+
+          if (pErr) throw pErr;
+          if (pData && pData.length > 0) deletedRows += pData.length;
+        }
+
+        // 3. If targetGamertag is known, purge any remaining records by gamertag across players and league_signups
+        if (targetGamertag) {
+          try {
+            const { data: byTag } = await dbClient
+              .from("players")
+              .select("id")
+              .ilike("gamertag", targetGamertag);
+
+            if (byTag && byTag.length > 0) {
+              const tagIds = byTag.map(b => b.id);
+              await dbClient.from("player_map_stats").delete().in("player_id", tagIds);
+              const { data: tagDeleted } = await dbClient
+                .from("players")
+                .delete()
+                .in("id", tagIds)
+                .select();
+              if (tagDeleted) deletedRows += tagDeleted.length;
+            }
+
+            // Also purge any matching record in league_signups so it can never resurrect
+            await dbClient
+              .from("league_signups")
+              .delete()
+              .ilike("gamertag", targetGamertag);
+          } catch (tagErr) {
+            console.warn("Secondary gamertag purge warning:", tagErr);
+          }
+        }
+
+        // Clean up MOCK_DATA in memory so fallback stays consistent
+        if (numericId) {
+          const idx = MOCK_DATA.players.findIndex(x => x.id == numericId);
+          if (idx !== -1) MOCK_DATA.players.splice(idx, 1);
+        }
+        if (targetGamertag) {
+          const idx = MOCK_DATA.players.findIndex(x => (x.gamertag || "").toLowerCase() === targetGamertag.toLowerCase());
+          if (idx !== -1) MOCK_DATA.players.splice(idx, 1);
+          if (MOCK_DATA.signups) {
+            const sIdx = MOCK_DATA.signups.findIndex(x => (x.gamertag || "").toLowerCase() === targetGamertag.toLowerCase());
+            if (sIdx !== -1) MOCK_DATA.signups.splice(sIdx, 1);
+          }
+        }
+
+        return { success: true, deletedRows };
       } catch (err) {
         console.error("Supabase deletePlayer error:", err);
         return { success: false, error: err.message || err };
       }
     }
-    const idx = MOCK_DATA.players.findIndex(x => x.id == playerId);
+
+    // In-memory fallback
+    const targetTag = (targetGamertag || idStr).toLowerCase();
+    const idx = MOCK_DATA.players.findIndex(x => String(x.id) === idStr || (x.gamertag && x.gamertag.toLowerCase() === targetTag));
     if (idx !== -1) MOCK_DATA.players.splice(idx, 1);
+    if (MOCK_DATA.signups) {
+      const sIdx = MOCK_DATA.signups.findIndex(x => String(x.id) === idStr || (x.gamertag && x.gamertag.toLowerCase() === targetTag));
+      if (sIdx !== -1) MOCK_DATA.signups.splice(sIdx, 1);
+    }
     return { success: true, mock: true };
+  },
+
+  // Admin: Add Individual Map Performance Record for a Player
+  async addPlayerMapStat(statData) {
+    const kills = parseInt(statData.kills) || 0;
+    const deaths = parseInt(statData.deaths) || 0;
+    const calculatedKd = deaths > 0 ? parseFloat((kills / deaths).toFixed(2)) : kills;
+    const payload = {
+      player_id: Number(statData.player_id),
+      map_name: (statData.map_name || "Karachi").trim(),
+      game_mode: (statData.game_mode || "Hardpoint").trim(),
+      opponent_team: (statData.opponent_team || "Opponent").trim(),
+      kills: kills,
+      deaths: deaths,
+      damage: parseInt(statData.damage) || 0,
+      kdr: statData.kdr != null ? parseFloat(statData.kdr) : calculatedKd,
+      result: (statData.result || "W").toUpperCase(),
+      score: statData.score ? String(statData.score).trim() : null,
+      match_date: statData.match_date || new Date().toISOString().split("T")[0]
+    };
+
+    let insertedRow = null;
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("player_map_stats")
+          .insert([payload])
+          .select();
+        if (error) throw error;
+        insertedRow = data && data[0];
+      } catch (err) {
+        console.error("Supabase addPlayerMapStat error:", err);
+        return { success: false, error: err.message || err };
+      }
+    } else {
+      if (!MOCK_DATA.map_stats) MOCK_DATA.map_stats = {};
+      if (!MOCK_DATA.map_stats[payload.player_id]) MOCK_DATA.map_stats[payload.player_id] = [];
+      insertedRow = { id: Date.now(), ...payload };
+      MOCK_DATA.map_stats[payload.player_id].unshift(insertedRow);
+    }
+
+    // Automatically recalculate and sync player totals (kills, deaths, kdr, wins, losses)
+    await this.syncPlayerTotals(payload.player_id);
+    const telemetry = await this.getPlayerTelemetry(payload.player_id);
+
+    return { success: true, data: insertedRow, telemetry };
+  },
+
+  // Admin: Update Existing Map Performance Record
+  async updatePlayerMapStat(statId, updates, playerId) {
+    const formattedUpdates = { ...updates };
+    if (formattedUpdates.kills != null) formattedUpdates.kills = parseInt(formattedUpdates.kills) || 0;
+    if (formattedUpdates.deaths != null) formattedUpdates.deaths = parseInt(formattedUpdates.deaths) || 0;
+    if (formattedUpdates.damage != null) formattedUpdates.damage = parseInt(formattedUpdates.damage) || 0;
+    if (formattedUpdates.result) formattedUpdates.result = formattedUpdates.result.toUpperCase();
+    if (formattedUpdates.kills != null && formattedUpdates.deaths != null) {
+      formattedUpdates.kdr = formattedUpdates.deaths > 0
+        ? parseFloat((formattedUpdates.kills / formattedUpdates.deaths).toFixed(2))
+        : formattedUpdates.kills;
+    }
+
+    let updatedRow = null;
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("player_map_stats")
+          .update(formattedUpdates)
+          .eq("id", statId)
+          .select();
+        if (error) throw error;
+        updatedRow = data && data[0];
+      } catch (err) {
+        console.error("Supabase updatePlayerMapStat error:", err);
+        return { success: false, error: err.message || err };
+      }
+    } else {
+      const pId = playerId || Object.keys(MOCK_DATA.map_stats || {}).find(pid => 
+        MOCK_DATA.map_stats[pid].some(m => m.id == statId)
+      );
+      if (pId && MOCK_DATA.map_stats[pId]) {
+        const item = MOCK_DATA.map_stats[pId].find(m => m.id == statId);
+        if (item) {
+          Object.assign(item, formattedUpdates);
+          updatedRow = item;
+        }
+      }
+    }
+
+    const targetPid = playerId || (updatedRow ? updatedRow.player_id : null);
+    if (targetPid) {
+      await this.syncPlayerTotals(targetPid);
+    }
+    const telemetry = targetPid ? await this.getPlayerTelemetry(targetPid) : null;
+    return { success: true, data: updatedRow, telemetry };
+  },
+
+  // Admin: Delete Map Record
+  async deletePlayerMapStat(statId, playerId) {
+    if (dbClient) {
+      try {
+        const { error } = await dbClient
+          .from("player_map_stats")
+          .delete()
+          .eq("id", statId);
+        if (error) throw error;
+      } catch (err) {
+        console.error("Supabase deletePlayerMapStat error:", err);
+        return { success: false, error: err.message || err };
+      }
+    } else {
+      const pId = playerId || Object.keys(MOCK_DATA.map_stats || {}).find(pid => 
+        MOCK_DATA.map_stats[pid].some(m => m.id == statId)
+      );
+      if (pId && MOCK_DATA.map_stats[pId]) {
+        const idx = MOCK_DATA.map_stats[pId].findIndex(m => m.id == statId);
+        if (idx !== -1) MOCK_DATA.map_stats[pId].splice(idx, 1);
+      }
+    }
+
+    if (playerId) {
+      await this.syncPlayerTotals(playerId);
+    }
+    const telemetry = playerId ? await this.getPlayerTelemetry(playerId) : null;
+    return { success: true, telemetry };
+  },
+
+  // Admin / Internal: Sync & Recalculate Player's Season Totals from Map Stats
+  async syncPlayerTotals(playerId) {
+    if (!playerId) return null;
+    try {
+      const mapStats = await this.getPlayerMapStats(playerId);
+      const player = await this.getPlayerById(playerId);
+      const telemetry = this.calculatePlayerTelemetry(player, mapStats);
+
+      const updatePayload = {
+        total_kills: telemetry.overall.total_kills,
+        total_deaths: telemetry.overall.total_deaths,
+        kdr: parseFloat(telemetry.overall.kdr)
+      };
+
+      if (dbClient && /^\d+$/.test(String(playerId))) {
+        // Try including wins and losses if database columns exist
+        const fullPayload = {
+          ...updatePayload,
+          wins: telemetry.overall.wins,
+          losses: telemetry.overall.losses
+        };
+        const { error } = await dbClient
+          .from("players")
+          .update(fullPayload)
+          .eq("id", playerId);
+        
+        if (error) {
+          // If wins/losses column missing, fallback to core total_kills, total_deaths, kdr
+          if (error.message && (error.message.includes("wins") || error.message.includes("losses"))) {
+            await dbClient
+              .from("players")
+              .update(updatePayload)
+              .eq("id", playerId);
+          } else {
+            console.warn("Could not sync players totals in Supabase:", error.message);
+          }
+        }
+      } else {
+        const mockP = MOCK_DATA.players.find(p => String(p.id) === String(playerId));
+        if (mockP) {
+          Object.assign(mockP, updatePayload, {
+            wins: telemetry.overall.wins,
+            losses: telemetry.overall.losses
+          });
+        }
+      }
+      return telemetry;
+    } catch (err) {
+      console.error("Error in syncPlayerTotals:", err);
+      return null;
+    }
   },
 
   // Admin: Record Match Result & Auto-Update Standings
@@ -897,6 +1400,115 @@ window.LeagueDB = {
       }
     }
     return { success: true, mock: true };
+  },
+
+  // Admin: Delete Signup from league_signups
+  async deleteSignup(signupId) {
+    if (dbClient) {
+      try {
+        const { error, data } = await dbClient
+          .from("league_signups")
+          .delete()
+          .eq("id", signupId)
+          .select();
+
+        if (error) {
+          console.error("Supabase deleteSignup error:", error);
+          return { success: false, error: error.message || error };
+        }
+
+        // If delete returned empty data (RLS blocked DELETE without throwing error),
+        // update status to 'Enlisted' so it won't linger in pending signups queue
+        if (!data || data.length === 0) {
+          await dbClient
+            .from("league_signups")
+            .update({ status: "Enlisted" })
+            .eq("id", signupId);
+        }
+
+        return { success: true, data };
+      } catch (err) {
+        console.error("Supabase deleteSignup exception:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+
+    if (MOCK_DATA.signups) {
+      const idx = MOCK_DATA.signups.findIndex(x => String(x.id) === String(signupId));
+      if (idx !== -1) MOCK_DATA.signups.splice(idx, 1);
+    }
+    return { success: true, mock: true };
+  },
+
+  // Admin: Approve & Enlist a Signup (stores player in players table and deletes from league_signups table)
+  async approveAndEnlistSignup(signupId, customPlayerData = {}) {
+    try {
+      let signup = null;
+      if (dbClient) {
+        const { data, error } = await dbClient
+          .from("league_signups")
+          .select("*")
+          .eq("id", signupId)
+          .maybeSingle();
+        if (!error && data) signup = data;
+      }
+
+      if (!signup && MOCK_DATA.signups) {
+        signup = MOCK_DATA.signups.find(s => String(s.id) === String(signupId));
+      }
+
+      const gamertag = signup?.gamertag || customPlayerData.gamertag;
+      if (!gamertag) {
+        return { success: false, error: "Signup not found or gamertag missing" };
+      }
+
+      // 1. Resolve team assignment if squad name was provided
+      let teamId = customPlayerData.team_id || null;
+      if (!teamId && signup?.team_name) {
+        try {
+          const teams = await this.getTeams();
+          const matched = teams.find(t => 
+            (t.name && t.name.toLowerCase() === signup.team_name.toLowerCase()) ||
+            (t.tag && t.tag.toLowerCase() === signup.team_name.toLowerCase())
+          );
+          if (matched) teamId = matched.id;
+        } catch (_) {}
+      }
+
+      // 2. Build player entity
+      const newPlayerData = {
+        gamertag: gamertag,
+        role: signup?.role || customPlayerData.role || "Flex",
+        team_id: teamId,
+        kdr: customPlayerData.kdr != null ? parseFloat(customPlayerData.kdr) : 1.00,
+        activision_id: signup?.activision_id || customPlayerData.activision_id || null,
+        total_kills: 0,
+        total_deaths: 0,
+        wins: 0,
+        losses: 0,
+        ...customPlayerData
+      };
+
+      // 3. Store player in players table
+      const playerResult = await this.createPlayer(newPlayerData);
+      if (!playerResult.success) {
+        return { success: false, error: playerResult.error || "Failed to create player in players table" };
+      }
+
+      // 4. Remove player from league_signups table
+      const deleteResult = await this.deleteSignup(signupId);
+
+      return {
+        success: true,
+        player: playerResult.data,
+        alreadyExisted: !!playerResult.alreadyExisted,
+        deletedSignupId: signupId,
+        deleteResult
+      };
+    } catch (err) {
+      console.error("Error in approveAndEnlistSignup:", err);
+      return { success: false, error: err.message || err };
+    }
   },
 
   // Admin: Update Livestream / Broadcast State

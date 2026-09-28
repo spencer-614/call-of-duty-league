@@ -132,15 +132,77 @@
         metaEl.innerHTML = metaItems.join(`<span style="color:#ffffff25">•</span>`);
       }
 
-      // Calculate aggregated metrics from map stats
-      const mapsPlayed = mapStats.length;
-      const wins = mapStats.filter(m => m.result === "W" || m.result === "Victory").length;
-      const winRate = mapsPlayed > 0 ? Math.round((wins / mapsPlayed) * 100) : 0;
-      const avgKillsPerMap = mapsPlayed > 0 ? (totalKills / mapsPlayed).toFixed(1) : (totalKills || 0);
+      // Calculate full telemetry via LeagueDB calculation engine
+      const telemetry = window.LeagueDB && window.LeagueDB.calculatePlayerTelemetry
+        ? window.LeagueDB.calculatePlayerTelemetry(player, mapStats)
+        : null;
 
-      // Render Modal Body with Season Stats HUD & Map Stats Table
+      const overall = telemetry ? telemetry.overall : {
+        wins: mapStats.filter(m => m.result === "W" || m.result === "Victory").length,
+        losses: mapStats.filter(m => m.result === "L" || m.result === "Defeat").length,
+        total_maps: mapStats.length,
+        win_rate: mapStats.length > 0 ? Math.round((mapStats.filter(m => m.result === "W" || m.result === "Victory").length / mapStats.length) * 100) : 0,
+        total_kills: totalKills,
+        total_deaths: totalDeaths,
+        total_damage: 0,
+        kdr: kdr,
+        avg_kills_per_map: mapStats.length > 0 ? (totalKills / mapStats.length).toFixed(1) : totalKills
+      };
+
+      const modes = telemetry ? telemetry.modes : {};
+      const mapsList = telemetry ? telemetry.maps : [];
+      const mapsPlayed = overall.total_maps;
+
+      // Mode cards HTML
+      const modeKeys = ["Hardpoint", "Search & Destroy", "Control"];
+      const modeCardsHtml = modeKeys.map(mName => {
+        const mData = modes[mName] || { wins: 0, losses: 0, win_rate: 0, kdr: "0.00", kills: 0, deaths: 0, damage: 0, total: 0 };
+        const kdColor = Number(mData.kdr) >= 1.0 ? "var(--lime)" : "#ff6b6b";
+        return `
+          <div class="hud-item" style="text-align:left; padding:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span class="hud-label" style="font-size:10px; color:var(--text);">${escapeHtml(mName)}</span>
+              <span class="mode-badge">${mData.total} Maps</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+              <span style="font:800 20px var(--display); color:var(--text);">${mData.wins}W - ${mData.losses}L</span>
+              <span class="pill" style="font-size:9px; color:${mData.win_rate >= 50 ? 'var(--lime)' : 'var(--muted)'};">${mData.win_rate}% WIN</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); border-top:1px solid #ffffff0a; padding-top:6px; margin-top:4px;">
+              <span>K/D: <strong style="color:${kdColor};">${mData.kdr}</strong> (${mData.kills}K - ${mData.deaths}D)</span>
+              <span>${(mData.damage || 0).toLocaleString()} Dmg</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Map telemetry table rows
+      const mapRowsSummaryHtml = mapsList.length > 0
+        ? mapsList.map(m => {
+            const kdColor = Number(m.kdr) >= 1.0 ? "var(--lime)" : "#ff6b6b";
+            return `
+              <tr>
+                <td>
+                  <strong style="color:var(--text); font-family:var(--display); font-size:13px;">${escapeHtml(m.map_name)}</strong>
+                  <div style="font-size:9px; color:var(--muted);">${escapeHtml(m.modes.join(", "))}</div>
+                </td>
+                <td>
+                  <span class="pill" style="font-size:10px;">${m.wins}W - ${m.losses}L</span>
+                </td>
+                <td>
+                  <span style="font-weight:700; color:${m.win_rate >= 50 ? 'var(--lime)' : 'var(--muted)'};">${m.win_rate}%</span>
+                </td>
+                <td style="color:${kdColor}; font-weight:800;">${m.kdr}</td>
+                <td>${m.kills} - ${m.deaths}</td>
+                <td>${(m.damage || 0).toLocaleString()}</td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted);">No map telemetry recorded yet.</td></tr>`;
+
+      // Render Modal Body with Season Stats HUD, Mode Telemetry, Map Telemetry, and Match History Table
       bodyEl.innerHTML = `
-        <!-- Season Stats Summary HUD -->
+        <!-- Section 1: Season Combat Summary HUD -->
         <div class="modal-section-title">
           <div class="section-title-left">
             <span class="title-accent">//</span>
@@ -151,33 +213,71 @@
         <div class="overall-stats-hud">
           <div class="hud-item">
             <div class="hud-label">Season K/D Ratio</div>
-            <div class="hud-value">${kdr}</div>
-            <div class="hud-sub">${Number(kdr) >= 1.0 ? "POSITIVE RATIO" : "SUB-1.0 RATIO"}</div>
+            <div class="hud-value">${overall.kdr}</div>
+            <div class="hud-sub">${Number(overall.kdr) >= 1.0 ? "POSITIVE RATIO" : "SUB-1.0 RATIO"}</div>
+          </div>
+          <div class="hud-item">
+            <div class="hud-label">Overall Win / Loss</div>
+            <div class="hud-value">${overall.wins}W - ${overall.losses}L</div>
+            <div class="hud-sub">${overall.win_rate}% WIN RATE (${overall.total_maps} MAPS)</div>
           </div>
           <div class="hud-item">
             <div class="hud-label">Confirmed Kills</div>
-            <div class="hud-value">${Number(totalKills).toLocaleString()}</div>
-            <div class="hud-sub">${avgKillsPerMap} AVG / MAP</div>
+            <div class="hud-value">${Number(overall.total_kills).toLocaleString()}</div>
+            <div class="hud-sub">${overall.avg_kills_per_map} AVG / MAP</div>
           </div>
           <div class="hud-item">
             <div class="hud-label">Combat Deaths</div>
-            <div class="hud-value">${Number(totalDeaths).toLocaleString()}</div>
-            <div class="hud-sub">RECORDED CASUALTIES</div>
-          </div>
-          <div class="hud-item">
-            <div class="hud-label">Map Win Rate</div>
-            <div class="hud-value">${winRate}%</div>
-            <div class="hud-sub">${wins}W - ${mapsPlayed - wins}L (${mapsPlayed} MAPS)</div>
+            <div class="hud-value">${Number(overall.total_deaths).toLocaleString()}</div>
+            <div class="hud-sub">${(overall.total_damage || 0).toLocaleString()} DAMAGE</div>
           </div>
         </div>
 
-        <!-- Individual Map Breakdown -->
+        <!-- Section 2: Game Mode Telemetry (W/L and K/D per Mode) -->
         <div class="modal-section-title">
           <div class="section-title-left">
             <span class="title-accent">//</span>
-            <span>Individual Map Stats</span>
+            <span>Game Mode Performance (W/L & K/D)</span>
           </div>
-          <span class="title-count" id="map-stats-count">${mapsPlayed} Maps Recorded</span>
+          <span class="title-count">PER-MODE METRICS</span>
+        </div>
+        <div class="overall-stats-hud" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-bottom: 24px;">
+          ${modeCardsHtml}
+        </div>
+
+        <!-- Section 3: Map Breakdown Telemetry (W/L and K/D per Map) -->
+        <div class="modal-section-title">
+          <div class="section-title-left">
+            <span class="title-accent">//</span>
+            <span>Map Performance Telemetry (W/L & K/D)</span>
+          </div>
+          <span class="title-count">${mapsList.length} Maps Encountered</span>
+        </div>
+        <div class="map-stats-table-wrapper" style="margin-bottom: 26px;">
+          <table class="map-stats-table">
+            <thead>
+              <tr>
+                <th>Map Name</th>
+                <th>Record (W - L)</th>
+                <th>Win Rate</th>
+                <th>Map K/D</th>
+                <th>Kills - Deaths</th>
+                <th>Total Damage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mapRowsSummaryHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section 4: Individual Map Match History Log -->
+        <div class="modal-section-title">
+          <div class="section-title-left">
+            <span class="title-accent">//</span>
+            <span>Individual Match Records</span>
+          </div>
+          <span class="title-count" id="map-stats-count">${mapsPlayed} Matches Recorded</span>
         </div>
 
         <!-- Mode Filters -->

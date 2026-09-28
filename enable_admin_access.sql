@@ -4,6 +4,12 @@
 -- Enables the Admin Portal (admin.html) to create, update, and manage teams, players, scores, and brackets.
 -- ==============================================================================
 
+-- 0. Ensure players table has wins, losses, activision_id, and discord_name columns
+ALTER TABLE players ADD COLUMN IF NOT EXISTS wins INT DEFAULT 0;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS losses INT DEFAULT 0;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS activision_id TEXT;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS discord_name TEXT;
+
 -- 1. Enable full write access on TEAMS
 DO $$
 BEGIN
@@ -76,24 +82,58 @@ BEGIN
     END IF;
 END $$;
 
--- 6. Enable admin status updates on SIGNUPS
+-- 6. Enable full admin access (INSERT, UPDATE, DELETE) on SIGNUPS
 DO $$
 BEGIN
-    IF NOT EXISTS (
+    -- Drop old restrictive update-only policy on league_signups if present
+    IF EXISTS (
         SELECT 1 FROM pg_policies 
         WHERE tablename = 'league_signups' AND policyname = 'Enable update on league_signups'
     ) THEN
-        CREATE POLICY "Enable update on league_signups" ON league_signups
-            FOR UPDATE USING (true) WITH CHECK (true);
+        DROP POLICY "Enable update on league_signups" ON league_signups;
     END IF;
 
+    -- Enable all operations on league_signups (SELECT, INSERT, UPDATE, DELETE)
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'league_signups' AND policyname = 'Enable all access on league_signups'
+    ) THEN
+        CREATE POLICY "Enable all access on league_signups" ON league_signups
+            FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+
+    -- Explicit DELETE policy on league_signups
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'league_signups' AND policyname = 'Enable delete on league_signups'
+    ) THEN
+        CREATE POLICY "Enable delete on league_signups" ON league_signups
+            FOR DELETE USING (true);
+    END IF;
+
+    -- Enable full access on org_signups
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'org_signups') THEN
-        IF NOT EXISTS (
+        IF EXISTS (
             SELECT 1 FROM pg_policies 
             WHERE tablename = 'org_signups' AND policyname = 'Enable update on org_signups'
         ) THEN
-            CREATE POLICY "Enable update on org_signups" ON org_signups
-                FOR UPDATE USING (true) WITH CHECK (true);
+            DROP POLICY "Enable update on org_signups" ON org_signups;
+        END IF;
+
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'org_signups' AND policyname = 'Enable all access on org_signups'
+        ) THEN
+            CREATE POLICY "Enable all access on org_signups" ON org_signups
+                FOR ALL USING (true) WITH CHECK (true);
+        END IF;
+
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'org_signups' AND policyname = 'Enable delete on org_signups'
+        ) THEN
+            CREATE POLICY "Enable delete on org_signups" ON org_signups
+                FOR DELETE USING (true);
         END IF;
     END IF;
 END $$;

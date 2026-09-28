@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS league_signups (
 -- 2. Enable Row Level Security (RLS)
 ALTER TABLE league_signups ENABLE ROW LEVEL SECURITY;
 
--- 3. Allow Public Insert (CRITICAL: lets visitors submit signups from your website)
+-- 3. Allow Public Insert, Public Read, and Full Admin Access (Delete & Update)
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -42,6 +42,15 @@ BEGIN
     ) THEN
         CREATE POLICY "Allow public read on league_signups" ON league_signups
             FOR SELECT USING (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'league_signups' 
+        AND policyname = 'Allow all access on league_signups'
+    ) THEN
+        CREATE POLICY "Allow all access on league_signups" ON league_signups
+            FOR ALL USING (true) WITH CHECK (true);
     END IF;
 END
 $$;
