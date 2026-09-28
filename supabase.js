@@ -677,6 +677,24 @@ window.LeagueDB = {
     return [];
   },
 
+  // 13. Fetch Tournament Brackets & Matches
+  async getBrackets(divisionId = "premier") {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("tournament_matches")
+          .select("*")
+          .eq("division_id", divisionId)
+          .order("round_order", { ascending: true })
+          .order("match_order", { ascending: true });
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn("Supabase tournament_matches not yet created, using local bracket engine:", err.message);
+      }
+    }
+    return null;
+  },
+
   paypalConfig: PAYPAL_CONFIG,
   isConfigured: isSupabaseConfigured
 };

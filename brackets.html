@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline — Division Tournament Brackets</title>
+  </head>
+  <body>
+    <!-- Top Header & Navigation -->
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="index.html">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          FRONTLINE<small>COMMUNITY LEAGUE</small>
+        </a>
+        <h1>TOURNAMENT BRACKETS</h1>
+        <a
+          class="cta"
+          href="https://discord.com/"
+          target="_blank"
+          rel="noopener"
+          >Join Discord ↗</a
+        >
+        <div class="menu-toggle">
+          <input type="checkbox" id="menu-toggle" />
+          <label for="menu-toggle">Menu</label>
+          <nav class="links" aria-label="Main navigation">
+            <a href="index.html#league">THE LEAGUE</a>
+            <a href="index.html#standings">STANDINGS</a>
+            <a href="teams.html">TEAMS</a>
+            <a href="players.html">PLAYERS</a>
+            <a href="brackets.html" style="color:var(--lime);">BRACKETS</a>
+            <a href="livestreams.html">LIVESTREAMS</a>
+            <a href="vods.html">VODS</a>
+            <a href="signup.html">SIGN UP</a>
+            <a
+              class="cta"
+              href="https://discord.com/"
+              target="_blank"
+              rel="noopener"
+              >Join Discord ↗</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- Page Header -->
+      <section class="bracket-header-section">
+        <div class="kicker">CHAMPIONSHIP SERIES // TOURNAMENT PROGRESSION</div>
+        <h2 style="font: 800 48px/0.9 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
+          DIVISION <span style="color:var(--lime);">TOURNAMENT BRACKETS</span>
+        </h2>
+        <p class="intro">
+          Live tournament progression across all Frontline competitive divisions. Follow the path to the championship from Upper Bracket dominance to Elimination Bracket survival.
+        </p>
+      </section>
+
+      <!-- Division Selection Tabs -->
+      <nav class="division-selector-bar" aria-label="League Divisions">
+        <button type="button" class="div-tab-btn active" data-division="premier" aria-selected="true">
+          <span>★ DIVISION 1 · PREMIER CHAMPIONSHIP</span>
+          <span class="div-badge-pill">DOUBLE ELIM</span>
+        </button>
+        <button type="button" class="div-tab-btn" data-division="challengers" aria-selected="false">
+          <span>⚔ DIVISION 2 · CHALLENGERS TIER</span>
+          <span class="div-badge-pill">DOUBLE ELIM</span>
+        </button>
+        <button type="button" class="div-tab-btn" data-division="open" aria-selected="false">
+          <span>⊕ DIVISION 3 · OPEN RECRUIT CUP</span>
+          <span class="div-badge-pill">SINGLE ELIM</span>
+        </button>
+      </nav>
+
+      <!-- Active Division Overview Banner -->
+      <section class="division-info-banner" aria-label="Division Details">
+        <div class="div-banner-left">
+          <div style="font: 700 11px var(--display); color:var(--muted); letter-spacing: 1.5px; margin-bottom: 4px;">
+            // ACTIVE TOURNAMENT TELEMETRY
+          </div>
+          <div style="display:flex; align-items:center; gap: 12px; flex-wrap: wrap;">
+            <h2 id="div-banner-title">Premier Championship</h2>
+            <span class="pill" id="div-banner-badge" style="color:var(--lime); border-color:#d5f45b50;">Division 1 · Pro Tier</span>
+          </div>
+          <p id="div-banner-desc">
+            The top 8 franchise squads battling in the definitive Frontline double-elimination tournament.
+          </p>
+        </div>
+
+        <div class="div-banner-stats">
+          <div>
+            <div class="stat-chip-label">BRACKET FORMAT</div>
+            <div class="stat-chip-value" id="div-banner-format">8-Team Double Elim (BO5)</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">PRIZE POOL</div>
+            <div class="stat-chip-value" id="div-banner-prize" style="color:#ffe270;">$1,000 USD</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">TOURNAMENT STAGE</div>
+            <div class="stat-chip-value" id="div-banner-status" style="color:var(--lime);">GRAND FINALS</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">RULESET</div>
+            <div class="stat-chip-value" id="div-banner-rules" style="font-size:12px; color:var(--muted);">CDL V4 Competitive</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bracket Controls & View Modes Toolbar -->
+      <div class="bracket-toolbar">
+        <div class="stage-filter-group" aria-label="Stage Filter">
+          <button type="button" class="stage-filter-btn active" data-stage="all">All Stages</button>
+          <button type="button" class="stage-filter-btn" data-stage="winners">Winners Bracket</button>
+          <button type="button" class="stage-filter-btn" data-stage="elimination">Elimination Bracket</button>
+          <button type="button" class="stage-filter-btn" data-stage="finals">Grand Finals</button>
+        </div>
+
+        <div class="view-mode-group" aria-label="Display View">
+          <button type="button" class="view-mode-btn active" id="view-btn-tree" title="Interactive visual tree">
+            ☷ Tree View
+          </button>
+          <button type="button" class="view-mode-btn" id="view-btn-list" title="Chronological schedule view">
+            ☰ Schedule View
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Bracket Container (Populated by bracket.js) -->
+      <section id="bracket-display-root" aria-label="Interactive Tournament Bracket">
+        <div style="text-align:center; padding: 60px 0; color:var(--muted);">
+          Loading division tournament bracket...
+        </div>
+      </section>
+
+      <!-- Tournament Rules & Format Explainer -->
+      <section style="margin: 40px 0 60px; background:var(--panel); border:1px solid var(--line); padding: 32px;">
+        <div class="kicker">COMPETITIVE FRAMEWORK // CDL RULES</div>
+        <h3 style="font: 800 24px var(--display); text-transform: uppercase; margin: 8px 0 16px; color:var(--text);">
+          How Frontline <span style="color:var(--lime);">Tournament Brackets Work</span>
+        </h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">1. Double Elimination Format</strong>
+            Divisions 1 and 2 operate on double elimination. A team that loses in the Winners Bracket drops into the Elimination Bracket. A second loss results in complete tournament elimination.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">2. Best of 5 Series Rotation</strong>
+            Standard CDL match rotation: Map 1 Hardpoint, Map 2 Search & Destroy, Map 3 Control, Map 4 Hardpoint, and Map 5 Search & Destroy. Division 3 plays a Best of 3 format.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">3. Grand Finals Advantage</strong>
+            The team advancing from the Winners Bracket enters Grand Finals with 1-series advantage. The team advancing from the Elimination Bracket must win two consecutive Best of 5 series to win the title.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">4. Live Telemetry & VODs</strong>
+            Click on any match card in the bracket to review individual map scores, slayer MVPs, and link directly to full stream broadcasts.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Global Footer -->
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <div class="footer-info">
+          <strong>FRONTLINE · COMMUNITY LEAGUE</strong>
+          <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
+        </div>
+        <div class="footer-links">
+          <a href="index.html#league">League</a>
+          <a href="index.html#standings">Standings</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="brackets.html">Brackets</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts: Supabase DB, Bullet Sparks & Bracket Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./bullet-sparks.js"></script>
+    <script src="./bracket.js"></script>
+  </body>
+</html>
