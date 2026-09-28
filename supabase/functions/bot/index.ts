@@ -1,6 +1,6 @@
 // ==============================================================================
-// FRONTLINE CDL - SUPABASE EDGE FUNCTION: BOT REGISTRATIONS
-// Endpoint: POST /functions/v1/bot-registrations
+// FRONTLINE CDL - SUPABASE EDGE FUNCTION: BOT REGISTRATIONS ROUTER
+// Endpoint: POST /functions/v1/bot/registrations
 // Authenticated via FRONTLINE_BOT_SECRET or FRONTLINE_API_KEY
 // ==============================================================================
 
