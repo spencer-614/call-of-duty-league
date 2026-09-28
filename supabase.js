@@ -125,6 +125,392 @@ const MOCK_DATA = {
       vod_url: "https://twitch.tv/callofduty"
     }
   ],
+  scheduled_matches: [
+    {
+      id: 1,
+      week_number: 1,
+      season_type: "preseason",
+      week_label: "Preseason Week 1",
+      match_number: 1,
+      team1_id: 1,
+      team1_name: "Night Shift",
+      team1_tag: "NSH",
+      team1_score: 3,
+      team2_id: 3,
+      team2_name: "Redline",
+      team2_tag: "RED",
+      team2_score: 1,
+      winner_id: 1,
+      winner_name: "Night Shift",
+      status: "Completed",
+      scheduled_date: "2026-10-09",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: "callofduty",
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      week_number: 1,
+      season_type: "preseason",
+      week_label: "Preseason Week 1",
+      match_number: 2,
+      team1_id: 2,
+      team1_name: "Vantage",
+      team1_tag: "VTG",
+      team1_score: 3,
+      team2_id: 4,
+      team2_name: "Static",
+      team2_tag: "STC",
+      team2_score: 2,
+      winner_id: 2,
+      winner_name: "Vantage",
+      status: "Completed",
+      scheduled_date: "2026-10-09",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: "callofduty",
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 3,
+      week_number: 2,
+      season_type: "preseason",
+      week_label: "Preseason Week 2",
+      match_number: 3,
+      team1_id: 1,
+      team1_name: "Night Shift",
+      team1_tag: "NSH",
+      team1_score: 2,
+      team2_id: 2,
+      team2_name: "Vantage",
+      team2_tag: "VTG",
+      team2_score: 1,
+      winner_id: null,
+      winner_name: null,
+      status: "Live",
+      scheduled_date: "2026-10-16",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: "callofduty",
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 4,
+      week_number: 2,
+      season_type: "preseason",
+      week_label: "Preseason Week 2",
+      match_number: 4,
+      team1_id: 3,
+      team1_name: "Redline",
+      team1_tag: "RED",
+      team1_score: 0,
+      team2_id: 4,
+      team2_name: "Static",
+      team2_tag: "STC",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-10-16",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: "callofduty",
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 5,
+      week_number: 3,
+      season_type: "regular",
+      week_label: "Regular Season Week 1",
+      match_number: 5,
+      team1_id: 1,
+      team1_name: "Night Shift",
+      team1_tag: "NSH",
+      team1_score: 0,
+      team2_id: 4,
+      team2_name: "Static",
+      team2_tag: "STC",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-10-23",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 6,
+      week_number: 3,
+      season_type: "regular",
+      week_label: "Regular Season Week 1",
+      match_number: 6,
+      team1_id: 2,
+      team1_name: "Vantage",
+      team1_tag: "VTG",
+      team1_score: 0,
+      team2_id: 3,
+      team2_name: "Redline",
+      team2_tag: "RED",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-10-23",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 7,
+      week_number: 4,
+      season_type: "regular",
+      week_label: "Regular Season Week 2",
+      match_number: 7,
+      team1_id: 2,
+      team1_name: "Vantage",
+      team1_tag: "VTG",
+      team1_score: 0,
+      team2_id: 4,
+      team2_name: "Static",
+      team2_tag: "STC",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-10-30",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 8,
+      week_number: 4,
+      season_type: "regular",
+      week_label: "Regular Season Week 2",
+      match_number: 8,
+      team1_id: 1,
+      team1_name: "Night Shift",
+      team1_tag: "NSH",
+      team1_score: 0,
+      team2_id: 3,
+      team2_name: "Redline",
+      team2_tag: "RED",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-10-30",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 9,
+      week_number: 5,
+      season_type: "regular",
+      week_label: "Regular Season Week 3",
+      match_number: 9,
+      team1_id: 1,
+      team1_name: "Night Shift",
+      team1_tag: "NSH",
+      team1_score: 0,
+      team2_id: 2,
+      team2_name: "Vantage",
+      team2_tag: "VTG",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-06",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 10,
+      week_number: 5,
+      season_type: "regular",
+      week_label: "Regular Season Week 3",
+      match_number: 10,
+      team1_id: 3,
+      team1_name: "Redline",
+      team1_tag: "RED",
+      team1_score: 0,
+      team2_id: 4,
+      team2_name: "Static",
+      team2_tag: "STC",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-06",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 11,
+      week_number: 6,
+      season_type: "regular",
+      week_label: "Regular Season Week 4",
+      match_number: 11,
+      team1_id: 4,
+      team1_name: "Static",
+      team1_tag: "STC",
+      team1_score: 0,
+      team2_id: 1,
+      team2_name: "Night Shift",
+      team2_tag: "NSH",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-13",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 12,
+      week_number: 6,
+      season_type: "regular",
+      week_label: "Regular Season Week 4",
+      match_number: 12,
+      team1_id: 3,
+      team1_name: "Redline",
+      team1_tag: "RED",
+      team1_score: 0,
+      team2_id: 2,
+      team2_name: "Vantage",
+      team2_tag: "VTG",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-13",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 13,
+      week_number: 7,
+      season_type: "regular",
+      week_label: "Regular Season Week 5",
+      match_number: 13,
+      team1_id: 4,
+      team1_name: "Static",
+      team1_tag: "STC",
+      team1_score: 0,
+      team2_id: 2,
+      team2_name: "Vantage",
+      team2_tag: "VTG",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-20",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 14,
+      week_number: 7,
+      season_type: "regular",
+      week_label: "Regular Season Week 5",
+      match_number: 14,
+      team1_id: 3,
+      team1_name: "Redline",
+      team1_tag: "RED",
+      team1_score: 0,
+      team2_id: 1,
+      team2_name: "Night Shift",
+      team2_tag: "NSH",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-20",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 15,
+      week_number: 8,
+      season_type: "regular",
+      week_label: "Regular Season Week 6",
+      match_number: 15,
+      team1_id: 2,
+      team1_name: "Vantage",
+      team1_tag: "VTG",
+      team1_score: 0,
+      team2_id: 1,
+      team2_name: "Night Shift",
+      team2_tag: "NSH",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-27",
+      scheduled_time: "6:00 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 16,
+      week_number: 8,
+      season_type: "regular",
+      week_label: "Regular Season Week 6",
+      match_number: 16,
+      team1_id: 4,
+      team1_name: "Static",
+      team1_tag: "STC",
+      team1_score: 0,
+      team2_id: 3,
+      team2_name: "Redline",
+      team2_tag: "RED",
+      team2_score: 0,
+      winner_id: null,
+      winner_name: null,
+      status: "Scheduled",
+      scheduled_date: "2026-11-27",
+      scheduled_time: "7:30 PM EST",
+      best_of: 5,
+      stream_url: null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    }
+  ],
   map_stats: {
     1: [ // Apex (Night Shift)
       { id: 1, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Vantage", kills: 32, deaths: 21, damage: 4820, kdr: 1.52, result: "W", score: "250 - 210", match_date: "2026-09-24" },
@@ -2016,6 +2402,475 @@ window.LeagueDB = {
     }
 
     return { success: true, pick: newPick, state };
+  },
+
+  // ==============================================================================
+  // 8-WEEK MATCH SCHEDULING SYSTEM (2 PRESEASON + 6 REGULAR SEASON)
+  // ==============================================================================
+
+  // Fetch all scheduled matches with optional filters
+  async getScheduledMatches(filters = {}) {
+    let matches = [];
+
+    if (dbClient) {
+      try {
+        let query = dbClient
+          .from("scheduled_matches")
+          .select("*")
+          .order("week_number", { ascending: true })
+          .order("id", { ascending: true });
+
+        if (filters.week_number) {
+          query = query.eq("week_number", Number(filters.week_number));
+        }
+        if (filters.season_type) {
+          query = query.eq("season_type", filters.season_type);
+        }
+        if (filters.status) {
+          query = query.eq("status", filters.status);
+        }
+
+        const { data, error } = await query;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          matches = data;
+          try {
+            localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn("Could not fetch scheduled_matches from Supabase, checking local cache:", err);
+      }
+    }
+
+    // Fallback to localStorage or MOCK_DATA
+    if (!matches || matches.length === 0) {
+      try {
+        const cached = localStorage.getItem("frontline_scheduled_matches");
+        if (cached) {
+          matches = JSON.parse(cached);
+        }
+      } catch (e) {}
+    }
+
+    if (!matches || matches.length === 0) {
+      matches = (MOCK_DATA.scheduled_matches || []).map(m => ({ ...m }));
+      try {
+        localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
+      } catch (e) {}
+    }
+
+    // Apply in-memory filters if needed
+    if (filters) {
+      if (filters.week_number) {
+        matches = matches.filter(m => Number(m.week_number) === Number(filters.week_number));
+      }
+      if (filters.season_type) {
+        matches = matches.filter(m => m.season_type === filters.season_type);
+      }
+      if (filters.status && filters.status !== "all") {
+        matches = matches.filter(m => m.status && m.status.toLowerCase() === filters.status.toLowerCase());
+      }
+      if (filters.team_id) {
+        const tid = Number(filters.team_id);
+        matches = matches.filter(m => Number(m.team1_id) === tid || Number(m.team2_id) === tid);
+      }
+      if (filters.team_name) {
+        const queryTerm = filters.team_name.toLowerCase().trim();
+        matches = matches.filter(m => 
+          (m.team1_name && m.team1_name.toLowerCase().includes(queryTerm)) ||
+          (m.team2_name && m.team2_name.toLowerCase().includes(queryTerm)) ||
+          (m.team1_tag && m.team1_tag.toLowerCase().includes(queryTerm)) ||
+          (m.team2_tag && m.team2_tag.toLowerCase().includes(queryTerm))
+        );
+      }
+    }
+
+    return matches;
+  },
+
+  async getTeams() {
+    return this.getStandings();
+  },
+
+  // Generate an 8-week randomized schedule: Weeks 1-2 Preseason, Weeks 3-8 Regular Season
+  async generate8WeekSchedule(options = {}) {
+    let teams = options.teams;
+    if (!teams || teams.length === 0) {
+      teams = await this.getStandings();
+    }
+    if (!teams || teams.length < 2) {
+      teams = MOCK_DATA.teams || [];
+    }
+    if (!teams || teams.length < 2) {
+      return { success: false, error: "At least 2 active teams are required to generate an 8-week schedule." };
+    }
+
+    // Options defaults
+    const today = new Date();
+    // Default start date to next Friday (or today if Friday)
+    const nextFriday = new Date();
+    const dayOfWeek = nextFriday.getDay();
+    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+    nextFriday.setDate(nextFriday.getDate() + (dayOfWeek === 5 ? 0 : daysUntilFriday));
+    
+    const startDateStr = options.startDate || nextFriday.toISOString().split("T")[0];
+    const timeSlots = options.timeSlots || ["6:00 PM EST", "7:15 PM EST", "8:30 PM EST", "9:45 PM EST"];
+    const bestOf = options.bestOf || 5;
+
+    // Helper: Fisher-Yates array shuffle
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // Helper: Generate round-robin rounds using Circle Method
+    function generateRoundRobinRounds(teamList) {
+      let list = [...teamList];
+      if (list.length % 2 !== 0) {
+        list.push({ id: null, name: "BYE", tag: "BYE", isBye: true });
+      }
+      const n = list.length;
+      const rounds = [];
+      const totalRounds = n - 1;
+      const half = n / 2;
+
+      let current = [...list];
+      for (let r = 0; r < totalRounds; r++) {
+        const roundPairs = [];
+        for (let i = 0; i < half; i++) {
+          const t1 = current[i];
+          const t2 = current[n - 1 - i];
+          if (!t1.isBye && !t2.isBye) {
+            // Randomly alternate home/away
+            const flip = Math.random() > 0.5;
+            roundPairs.push(flip ? [t1, t2] : [t2, t1]);
+          }
+        }
+        rounds.push(roundPairs);
+
+        // Rotate
+        const fixed = current[0];
+        const rest = current.slice(1);
+        const last = rest.pop();
+        rest.unshift(last);
+        current = [fixed, ...rest];
+      }
+      return rounds;
+    }
+
+    // Helper: Collect N randomized rounds across cycles
+    function getRounds(count) {
+      const collected = [];
+      let attempts = 0;
+      while (collected.length < count && attempts < 20) {
+        attempts++;
+        const shuffledTeams = shuffleArray(teams);
+        const cycleRounds = shuffleArray(generateRoundRobinRounds(shuffledTeams));
+        for (const r of cycleRounds) {
+          if (r.length > 0) {
+            collected.push(r);
+            if (collected.length >= count) break;
+          }
+        }
+      }
+      return collected;
+    }
+
+    // Preseason: Exactly 2 Weeks (Week 1 and Week 2)
+    const preseasonRounds = getRounds(2);
+    // Regular Season: Exactly 6 Weeks (Week 3 to Week 8)
+    const regularRounds = getRounds(6);
+
+    const generatedMatches = [];
+    const baseDate = new Date(startDateStr + "T12:00:00");
+    let matchCounter = 1;
+
+    // Build Preseason Weeks (Week 1 & Week 2)
+    for (let w = 1; w <= 2; w++) {
+      const round = preseasonRounds[w - 1] || [];
+      const matchDate = new Date(baseDate);
+      matchDate.setDate(baseDate.getDate() + (w - 1) * 7);
+      const dateFormatted = matchDate.toISOString().split("T")[0];
+
+      round.forEach((pair, idx) => {
+        generatedMatches.push({
+          id: Date.now() + matchCounter,
+          week_number: w,
+          season_type: "preseason",
+          week_label: `Preseason Week ${w}`,
+          match_number: matchCounter++,
+          team1_id: pair[0].id || null,
+          team1_name: pair[0].name,
+          team1_tag: pair[0].tag || "CDL",
+          team1_score: 0,
+          team2_id: pair[1].id || null,
+          team2_name: pair[1].name,
+          team2_tag: pair[1].tag || "CDL",
+          team2_score: 0,
+          winner_id: null,
+          winner_name: null,
+          status: "Scheduled",
+          scheduled_date: dateFormatted,
+          scheduled_time: timeSlots[idx % timeSlots.length],
+          best_of: bestOf,
+          stream_url: null,
+          standings_recorded: false,
+          created_at: new Date().toISOString()
+        });
+      });
+    }
+
+    // Build Regular Season Weeks (Weeks 3 to 8, representing Regular Season Weeks 1 to 6)
+    for (let rw = 1; rw <= 6; rw++) {
+      const weekNum = rw + 2;
+      const round = regularRounds[rw - 1] || [];
+      const matchDate = new Date(baseDate);
+      matchDate.setDate(baseDate.getDate() + (weekNum - 1) * 7);
+      const dateFormatted = matchDate.toISOString().split("T")[0];
+
+      round.forEach((pair, idx) => {
+        generatedMatches.push({
+          id: Date.now() + matchCounter,
+          week_number: weekNum,
+          season_type: "regular",
+          week_label: `Regular Season Week ${rw}`,
+          match_number: matchCounter++,
+          team1_id: pair[0].id || null,
+          team1_name: pair[0].name,
+          team1_tag: pair[0].tag || "CDL",
+          team1_score: 0,
+          team2_id: pair[1].id || null,
+          team2_name: pair[1].name,
+          team2_tag: pair[1].tag || "CDL",
+          team2_score: 0,
+          winner_id: null,
+          winner_name: null,
+          status: "Scheduled",
+          scheduled_date: dateFormatted,
+          scheduled_time: timeSlots[idx % timeSlots.length],
+          best_of: bestOf,
+          stream_url: null,
+          standings_recorded: false,
+          created_at: new Date().toISOString()
+        });
+      });
+    }
+
+    // Save to localStorage immediately
+    try {
+      localStorage.setItem("frontline_scheduled_matches", JSON.stringify(generatedMatches));
+    } catch (e) {}
+
+    // Persist to Supabase if available
+    if (dbClient) {
+      try {
+        // Clear previous schedule
+        await dbClient.from("scheduled_matches").delete().gte("id", 0);
+        
+        // Strip client temporary IDs for Supabase autoincrement
+        const dbPayload = generatedMatches.map(({ id, standings_recorded, ...m }) => m);
+        const { data, error } = await dbClient.from("scheduled_matches").insert(dbPayload).select();
+        if (!error && Array.isArray(data) && data.length > 0) {
+          // Update cached matches with database IDs
+          try {
+            localStorage.setItem("frontline_scheduled_matches", JSON.stringify(data));
+          } catch (e) {}
+        }
+      } catch (cloudErr) {
+        console.warn("Could not sync generated schedule to Supabase table (offline or table not yet created):", cloudErr);
+      }
+    }
+
+    // Broadcast announcement
+    try {
+      await this.addAnnouncement({
+        title: "Official 8-Week Match Schedule Published!",
+        message: `The official league schedule has been drawn: 2 weeks of Preseason exhibition clashes followed by 6 weeks of intense Regular Season competition. Head to the Match Schedule to view all matchups!`,
+        tag: "Schedule Alert",
+        tag_color: "lime",
+        link_url: "schedule.html",
+        link_text: "View 8-Week Schedule ↗",
+        pinned: true,
+        is_active: true
+      });
+    } catch (annErr) {}
+
+    return { success: true, count: generatedMatches.length, matches: generatedMatches };
+  },
+
+  // Add a single custom scheduled match
+  async createScheduledMatch(matchData) {
+    const newMatch = {
+      id: matchData.id || Date.now(),
+      week_number: Number(matchData.week_number) || 1,
+      season_type: matchData.season_type || (Number(matchData.week_number) <= 2 ? "preseason" : "regular"),
+      week_label: matchData.week_label || (Number(matchData.week_number) <= 2 ? `Preseason Week ${matchData.week_number}` : `Regular Season Week ${Number(matchData.week_number) - 2}`),
+      match_number: matchData.match_number || Date.now(),
+      team1_id: matchData.team1_id || null,
+      team1_name: matchData.team1_name,
+      team1_tag: matchData.team1_tag || "CDL",
+      team1_score: Number(matchData.team1_score ?? 0),
+      team2_id: matchData.team2_id || null,
+      team2_name: matchData.team2_name,
+      team2_tag: matchData.team2_tag || "CDL",
+      team2_score: Number(matchData.team2_score ?? 0),
+      winner_id: matchData.winner_id || null,
+      winner_name: matchData.winner_name || null,
+      status: matchData.status || "Scheduled",
+      scheduled_date: matchData.scheduled_date || new Date().toISOString().split("T")[0],
+      scheduled_time: matchData.scheduled_time || "7:00 PM EST",
+      best_of: Number(matchData.best_of || 5),
+      stream_url: matchData.stream_url || null,
+      standings_recorded: false,
+      created_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        const { id, standings_recorded, ...dbFields } = newMatch;
+        const { data, error } = await dbClient.from("scheduled_matches").insert([dbFields]).select();
+        if (!error && Array.isArray(data) && data.length > 0) {
+          newMatch.id = data[0].id;
+        }
+      } catch (err) {
+        console.warn("Could not insert custom match to Supabase:", err);
+      }
+    }
+
+    let matches = await this.getScheduledMatches();
+    matches.push(newMatch);
+    try {
+      localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
+    } catch (e) {}
+
+    return { success: true, match: newMatch };
+  },
+
+  // Record/update match score, status, and optionally standings
+  async recordScheduledMatchResult(matchId, resultData) {
+    const s1 = Number(resultData.team1_score ?? 0);
+    const s2 = Number(resultData.team2_score ?? 0);
+    const status = resultData.status || (s1 > 0 || s2 > 0 ? "Completed" : "Scheduled");
+
+    let matches = await this.getScheduledMatches();
+    const match = matches.find(m => String(m.id) === String(matchId));
+    if (!match) {
+      return { success: false, error: "Match not found" };
+    }
+
+    let winnerId = null;
+    let winnerName = null;
+    if (s1 > s2) {
+      winnerId = match.team1_id;
+      winnerName = match.team1_name;
+    } else if (s2 > s1) {
+      winnerId = match.team2_id;
+      winnerName = match.team2_name;
+    }
+
+    const updates = {
+      team1_score: s1,
+      team2_score: s2,
+      status: status,
+      winner_id: winnerId,
+      winner_name: winnerName
+    };
+    if (resultData.scheduled_date) updates.scheduled_date = resultData.scheduled_date;
+    if (resultData.scheduled_time) updates.scheduled_time = resultData.scheduled_time;
+    if (resultData.best_of) updates.best_of = Number(resultData.best_of);
+    if (resultData.stream_url !== undefined) updates.stream_url = resultData.stream_url;
+
+    // Apply to standings if requested and not already recorded
+    const shouldUpdateStandings = resultData.update_standings && !match.standings_recorded && status === "Completed" && winnerId;
+    if (shouldUpdateStandings) {
+      try {
+        await this.recordMatchResult(match.team1_id, match.team2_id, s1, s2, winnerId, resultData.pointsDelta || 10);
+        updates.standings_recorded = true;
+      } catch (standErr) {
+        console.warn("Standings update failed:", standErr);
+      }
+    }
+
+    // Persist to Supabase
+    if (dbClient) {
+      try {
+        const { standings_recorded, ...dbFields } = updates;
+        await dbClient.from("scheduled_matches").update(dbFields).eq("id", matchId);
+      } catch (e) {
+        console.warn("Supabase scheduled_matches update failed, persisting locally:", e);
+      }
+    }
+
+    // Update in memory and localStorage
+    Object.assign(match, updates);
+    try {
+      localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
+    } catch (e) {}
+
+    return { success: true, match };
+  },
+
+  // Update match details (date, time, teams, stream, etc.)
+  async updateScheduledMatch(matchId, updates) {
+    let matches = await this.getScheduledMatches();
+    const match = matches.find(m => String(m.id) === String(matchId));
+    if (!match) return { success: false, error: "Match not found" };
+
+    if (dbClient) {
+      try {
+        await dbClient.from("scheduled_matches").update(updates).eq("id", matchId);
+      } catch (e) {
+        console.warn("Supabase update error:", e);
+      }
+    }
+
+    Object.assign(match, updates);
+    try {
+      localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
+    } catch (e) {}
+
+    return { success: true, match };
+  },
+
+  // Delete a single scheduled match
+  async deleteScheduledMatch(matchId) {
+    if (dbClient) {
+      try {
+        await dbClient.from("scheduled_matches").delete().eq("id", matchId);
+      } catch (e) {
+        console.warn("Supabase delete error:", e);
+      }
+    }
+
+    let matches = await this.getScheduledMatches();
+    matches = matches.filter(m => String(m.id) !== String(matchId));
+    try {
+      localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
+    } catch (e) {}
+
+    return { success: true };
+  },
+
+  // Clear all scheduled matches
+  async clearScheduledMatches() {
+    if (dbClient) {
+      try {
+        await dbClient.from("scheduled_matches").delete().gte("id", 0);
+      } catch (e) {
+        console.warn("Supabase clear error:", e);
+      }
+    }
+
+    try {
+      localStorage.removeItem("frontline_scheduled_matches");
+      localStorage.setItem("frontline_scheduled_matches", JSON.stringify([]));
+    } catch (e) {}
+
+    return { success: true };
   },
 
   paypalConfig: PAYPAL_CONFIG,

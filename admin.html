@@ -273,6 +273,74 @@
         border-radius: 2px;
       }
 
+      /* 7b. Schedule Management Specific Styles */
+      .btn-week-filter {
+        background: #191b15;
+        border: 1px solid #34372b;
+        color: #c9ceb9;
+        padding: 8px 14px;
+        font: 700 12px/1 var(--admin-font);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s ease;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+      .btn-week-filter:hover {
+        background: #23261c;
+        border-color: #5c6633;
+        color: #ffffff;
+      }
+      .btn-week-filter.active {
+        background: #23271a;
+        border-color: var(--lime);
+        color: var(--lime);
+        box-shadow: 0 0 14px rgba(213, 244, 91, 0.16);
+      }
+      .btn-week-filter.pill-preseason.active {
+        border-color: #38bdf8;
+        color: #38bdf8;
+        background: #0f2331;
+      }
+      .btn-status-filter {
+        background: transparent;
+        border: 1px solid #303328;
+        color: #a8ac9a;
+        padding: 6px 12px;
+        font: 700 12px/1 var(--admin-font);
+        letter-spacing: 0.4px;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-status-filter:hover {
+        border-color: #585d43;
+        color: #ffffff;
+      }
+      .btn-status-filter.active {
+        background: #1d2017;
+        border-color: #8c974c;
+        color: #ffffff;
+      }
+      .admin-match-row {
+        background: #12130e;
+        border: 1px solid #2d3024;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        border-radius: 2px;
+        transition: border-color 0.2s ease;
+      }
+      .admin-match-row:hover {
+        border-color: #4a5035;
+      }
+      .admin-match-row.is-live {
+        border-left: 3px solid #ef4444;
+      }
+      .admin-match-row.is-completed {
+        border-left: 3px solid var(--lime);
+      }
+
+
       /* 8. Badges, Pills & HUD Indicators */
       .pill {
         float: none;
@@ -549,6 +617,7 @@
                   <div class="nav-category-title">Competition</div>
                   <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                   <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
                   <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
@@ -646,6 +715,9 @@
           </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-matches">
             ⚔ Record Match Score
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-schedule">
+            📅 8-Week Match Schedule
           </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-signups">
             📋 Review Signups (<span id="signup-badge-count">0</span>)
@@ -1290,8 +1362,198 @@
             </form>
           </div>
         </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 9: 8-WEEK MATCH SCHEDULE MANAGER       -->
+        <!-- ========================================== -->
+        <div id="tab-schedule" class="admin-tab-content" style="display:none;">
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+              <div>
+                <h3 class="admin-card-title" style="margin:0 0 6px;">📅 8-Week Match Schedule Manager</h3>
+                <p style="color:var(--muted); font-size:13px; margin:0;">
+                  Generate, customize, and record scores for the 8-week season (Weeks 1–2 Preseason exhibition + Weeks 3–8 Regular Season championship).
+                </p>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="button" id="btn-open-custom-match-modal" class="admin-nav-btn" style="padding:9px 16px; font-size:12.5px;">
+                  ➕ Add Single Match
+                </button>
+                <button type="button" id="btn-admin-clear-schedule" class="admin-nav-btn" style="padding:9px 16px; font-size:12.5px; border-color:#ef444460; color:#f87171;">
+                  🗑️ Clear Schedule
+                </button>
+              </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:24px;">
+              <div style="background:#11120f; border:1px solid var(--line); padding:14px 16px;">
+                <span style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; display:block;">Total Matches</span>
+                <strong id="admin-stat-total" style="font-size:24px; color:var(--text); font-family:var(--admin-font); display:block; margin-top:4px;">0</strong>
+              </div>
+              <div style="background:#11120f; border:1px solid var(--line); padding:14px 16px;">
+                <span style="font-size:11px; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; display:block;">Preseason (W1–W2)</span>
+                <strong id="admin-stat-preseason" style="font-size:24px; color:#38bdf8; font-family:var(--admin-font); display:block; margin-top:4px;">0</strong>
+              </div>
+              <div style="background:#11120f; border:1px solid var(--line); padding:14px 16px;">
+                <span style="font-size:11px; color:var(--lime); text-transform:uppercase; letter-spacing:1px; display:block;">Regular Season (W3–W8)</span>
+                <strong id="admin-stat-regular" style="font-size:24px; color:var(--lime); font-family:var(--admin-font); display:block; margin-top:4px;">0</strong>
+              </div>
+              <div style="background:#11120f; border:1px solid var(--line); padding:14px 16px;">
+                <span style="font-size:11px; color:#ef4444; text-transform:uppercase; letter-spacing:1px; display:block;">Completed / Live</span>
+                <strong id="admin-stat-completed" style="font-size:24px; color:#ef4444; font-family:var(--admin-font); display:block; margin-top:4px;">0</strong>
+              </div>
+            </div>
+
+            <!-- Automated 8-Week Schedule Generator Box -->
+            <div style="background:#13150f; border:1px solid #363b28; padding:22px; margin-bottom:28px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+                <h4 style="font-family:var(--admin-font); font-size:15px; font-weight:800; color:var(--lime); text-transform:uppercase; margin:0; letter-spacing:0.5px;">
+                  ⚡ Automated 8-Week Schedule Generator
+                </h4>
+                <span style="font-size:12px; color:#a6ab98;">Balanced round-robin rotations for all active teams</span>
+              </div>
+              <p style="color:#b2b5a5; font-size:13px; line-height:1.5; margin:0 0 16px;">
+                Generates a complete 8-week randomized schedule. <strong>Weeks 1–2</strong> are exhibition preseason clashes (do not affect standings), and <strong>Weeks 3–8</strong> are 6 weeks of official regular season matchups (updating wins, losses, and 10 standings points per win).
+              </p>
+
+              <form id="form-generate-schedule" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; align-items:flex-end;">
+                <div>
+                  <label class="form-label" for="schedule-start-date">Week 1 Start Date *</label>
+                  <input type="date" id="schedule-start-date" class="form-control" required />
+                </div>
+                <div>
+                  <label class="form-label" for="schedule-default-time">Default Series Time</label>
+                  <select id="schedule-default-time" class="form-control">
+                    <option value="6:00 PM EST">6:00 PM EST</option>
+                    <option value="7:00 PM EST" selected>7:00 PM EST</option>
+                    <option value="8:00 PM EST">8:00 PM EST</option>
+                    <option value="9:00 PM EST">9:00 PM EST</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" for="schedule-best-of">Format</label>
+                  <select id="schedule-best-of" class="form-control">
+                    <option value="5" selected>Best of 5 Maps (Standard CDL)</option>
+                    <option value="3">Best of 3 Maps</option>
+                  </select>
+                </div>
+                <div>
+                  <button type="submit" id="btn-generate-8weeks" class="btn-paypal-submit" style="width:100%; padding:11px 18px;">
+                    <span>⚡ Randomize 8 Weeks</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Filter Controls -->
+            <div style="margin-bottom:20px;">
+              <div style="font-family:var(--admin-font); font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+                Filter Scheduled Matches
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;" id="admin-week-filter-bar">
+                <button type="button" class="btn-week-filter active" data-admin-week="all">All (8 Weeks)</button>
+                <button type="button" class="btn-week-filter pill-preseason" data-admin-week="1">Preseason W1</button>
+                <button type="button" class="btn-week-filter pill-preseason" data-admin-week="2">Preseason W2</button>
+                <button type="button" class="btn-week-filter" data-admin-week="3">Regular W1</button>
+                <button type="button" class="btn-week-filter" data-admin-week="4">Regular W2</button>
+                <button type="button" class="btn-week-filter" data-admin-week="5">Regular W3</button>
+                <button type="button" class="btn-week-filter" data-admin-week="6">Regular W4</button>
+                <button type="button" class="btn-week-filter" data-admin-week="7">Regular W5</button>
+                <button type="button" class="btn-week-filter" data-admin-week="8">Regular W6</button>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; gap:8px;" id="admin-status-filter-bar">
+                  <button type="button" class="btn-status-filter active" data-admin-status="all">All Statuses</button>
+                  <button type="button" class="btn-status-filter" data-admin-status="scheduled">Scheduled</button>
+                  <button type="button" class="btn-status-filter" data-admin-status="live">Live</button>
+                  <button type="button" class="btn-status-filter" data-admin-status="completed">Completed</button>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <label for="admin-schedule-team-filter" style="font-size:12px; color:var(--muted); font-weight:bold;">Filter Team:</label>
+                  <select id="admin-schedule-team-filter" class="form-control" style="width:auto; padding:6px 12px; font-size:12px;">
+                    <option value="all">All Teams</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Matches List Container -->
+            <div id="admin-schedule-matches-list">
+              <div style="text-align:center; padding:40px 20px; color:var(--muted);">
+                Loading schedule matches...
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
+
+    <!-- Modal: Add Custom Scheduled Match -->
+    <dialog id="modal-add-custom-match" class="admin-modal" closedby="any">
+      <div class="admin-modal-header">
+        <h4 class="admin-modal-title">➕ Schedule Custom Match</h4>
+        <button type="button" class="modal-close-btn" id="btn-close-custom-match-modal" aria-label="Close">✕</button>
+      </div>
+      <form id="form-add-custom-match">
+        <div class="admin-modal-body">
+          <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group">
+              <label class="form-label" for="custom-match-week">Week Slate *</label>
+              <select id="custom-match-week" class="form-control" required>
+                <option value="1">Preseason Week 1</option>
+                <option value="2">Preseason Week 2</option>
+                <option value="3" selected>Regular Season Week 1</option>
+                <option value="4">Regular Season Week 2</option>
+                <option value="5">Regular Season Week 3</option>
+                <option value="6">Regular Season Week 4</option>
+                <option value="7">Regular Season Week 5</option>
+                <option value="8">Regular Season Week 6</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="custom-match-best-of">Format *</label>
+              <select id="custom-match-best-of" class="form-control" required>
+                <option value="5" selected>Best of 5</option>
+                <option value="3">Best of 3</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group">
+              <label class="form-label" for="custom-match-team1">Team 1 *</label>
+              <select id="custom-match-team1" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="custom-match-team2">Team 2 *</label>
+              <select id="custom-match-team2" class="form-control" required></select>
+            </div>
+          </div>
+
+          <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group">
+              <label class="form-label" for="custom-match-date">Scheduled Date *</label>
+              <input type="date" id="custom-match-date" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="custom-match-time">Scheduled Time *</label>
+              <input type="text" id="custom-match-time" class="form-control" placeholder="e.g. 7:00 PM EST" value="7:00 PM EST" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-match-stream">Twitch Stream / VOD URL (Optional)</label>
+            <input type="text" id="custom-match-stream" class="form-control" placeholder="e.g. callofduty or https://twitch.tv/..." />
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-custom-match">Cancel</button>
+          <button type="submit" class="btn-save">Schedule Match ✓</button>
+        </div>
+      </form>
+    </dialog>
 
     <!-- Edit Map Record Modal -->
     <dialog id="modal-edit-map-record" class="admin-modal" closedby="any">
@@ -1542,6 +1804,9 @@
             if (targetId === "tab-season") {
               loadSeasonSettings();
             }
+            if (targetId === "tab-schedule") {
+              loadAdminSchedule();
+            }
           });
         });
 
@@ -1549,7 +1814,7 @@
         // 3. LOAD DATA & POPULATE UI
         // ==========================================
         async function loadAllData() {
-          await Promise.all([loadTeams(), loadPlayers(), loadSignups(), loadAnnouncements(), loadSeasonSettings()]);
+          await Promise.all([loadTeams(), loadPlayers(), loadSignups(), loadAnnouncements(), loadSeasonSettings(), loadAdminSchedule()]);
           updateAnnouncementPreview();
         }
 
@@ -2885,6 +3150,419 @@
             }
           }
         });
+
+        // ==========================================
+        // 8-WEEK MATCH SCHEDULE MANAGER LOGIC
+        // ==========================================
+        let adminScheduleMatches = [];
+        let adminScheduleWeekFilter = "all";
+        let adminScheduleStatusFilter = "all";
+        let adminScheduleTeamFilter = "all";
+
+        function initScheduleGeneratorDate() {
+          const dateInput = document.getElementById("schedule-start-date");
+          const customDateInput = document.getElementById("custom-match-date");
+          if (!dateInput && !customDateInput) return;
+
+          const nextFriday = new Date();
+          const day = nextFriday.getDay();
+          const diff = (5 - day + 7) % 7 || 7;
+          nextFriday.setDate(nextFriday.getDate() + (day === 5 ? 0 : diff));
+          const dateStr = nextFriday.toISOString().split("T")[0];
+
+          if (dateInput && !dateInput.value) dateInput.value = dateStr;
+          if (customDateInput && !customDateInput.value) customDateInput.value = dateStr;
+        }
+
+        async function loadAdminSchedule() {
+          initScheduleGeneratorDate();
+          try {
+            adminScheduleMatches = await window.LeagueDB.getScheduledMatches();
+            await populateScheduleTeamSelects();
+            renderAdminScheduleList();
+          } catch (err) {
+            console.error("Error loading admin schedule:", err);
+            const container = document.getElementById("admin-schedule-matches-list");
+            if (container) {
+              container.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center;">Failed to load schedule matches: ${escapeHtml(err.message || String(err))}</div>`;
+            }
+          }
+        }
+
+        async function populateScheduleTeamSelects() {
+          try {
+            const teams = await window.LeagueDB.getStandings();
+            const filterSelect = document.getElementById("admin-schedule-team-filter");
+            const t1Select = document.getElementById("custom-match-team1");
+            const t2Select = document.getElementById("custom-match-team2");
+
+            if (filterSelect) {
+              const current = filterSelect.value;
+              filterSelect.innerHTML = `<option value="all">All Teams</option>` +
+                teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)} [${escapeHtml(t.tag || "CDL")}]</option>`).join("");
+              filterSelect.value = current || "all";
+            }
+            if (t1Select) {
+              t1Select.innerHTML = teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)} [${escapeHtml(t.tag || "CDL")}]</option>`).join("");
+            }
+            if (t2Select) {
+              t2Select.innerHTML = teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)} [${escapeHtml(t.tag || "CDL")}]</option>`).join("");
+              if (teams.length > 1) t2Select.selectedIndex = 1;
+            }
+          } catch(e) {}
+        }
+
+        function renderAdminScheduleList() {
+          const container = document.getElementById("admin-schedule-matches-list");
+          if (!container) return;
+
+          // Update stats
+          const totalEl = document.getElementById("admin-stat-total");
+          const preseasonEl = document.getElementById("admin-stat-preseason");
+          const regularEl = document.getElementById("admin-stat-regular");
+          const completedEl = document.getElementById("admin-stat-completed");
+
+          const preseasonMatches = adminScheduleMatches.filter(m => Number(m.week_number) <= 2);
+          const regularMatches = adminScheduleMatches.filter(m => Number(m.week_number) >= 3);
+          const compMatches = adminScheduleMatches.filter(m => m.status === "Completed" || m.status === "Live");
+
+          if (totalEl) totalEl.textContent = adminScheduleMatches.length;
+          if (preseasonEl) preseasonEl.textContent = preseasonMatches.length;
+          if (regularEl) regularEl.textContent = regularMatches.length;
+          if (completedEl) completedEl.textContent = compMatches.length;
+
+          // Filter
+          let filtered = [...adminScheduleMatches];
+          if (adminScheduleWeekFilter !== "all") {
+            const wNum = Number(adminScheduleWeekFilter);
+            filtered = filtered.filter(m => Number(m.week_number) === wNum);
+          }
+          if (adminScheduleStatusFilter !== "all") {
+            filtered = filtered.filter(m => m.status && m.status.toLowerCase() === adminScheduleStatusFilter.toLowerCase());
+          }
+          if (adminScheduleTeamFilter !== "all") {
+            const tid = Number(adminScheduleTeamFilter);
+            filtered = filtered.filter(m => Number(m.team1_id) === tid || Number(m.team2_id) === tid);
+          }
+
+          if (filtered.length === 0) {
+            container.innerHTML = `
+              <div style="background:#11120f; border:1px dashed var(--line); padding:50px 20px; text-align:center; color:var(--muted);">
+                <h4 style="font-family:var(--admin-font); font-size:17px; text-transform:uppercase; color:#ffffff; margin:0 0 8px;">No Scheduled Matches Found</h4>
+                <p style="margin:0 0 16px; font-size:13px;">No matches match the selected filter. Click <strong>"Randomize 8 Weeks"</strong> above to auto-generate the 8-week slate or add a custom match.</p>
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = filtered.map(m => {
+            const isPreseason = Number(m.week_number) <= 2;
+            const weekLabel = isPreseason 
+              ? `Preseason Week ${m.week_number}`
+              : `Regular Season Week ${Number(m.week_number) - 2}`;
+            const badgeColor = isPreseason ? "#38bdf8" : "var(--lime)";
+            const isCompleted = m.status === "Completed";
+            const isLive = m.status === "Live";
+
+            return `
+              <div class="admin-match-row ${isLive ? 'is-live' : (isCompleted ? 'is-completed' : '')}" data-match-id="${m.id}">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #ffffff0a;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-family:var(--admin-font); font-size:12px; font-weight:800; color:${badgeColor}; text-transform:uppercase; background:#1b1d16; border:1px solid #373c26; padding:3px 8px; border-radius:2px;">
+                      ${escapeHtml(weekLabel)}
+                    </span>
+                    <span style="font-size:12px; color:var(--muted);">Match #${m.match_number || m.id} · Best of ${m.best_of || 5}</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <input type="date" class="form-control edit-match-date" value="${m.scheduled_date || ''}" style="width:auto; padding:4px 8px; font-size:12px;" />
+                    <input type="text" class="form-control edit-match-time" value="${escapeHtml(m.scheduled_time || '7:00 PM EST')}" style="width:110px; padding:4px 8px; font-size:12px;" placeholder="Time" />
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr auto 1fr; gap:16px; align-items:center; margin-bottom:14px; background:#0f100c; padding:12px 16px; border:1px solid #23251a;">
+                  <!-- Team 1 -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div>
+                      <span style="font-size:11px; color:var(--lime); font-weight:bold;">[${escapeHtml(m.team1_tag || 'CDL')}]</span>
+                      <strong style="font-size:15px; color:#ffffff; margin-left:4px;">${escapeHtml(m.team1_name)}</strong>
+                    </div>
+                    <input type="number" min="0" max="5" class="form-control edit-t1-score" value="${m.team1_score ?? 0}" style="width:55px; text-align:center; font-weight:800; font-size:16px; padding:4px;" />
+                  </div>
+
+                  <div style="font-family:var(--admin-font); font-weight:800; color:#676a59; font-size:14px;">VS</div>
+
+                  <!-- Team 2 -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <input type="number" min="0" max="5" class="form-control edit-t2-score" value="${m.team2_score ?? 0}" style="width:55px; text-align:center; font-weight:800; font-size:16px; padding:4px;" />
+                    <div style="text-align:right;">
+                      <strong style="font-size:15px; color:#ffffff; margin-right:4px;">${escapeHtml(m.team2_name)}</strong>
+                      <span style="font-size:11px; color:var(--lime); font-weight:bold;">[${escapeHtml(m.team2_tag || 'CDL')}]</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <label style="font-size:11.5px; color:var(--muted); font-weight:bold;">STATUS:</label>
+                      <select class="form-control edit-match-status" style="width:auto; padding:4px 8px; font-size:12px;">
+                        <option value="Scheduled" ${m.status === 'Scheduled' ? 'selected' : ''}>Scheduled</option>
+                        <option value="Live" ${m.status === 'Live' ? 'selected' : ''}>Live Now 🔴</option>
+                        <option value="Completed" ${m.status === 'Completed' ? 'selected' : ''}>Completed ✓</option>
+                      </select>
+                    </div>
+
+                    ${!isPreseason ? `
+                      <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#c7ccb8; cursor:pointer;">
+                        <input type="checkbox" class="edit-update-standings" ${m.standings_recorded ? 'disabled checked' : 'checked'} />
+                        <span>${m.standings_recorded ? '✓ Standings Applied' : 'Apply to Standings (+1 Win & 10 Pts)'}</span>
+                      </label>
+                    ` : `
+                      <span style="font-size:11.5px; color:#38bdf8;">Preseason Exhibition (No Standings Impact)</span>
+                    `}
+                  </div>
+
+                  <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-action-sm btn-save-admin-match" data-id="${m.id}" style="padding:6px 14px; font-size:12px; border-color:var(--lime); color:var(--lime);">
+                      <span>💾 Save Result</span>
+                    </button>
+                    <button type="button" class="btn-action-sm btn-action-danger btn-delete-admin-match" data-id="${m.id}" style="padding:6px 10px; font-size:12px;">
+                      <span>🗑</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          // Event listeners for Save & Delete buttons
+          container.querySelectorAll(".btn-save-admin-match").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const id = btn.getAttribute("data-id");
+              const row = btn.closest(".admin-match-row");
+              if (!row) return;
+
+              const t1Score = parseInt(row.querySelector(".edit-t1-score")?.value || "0", 10);
+              const t2Score = parseInt(row.querySelector(".edit-t2-score")?.value || "0", 10);
+              const status = row.querySelector(".edit-match-status")?.value || "Scheduled";
+              const scheduledDate = row.querySelector(".edit-match-date")?.value || "";
+              const scheduledTime = row.querySelector(".edit-match-time")?.value || "";
+              const updateStandingsCheckbox = row.querySelector(".edit-update-standings");
+              const shouldUpdateStandings = updateStandingsCheckbox ? updateStandingsCheckbox.checked : false;
+
+              btn.disabled = true;
+              btn.textContent = "Saving...";
+
+              try {
+                const res = await window.LeagueDB.recordScheduledMatchResult(id, {
+                  team1_score: t1Score,
+                  team2_score: t2Score,
+                  status: status,
+                  scheduled_date: scheduledDate,
+                  scheduled_time: scheduledTime,
+                  update_standings: shouldUpdateStandings
+                });
+
+                if (res.success) {
+                  showToast(`✓ Match scores saved (${t1Score} - ${t2Score}). Status: ${status}`);
+                  await loadAdminSchedule();
+                  loadTeams(); // Refresh standings table if standings updated
+                } else {
+                  alert("Failed to save match: " + (res.error || "Unknown error"));
+                }
+              } catch (err) {
+                console.error("Save match error:", err);
+                alert("Error saving match: " + (err.message || err));
+              } finally {
+                btn.disabled = false;
+                btn.textContent = "💾 Save Result";
+              }
+            });
+          });
+
+          container.querySelectorAll(".btn-delete-admin-match").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const id = btn.getAttribute("data-id");
+              if (!confirm("Are you sure you want to remove this match from the schedule?")) return;
+
+              const res = await window.LeagueDB.deleteScheduledMatch(id);
+              if (res.success) {
+                showToast("✓ Match removed from schedule.");
+                loadAdminSchedule();
+              } else {
+                alert("Failed to delete match: " + (res.error || "Unknown error"));
+              }
+            });
+          });
+        }
+
+        // Generator submit
+        const formGenerate = document.getElementById("form-generate-schedule");
+        if (formGenerate) {
+          formGenerate.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const startDate = document.getElementById("schedule-start-date")?.value;
+            const defaultTime = document.getElementById("schedule-default-time")?.value || "7:00 PM EST";
+            const bestOf = parseInt(document.getElementById("schedule-best-of")?.value || "5", 10);
+
+            const activeTeams = await window.LeagueDB.getStandings();
+            if (!activeTeams || activeTeams.length < 2) {
+              alert("You must have at least 2 teams created in Teams & Standings before generating a schedule.");
+              return;
+            }
+
+            const msg = `⚡ Generate 8-Week Randomized Schedule?\n\n• Preseason: Weeks 1 & 2 (Exhibition)\n• Regular Season: Weeks 3 through 8 (6 Weeks)\n• Active Teams (${activeTeams.length}): ${activeTeams.map(t => t.name).join(", ")}\n\nThis will replace any existing scheduled matches. Proceed?`;
+            if (!confirm(msg)) return;
+
+            const btn = document.getElementById("btn-generate-8weeks");
+            if (btn) {
+              btn.disabled = true;
+              btn.innerHTML = `<span>Randomizing & Generating...</span><span>⏳</span>`;
+            }
+
+            try {
+              const res = await window.LeagueDB.generate8WeekSchedule({
+                startDate: startDate,
+                bestOf: bestOf,
+                timeSlots: [defaultTime, "7:30 PM EST", "9:00 PM EST", "10:15 PM EST"]
+              });
+
+              if (res.success) {
+                showToast(`✓ Generated ${res.count} matches across 8 weeks (2 Preseason + 6 Regular Season)!`);
+                await loadAdminSchedule();
+              } else {
+                alert("Could not generate schedule: " + (res.error || "Unknown error"));
+              }
+            } catch (err) {
+              console.error("Schedule generator failed:", err);
+              alert("Error generating schedule: " + (err.message || err));
+            } finally {
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span>⚡ Randomize 8 Weeks</span>`;
+              }
+            }
+          });
+        }
+
+        // Clear schedule
+        const btnClear = document.getElementById("btn-admin-clear-schedule");
+        if (btnClear) {
+          btnClear.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to clear ALL scheduled matches? This action cannot be undone.")) return;
+            const res = await window.LeagueDB.clearScheduledMatches();
+            if (res.success) {
+              showToast("✓ Schedule cleared.");
+              loadAdminSchedule();
+            }
+          });
+        }
+
+        // Filter event listeners
+        document.querySelectorAll("#admin-week-filter-bar .btn-week-filter").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll("#admin-week-filter-bar .btn-week-filter").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            adminScheduleWeekFilter = btn.getAttribute("data-admin-week");
+            renderAdminScheduleList();
+          });
+        });
+
+        document.querySelectorAll("#admin-status-filter-bar .btn-status-filter").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll("#admin-status-filter-bar .btn-status-filter").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            adminScheduleStatusFilter = btn.getAttribute("data-admin-status");
+            renderAdminScheduleList();
+          });
+        });
+
+        const adminTeamFilterSelect = document.getElementById("admin-schedule-team-filter");
+        if (adminTeamFilterSelect) {
+          adminTeamFilterSelect.addEventListener("change", (e) => {
+            adminScheduleTeamFilter = e.target.value;
+            renderAdminScheduleList();
+          });
+        }
+
+        // Custom match modal handlers
+        const customModal = document.getElementById("modal-add-custom-match");
+        const btnOpenCustom = document.getElementById("btn-open-custom-match-modal");
+        const btnCloseCustom = document.getElementById("btn-close-custom-match-modal");
+        const btnCancelCustom = document.getElementById("btn-cancel-custom-match");
+        const formCustom = document.getElementById("form-add-custom-match");
+
+        if (btnOpenCustom && customModal) {
+          btnOpenCustom.addEventListener("click", () => {
+            populateScheduleTeamSelects();
+            customModal.showModal();
+          });
+        }
+        if (btnCloseCustom && customModal) {
+          btnCloseCustom.addEventListener("click", () => customModal.close());
+        }
+        if (btnCancelCustom && customModal) {
+          btnCancelCustom.addEventListener("click", () => customModal.close());
+        }
+
+        if (formCustom) {
+          formCustom.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const weekNum = parseInt(document.getElementById("custom-match-week")?.value || "1", 10);
+            const bestOf = parseInt(document.getElementById("custom-match-best-of")?.value || "5", 10);
+            const t1Id = document.getElementById("custom-match-team1")?.value;
+            const t2Id = document.getElementById("custom-match-team2")?.value;
+            const dateVal = document.getElementById("custom-match-date")?.value;
+            const timeVal = document.getElementById("custom-match-time")?.value || "7:00 PM EST";
+            const streamVal = document.getElementById("custom-match-stream")?.value || null;
+
+            if (t1Id === t2Id) {
+              alert("Team 1 and Team 2 cannot be the same team.");
+              return;
+            }
+
+            const teams = await window.LeagueDB.getStandings();
+            const t1 = teams.find(t => String(t.id) === String(t1Id));
+            const t2 = teams.find(t => String(t.id) === String(t2Id));
+
+            const isPreseason = weekNum <= 2;
+            const weekLabel = isPreseason ? `Preseason Week ${weekNum}` : `Regular Season Week ${weekNum - 2}`;
+
+            const matchData = {
+              id: Date.now(),
+              week_number: weekNum,
+              season_type: isPreseason ? "preseason" : "regular",
+              week_label: weekLabel,
+              team1_id: t1 ? t1.id : null,
+              team1_name: t1 ? t1.name : "Team 1",
+              team1_tag: t1 ? t1.tag : "CDL",
+              team1_score: 0,
+              team2_id: t2 ? t2.id : null,
+              team2_name: t2 ? t2.name : "Team 2",
+              team2_tag: t2 ? t2.tag : "CDL",
+              team2_score: 0,
+              winner_id: null,
+              winner_name: null,
+              status: "Scheduled",
+              scheduled_date: dateVal,
+              scheduled_time: timeVal,
+              best_of: bestOf,
+              stream_url: streamVal,
+              standings_recorded: false,
+              created_at: new Date().toISOString()
+            };
+
+            const res = await window.LeagueDB.createScheduledMatch(matchData);
+            if (res.success) {
+              showToast("✓ Custom match scheduled successfully!");
+              customModal.close();
+              formCustom.reset();
+              loadAdminSchedule();
+            } else {
+              alert("Failed to schedule match: " + (res.error || "Unknown error"));
+            }
+          });
+        }
       })();
 
       // User-Centered Navigation: Close dropdown on outside click or Escape key

@@ -54,6 +54,7 @@
                   <div class="nav-category-title">Competition</div>
                   <a href="#league"><span class="nav-icon">⌖</span> The League</a>
                   <a href="#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
                   <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
@@ -247,6 +248,7 @@
         <div class="footer-links">
           <a href="#league">League</a>
           <a href="#standings">Standings</a>
+          <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
           <a href="brackets.html">Brackets</a>
@@ -334,7 +336,7 @@
                 <div class="announcement-badge-group">
                   <span class="${beaconClass}"></span>
                   <span class="${tagClass}">${escapeHtml(ann.tag || "OFFICIAL DISPATCH")}</span>
-                  ${ann.pinned ? '<span style="font-size:10px; font-weight:800; color:var(--lime); letter-spacing:1px; background:#1f2214; border:1px solid #4a5420; padding:2px 6px; text-transform:uppercase;">PINNED</span>' : ""}
+                  ${ann.pinned ? '<span style="font-size:11px; font-weight:800; color:var(--lime); letter-spacing:0.8px; background:#1f2214; border:1px solid #4a5420; padding:2px 6px; text-transform:uppercase;">PINNED</span>' : ""}
                 </div>
                 ${dateStr ? `<span class="announcement-date">TRANSMITTED ${escapeHtml(dateStr)}</span>` : ""}
               </div>

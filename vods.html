@@ -29,8 +29,8 @@
         border: 1px solid var(--line);
         color: var(--muted);
         padding: 8px 14px;
-        font: 700 11px var(--display);
-        letter-spacing: 1px;
+        font: 700 12px var(--body);
+        letter-spacing: 0.5px;
         cursor: pointer;
         text-transform: uppercase;
         transition: all 0.2s;
@@ -111,9 +111,9 @@
         background: #141511;
         border: 1px solid #ffffff0f;
         padding: 6px 12px;
-        font: 700 12px var(--display);
+        font: 800 12px var(--body);
         color: var(--lime);
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
       }
       .empty-state {
         grid-column: 1 / -1;
@@ -173,6 +173,7 @@
                   <div class="nav-category-title">Competition</div>
                   <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                   <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
                   <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
@@ -242,6 +243,7 @@
         <div class="footer-links">
           <a href="index.html#league">League</a>
           <a href="index.html#standings">Standings</a>
+          <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
           <a href="brackets.html">Brackets</a>
@@ -342,7 +344,7 @@
                 <div>
                   <div class="vod-meta">
                     <span class="pill">${stage}</span>
-                    <small style="color:var(--muted);">${vod.match_date || ''}</small>
+                    <small style="color:#b8baa9; font-size:12px; font-weight:600;">${vod.match_date || ''}</small>
                   </div>
                   <h3 class="vod-title">${vod.title}</h3>
                 </div>

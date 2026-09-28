@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Match Schedule | Frontline Call of Duty League</title>
+    <meta
+      name="description"
+      content="Official 8-Week Match Schedule for the Frontline Call of Duty League: 2 Weeks of Preseason Exhibition followed by 6 Weeks of Regular Season Championship battles."
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Page-specific styles for 8-Week Match Schedule */
+      :root {
+        --schedule-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .schedule-hero {
+        padding: 56px 0 36px;
+        background: radial-gradient(circle at 50% 0%, #202417 0%, #11120f 75%);
+        border-bottom: 1px solid var(--line);
+        position: relative;
+      }
+      .schedule-hero::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--lime), transparent);
+        opacity: 0.35;
+      }
+
+      .schedule-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #1c1e16;
+        border: 1px solid #4a5420;
+        padding: 6px 14px;
+        font: 800 11.5px/1 var(--schedule-font);
+        color: var(--lime);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        border-radius: 2px;
+      }
+
+      .schedule-hero-title {
+        font: 900 clamp(32px, 5vw, 56px)/1 var(--display);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0 0 14px;
+        color: #ffffff;
+      }
+      .schedule-hero-title span {
+        color: var(--lime);
+      }
+
+      .schedule-hero-desc {
+        color: #cdd1be;
+        font: 500 15px/1.6 var(--schedule-font);
+        max-width: 680px;
+        margin: 0 0 28px;
+      }
+
+      /* Overview Stat Chips */
+      .schedule-stats-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .schedule-stat-chip {
+        background: #171813;
+        border: 1px solid #36382e;
+        padding: 10px 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--schedule-font);
+        font-size: 13px;
+        color: #b8baa9;
+      }
+      .schedule-stat-chip strong {
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 800;
+      }
+      .schedule-stat-chip .chip-accent {
+        color: var(--lime);
+        font-weight: 800;
+      }
+
+      /* Filter Hub */
+      .schedule-controls-card {
+        background: #151711;
+        border: 1px solid var(--line);
+        padding: 22px 24px;
+        margin: 32px 0 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .filter-category-label {
+        font: 800 11.5px/1 var(--schedule-font);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .weeks-filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #ffffff0d;
+      }
+
+      .btn-week-filter {
+        background: #191b15;
+        border: 1px solid #34372b;
+        color: #c9ceb9;
+        padding: 8px 14px;
+        font: 700 12.5px/1 var(--schedule-font);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s ease;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+      .btn-week-filter:hover {
+        background: #23261c;
+        border-color: #5c6633;
+        color: #ffffff;
+      }
+      .btn-week-filter.active {
+        background: #23271a;
+        border-color: var(--lime);
+        color: var(--lime);
+        box-shadow: 0 0 14px rgba(213, 244, 91, 0.16);
+      }
+      .btn-week-filter.pill-preseason.active {
+        border-color: #38bdf8;
+        color: #38bdf8;
+        background: #0f2331;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
+      }
+
+      .schedule-subfilters {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      .status-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .btn-status-filter {
+        background: transparent;
+        border: 1px solid #303328;
+        color: #a8ac9a;
+        padding: 6px 12px;
+        font: 700 12px/1 var(--schedule-font);
+        letter-spacing: 0.4px;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-status-filter:hover {
+        border-color: #585d43;
+        color: #ffffff;
+      }
+      .btn-status-filter.active {
+        background: #1d2017;
+        border-color: #8c974c;
+        color: #ffffff;
+      }
+
+      .schedule-search-select-wrap {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .schedule-team-select {
+        background: #11120f;
+        border: 1px solid #36392d;
+        color: #e3e6d6;
+        padding: 7px 12px;
+        font: 600 12.5px var(--schedule-font);
+        border-radius: 2px;
+      }
+      .schedule-team-select:focus {
+        border-color: var(--lime);
+        outline: none;
+      }
+
+      /* Week Group Headings */
+      .week-section {
+        margin-bottom: 40px;
+      }
+      .week-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        background: #171913;
+        border: 1px solid #333629;
+        border-left: 4px solid var(--lime);
+        padding: 14px 20px;
+        margin-bottom: 18px;
+      }
+      .week-section-header.preseason-header {
+        border-left-color: #38bdf8;
+      }
+      .week-title-area {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .week-main-title {
+        font: 800 18px/1 var(--schedule-font);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #ffffff;
+        margin: 0;
+      }
+      .week-badge-pill {
+        font: 800 11px/1 var(--schedule-font);
+        letter-spacing: 1px;
+        padding: 4px 8px;
+        text-transform: uppercase;
+        border-radius: 2px;
+      }
+      .week-badge-pill.preseason {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border: 1px solid #38bdf840;
+      }
+      .week-badge-pill.regular {
+        background: rgba(213, 244, 91, 0.15);
+        color: var(--lime);
+        border: 1px solid #d5f45b40;
+      }
+      .week-date-meta {
+        font: 600 12.5px var(--schedule-font);
+        color: #a1a693;
+      }
+
+      /* Matches Grid */
+      .matches-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 18px;
+      }
+
+      /* Match Card */
+      .match-card {
+        background: #151711;
+        border: 1px solid #323528;
+        border-radius: 2px;
+        padding: 20px;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+      }
+      .match-card:hover {
+        transform: translateY(-3px);
+        border-color: #555d37;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+      }
+      .match-card.is-live {
+        border-color: #ef4444;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+      }
+
+      .match-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font: 700 11.5px var(--schedule-font);
+        color: #9ea38f;
+        letter-spacing: 0.5px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #ffffff0d;
+        margin-bottom: 18px;
+      }
+      .match-time-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .match-status-badge {
+        font: 800 10.5px/1 var(--schedule-font);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 4px 8px;
+        border-radius: 2px;
+      }
+      .match-status-badge.scheduled {
+        background: #1e2019;
+        color: #9da28e;
+        border: 1px solid #363a2b;
+      }
+      .match-status-badge.live {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .match-status-badge.completed {
+        background: rgba(213, 244, 91, 0.14);
+        color: var(--lime);
+        border: 1px solid #d5f45b50;
+      }
+
+      /* Live pulsating dot */
+      .pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #ef4444;
+        box-shadow: 0 0 8px #ef4444;
+        animation: pulseAnimation 1.5s infinite;
+      }
+      @keyframes pulseAnimation {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(1.3); }
+      }
+
+      /* Competitors Battle Box */
+      .match-battle-box {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .team-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background: #11120f;
+        border: 1px solid #282a20;
+        border-radius: 2px;
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+      .team-row:hover {
+        background: #181914;
+        border-color: #434734;
+      }
+      .team-row.winner-row {
+        border-color: #55622a;
+        background: #161811;
+      }
+      .team-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .team-tag-pill {
+        background: #202319;
+        border: 1px solid #3e442d;
+        color: var(--lime);
+        font: 800 12px/1 var(--schedule-font);
+        padding: 4px 7px;
+        letter-spacing: 0.5px;
+      }
+      .team-row.winner-row .team-tag-pill {
+        background: var(--lime);
+        color: #12130e;
+        border-color: var(--lime);
+      }
+      .team-name-label {
+        font: 700 15px var(--schedule-font);
+        color: #ffffff;
+        letter-spacing: 0.3px;
+      }
+      .team-score-num {
+        font: 900 20px/1 var(--display);
+        color: #8c917d;
+        letter-spacing: 1px;
+        min-width: 24px;
+        text-align: right;
+      }
+      .team-row.winner-row .team-score-num {
+        color: var(--lime);
+      }
+
+      /* Match Card Footer */
+      .match-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 14px;
+        border-top: 1px solid #ffffff0d;
+        font: 600 12px var(--schedule-font);
+        color: #9ba08c;
+      }
+      .btn-match-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #1e2018;
+        border: 1px solid #363a2b;
+        color: #ced3c0;
+        padding: 6px 12px;
+        font: 700 11.5px/1 var(--schedule-font);
+        letter-spacing: 0.5px;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-match-action:hover {
+        background: #272a1e;
+        border-color: var(--lime);
+        color: var(--lime);
+      }
+      .btn-match-action.stream-btn {
+        border-color: #ef444460;
+        color: #f87171;
+      }
+      .btn-match-action.stream-btn:hover {
+        background: #2b1414;
+        border-color: #ef4444;
+        color: #ffffff;
+      }
+
+      .empty-schedule {
+        background: #141610;
+        border: 1px dashed var(--line);
+        padding: 60px 24px;
+        text-align: center;
+        color: #9fa490;
+        font-family: var(--schedule-font);
+      }
+      .empty-schedule h4 {
+        font: 800 20px/1 var(--display);
+        color: #ffffff;
+        text-transform: uppercase;
+        margin: 0 0 10px;
+      }
+
+      @media (max-width: 768px) {
+        .matches-grid {
+          grid-template-columns: 1fr;
+        }
+        .schedule-subfilters {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .schedule-search-select-wrap {
+          width: 100%;
+        }
+        .schedule-team-select {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Global Header -->
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="index.html">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">COMMUNITY LEAGUE</small>
+            <div class="brand-status">
+              <span class="nav-beacon"></span>
+              <span>SEASON 1 ACTIVE</span>
+            </div>
+            <script>
+              (function(){
+                try {
+                  var s = JSON.parse(localStorage.getItem('frontline_season_settings'));
+                  if (s) {
+                    var el = document.currentScript.previousElementSibling;
+                    if (el && el.classList.contains('brand-status')) {
+                      el.className = 'brand-status' + (s.status_state === 'coming_soon' ? ' status-coming-soon' : ' status-active');
+                      var t = s.status_text || ('SEASON ' + (s.season_number || 1) + (s.status_state === 'coming_soon' ? ' COMING SOON' : ' ACTIVE'));
+                      el.innerHTML = '<span class="nav-beacon"></span><span>' + t + '</span>';
+                    }
+                  }
+                } catch(e){}
+              })();
+            </script>
+          </div>
+        </a>
+
+        <!-- Centered Welcome Header -->
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Competition</div>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html" style="color:var(--lime);"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="admin.html"><span class="nav-icon">⚙</span> Admin Console</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.com/"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <svg class="discord-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+            <span>Join Discord</span>
+            <span style="font-size:11px;">↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero / Schedule Introduction -->
+    <section class="schedule-hero">
+      <div class="wrap">
+        <div class="schedule-eyebrow">
+          <span>⚡ Official Season Schedule</span>
+          <span>·</span>
+          <span>8 Complete Weeks</span>
+        </div>
+        <h2 class="schedule-hero-title">Match Schedule &amp; <span>Battle Grid</span></h2>
+        <p class="schedule-hero-desc">
+          Follow every official Call of Duty League showdown across all 8 weeks: 2 weeks of high-intensity Preseason exhibition clashes, followed by 6 weeks of official Regular Season Championship battles.
+        </p>
+
+        <!-- Stat Chips -->
+        <div class="schedule-stats-row">
+          <div class="schedule-stat-chip">
+            <span>Duration:</span>
+            <strong class="chip-accent">8 Weeks Total</strong>
+          </div>
+          <div class="schedule-stat-chip">
+            <span>Preseason:</span>
+            <strong style="color:#38bdf8;">Weeks 1 &amp; 2 (Exhibition)</strong>
+          </div>
+          <div class="schedule-stat-chip">
+            <span>Regular Season:</span>
+            <strong class="chip-accent">Weeks 3 – 8 (6 Weeks)</strong>
+          </div>
+          <div class="schedule-stat-chip">
+            <span>Format:</span>
+            <strong>Best of 5 Matches</strong>
+          </div>
+          <div class="schedule-stat-chip">
+            <span>Total Matches:</span>
+            <strong id="stat-total-matches">--</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Schedule Content Area -->
+    <main class="wrap" style="padding-bottom:80px;">
+      <!-- Filter Hub Card -->
+      <section class="schedule-controls-card">
+        <div class="filter-category-label">
+          <span>Filter By Week Slate</span>
+          <span id="active-filter-label" style="color:var(--lime); font-size:11.5px;">SHOWING ALL 8 WEEKS</span>
+        </div>
+
+        <!-- Week Buttons -->
+        <div class="weeks-filter-bar" id="weeks-filter-bar">
+          <button type="button" class="btn-week-filter active" data-week="all">All (8 Weeks)</button>
+          <button type="button" class="btn-week-filter pill-preseason" data-week="1">Preseason W1</button>
+          <button type="button" class="btn-week-filter pill-preseason" data-week="2">Preseason W2</button>
+          <button type="button" class="btn-week-filter" data-week="3">Regular W1</button>
+          <button type="button" class="btn-week-filter" data-week="4">Regular W2</button>
+          <button type="button" class="btn-week-filter" data-week="5">Regular W3</button>
+          <button type="button" class="btn-week-filter" data-week="6">Regular W4</button>
+          <button type="button" class="btn-week-filter" data-week="7">Regular W5</button>
+          <button type="button" class="btn-week-filter" data-week="8">Regular W6</button>
+        </div>
+
+        <!-- Secondary Filters (Status & Team Filter) -->
+        <div class="schedule-subfilters">
+          <div class="status-pills" id="status-pills">
+            <button type="button" class="btn-status-filter active" data-status="all">All Statuses</button>
+            <button type="button" class="btn-status-filter" data-status="live">🔴 Live Now</button>
+            <button type="button" class="btn-status-filter" data-status="scheduled">⏳ Upcoming</button>
+            <button type="button" class="btn-status-filter" data-status="completed">✓ Final</button>
+          </div>
+
+          <div class="schedule-search-select-wrap">
+            <label for="filter-team-select" style="font:700 12px var(--schedule-font); color:#9da18f;">Team:</label>
+            <select id="filter-team-select" class="schedule-team-select">
+              <option value="all">All Teams</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Matches Container Rendered Here -->
+      <section id="schedule-container" aria-label="League Scheduled Matches">
+        <div class="empty-schedule">
+          <h4>Loading Official Match Schedule...</h4>
+          <p>Connecting to Frontline League match system...</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Global Footer -->
+    <footer class="footer">
+      <div class="wrap footer-content">
+        <div class="footer-left">
+          <div class="footer-brand">
+            <img src="images/leaguelogo_1.png" alt="Frontline League Emblem" class="footer-logo" />
+            <div class="brand-text">
+              <span class="brand-title">FRONTLINE</span>
+              <small class="brand-sub">COMMUNITY LEAGUE</small>
+            </div>
+          </div>
+          <p class="footer-desc">
+            A community-built competitive Call of Duty league. Squad up, compete in weekly matches, and rise through the ranks.
+          </p>
+          <div class="footer-copy">
+            &copy; 2026 Frontline League. All rights reserved. Not affiliated with or endorsed by Activision Publishing, Inc.
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="index.html#league">The League</a>
+          <a href="index.html#standings">Standings</a>
+          <a href="schedule.html" style="color:var(--lime);">Schedule</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="brackets.html">Brackets</a>
+          <a href="draft.html">Draft HQ</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+          <a href="admin.html" style="color:var(--lime);">Admin Console</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./player-modal.js"></script>
+    <script src="./team-modal.js"></script>
+    <script src="./bullet-sparks.js"></script>
+
+    <script>
+      (function() {
+        let allMatches = [];
+        let activeWeekFilter = "all";
+        let activeStatusFilter = "all";
+        let activeTeamFilter = "all";
+
+        async function initSchedule() {
+          const container = document.getElementById("schedule-container");
+          try {
+            // 1. Fetch matches
+            allMatches = await window.LeagueDB.getScheduledMatches();
+            
+            // 2. Fetch teams for dropdown
+            const teams = await window.LeagueDB.getStandings();
+            populateTeamSelect(teams);
+
+            // 3. Update stats chip
+            const statTotal = document.getElementById("stat-total-matches");
+            if (statTotal) statTotal.textContent = `${allMatches.length} Matches`;
+
+            // 4. Render matches
+            renderSchedule();
+          } catch (err) {
+            console.error("Error loading schedule:", err);
+            if (container) {
+              container.innerHTML = `
+                <div class="empty-schedule">
+                  <h4 style="color:#ff6b6b;">Failed to Load Match Schedule</h4>
+                  <p>${escapeHtml(err.message || String(err))}</p>
+                </div>
+              `;
+            }
+          }
+        }
+
+        function populateTeamSelect(teams) {
+          const select = document.getElementById("filter-team-select");
+          if (!select || !teams) return;
+          select.innerHTML = '<option value="all">All Teams</option>' + 
+            teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)} [${escapeHtml(t.tag || "CDL")}]</option>`).join("");
+        }
+
+        function renderSchedule() {
+          const container = document.getElementById("schedule-container");
+          if (!container) return;
+
+          let filtered = [...allMatches];
+
+          // Apply Week Filter
+          if (activeWeekFilter !== "all") {
+            const wNum = Number(activeWeekFilter);
+            filtered = filtered.filter(m => Number(m.week_number) === wNum);
+          }
+
+          // Apply Status Filter
+          if (activeStatusFilter !== "all") {
+            filtered = filtered.filter(m => m.status && m.status.toLowerCase() === activeStatusFilter.toLowerCase());
+          }
+
+          // Apply Team Filter
+          if (activeTeamFilter !== "all") {
+            const tid = Number(activeTeamFilter);
+            filtered = filtered.filter(m => Number(m.team1_id) === tid || Number(m.team2_id) === tid);
+          }
+
+          if (filtered.length === 0) {
+            container.innerHTML = `
+              <div class="empty-schedule">
+                <h4>No Matches Found</h4>
+                <p>No matches match the selected week or filters. Try selecting "All (8 Weeks)" or changing filter settings.</p>
+              </div>
+            `;
+            return;
+          }
+
+          // Group filtered matches by week_number
+          const weeksMap = new Map();
+          filtered.forEach(m => {
+            const w = m.week_number || 1;
+            if (!weeksMap.has(w)) {
+              weeksMap.set(w, []);
+            }
+            weeksMap.get(w).push(m);
+          });
+
+          // Sort weeks ascending
+          const sortedWeeks = Array.from(weeksMap.keys()).sort((a, b) => a - b);
+
+          let html = "";
+          sortedWeeks.forEach(weekNum => {
+            const matches = weeksMap.get(weekNum);
+            const isPreseason = weekNum <= 2;
+            const weekLabel = isPreseason 
+              ? `Preseason Week ${weekNum}` 
+              : `Regular Season Week ${weekNum - 2}`;
+            const headerClass = isPreseason ? "preseason-header" : "";
+            const badgeClass = isPreseason ? "preseason" : "regular";
+            const badgeText = isPreseason ? "Preseason Exhibition" : "Championship Battle";
+
+            // Approximate date from first match
+            const firstDate = matches[0]?.scheduled_date;
+            let dateDisplay = "";
+            if (firstDate) {
+              try {
+                const d = new Date(firstDate + "T12:00:00");
+                dateDisplay = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+              } catch(e) {}
+            }
+
+            html += `
+              <div class="week-section">
+                <div class="week-section-header ${headerClass}">
+                  <div class="week-title-area">
+                    <h3 class="week-main-title">${escapeHtml(weekLabel)}</h3>
+                    <span class="week-badge-pill ${badgeClass}">${badgeText}</span>
+                  </div>
+                  ${dateDisplay ? `<span class="week-date-meta">📅 Series Date: <strong>${dateDisplay}</strong></span>` : ""}
+                </div>
+
+                <div class="matches-grid">
+                  ${matches.map(renderMatchCard).join("")}
+                </div>
+              </div>
+            `;
+          });
+
+          container.innerHTML = html;
+          attachCardActionEvents();
+        }
+
+        function renderMatchCard(m) {
+          const status = (m.status || "Scheduled").toLowerCase();
+          let statusBadgeHtml = "";
+          let cardLiveClass = "";
+
+          if (status === "live") {
+            cardLiveClass = "is-live";
+            statusBadgeHtml = `
+              <span class="match-status-badge live">
+                <span class="pulse-dot"></span>
+                <span>LIVE NOW</span>
+              </span>
+            `;
+          } else if (status === "completed") {
+            statusBadgeHtml = `<span class="match-status-badge completed">✓ FINAL</span>`;
+          } else {
+            statusBadgeHtml = `<span class="match-status-badge scheduled">UPCOMING</span>`;
+          }
+
+          let dateStr = m.scheduled_time || "7:00 PM EST";
+          if (m.scheduled_date) {
+            try {
+              const d = new Date(m.scheduled_date + "T12:00:00");
+              const shortDate = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              dateStr = `${shortDate} · ${m.scheduled_time || "7:00 PM EST"}`;
+            } catch(e) {}
+          }
+
+          const s1 = Number(m.team1_score ?? 0);
+          const s2 = Number(m.team2_score ?? 0);
+          const isFinal = status === "completed";
+          const isT1Winner = isFinal && (m.winner_id == m.team1_id || (s1 > s2 && !m.winner_id));
+          const isT2Winner = isFinal && (m.winner_id == m.team2_id || (s2 > s1 && !m.winner_id));
+
+          const streamUrl = m.stream_url || (status === "live" ? "callofduty" : "");
+
+          return `
+            <div class="match-card ${cardLiveClass}" data-match-id="${m.id}">
+              <div class="match-card-top">
+                <span class="match-time-tag">
+                  <span>🕒</span>
+                  <span>${escapeHtml(dateStr)}</span>
+                </span>
+                ${statusBadgeHtml}
+              </div>
+
+              <div class="match-battle-box">
+                <!-- Team 1 -->
+                <div class="team-row ${isT1Winner ? 'winner-row' : ''}">
+                  <div class="team-info">
+                    <span class="team-tag-pill">${escapeHtml(m.team1_tag || "CDL")}</span>
+                    <span class="team-name-label">${escapeHtml(m.team1_name)}</span>
+                    ${isT1Winner ? '<span title="Winner" style="color:var(--lime); font-size:12px;">👑</span>' : ''}
+                  </div>
+                  <div class="team-score-num">${status === "scheduled" && s1 === 0 && s2 === 0 ? "-" : s1}</div>
+                </div>
+
+                <!-- Team 2 -->
+                <div class="team-row ${isT2Winner ? 'winner-row' : ''}">
+                  <div class="team-info">
+                    <span class="team-tag-pill">${escapeHtml(m.team2_tag || "CDL")}</span>
+                    <span class="team-name-label">${escapeHtml(m.team2_name)}</span>
+                    ${isT2Winner ? '<span title="Winner" style="color:var(--lime); font-size:12px;">👑</span>' : ''}
+                  </div>
+                  <div class="team-score-num">${status === "scheduled" && s1 === 0 && s2 === 0 ? "-" : s2}</div>
+                </div>
+              </div>
+
+              <div class="match-card-footer">
+                <span>Best of ${m.best_of || 5}</span>
+                <div style="display:flex; gap:8px;">
+                  ${streamUrl ? `
+                    <a href="livestreams.html" class="btn-match-action stream-btn" title="Watch Broadcast">
+                      <span>▶</span>
+                      <span>Watch</span>
+                    </a>
+                  ` : ""}
+                  ${m.team1_id ? `
+                    <button type="button" class="btn-match-action btn-open-team" data-team-id="${m.team1_id}" title="View ${escapeHtml(m.team1_name)}">
+                      <span>🛡</span>
+                      <span>${escapeHtml(m.team1_tag || "Team")}</span>
+                    </button>
+                  ` : ""}
+                  ${m.team2_id ? `
+                    <button type="button" class="btn-match-action btn-open-team" data-team-id="${m.team2_id}" title="View ${escapeHtml(m.team2_name)}">
+                      <span>🛡</span>
+                      <span>${escapeHtml(m.team2_tag || "Team")}</span>
+                    </button>
+                  ` : ""}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        function attachCardActionEvents() {
+          document.querySelectorAll(".btn-open-team").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const tid = btn.getAttribute("data-team-id");
+              if (tid && window.openTeamModal) {
+                window.openTeamModal(tid);
+              }
+            });
+          });
+        }
+
+        function escapeHtml(str) {
+          if (!str) return "";
+          return String(str).replace(/[&<>"']/g, m => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+          })[m]);
+        }
+
+        // Setup filter click listeners
+        document.querySelectorAll(".btn-week-filter").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".btn-week-filter").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            activeWeekFilter = btn.getAttribute("data-week");
+
+            const labelEl = document.getElementById("active-filter-label");
+            if (labelEl) {
+              if (activeWeekFilter === "all") {
+                labelEl.textContent = "SHOWING ALL 8 WEEKS";
+              } else if (Number(activeWeekFilter) <= 2) {
+                labelEl.textContent = `SHOWING PRESEASON WEEK ${activeWeekFilter}`;
+              } else {
+                labelEl.textContent = `SHOWING REGULAR SEASON WEEK ${Number(activeWeekFilter) - 2}`;
+              }
+            }
+            renderSchedule();
+          });
+        });
+
+        document.querySelectorAll(".btn-status-filter").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".btn-status-filter").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            activeStatusFilter = btn.getAttribute("data-status");
+            renderSchedule();
+          });
+        });
+
+        const teamSelect = document.getElementById("filter-team-select");
+        if (teamSelect) {
+          teamSelect.addEventListener("change", (e) => {
+            activeTeamFilter = e.target.value;
+            renderSchedule();
+          });
+        }
+
+        // Close navigation menu on outside click
+        document.addEventListener("click", (e) => {
+          const toggle = document.getElementById("menu-toggle");
+          const menuWrap = document.querySelector(".menu-toggle");
+          if (toggle && toggle.checked && menuWrap && !menuWrap.contains(e.target)) {
+            toggle.checked = false;
+          }
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            const toggle = document.getElementById("menu-toggle");
+            if (toggle) toggle.checked = false;
+          }
+        });
+
+        // Initialize on load
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initSchedule);
+        } else {
+          initSchedule();
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -3,10 +3,12 @@
   --panel: #1a1b17;
   --line: #34352d;
   --lime: #d5f45b;
-  --text: #f1f0e9;
-  --muted: #a4a599;
+  --text: #f5f5f0;
+  --muted: #b8baa9;
   --display: Impact, "Arial Narrow", sans-serif;
-  --body: Arial, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+  accent-color: var(--lime);
 }
 * {
   box-sizing: border-box;
@@ -21,12 +23,18 @@ select {
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 14px var(--body);
+  font: 14px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 a {
   color: inherit;
@@ -98,8 +106,8 @@ a {
 }
 .brand-sub {
   color: var(--muted);
-  font: 700 8.5px var(--body);
-  letter-spacing: 2px;
+  font: 700 11px var(--body);
+  letter-spacing: 1.5px;
   margin-top: 4px;
   text-transform: uppercase;
 }
@@ -108,8 +116,8 @@ a {
   align-items: center;
   gap: 6px;
   margin-top: 6px;
-  font: 800 9.5px/1 var(--body);
-  letter-spacing: 1.2px;
+  font: 800 11px/1 var(--body);
+  letter-spacing: 1px;
   color: var(--lime);
   text-transform: uppercase;
   transition: color 0.25s ease;
@@ -140,8 +148,8 @@ a {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font: 700 8.5px var(--body);
-  letter-spacing: 2px;
+  font: 700 11px var(--body);
+  letter-spacing: 1.5px;
 }
 
 /* User-Centered Navigation Actions (Top Right Hub) */
@@ -371,9 +379,9 @@ a {
 .eyebrow,
 .kicker {
   color: var(--lime);
-  font-size: 10px;
-  font-weight: bold;
-  letter-spacing: 2px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 .hero h1 {
@@ -388,8 +396,9 @@ a {
 }
 .intro {
   max-width: 420px;
-  color: var(--muted);
-  line-height: 1.8;
+  color: #c5c8ba;
+  font-size: 14.5px;
+  line-height: 1.7;
 }
 .actions {
   display: flex;
@@ -398,8 +407,8 @@ a {
   margin-top: 27px;
 }
 .plain-link {
-  font-size: 11px;
-  font-weight: bold;
+  font-size: 12.5px;
+  font-weight: 700;
 }
 .plain-link span {
   color: var(--lime);
@@ -508,9 +517,9 @@ a {
   transform: skew(-8deg);
 }
 .badge small {
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   margin-top: 12px;
 }
 .tag {
@@ -518,15 +527,17 @@ a {
   background: #20211c;
   border: 1px solid #414239;
   padding: 10px 12px;
-  color: #bbb;
-  font-size: 9px;
-  letter-spacing: 1px;
+  color: #dce0cf;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
 }
 .tag b {
   display: block;
   margin-top: 4px;
   color: var(--lime);
-  font: 700 17px var(--display);
+  font: 800 16px var(--body);
+  letter-spacing: 0.5px;
 }
 .tag.top {
   top: 42px;
@@ -550,8 +561,9 @@ a {
   background: var(--lime);
   color: #171811;
   padding: 11px 0;
-  font: 800 11px var(--display);
-  letter-spacing: 2px;
+  font: 800 12px var(--body);
+  letter-spacing: 1px;
+  text-transform: uppercase;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -628,9 +640,11 @@ a {
   float: right;
   color: var(--lime);
   background: #d5f45b12;
-  padding: 6px 8px;
-  font-size: 8px;
-  letter-spacing: 1px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 2px;
   text-transform: uppercase;
 }
 .card h3 {
@@ -639,9 +653,9 @@ a {
   margin: 0 0 8px;
 }
 .card p {
-  font-size: 11px;
-  line-height: 1.7;
-  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #c5c8ba;
   margin: 0;
 }
 .league {
@@ -667,34 +681,36 @@ a {
   margin-bottom: 12px;
 }
 .table-title small {
-  font: 700 8px var(--body);
+  font: 700 11px var(--body);
   color: var(--lime);
   letter-spacing: 1px;
 }
 .standings {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 13px;
   text-align: left;
 }
 .standings th {
-  padding: 10px 7px;
-  color: #88897e;
-  font-size: 8px;
-  letter-spacing: 1px;
+  padding: 10px 10px;
+  color: #d0d4c0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid #3d412e;
 }
 .standings tbody tr {
   transition: background 0.18s ease;
 }
 .standings tbody tr:hover {
-  background: rgba(213, 244, 91, 0.06);
+  background: rgba(213, 244, 91, 0.08);
 }
 .standings td {
-  padding: 12px 7px;
-  color: #ccc;
-  border-bottom: 1px solid #ffffff0c;
+  padding: 12px 10px;
+  color: #f1f0e9;
+  font-weight: 600;
+  border-bottom: 1px solid #ffffff14;
 }
 .standings tbody tr:last-child td {
   border: 0;
@@ -713,10 +729,10 @@ a {
   color: var(--lime);
 }
 .league-copy p {
-  max-width: 390px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.8;
+  max-width: 420px;
+  color: #c5c8ba;
+  font-size: 13.5px;
+  line-height: 1.7;
 }
 .steps {
   display: flex;
@@ -729,8 +745,9 @@ a {
   font: 700 25px var(--display);
 }
 .steps small {
-  color: var(--muted);
-  font-size: 8px;
+  color: #b8baa9;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.7px;
 }
@@ -859,8 +876,8 @@ textarea.form-control {
   min-height: 80px;
 }
 .form-hint {
-  font-size: 10px;
-  color: var(--muted);
+  font-size: 11.5px;
+  color: #b8baa9;
   letter-spacing: 0.3px;
 }
 .form-actions {
@@ -876,8 +893,8 @@ textarea.form-control {
 .btn-submit-signup {
   background: var(--lime);
   color: #171811;
-  font: 800 14px var(--display);
-  letter-spacing: 1px;
+  font: 800 13.5px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   border: none;
   padding: 13px 28px;
@@ -901,7 +918,7 @@ textarea.form-control {
   filter: grayscale(0.5);
 }
 .form-discord-note {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .form-discord-note a {
@@ -928,8 +945,8 @@ textarea.form-control {
   background: rgba(255, 91, 91, 0.1);
 }
 .alert-title {
-  font: 800 18px var(--display);
-  letter-spacing: 1px;
+  font: 800 16px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   display: flex;
   align-items: center;
@@ -942,7 +959,7 @@ textarea.form-control {
   color: #ff5b5b;
 }
 .alert-msg {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text);
   line-height: 1.6;
 }
@@ -954,8 +971,8 @@ textarea.form-control {
 }
 .btn-alert-action {
   padding: 10px 18px;
-  font: 700 12px var(--display);
-  letter-spacing: 1px;
+  font: 700 12px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   cursor: pointer;
   border: 1px solid var(--lime);
@@ -1029,8 +1046,8 @@ textarea.form-control {
   margin-bottom: 2px;
 }
 .signup-tab-btn .tab-badge {
-  font: 700 10px var(--display);
-  letter-spacing: 1px;
+  font: 800 11px var(--body);
+  letter-spacing: 0.8px;
   padding: 3px 8px;
   background: #23251e;
   color: var(--muted);
@@ -1052,7 +1069,7 @@ textarea.form-control {
   border-color: #ffb300;
 }
 .signup-tab-btn .tab-title {
-  font: 800 17px var(--display);
+  font: 800 16px var(--body);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text);
@@ -1061,8 +1078,8 @@ textarea.form-control {
   color: #fff;
 }
 .signup-tab-btn .tab-desc {
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 12px;
+  color: #b8baa9;
 }
 
 /* Form Section Headers */
@@ -1078,8 +1095,8 @@ textarea.form-control {
   gap: 8px;
 }
 .form-section-header h4 {
-  font: 800 13px var(--display);
-  letter-spacing: 1.5px;
+  font: 800 13px var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--lime);
   margin: 0;
@@ -1091,8 +1108,8 @@ textarea.form-control {
   color: #ffb300;
 }
 .form-section-header span {
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 11.5px;
+  color: #b8baa9;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1120,13 +1137,14 @@ textarea.form-control {
   padding-bottom: 8px;
 }
 .roster-slot-header strong {
-  font: 700 11px var(--display);
-  letter-spacing: 1px;
+  font: 800 12px var(--body);
+  letter-spacing: 0.5px;
   color: #fff;
   text-transform: uppercase;
 }
 .roster-slot-header span.slot-tag {
-  font-size: 9px;
+  font-size: 11px;
+  font-weight: 700;
   padding: 2px 6px;
   background: #23251e;
   color: var(--muted);
@@ -1162,8 +1180,8 @@ textarea.form-control {
   gap: 4px;
 }
 .buyin-label {
-  font: 700 11px var(--display);
-  letter-spacing: 1.5px;
+  font: 800 12px var(--body);
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: #ffb300;
 }
@@ -1179,7 +1197,7 @@ textarea.form-control {
   margin-left: 4px;
 }
 .buyin-notes {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   max-width: 420px;
   line-height: 1.5;
@@ -1191,16 +1209,16 @@ textarea.form-control {
   padding: 8px 14px;
   background: #003087;
   color: #fff;
-  font: 700 12px var(--display);
-  letter-spacing: 1px;
+  font: 800 12px var(--body);
+  letter-spacing: 0.5px;
 }
 
 /* PayPal Button Action */
 .btn-paypal-submit {
   background: #ffc439;
   color: #003087;
-  font: 800 14px var(--display);
-  letter-spacing: 1px;
+  font: 800 13.5px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   border: none;
   padding: 14px 28px;
@@ -1271,14 +1289,14 @@ textarea.form-control {
   max-width: 480px;
 }
 .footer-inner strong {
-  font: 800 15px var(--display);
+  font: 800 15px var(--body);
   color: var(--text);
-  letter-spacing: 1.2px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 .footer-inner span {
-  color: #a8a999;
-  font-size: 12px;
+  color: #b8baa9;
+  font-size: 13px;
   line-height: 1.5;
 }
 .footer-links {
@@ -1288,9 +1306,9 @@ textarea.form-control {
   gap: 12px 24px;
 }
 .footer-links a {
-  font: 700 13px var(--display);
+  font: 700 12.5px var(--body);
   color: #f0f0ea;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   padding: 4px 2px;
   transition: color 0.2s ease, text-shadow 0.2s ease;
@@ -1333,10 +1351,10 @@ textarea.form-control {
     font-size: 20px;
   }
   .brand-sub {
-    font-size: 7.5px;
+    font-size: 10.5px;
   }
   .brand-status {
-    font-size: 8px;
+    font-size: 11px;
     margin-top: 3px;
   }
   .wrap {
@@ -1518,8 +1536,8 @@ dialog.player-modal::backdrop {
 
 .modal-kicker {
   color: var(--lime);
-  font: 700 10px var(--display);
-  letter-spacing: 2px;
+  font: 800 11.5px var(--body);
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
@@ -1595,7 +1613,7 @@ dialog.player-modal::backdrop {
   background: var(--panel);
   border: 1px solid var(--line);
   color: var(--text);
-  font: 800 16px var(--display);
+  font: 700 18px var(--body);
   width: 36px;
   height: 36px;
   display: grid;
@@ -1621,9 +1639,9 @@ dialog.player-modal::backdrop {
 
 /* Section Title */
 .modal-section-title {
-  font: 700 10px var(--display);
+  font: 800 11.5px var(--body);
   color: var(--lime);
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   margin: 0 0 14px;
   padding-bottom: 6px;
@@ -1644,9 +1662,10 @@ dialog.player-modal::backdrop {
 }
 
 .modal-section-title .title-count {
-  color: var(--muted);
-  font-size: 8px;
-  letter-spacing: 1px;
+  color: #b8baa9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 /* Overall Stats HUD Cards */
@@ -1768,7 +1787,7 @@ dialog.player-modal::backdrop {
 }
 
 .map-name-cell strong {
-  font: 800 13px var(--display);
+  font: 800 13px var(--body);
   color: var(--text);
   letter-spacing: 0.5px;
 }
@@ -1905,7 +1924,7 @@ dialog.team-modal::backdrop {
 }
 
 .player-modal-gt {
-  font: 800 18px/1 var(--display);
+  font: 800 17px/1 var(--body);
   text-transform: uppercase;
   color: var(--text);
   letter-spacing: 0.5px;
@@ -1935,12 +1954,12 @@ tr.clickable-team {
 }
 
 .team-banner-action {
-  font: 800 11px var(--display);
+  font: 800 11.5px var(--body);
   color: var(--lime);
   background: #d5f45b14;
   border: 1px solid rgba(213, 244, 91, 0.3);
   padding: 6px 12px;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   display: inline-flex;
   align-items: center;
@@ -1985,10 +2004,10 @@ tr.clickable-team {
 }
 
 .directory-title-area .kicker {
-  font: 700 11px var(--display);
-  letter-spacing: 2px;
+  font: 800 12px var(--body);
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #ff7844;
+  color: #ff9466;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -2000,7 +2019,7 @@ tr.clickable-team {
   display: inline-block;
   width: 14px;
   height: 2px;
-  background: #ff7844;
+  background: #ff9466;
 }
 
 .directory-title-area h2 {
@@ -2013,7 +2032,7 @@ tr.clickable-team {
 
 .directory-title-area p {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.6;
   margin: 0;
 }
@@ -2046,10 +2065,10 @@ tr.clickable-team {
 
 .hud-label {
   display: block;
-  font: 700 9px var(--display);
-  letter-spacing: 1.5px;
+  font: 800 11px var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: #64748b;
+  color: #94a3b8;
   margin-bottom: 4px;
 }
 
@@ -2077,8 +2096,8 @@ tr.clickable-team {
   border: 1px solid #1f2535;
   color: #94a3b8;
   padding: 8px 18px;
-  font: 700 11px var(--display);
-  letter-spacing: 1.2px;
+  font: 700 12px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   border-radius: 6px;
   cursor: pointer;
@@ -2119,10 +2138,10 @@ tr.clickable-team {
 }
 
 .filter-group-label {
-  font: 700 9px var(--display);
-  letter-spacing: 1.5px;
+  font: 800 11px var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: #ff7844;
+  color: #ff9466;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2133,7 +2152,7 @@ tr.clickable-team {
   display: inline-block;
   width: 10px;
   height: 2px;
-  background: #ff7844;
+  background: #ff9466;
 }
 
 .dir-input,
@@ -2169,8 +2188,8 @@ tr.clickable-team {
   background: #141722;
   border: 1px solid #272f42;
   color: #94a3b8;
-  font: 700 11px var(--display);
-  letter-spacing: 1.2px;
+  font: 700 12px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   padding: 10px 18px;
   border-radius: 6px;
@@ -2207,16 +2226,16 @@ tr.clickable-team {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .directory-table th {
   background: #090c12;
   padding: 15px 18px;
-  font: 700 9px var(--display);
-  letter-spacing: 1.5px;
+  font: 800 11.5px var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: #64748b;
+  color: #94a3b8;
   border-bottom: 1px solid #1c2230;
   white-space: nowrap;
 }
@@ -2261,8 +2280,8 @@ tr.clickable-team {
 }
 
 .player-role-badge {
-  font: 700 11px var(--display);
-  letter-spacing: 1px;
+  font: 700 11.5px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   color: #cbd5e1;
 }
@@ -2291,8 +2310,8 @@ tr.clickable-team {
 .status-tag {
   display: inline-block;
   padding: 4px 10px;
-  font: 800 10px var(--display);
-  letter-spacing: 1px;
+  font: 800 11px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   border-radius: 4px;
   line-height: 1;
@@ -2323,7 +2342,7 @@ tr.clickable-team {
 }
 
 .kd-cell {
-  font: 800 15px var(--display);
+  font: 800 14px var(--body);
   letter-spacing: 0.5px;
   color: #f1f0e9;
 }
@@ -2365,11 +2384,11 @@ tr.clickable-team {
 .view-switch-btn {
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   padding: 5px 10px;
   border-radius: 4px;
-  font: 700 10px var(--display);
-  letter-spacing: 1px;
+  font: 700 11px var(--body);
+  letter-spacing: 0.8px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -2422,8 +2441,8 @@ tr.clickable-team {
   border: 1px solid var(--line);
   color: var(--muted);
   padding: 12px 20px;
-  font: 800 13px var(--display);
-  letter-spacing: 1.5px;
+  font: 800 13px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   display: inline-flex;
   align-items: center;
@@ -2445,12 +2464,13 @@ tr.clickable-team {
 }
 
 .div-badge-pill {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 700;
   padding: 2px 7px;
   background: #ffffff10;
   border: 1px solid #ffffff20;
   color: var(--text);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .div-tab-btn.active .div-badge-pill {
@@ -2510,15 +2530,15 @@ tr.clickable-team {
 }
 
 .stat-chip-label {
-  font: 700 10px var(--display);
-  color: var(--muted);
+  font: 800 11px var(--body);
+  color: #cbd5e1;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
 
 .stat-chip-value {
-  font: 800 15px var(--display);
+  font: 800 15px var(--body);
   color: var(--lime);
   letter-spacing: 0.5px;
 }
@@ -2547,8 +2567,8 @@ tr.clickable-team {
   border: 1px solid transparent;
   color: var(--muted);
   padding: 6px 14px;
-  font: 700 11px var(--display);
-  letter-spacing: 1px;
+  font: 700 12px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   transition: all 0.2s;
 }
@@ -2578,8 +2598,8 @@ tr.clickable-team {
   border: none;
   color: var(--muted);
   padding: 6px 12px;
-  font: 700 11px var(--display);
-  letter-spacing: 1px;
+  font: 700 11.5px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   transition: all 0.2s;
 }
@@ -2614,9 +2634,9 @@ tr.clickable-team {
 }
 
 .stage-tag {
-  font: 700 11px var(--display);
+  font: 800 11.5px var(--body);
   color: var(--muted);
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
 }
 
 .stage-name {
@@ -2656,21 +2676,21 @@ tr.clickable-team {
 }
 
 .round-badge {
-  font: 800 10px var(--display);
+  font: 800 11px var(--body);
   color: var(--muted);
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .round-title {
-  font: 800 14px var(--display);
+  font: 800 13.5px var(--body);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: var(--text);
   margin: 0;
 }
 
 .round-rule {
-  font: 700 10px var(--display);
+  font: 700 11px var(--body);
   background: #000;
   border: 1px solid var(--line);
   color: var(--lime);
@@ -2710,9 +2730,9 @@ tr.clickable-team {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font: 700 10px var(--display);
+  font: 700 11px var(--body);
   color: var(--muted);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   margin-bottom: 10px;
   padding-bottom: 6px;
   border-bottom: 1px solid #ffffff0a;
@@ -2779,13 +2799,13 @@ tr.clickable-team {
 }
 
 .bmc-seed {
-  font: 700 10px var(--display);
+  font: 800 11px var(--body);
   color: var(--muted);
   width: 14px;
 }
 
 .bmc-tag {
-  font: 800 11px var(--display);
+  font: 800 11.5px var(--body);
   background: #000;
   border: 1px solid #333;
   padding: 1px 5px;
@@ -2811,7 +2831,7 @@ tr.clickable-team {
 }
 
 .bmc-score {
-  font: 800 15px var(--display);
+  font: 800 15px var(--body);
   color: var(--muted);
 }
 
@@ -2824,9 +2844,9 @@ tr.clickable-team {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font: 700 10px var(--display);
+  font: 700 11px var(--body);
   color: var(--muted);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .bmc-bestof {
@@ -2860,9 +2880,9 @@ tr.clickable-team {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font: 700 11px var(--display);
+  font: 700 11.5px var(--body);
   color: var(--muted);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   padding: 0 4px;
 }
 
@@ -2907,9 +2927,9 @@ tr.clickable-team {
 }
 
 .modal-team-tag {
-  font: 800 13px var(--display);
+  font: 800 13px var(--body);
   color: var(--muted);
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
 }
 
 .modal-team-name {
@@ -2919,7 +2939,7 @@ tr.clickable-team {
 }
 
 .modal-team-seed {
-  font: 700 11px var(--display);
+  font: 700 11.5px var(--body);
   color: var(--muted);
   margin-bottom: 8px;
 }
@@ -2938,13 +2958,14 @@ tr.clickable-team {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font: 800 16px var(--display);
+  font: 800 16px var(--body);
   color: var(--muted);
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
 }
 
 .modal-vs-divider small {
-  font-size: 11px;
+  font-size: 11.5px;
+  font-weight: 700;
   color: var(--lime);
 }
 
@@ -2968,7 +2989,7 @@ tr.clickable-team {
 .map-card-header {
   display: flex;
   justify-content: space-between;
-  font: 700 10px var(--display);
+  font: 700 11px var(--body);
   color: var(--muted);
   margin-bottom: 6px;
 }
@@ -2978,7 +2999,8 @@ tr.clickable-team {
 }
 
 .map-name {
-  font: 800 15px var(--display);
+  font: 800 14px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
@@ -2997,13 +3019,13 @@ tr.clickable-team {
 
 .map-winner-tag {
   color: var(--lime);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .map-in-progress {
   color: #ff4a4a;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -3018,9 +3040,9 @@ tr.clickable-team {
 }
 
 .mvp-label {
-  font: 800 11px var(--display);
+  font: 800 11.5px var(--body);
   color: var(--lime);
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .mvp-name {
@@ -3112,9 +3134,8 @@ tr.clickable-team {
   gap: 10px;
 }
 .announcement-tag {
-  font-family: var(--display);
-  font-size: 13px;
-  letter-spacing: 1.5px;
+  font: 800 12px var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--lime);
   background: rgba(213, 244, 91, 0.1);
@@ -3163,7 +3184,7 @@ tr.clickable-team {
   100% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px var(--lime); }
 }
 .announcement-date {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -3232,8 +3253,8 @@ tr.clickable-team {
   background: rgba(213, 244, 91, 0.12);
   border: 1px solid var(--lime);
   color: var(--lime);
-  font: 800 11px/1 var(--display);
-  letter-spacing: 1.5px;
+  font: 800 11.5px/1 var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
   padding: 8px 14px;
 }
@@ -3263,7 +3284,7 @@ tr.clickable-team {
   border: 1px solid #3d4726;
   color: var(--text);
   padding: 4px 8px;
-  font: 700 10px var(--display);
+  font: 700 11px var(--body);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   cursor: pointer;
@@ -3283,16 +3304,17 @@ tr.clickable-team {
 }
 
 .draft-clock-label {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .draft-clock-team {
-  font: 800 18px var(--display);
+  font: 800 17px var(--body);
   color: #ffffff;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
@@ -3308,15 +3330,16 @@ tr.clickable-team {
 
 .draft-stat-chip strong {
   display: block;
-  font: 800 18px var(--display);
+  font: 800 17px var(--body);
   color: var(--lime);
 }
 
 .draft-stat-chip small {
-  font-size: 9px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 /* Draft Tabs Navigation */
@@ -3332,8 +3355,8 @@ tr.clickable-team {
   border: 1px solid var(--line);
   color: var(--muted);
   padding: 12px 20px;
-  font: 800 13px var(--display);
-  letter-spacing: 1.2px;
+  font: 800 13px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s;
@@ -3424,8 +3447,8 @@ tr.clickable-team {
   color: #11120f;
   border: none;
   padding: 15px 36px;
-  font: 900 16px var(--display);
-  letter-spacing: 2px;
+  font: 800 15px var(--body);
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(213, 244, 91, 0.4);
@@ -3459,8 +3482,8 @@ tr.clickable-team {
   border: 1px solid var(--line);
   color: var(--text);
   padding: 10px 18px;
-  font: 700 11px var(--display);
-  letter-spacing: 1px;
+  font: 700 12px var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3512,7 +3535,7 @@ tr.clickable-team {
 }
 
 .draft-slot-team {
-  font: 800 14px var(--display);
+  font: 800 13.5px var(--body);
   color: #ffffff;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -3617,15 +3640,16 @@ tr.clickable-team {
 
 .fa-stat-box strong {
   display: block;
-  font: 800 18px var(--display);
+  font: 800 17px var(--body);
   color: var(--lime);
 }
 
 .fa-stat-box small {
-  font-size: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .fa-contacts-box {
@@ -3653,8 +3677,9 @@ tr.clickable-team {
   border: none;
   color: var(--lime);
   cursor: pointer;
-  font-size: 10px;
-  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 5px;
   transition: color 0.15s;
 }
 
@@ -3674,8 +3699,8 @@ tr.clickable-team {
   color: #11120f;
   border: none;
   padding: 10px 16px;
-  font: 800 12px var(--display);
-  letter-spacing: 1px;
+  font: 800 12.5px var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   cursor: pointer;
   display: inline-flex;
@@ -3769,8 +3794,8 @@ tr.clickable-team {
 }
 
 .draft-pick-team {
-  font: 800 16px var(--display);
-  letter-spacing: 1px;
+  font: 800 15px var(--body);
+  letter-spacing: 0.5px;
   color: #ffffff;
   text-transform: uppercase;
 }
@@ -3816,14 +3841,14 @@ tr.clickable-team {
 .draft-matrix-table td {
   padding: 14px 16px;
   border-bottom: 1px solid #252b1b;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .draft-matrix-table th {
   background: #0f110c;
-  color: var(--muted);
-  font: 800 11px var(--display);
-  letter-spacing: 1.5px;
+  color: #cbd5e1;
+  font: 800 11.5px var(--body);
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -3856,16 +3881,16 @@ tr.clickable-team {
 }
 
 .div-selector-kicker {
-  font: 800 10px var(--display);
+  font: 800 11px var(--body);
   color: var(--lime);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   display: block;
 }
 
 .div-selector-title {
   color: #ffffff;
-  font: 800 15px var(--display);
+  font: 800 14.5px var(--body);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -3875,7 +3900,7 @@ tr.clickable-team {
   border: 1.5px solid var(--lime);
   color: #ffffff;
   padding: 8px 14px;
-  font: 800 13px var(--display);
+  font: 700 13px var(--body);
   letter-spacing: 0.5px;
   outline: none;
   cursor: pointer;
@@ -3902,8 +3927,8 @@ tr.clickable-team {
   color: #11120f;
   border: 2px solid var(--lime);
   padding: 9px 18px;
-  font: 900 13px/1 var(--display);
-  letter-spacing: 1px;
+  font: 800 13px/1 var(--body);
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   cursor: pointer;
   display: inline-flex;
@@ -3936,7 +3961,7 @@ tr.clickable-team {
   border: 1px solid #784f18;
   color: #ffad33;
   padding: 8px 12px;
-  font: 800 11px/1 var(--display);
+  font: 700 11.5px/1 var(--body);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   cursor: pointer;
@@ -3956,8 +3981,8 @@ tr.clickable-team {
   background: #191c13;
   border: 1px solid #363e26;
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
   padding: 2px 4px;
   cursor: pointer;
   outline: none;
@@ -4036,15 +4061,15 @@ tr.clickable-team {
 }
 
 .autodraft-toast-title {
-  font: 800 13px var(--display);
+  font: 800 13px var(--body);
   color: var(--lime);
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .autodraft-toast-msg {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text);
   line-height: 1.4;
 }
@@ -4052,7 +4077,7 @@ tr.clickable-team {
 .autodraft-tag {
   background: #ff5533;
   color: #ffffff;
-  font: 900 9px monospace;
+  font: 900 11px monospace;
   padding: 2px 5px;
   letter-spacing: 0.5px;
   margin-left: 6px;

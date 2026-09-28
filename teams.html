@@ -65,9 +65,9 @@
       .team-tag-badge {
         background: var(--lime);
         color: #171811;
-        font: 900 16px/1 var(--display);
+        font: 900 15px/1 var(--body);
         padding: 8px 12px;
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
       }
       .team-name {
         font: 800 32px/1 var(--display);
@@ -84,12 +84,12 @@
         background: #141511;
         border: 1px solid #ffffff14;
         padding: 8px 14px;
-        font: 700 13px var(--display);
+        font: 800 13px var(--body);
         color: var(--lime);
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
       }
       .roster-title {
-        font: 700 11px var(--display);
+        font: 800 11.5px var(--body);
         color: var(--muted);
         letter-spacing: 1.5px;
         text-transform: uppercase;
@@ -133,7 +133,8 @@
         background: #1a1b17;
         padding: 8px 10px;
         border: 1px solid #ffffff08;
-        font-size: 10px;
+        font-size: 11.5px;
+        font-weight: 600;
       }
       .player-mini-stats span {
         color: var(--muted);
@@ -216,6 +217,7 @@
                   <div class="nav-category-title">Competition</div>
                   <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                   <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
                   <a href="teams.html" style="color:var(--lime);"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
@@ -289,6 +291,7 @@
         <div class="footer-links">
           <a href="index.html#league">League</a>
           <a href="index.html#standings">Standings</a>
+          <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
           <a href="brackets.html">Brackets</a>
@@ -354,14 +357,14 @@
                 <div class="player-mini-card clickable-player" data-player-id="${p.id}" title="Click to view combat records & map stats">
                   <div class="player-mini-top">
                     <span class="pill">${p.role || 'Flex'}</span>
-                    <span style="font-size:9px; color:var(--muted); font-weight:bold;">${p.real_name || ''}</span>
+                    <span style="font-size:11px; color:#b8baa9; font-weight:700;">${p.real_name || ''}</span>
                   </div>
                   <h4 class="player-mini-gamertag">${p.gamertag}</h4>
                   <div class="player-mini-stats">
                     <div><span>K/D: </span><strong>${Number(p.kdr || 1.0).toFixed(2)}</strong></div>
                     <div><span>Kills: </span><strong>${p.total_kills ?? 0}</strong></div>
                   </div>
-                  <div style="margin-top:8px; text-align:right; font-size:9px; color:var(--lime); font-weight:bold;">MAP STATS ↗</div>
+                  <div style="margin-top:8px; text-align:right; font-size:11px; color:var(--lime); font-weight:800; letter-spacing:0.5px;">MAP STATS ↗</div>
                 </div>
               `).join('')
             : '<div class="empty-roster">No players signed to this roster yet.</div>';

@@ -29,8 +29,8 @@
         border: 1px solid var(--line);
         color: var(--muted);
         padding: 8px 14px;
-        font: 700 11px var(--display);
-        letter-spacing: 1px;
+        font: 700 12px var(--body);
+        letter-spacing: 0.5px;
         cursor: pointer;
         text-transform: uppercase;
         transition: all 0.2s;
@@ -65,9 +65,9 @@
         margin-bottom: 14px;
       }
       .team-badge {
-        font: 700 11px var(--display);
+        font: 800 11.5px var(--body);
         color: var(--lime);
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
       }
       .player-gamertag {
         font: 800 28px/1 var(--display);
@@ -86,14 +86,15 @@
       }
       .stat-item strong {
         display: block;
-        font: 800 18px var(--display);
+        font: 800 17px var(--body);
         color: var(--lime);
       }
       .stat-item small {
         color: var(--muted);
-        font-size: 8px;
+        font-size: 10.5px;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
       }
       .empty-state {
         grid-column: 1 / -1;
@@ -148,6 +149,7 @@
                   <div class="nav-category-title">Competition</div>
                   <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                   <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
                   <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html" style="color:var(--lime);"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
@@ -220,6 +222,7 @@
         <div class="footer-links">
           <a href="index.html#league">League</a>
           <a href="index.html#standings">Standings</a>
+          <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
           <a href="brackets.html">Brackets</a>
@@ -315,8 +318,8 @@
                 </div>
               </div>
               <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #ffffff0a; padding-top:8px;">
-                <span style="font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;">Combat Dossier</span>
-                <span style="font-size:10px; color:var(--lime); font-weight:800; letter-spacing:0.5px;">VIEW MAP STATS ↗</span>
+                <span style="font-size:11px; color:#b8baa9; letter-spacing:0.8px; text-transform:uppercase; font-weight:700;">Combat Dossier</span>
+                <span style="font-size:11px; color:var(--lime); font-weight:800; letter-spacing:0.5px;">VIEW MAP STATS ↗</span>
               </div>
             </article>
           `;
