@@ -85,6 +85,10 @@
           <span>WEEKLY SCRIMS ✳</span>
         </div>
       </div>
+      <!-- League Announcements Dispatch Banner -->
+      <aside class="wrap league-announcement-aside" id="league-announcements-aside" style="display:none;" aria-label="League Announcements">
+        <!-- Rendered dynamically via renderAnnouncements() -->
+      </aside>
       <section class="section" id="league">
         <div class="wrap">
           <div class="section-head">
@@ -242,6 +246,69 @@
           console.error("Failed to render standings:", e);
         }
       }
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>"']/g, (m) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        })[m]);
+      }
+
+      async function renderAnnouncements() {
+        const aside = document.getElementById("league-announcements-aside");
+        if (!aside) return;
+        try {
+          const ann = await window.LeagueDB.getLatestAnnouncement();
+          if (!ann || ann.is_active === false) {
+            aside.style.display = "none";
+            return;
+          }
+
+          const colorClass = ["amber", "red", "cyan"].includes(ann.tag_color) ? ann.tag_color : "";
+          const beaconClass = colorClass ? `announcement-beacon ${colorClass}` : "announcement-beacon";
+          const tagClass = colorClass ? `announcement-tag ${colorClass}` : "announcement-tag";
+          const bannerClass = colorClass ? `announcement-banner ${colorClass}` : "announcement-banner";
+
+          let dateStr = "";
+          if (ann.created_at) {
+            try {
+              const d = new Date(ann.created_at);
+              dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            } catch (e) {}
+          }
+
+          const linkHtml = ann.link_url ? `
+            <a href="${escapeHtml(ann.link_url)}" class="announcement-cta">
+              ${escapeHtml(ann.link_text || "Learn More ↗")}
+            </a>
+          ` : "";
+
+          aside.innerHTML = `
+            <div class="${bannerClass}">
+              <div class="announcement-header">
+                <div class="announcement-badge-group">
+                  <span class="${beaconClass}"></span>
+                  <span class="${tagClass}">${escapeHtml(ann.tag || "OFFICIAL DISPATCH")}</span>
+                  ${ann.pinned ? '<span style="font-size:10px; font-weight:800; color:var(--lime); letter-spacing:1px; background:#1f2214; border:1px solid #4a5420; padding:2px 6px; text-transform:uppercase;">PINNED</span>' : ""}
+                </div>
+                ${dateStr ? `<span class="announcement-date">TRANSMITTED ${escapeHtml(dateStr)}</span>` : ""}
+              </div>
+              <h3 class="announcement-title">${escapeHtml(ann.title)}</h3>
+              <p class="announcement-body">${escapeHtml(ann.message)}</p>
+              ${linkHtml}
+            </div>
+          `;
+          aside.style.display = "block";
+        } catch (e) {
+          console.error("Failed to render announcements:", e);
+          aside.style.display = "none";
+        }
+      }
+
+      renderAnnouncements();
       renderStandings();
     </script>
   </body>

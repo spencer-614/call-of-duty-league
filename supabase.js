@@ -81,6 +81,21 @@ const MOCK_DATA = {
       created_at: new Date().toISOString()
     }
   ],
+  announcements: [
+    {
+      id: 1,
+      title: "Season 1 Official Bracket Seeding & Roster Lock",
+      message: "Rosters for Season 1 lock this Friday at 11:59 PM EST. Team captains must ensure all player Activision IDs and roles are confirmed in the recruitment terminal before seedings are locked.",
+      tag: "Tournament Alert",
+      tag_color: "lime",
+      link_url: "brackets.html",
+      link_text: "View Tournament Brackets ↗",
+      is_active: true,
+      pinned: true,
+      created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+      updated_at: new Date(Date.now() - 3600000 * 24).toISOString()
+    }
+  ],
   vods: [
     {
       id: 1,
@@ -1536,6 +1551,133 @@ window.LeagueDB = {
       MOCK_DATA.vods[0].is_live = isLive;
       if (vodUrl) MOCK_DATA.vods[0].vod_url = vodUrl;
       if (title) MOCK_DATA.vods[0].title = title;
+    }
+    return { success: true, mock: true };
+  },
+
+  // ==========================================
+  // LEAGUE ANNOUNCEMENTS & INTEL BROADCAST
+  // ==========================================
+  async getAnnouncements(includeInactive = false) {
+    if (dbClient) {
+      try {
+        let query = dbClient
+          .from("league_announcements")
+          .select("*")
+          .order("pinned", { ascending: false })
+          .order("created_at", { ascending: false });
+
+        if (!includeInactive) {
+          query = query.eq("is_active", true);
+        }
+
+        const { data, error } = await query;
+        if (!error && data) {
+          return data;
+        }
+        if (error) {
+          console.warn("Supabase league_announcements returned error, falling back to mock:", error.message || error);
+        }
+      } catch (err) {
+        console.warn("Supabase getAnnouncements query error, using fallback:", err);
+      }
+    }
+
+    let list = Array.isArray(MOCK_DATA.announcements) ? [...MOCK_DATA.announcements] : [];
+    if (!includeInactive) {
+      list = list.filter(a => a.is_active !== false);
+    }
+    // Sort pinned first, then newest
+    return list.sort((a, b) => {
+      if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+  },
+
+  async getLatestAnnouncement() {
+    const list = await this.getAnnouncements(false);
+    return list && list.length > 0 ? list[0] : null;
+  },
+
+  async createAnnouncement(announcementData) {
+    const record = {
+      title: announcementData.title,
+      message: announcementData.message,
+      tag: announcementData.tag || "Official Update",
+      tag_color: announcementData.tag_color || "lime",
+      link_url: announcementData.link_url || null,
+      link_text: announcementData.link_text || null,
+      is_active: announcementData.is_active !== undefined ? !!announcementData.is_active : true,
+      pinned: announcementData.pinned !== undefined ? !!announcementData.pinned : false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_announcements")
+          .insert([record])
+          .select();
+        if (error) throw error;
+        if (data && data.length > 0) return { success: true, data: data[0] };
+      } catch (err) {
+        console.warn("Supabase createAnnouncement error, falling back to mock storage:", err);
+      }
+    }
+
+    // Fallback Mock Storage
+    record.id = Date.now();
+    if (!MOCK_DATA.announcements) MOCK_DATA.announcements = [];
+    MOCK_DATA.announcements.unshift(record);
+    return { success: true, data: record, mock: true };
+  },
+
+  async updateAnnouncement(id, updates) {
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_announcements")
+          .update(cleanUpdates)
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+        if (data && data.length > 0) return { success: true, data: data[0] };
+      } catch (err) {
+        console.warn("Supabase updateAnnouncement error, updating in mock storage:", err);
+      }
+    }
+
+    if (MOCK_DATA.announcements) {
+      const idx = MOCK_DATA.announcements.findIndex(a => String(a.id) === String(id));
+      if (idx !== -1) {
+        MOCK_DATA.announcements[idx] = { ...MOCK_DATA.announcements[idx], ...cleanUpdates };
+        return { success: true, data: MOCK_DATA.announcements[idx], mock: true };
+      }
+    }
+    return { success: false, error: "Announcement not found in memory" };
+  },
+
+  async deleteAnnouncement(id) {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_announcements")
+          .delete()
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+        return { success: true, data };
+      } catch (err) {
+        console.warn("Supabase deleteAnnouncement error, deleting from mock storage:", err);
+      }
+    }
+
+    if (MOCK_DATA.announcements) {
+      const initLen = MOCK_DATA.announcements.length;
+      MOCK_DATA.announcements = MOCK_DATA.announcements.filter(a => String(a.id) !== String(id));
+      return { success: true, mock: true, deleted: initLen !== MOCK_DATA.announcements.length };
     }
     return { success: true, mock: true };
   },

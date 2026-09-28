@@ -371,6 +371,9 @@
           <button type="button" class="admin-nav-btn" data-tab="tab-broadcast">
             🔴 Live Broadcast Control
           </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-announcements">
+            📢 Announcements
+          </button>
         </nav>
 
         <!-- ========================================== -->
@@ -773,6 +776,124 @@
             </form>
           </div>
         </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 7: LEAGUE ANNOUNCEMENTS                -->
+        <!-- ========================================== -->
+        <div id="tab-announcements" class="admin-tab-content" style="display:none;">
+          <!-- Live Preview HUD -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 class="admin-card-title" style="margin:0;">👁 Live Broadcast Preview (Homepage Banner)</h3>
+              <span style="font-size:12px; color:var(--muted); font-family:var(--sans);">Updates dynamically as you compose below</span>
+            </div>
+            <div class="league-announcement-aside" style="margin:8px 0 0 0;">
+              <div id="preview-announcement-banner" class="announcement-banner">
+                <div class="announcement-header">
+                  <div class="announcement-badge-group">
+                    <span id="preview-announcement-beacon" class="announcement-beacon"></span>
+                    <span id="preview-announcement-tag" class="announcement-tag">Official Update</span>
+                    <span id="preview-announcement-pinned" style="display:none; font-size:10px; font-weight:800; color:var(--lime); letter-spacing:1px; background:#1f2214; border:1px solid #4a5420; padding:2px 6px; text-transform:uppercase;">PINNED</span>
+                  </div>
+                  <span id="preview-announcement-date" class="announcement-date">TRANSMITTED TODAY</span>
+                </div>
+                <h3 id="preview-announcement-title" class="announcement-title">Season 1 Official Bracket Seeding & Roster Lock</h3>
+                <p id="preview-announcement-body" class="announcement-body">Rosters for Season 1 lock this Friday at 11:59 PM EST. Team captains must ensure all player Activision IDs and roles are confirmed in the recruitment terminal before seedings are locked.</p>
+                <a id="preview-announcement-cta" href="#" class="announcement-cta" style="display:inline-flex;">
+                  <span id="preview-announcement-cta-text">View Tournament Brackets ↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Announcement Composer -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 id="announcement-form-title" class="admin-card-title" style="margin:0;">📢 Compose League Announcement</h3>
+              <button type="button" id="btn-cancel-announcement-edit" class="btn-action-sm" style="display:none;">✕ Cancel Edit Mode</button>
+            </div>
+            <form id="form-announcement">
+              <input type="hidden" id="announcement-id" />
+              <div class="admin-form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="announcement-title-input">Headline / Dispatch Title *</label>
+                  <input type="text" id="announcement-title-input" class="form-control" placeholder="e.g. Season 1 Official Bracket Seeding & Roster Lock" required />
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="announcement-message-input">Announcement Message / Transmission Body *</label>
+                  <textarea id="announcement-message-input" class="form-control" rows="3" placeholder="Enter bulletin content displayed to players on the homepage..." required style="resize:vertical;"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="announcement-tag-input">Category Tag</label>
+                  <input type="text" id="announcement-tag-input" class="form-control" placeholder="e.g. Tournament Alert, Rules Update, Roster Lock" value="Official Update" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="announcement-color-input">Accent HUD Color</label>
+                  <select id="announcement-color-input" class="form-control">
+                    <option value="lime">Lime Green (Default / Tactical)</option>
+                    <option value="amber">Amber Gold (Warning / Attention)</option>
+                    <option value="red">Red Alert (Urgent / Critical)</option>
+                    <option value="cyan">Cyan Neon (Special Event / Intel)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="announcement-link-url-input">Action Link URL (Optional)</label>
+                  <input type="text" id="announcement-link-url-input" class="form-control" placeholder="e.g. brackets.html, signup.html, or discord.gg" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="announcement-link-text-input">Action Link Label (Optional)</label>
+                  <input type="text" id="announcement-link-text-input" class="form-control" placeholder="e.g. View Tournament Brackets ↗" />
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:24px; padding-top:10px; grid-column: 1 / -1;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
+                    <input type="checkbox" id="announcement-is-active-input" checked style="accent-color:var(--lime); width:18px; height:18px;" />
+                    <span>Active (Display on Homepage)</span>
+                  </label>
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
+                    <input type="checkbox" id="announcement-pinned-input" style="accent-color:var(--lime); width:18px; height:18px;" />
+                    <span>Pin Announcement (Priority Broadcast)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
+                <button type="submit" id="btn-submit-announcement" class="btn-paypal-submit" style="width:auto; padding:12px 30px;">
+                  <span id="btn-submit-announcement-text">Broadcast Announcement</span>
+                  <span id="btn-submit-announcement-icon">📢</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Announcements History Table -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 class="admin-card-title" style="margin:0;">Dispatched Bulletins & Archive</h3>
+              <button type="button" id="btn-refresh-announcements" class="btn-action-sm">↻ Refresh Bulletins</button>
+            </div>
+            <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+              The most recent active pinned announcement appears on <a href="index.html" target="_blank" style="color:var(--lime);">index.html</a>. You can edit, deactivate, or delete past transmissions at any time.
+            </p>
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Theme</th>
+                    <th>Tag</th>
+                    <th>Headline & Message</th>
+                    <th>Action Link</th>
+                    <th>Transmitted</th>
+                    <th>Quick Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-announcements-tbody">
+                  <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:30px;">Loading announcements registry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -936,6 +1057,7 @@
         let cachedTeams = [];
         let cachedPlayers = [];
         let cachedSignups = [];
+        let cachedAnnouncements = [];
 
         function showToast(text) {
           const toast = document.getElementById("admin-toast");
@@ -1017,6 +1139,10 @@
             if (targetId === "tab-player-stats" && currentSelectedPlayerId) {
               renderSelectedPlayerTelemetry(currentSelectedPlayerId);
             }
+            if (targetId === "tab-announcements") {
+              loadAnnouncements();
+              updateAnnouncementPreview();
+            }
           });
         });
 
@@ -1024,7 +1150,8 @@
         // 3. LOAD DATA & POPULATE UI
         // ==========================================
         async function loadAllData() {
-          await Promise.all([loadTeams(), loadPlayers(), loadSignups()]);
+          await Promise.all([loadTeams(), loadPlayers(), loadSignups(), loadAnnouncements()]);
+          updateAnnouncementPreview();
         }
 
         // A. Load Teams
@@ -1990,6 +2117,244 @@
             showToast(`✓ Broadcast state published! Live status: ${isLive ? 'ONLINE' : 'OFFLINE'}`);
           } else {
             alert("Failed to update broadcast: " + res.error);
+          }
+        });
+
+        // ==========================================
+        // 5. LEAGUE ANNOUNCEMENTS CONTROLLER
+        // ==========================================
+
+        // Live Visual Preview HUD updater
+        function updateAnnouncementPreview() {
+          const title = document.getElementById("announcement-title-input")?.value.trim() || "Season 1 Official Bracket Seeding & Roster Lock";
+          const message = document.getElementById("announcement-message-input")?.value.trim() || "Rosters for Season 1 lock this Friday at 11:59 PM EST. Team captains must ensure all player Activision IDs and roles are confirmed in the recruitment terminal before seedings are locked.";
+          const tag = document.getElementById("announcement-tag-input")?.value.trim() || "Official Update";
+          const color = document.getElementById("announcement-color-input")?.value || "lime";
+          const linkUrl = document.getElementById("announcement-link-url-input")?.value.trim();
+          const linkText = document.getElementById("announcement-link-text-input")?.value.trim() || "View Tournament Brackets ↗";
+          const isPinned = document.getElementById("announcement-pinned-input")?.checked;
+
+          const bannerEl = document.getElementById("preview-announcement-banner");
+          const beaconEl = document.getElementById("preview-announcement-beacon");
+          const tagEl = document.getElementById("preview-announcement-tag");
+          const pinnedEl = document.getElementById("preview-announcement-pinned");
+          const titleEl = document.getElementById("preview-announcement-title");
+          const bodyEl = document.getElementById("preview-announcement-body");
+          const ctaEl = document.getElementById("preview-announcement-cta");
+          const ctaTextEl = document.getElementById("preview-announcement-cta-text");
+
+          const colorClass = ["amber", "red", "cyan"].includes(color) ? color : "";
+          if (bannerEl) bannerEl.className = colorClass ? `announcement-banner ${colorClass}` : "announcement-banner";
+          if (beaconEl) beaconEl.className = colorClass ? `announcement-beacon ${colorClass}` : "announcement-beacon";
+          if (tagEl) {
+            tagEl.className = colorClass ? `announcement-tag ${colorClass}` : "announcement-tag";
+            tagEl.textContent = tag.toUpperCase();
+          }
+          if (pinnedEl) pinnedEl.style.display = isPinned ? "inline-block" : "none";
+          if (titleEl) titleEl.textContent = title;
+          if (bodyEl) bodyEl.textContent = message;
+
+          if (ctaEl && ctaTextEl) {
+            if (linkUrl) {
+              ctaEl.style.display = "inline-flex";
+              ctaEl.href = linkUrl;
+              ctaTextEl.textContent = linkText;
+            } else {
+              ctaEl.style.display = "none";
+            }
+          }
+        }
+
+        // Attach real-time input listeners to update preview immediately
+        ["announcement-title-input", "announcement-message-input", "announcement-tag-input", "announcement-link-url-input", "announcement-link-text-input"].forEach(id => {
+          document.getElementById(id)?.addEventListener("input", updateAnnouncementPreview);
+        });
+        ["announcement-color-input", "announcement-pinned-input", "announcement-is-active-input"].forEach(id => {
+          document.getElementById(id)?.addEventListener("change", updateAnnouncementPreview);
+        });
+
+        // Load Announcements into Registry Table
+        async function loadAnnouncements() {
+          const tbody = document.getElementById("admin-announcements-tbody");
+          if (!tbody) return;
+          try {
+            cachedAnnouncements = await window.LeagueDB.getAnnouncements(true);
+            if (!cachedAnnouncements || cachedAnnouncements.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:30px;">No announcements currently registered. Compose your first bulletin above.</td></tr>`;
+              return;
+            }
+
+            tbody.innerHTML = cachedAnnouncements.map(a => {
+              const color = a.tag_color || "lime";
+              const colorDot = color === 'red' ? '#ff5b5b' : color === 'amber' ? '#ffb300' : color === 'cyan' ? '#5be9f4' : '#d5f45b';
+              const dateStr = a.created_at ? new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : '---';
+              
+              const statusPills = [];
+              if (a.is_active) {
+                statusPills.push('<span class="pill" style="color:var(--lime); background:rgba(213,244,91,0.1); border:1px solid rgba(213,244,91,0.3);">ACTIVE</span>');
+              } else {
+                statusPills.push('<span class="pill" style="color:var(--muted); background:#1e2017; border:1px solid #333;">INACTIVE</span>');
+              }
+              if (a.pinned) {
+                statusPills.push('<span class="pill" style="color:#5be9f4; border-color:#5be9f450; background:rgba(91,233,244,0.1);">PINNED</span>');
+              }
+
+              const linkHtml = a.link_url ? `
+                <a href="${escapeHtml(a.link_url)}" target="_blank" style="color:var(--lime); font-size:12px; text-decoration:underline;">
+                  ${escapeHtml(a.link_text || a.link_url)} ↗
+                </a>
+              ` : '<span style="color:var(--muted); font-size:12px;">None</span>';
+
+              return `
+                <tr>
+                  <td>${statusPills.join(" ")}</td>
+                  <td>
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; text-transform:uppercase; font-weight:bold; color:${colorDot};">
+                      <span style="width:8px; height:8px; border-radius:50%; background:${colorDot}; display:inline-block;"></span>
+                      ${color}
+                    </span>
+                  </td>
+                  <td><span class="pill" style="font-size:11px;">${escapeHtml(a.tag || 'Official')}</span></td>
+                  <td style="max-width:320px;">
+                    <strong style="color:var(--text); font-size:13px; display:block; margin-bottom:2px;">${escapeHtml(a.title)}</strong>
+                    <div style="color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      ${escapeHtml(a.message)}
+                    </div>
+                  </td>
+                  <td>${linkHtml}</td>
+                  <td style="color:var(--muted); font-size:12px; white-space:nowrap;">${dateStr}</td>
+                  <td style="white-space:nowrap;">
+                    <button type="button" class="btn-action-sm btn-edit-announcement" data-id="${a.id}">Edit</button>
+                    <button type="button" class="btn-action-sm btn-toggle-announcement" data-id="${a.id}" data-active="${a.is_active}">
+                      ${a.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button type="button" class="btn-action-sm btn-action-danger btn-delete-announcement" data-id="${a.id}">Delete</button>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+
+            // Row Action Event Listeners
+            tbody.querySelectorAll(".btn-edit-announcement").forEach(btn => {
+              btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-id");
+                editAnnouncement(id);
+              });
+            });
+
+            tbody.querySelectorAll(".btn-toggle-announcement").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const id = btn.getAttribute("data-id");
+                const currentActive = btn.getAttribute("data-active") === "true";
+                const res = await window.LeagueDB.updateAnnouncement(id, { is_active: !currentActive });
+                if (res.success) {
+                  showToast(`✓ Announcement ${!currentActive ? 'activated (live on homepage)' : 'deactivated'}.`);
+                  loadAnnouncements();
+                } else {
+                  alert("Failed to toggle announcement: " + (res.error || 'Unknown error'));
+                }
+              });
+            });
+
+            tbody.querySelectorAll(".btn-delete-announcement").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const id = btn.getAttribute("data-id");
+                if (confirm("Are you sure you want to permanently delete this announcement?")) {
+                  const res = await window.LeagueDB.deleteAnnouncement(id);
+                  if (res.success) {
+                    showToast("✓ Announcement permanently deleted.");
+                    if (document.getElementById("announcement-id").value == id) {
+                      resetAnnouncementForm();
+                    }
+                    loadAnnouncements();
+                  } else {
+                    alert("Failed to delete announcement: " + (res.error || 'Unknown error'));
+                  }
+                }
+              });
+            });
+
+          } catch (e) {
+            console.error("Error loading announcements:", e);
+          }
+        }
+
+        // Edit Announcement populator
+        function editAnnouncement(id) {
+          const ann = cachedAnnouncements.find(a => String(a.id) === String(id));
+          if (!ann) return;
+
+          document.getElementById("announcement-id").value = ann.id;
+          document.getElementById("announcement-title-input").value = ann.title || "";
+          document.getElementById("announcement-message-input").value = ann.message || "";
+          document.getElementById("announcement-tag-input").value = ann.tag || "Official Update";
+          document.getElementById("announcement-color-input").value = ann.tag_color || "lime";
+          document.getElementById("announcement-link-url-input").value = ann.link_url || "";
+          document.getElementById("announcement-link-text-input").value = ann.link_text || "";
+          document.getElementById("announcement-is-active-input").checked = ann.is_active !== false;
+          document.getElementById("announcement-pinned-input").checked = !!ann.pinned;
+
+          document.getElementById("announcement-form-title").textContent = "✏ Edit League Announcement #" + ann.id;
+          document.getElementById("btn-submit-announcement-text").textContent = "Save Changes";
+          document.getElementById("btn-submit-announcement-icon").textContent = "✓";
+          document.getElementById("btn-cancel-announcement-edit").style.display = "inline-block";
+
+          updateAnnouncementPreview();
+
+          document.getElementById("form-announcement").scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        // Reset Announcement Composer Form
+        function resetAnnouncementForm() {
+          document.getElementById("form-announcement")?.reset();
+          document.getElementById("announcement-id").value = "";
+          document.getElementById("announcement-form-title").textContent = "📢 Compose League Announcement";
+          document.getElementById("btn-submit-announcement-text").textContent = "Broadcast Announcement";
+          document.getElementById("btn-submit-announcement-icon").textContent = "📢";
+          document.getElementById("btn-cancel-announcement-edit").style.display = "none";
+          document.getElementById("announcement-is-active-input").checked = true;
+          document.getElementById("announcement-pinned-input").checked = false;
+          document.getElementById("announcement-tag-input").value = "Official Update";
+          document.getElementById("announcement-color-input").value = "lime";
+          updateAnnouncementPreview();
+        }
+
+        document.getElementById("btn-cancel-announcement-edit")?.addEventListener("click", resetAnnouncementForm);
+        document.getElementById("btn-refresh-announcements")?.addEventListener("click", loadAnnouncements);
+
+        // Announcement Form Submit Handler (Create or Update)
+        document.getElementById("form-announcement")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const id = document.getElementById("announcement-id").value;
+          const annData = {
+            title: document.getElementById("announcement-title-input").value.trim(),
+            message: document.getElementById("announcement-message-input").value.trim(),
+            tag: document.getElementById("announcement-tag-input").value.trim() || "Official Update",
+            tag_color: document.getElementById("announcement-color-input").value || "lime",
+            link_url: document.getElementById("announcement-link-url-input").value.trim() || null,
+            link_text: document.getElementById("announcement-link-text-input").value.trim() || null,
+            is_active: document.getElementById("announcement-is-active-input").checked,
+            pinned: document.getElementById("announcement-pinned-input").checked
+          };
+
+          if (id) {
+            const res = await window.LeagueDB.updateAnnouncement(id, annData);
+            if (res.success) {
+              showToast(`✓ Announcement Updated & Broadcasted: "${annData.title}"`);
+              resetAnnouncementForm();
+              loadAnnouncements();
+            } else {
+              alert("Failed to update announcement: " + (res.error || 'Unknown error'));
+            }
+          } else {
+            const res = await window.LeagueDB.createAnnouncement(annData);
+            if (res.success) {
+              showToast(`✓ New Announcement Broadcasted: "${annData.title}"`);
+              resetAnnouncementForm();
+              loadAnnouncements();
+            } else {
+              alert("Failed to broadcast announcement: " + (res.error || 'Unknown error'));
+            }
           }
         });
       })();
