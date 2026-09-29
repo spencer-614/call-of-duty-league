@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Official Rulebook &amp; Match Directives — Frontline Call of Duty League</title>
+    <style>
+      /* ======================================================== */
+      /* RULEBOOK CONTAINER & TABBED INTERFACE STYLES             */
+      /* ======================================================== */
+      .rulebook-header-section {
+        padding: 40px 0 24px;
+      }
+      .rulebook-header-section .kicker {
+        color: var(--lime);
+        font: 800 11.5px var(--body);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .rulebook-header-section h2 {
+        font: 800 46px/0.95 var(--display);
+        text-transform: uppercase;
+        margin: 8px 0 12px;
+        letter-spacing: 0.5px;
+      }
+      .rulebook-header-section .intro {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+        max-width: 720px;
+        margin: 0;
+      }
+
+      /* Rulebook Main Terminal Box */
+      .rulebook-box {
+        background: linear-gradient(135deg, #1b1e15 0%, #12130e 100%);
+        border: 1px solid #485223;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5), 0 0 30px rgba(213, 244, 91, 0.05);
+        margin-bottom: 60px;
+        position: relative;
+      }
+      .rulebook-box::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 24px;
+        width: 80px;
+        height: 2px;
+        background: var(--lime);
+      }
+
+      /* Top Bar: Tabs Aligned to Top-Left, Tools on Right */
+      .rulebook-top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        background: #141610;
+        border-bottom: 1px solid #2e3518;
+        padding: 12px 20px;
+      }
+
+      /* Top-Left Tabs Bar */
+      .rulebook-tabs-nav {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .rule-tab-btn {
+        background: #191c13;
+        border: 1px solid #333a1e;
+        color: #b5b8a8;
+        font: 800 12px/1 var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 10px 16px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.18s ease;
+      }
+      .rule-tab-btn:hover {
+        background: #23281a;
+        color: #fff;
+        border-color: #596138;
+      }
+      .rule-tab-btn.active {
+        background: #262c1a;
+        border-color: var(--lime);
+        color: var(--lime);
+        box-shadow: inset 0 -2px 0 var(--lime);
+      }
+      .rule-tab-btn .tab-num {
+        opacity: 0.65;
+        font-size: 11px;
+      }
+
+      /* Top-Right Tools: Search & Badge */
+      .rulebook-tools {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .rule-search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .rule-search-box input {
+        background: #0f100d;
+        border: 1px solid #3d4323;
+        color: var(--text);
+        padding: 8px 12px 8px 30px;
+        font-size: 12.5px;
+        font-family: var(--body);
+        outline: none;
+        width: 220px;
+        transition: border-color 0.2s, width 0.2s;
+      }
+      .rule-search-box input:focus {
+        border-color: var(--lime);
+        width: 260px;
+      }
+      .rule-search-icon {
+        position: absolute;
+        left: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        pointer-events: none;
+      }
+      .ruleset-badge {
+        background: rgba(213, 244, 91, 0.1);
+        border: 1px solid rgba(213, 244, 91, 0.35);
+        color: var(--lime);
+        font: 800 10.5px var(--body);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 6px 10px;
+      }
+
+      /* Rulebook Content Panes */
+      .rulebook-content-pane {
+        padding: 32px 36px 40px;
+      }
+      .rule-section-head {
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .rule-section-head h3 {
+        font: 800 28px/1 var(--display);
+        text-transform: uppercase;
+        margin: 0 0 6px;
+        letter-spacing: 0.5px;
+      }
+      .rule-section-head p {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0;
+        max-width: 680px;
+      }
+
+      /* Rule Article Cards */
+      .rule-card {
+        background: #141611;
+        border: 1px solid #282d1b;
+        padding: 22px 24px;
+        margin-bottom: 20px;
+        position: relative;
+        transition: border-color 0.2s ease;
+      }
+      .rule-card:hover {
+        border-color: #485223;
+      }
+      .rule-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .rule-card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font: 800 17px/1.2 var(--body);
+        color: #f1f0e9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .rule-tag-id {
+        background: #23281a;
+        color: var(--lime);
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 8px;
+        letter-spacing: 1px;
+        border: 1px solid rgba(213, 244, 91, 0.25);
+      }
+      .rule-card-desc {
+        color: #c5c8ba;
+        font-size: 13.5px;
+        line-height: 1.65;
+        margin: 0 0 14px;
+      }
+      .rule-card-list {
+        margin: 0;
+        padding-left: 20px;
+        color: #dce0cf;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .rule-card-list li {
+        margin-bottom: 6px;
+      }
+      .rule-card-list strong {
+        color: #fff;
+      }
+
+      /* Settings Grid & Tables */
+      .settings-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      .settings-table th,
+      .settings-table td {
+        padding: 10px 14px;
+        text-align: left;
+        border-bottom: 1px solid #262a1a;
+      }
+      .settings-table th {
+        background: #191c13;
+        color: var(--lime);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-size: 11.5px;
+      }
+      .settings-table tr:hover td {
+        background: rgba(213, 244, 91, 0.04);
+      }
+      .settings-table td strong {
+        color: #fff;
+      }
+      .val-badge {
+        display: inline-block;
+        background: #1f2316;
+        border: 1px solid #3f4722;
+        color: var(--lime);
+        font-weight: 800;
+        font-size: 11.5px;
+        padding: 2px 8px;
+      }
+      .val-badge.warn {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #ef444450;
+        color: #f87171;
+      }
+
+      /* Banned / Restricted Items Cards */
+      .restriction-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 18px;
+        margin-top: 14px;
+      }
+      .restriction-card {
+        background: #151711;
+        border: 1px solid #2c321d;
+        padding: 20px;
+      }
+      .restriction-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #232717;
+      }
+      .restriction-card-head h4 {
+        margin: 0;
+        font: 800 15px var(--body);
+        color: #f1f0e9;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .badge-banned {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #f87171;
+        font: 800 10.5px var(--body);
+        letter-spacing: 0.8px;
+        padding: 3px 8px;
+        text-transform: uppercase;
+      }
+      .badge-allowed {
+        background: rgba(213, 244, 91, 0.12);
+        border: 1px solid rgba(213, 244, 91, 0.4);
+        color: var(--lime);
+        font: 800 10.5px var(--body);
+        letter-spacing: 0.8px;
+        padding: 3px 8px;
+        text-transform: uppercase;
+      }
+      .item-tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .item-tag-pill {
+        background: #1a1c14;
+        border: 1px solid #383e23;
+        color: #cfd2c2;
+        font-size: 12px;
+        padding: 4px 10px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .item-tag-pill.banned-pill {
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+      }
+      .item-tag-pill.allowed-pill {
+        border-color: rgba(213, 244, 91, 0.3);
+        color: var(--lime);
+      }
+
+      /* Captain Interactive Checklist */
+      .checklist-card {
+        background: #141611;
+        border: 1px solid #333a20;
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .check-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #232717;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .check-item:last-child {
+        border-bottom: none;
+      }
+      .check-item:hover {
+        background: rgba(213, 244, 91, 0.04);
+      }
+      .check-item input[type="checkbox"] {
+        margin-top: 3px;
+        width: 17px;
+        height: 17px;
+        accent-color: var(--lime);
+        cursor: pointer;
+      }
+      .check-item-content {
+        flex: 1;
+      }
+      .check-item-title {
+        font-weight: 700;
+        color: #f1f0e9;
+        font-size: 13.5px;
+      }
+      .check-item-desc {
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 3px;
+      }
+
+      /* Callout Notice */
+      .rule-callout {
+        background: rgba(213, 244, 91, 0.06);
+        border-left: 3px solid var(--lime);
+        padding: 14px 18px;
+        margin: 18px 0;
+        color: #dce0cf;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .rule-callout.danger {
+        background: rgba(239, 68, 68, 0.07);
+        border-left-color: #ef4444;
+        color: #fca5a5;
+      }
+
+      @media (max-width: 768px) {
+        .rulebook-top-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .rulebook-tabs-nav {
+          width: 100%;
+        }
+        .rule-tab-btn {
+          flex: 1 1 calc(50% - 4px);
+          justify-content: center;
+        }
+        .rulebook-tools {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .rule-search-box {
+          flex: 1;
+        }
+        .rule-search-box input {
+          width: 100%;
+        }
+        .rule-search-box input:focus {
+          width: 100%;
+        }
+        .rulebook-content-pane {
+          padding: 20px 18px 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Header & Navigation -->
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="index.html">
+          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">COMMUNITY LEAGUE</small>
+            <div class="brand-status">
+              <span class="nav-beacon"></span>
+              <span>SEASON 1 ACTIVE</span>
+            </div>
+            <script>
+              (function(){
+                try {
+                  var s = JSON.parse(localStorage.getItem('frontline_season_settings'));
+                  if (s) {
+                    var el = document.currentScript.previousElementSibling;
+                    if (el && el.classList.contains('brand-status')) {
+                      el.className = 'brand-status' + (s.status_state === 'coming_soon' ? ' status-coming-soon' : ' status-active');
+                      var t = s.status_text || ('SEASON ' + (s.season_number || 1) + (s.status_state === 'coming_soon' ? ' COMING SOON' : ' ACTIVE'));
+                      el.innerHTML = '<span class="nav-beacon"></span><span>' + t + '</span>';
+                    }
+                  }
+                } catch(e){}
+              })();
+            </script>
+          </div>
+        </a>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Competition</div>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="rules.html" style="color:var(--lime);"><span class="nav-icon">📜</span> Official Rulebook</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.com/"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <span>Join Discord</span>
+            <span class="cta-arrow">↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- Page Header Banner -->
+      <section class="rulebook-header-section">
+        <div class="kicker">OFFICIAL COD LEAGUE CODEX // 2026 COMPETITIVE RULESET</div>
+        <h2>LEAGUE RULEBOOK &amp; <span style="color:var(--lime);">MATCH DIRECTIVES</span></h2>
+        <p class="intro">
+          Standardized operational regulations, mandatory custom lobby match settings, and restricted equipment directives for all Frontline Community League sanctioned matches. Click the tabs below to inspect specific directives.
+        </p>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- MAIN TABBED RULEBOOK CONTAINER BOX                       -->
+      <!-- ======================================================== -->
+      <section class="rulebook-box" id="rulebook-container">
+        
+        <!-- TOP-LEFT TABS & TOOLBAR -->
+        <div class="rulebook-top-bar">
+          <!-- Top-Left Tabs Navigation -->
+          <nav class="rulebook-tabs-nav" role="tablist" aria-label="Rulebook Section Tabs">
+            <button type="button" class="rule-tab-btn active" id="tab-btn-league" data-tab="league" role="tab" aria-selected="true" aria-controls="pane-league">
+              <span class="tab-num">01.</span>
+              <span>⚖ League Regulations</span>
+            </button>
+            <button type="button" class="rule-tab-btn" id="tab-btn-settings" data-tab="settings" role="tab" aria-selected="false" aria-controls="pane-settings">
+              <span class="tab-num">02.</span>
+              <span>🎮 Lobby Match Settings</span>
+            </button>
+            <button type="button" class="rule-tab-btn" id="tab-btn-banned" data-tab="banned" role="tab" aria-selected="false" aria-controls="pane-banned">
+              <span class="tab-num">03.</span>
+              <span>⛔ Restricted &amp; Banned Items</span>
+            </button>
+            <button type="button" class="rule-tab-btn" id="tab-btn-host" data-tab="host" role="tab" aria-selected="false" aria-controls="pane-host">
+              <span class="tab-num">04.</span>
+              <span>🌐 Host, Ping &amp; Disconnects</span>
+            </button>
+            <button type="button" class="rule-tab-btn" id="tab-btn-checklist" data-tab="checklist" role="tab" aria-selected="false" aria-controls="pane-checklist">
+              <span class="tab-num">05.</span>
+              <span>⚡ Captain's Checklist</span>
+            </button>
+          </nav>
+
+          <!-- Top-Right Search Tool & Badge -->
+          <div class="rulebook-tools">
+            <div class="rule-search-box">
+              <span class="rule-search-icon">🔍</span>
+              <input type="text" id="rule-search-input" placeholder="Search rules or items..." aria-label="Filter rules" />
+            </div>
+            <span class="ruleset-badge">CDL 2026 ALIGNED</span>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- PANE 1: LEAGUE & TOURNAMENT REGULATIONS             -->
+        <!-- ==================================================== -->
+        <div id="pane-league" class="rulebook-content-pane" role="tabpanel" aria-labelledby="tab-btn-league">
+          <div class="rule-section-head">
+            <div>
+              <h3>// 01. LEAGUE &amp; TOURNAMENT REGULATIONS</h3>
+              <p>Core governance standards covering team rosters, scheduling windows, forfeit thresholds, and competitive conduct.</p>
+            </div>
+            <span class="val-badge">SECTION 1 OF 5</span>
+          </div>
+
+          <!-- Article 1.1 -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 1.1</span>
+                <span>Roster Composition &amp; Combatant Eligibility</span>
+              </div>
+              <span class="val-badge">4V4 SQUAD</span>
+            </div>
+            <p class="rule-card-desc">
+              All official Frontline League matches are contested in a 4v4 format across permitted cross-platform systems (PC, PlayStation, Xbox).
+            </p>
+            <ul class="rule-card-list">
+              <li><strong>Roster Size:</strong> Each franchise team may register four (4) active starting players and up to two (2) designated reserve/substitute players.</li>
+              <li><strong>Player Verification:</strong> All players must have a verified Frontline Combatant Account with their active Activision ID (including tag numbers) and Discord handle logged in the league database.</li>
+              <li><strong>Cross-Team Roster Lock:</strong> A player may not compete for more than one franchise team within the same division during the regular season without an official front-office trade approved by the League Director.</li>
+            </ul>
+          </article>
+
+          <!-- Article 1.2 -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 1.2</span>
+                <span>Match Scheduling &amp; 10-Minute Forfeit Grace Period</span>
+              </div>
+              <span class="val-badge warn">STRICT DEADLINE</span>
+            </div>
+            <p class="rule-card-desc">
+              Match fixtures are published weekly on the official Schedule HQ. Team captains bear primary responsibility for confirming match start times.
+            </p>
+            <ul class="rule-card-list">
+              <li><strong>Discord Check-In:</strong> Both team captains must check into the designated Discord match thread at least fifteen (15) minutes prior to the scheduled broadcast start time.</li>
+              <li><strong>Map 1 Forfeit (10 Min):</strong> If a team does not have four players present in the custom lobby ten (10) minutes after scheduled start time, Map 1 is officially forfeited.</li>
+              <li><strong>Series Forfeit (15 Min):</strong> If a team fails to field four players fifteen (15) minutes past scheduled match time, the entire Best-of-5 series is forfeited as a 3–0 loss.</li>
+              <li><strong>Emergency Reschedule:</strong> Reschedule requests must be submitted to league administrators at least twenty-four (24) hours in advance and mutually agreed upon in writing by both captains.</li>
+            </ul>
+          </article>
+
+          <!-- Article 1.3 -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 1.3</span>
+                <span>Best-of-5 Match Sequence &amp; Map Vetoes</span>
+              </div>
+              <span class="val-badge">BO5 ROTATION</span>
+            </div>
+            <p class="rule-card-desc">
+              All regular season and playoff matches follow the standardized 5-map competitive rotation:
+            </p>
+            <div class="rule-callout">
+              <strong>Official Best-of-5 Order:</strong><br />
+              • Map 1: <strong>Hardpoint</strong><br />
+              • Map 2: <strong>Search &amp; Destroy</strong><br />
+              • Map 3: <strong>Control</strong><br />
+              • Map 4: <strong>Hardpoint</strong> (if required)<br />
+              • Map 5: <strong>Search &amp; Destroy</strong> (decider)
+            </div>
+            <ul class="rule-card-list">
+              <li><strong>Higher Seed Privilege:</strong> The higher-seeded team (or coin-flip winner in Week 1) selects whether to choose Map 1 host/side or initiate map vetos.</li>
+              <li><strong>No Repeated Maps:</strong> No map may be played more than once in the same Best-of-5 series.</li>
+            </ul>
+          </article>
+
+          <!-- Article 1.4 -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 1.4</span>
+                <span>Standings Points &amp; Tiebreaker Hierarchy</span>
+              </div>
+              <span class="val-badge">SCORING MATRIX</span>
+            </div>
+            <p class="rule-card-desc">
+              Standings and postseason tournament seedings are determined strictly by the following hierarchy:
+            </p>
+            <ul class="rule-card-list">
+              <li><strong>Match Series Wins:</strong> Primary rank sorted by total series won (3 pts per win, 0 pts per loss).</li>
+              <li><strong>Map Differential (Net +/-):</strong> Total maps won minus total maps lost across all played matches.</li>
+              <li><strong>Head-to-Head Record:</strong> Direct series and map score between tied squads.</li>
+              <li><strong>Total Maps Won:</strong> Cumulative volume of map victories.</li>
+            </ul>
+          </article>
+
+          <!-- Article 1.5 -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 1.5</span>
+                <span>Competitive Integrity, Hardware &amp; Conduct</span>
+              </div>
+              <span class="val-badge warn">ZERO TOLERANCE</span>
+            </div>
+            <div class="rule-callout danger">
+              <strong>CRITICAL WARNING:</strong> Any use of hardware-based aim adapters (Cronus Zen, XIM, Titan), strike-pack recoil macros, third-party wallhacks, or memory injection triggers immediate permanent disqualification and player expulsion from the Frontline League.
+            </div>
+            <ul class="rule-card-list">
+              <li><strong>PC Verification:</strong> PC combatants are required to run official anti-cheat background monitoring and must be able to provide Discord screen share or gameplay recording if requested by referees.</li>
+              <li><strong>Communication Conduct:</strong> Racial slurs, hate speech, severe harassment, or intentional stream-sniping in broadcasted matches results in immediate match forfeit and minimum 2-week player suspension.</li>
+            </ul>
+          </article>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- PANE 2: LOBBY MATCH SETTINGS                        -->
+        <!-- ==================================================== -->
+        <div id="pane-settings" class="rulebook-content-pane" style="display:none;" role="tabpanel" aria-labelledby="tab-btn-settings">
+          <div class="rule-section-head">
+            <div>
+              <h3>// 02. REQUIRED LOBBY MATCH SETTINGS</h3>
+              <p>Exact in-game lobby parameters mandatory for all custom matches. Lobby hosts must verify these presets prior to launching.</p>
+            </div>
+            <span class="val-badge">SECTION 2 OF 5</span>
+          </div>
+
+          <!-- Global Settings Table -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">GLOBAL</span>
+                <span>Universal Lobby Options (All Modes)</span>
+              </div>
+              <span class="val-badge">CORE PRESETS</span>
+            </div>
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Option Setting</th>
+                  <th>Required Value</th>
+                  <th>Description / Directive</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Friendly Fire</strong></td>
+                  <td><span class="val-badge">ENABLED</span></td>
+                  <td>Teammate weapon damage is active. 3 team-kills resets streak.</td>
+                </tr>
+                <tr>
+                  <td><strong>Killcam</strong></td>
+                  <td><span class="val-badge warn">DISABLED</span></td>
+                  <td>Killcam replay must be OFF to prevent ghost comms.</td>
+                </tr>
+                <tr>
+                  <td><strong>Max Health</strong></td>
+                  <td><span class="val-badge">100 (STANDARD)</span></td>
+                  <td>Normal competitive TTK (CDL standard).</td>
+                </tr>
+                <tr>
+                  <td><strong>Health Regeneration</strong></td>
+                  <td><span class="val-badge">NORMAL</span></td>
+                  <td>Standard automated health recovery delay.</td>
+                </tr>
+                <tr>
+                  <td><strong>Tactical Sprint</strong></td>
+                  <td><span class="val-badge">ENABLED</span></td>
+                  <td>Standard omni-directional mobility.</td>
+                </tr>
+                <tr>
+                  <td><strong>Weapon Mounting</strong></td>
+                  <td><span class="val-badge warn">DISABLED</span></td>
+                  <td>Ledge &amp; wall mounting is strictly forbidden.</td>
+                </tr>
+                <tr>
+                  <td><strong>Third-Person View</strong></td>
+                  <td><span class="val-badge warn">DISABLED</span></td>
+                  <td>First-person perspective only.</td>
+                </tr>
+                <tr>
+                  <td><strong>Radar Minimap</strong></td>
+                  <td><span class="val-badge">SWEEPING (STANDARD)</span></td>
+                  <td>Unsuppressed fire pings red dot on minimap.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <!-- Mode 1: Hardpoint -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">MODE 01</span>
+                <span>Hardpoint Required Parameters</span>
+              </div>
+              <span class="val-badge">250 PTS // 5 MIN</span>
+            </div>
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Setting</th>
+                  <th>Value</th>
+                  <th>Operational Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Time Limit</strong></td>
+                  <td><span class="val-badge">5 MINUTES (300S)</span></td>
+                  <td>Time elapses only when hill is uncontested.</td>
+                </tr>
+                <tr>
+                  <td><strong>Score Limit</strong></td>
+                  <td><span class="val-badge">250 POINTS</span></td>
+                  <td>First team to 250 captures victory.</td>
+                </tr>
+                <tr>
+                  <td><strong>Hill Lifetime</strong></td>
+                  <td><span class="val-badge">60 SECONDS</span></td>
+                  <td>Rotates every minute in linear sequence.</td>
+                </tr>
+                <tr>
+                  <td><strong>Contest Time Pause</strong></td>
+                  <td><span class="val-badge">ENABLED</span></td>
+                  <td>Game clock pauses while both teams contest.</td>
+                </tr>
+                <tr>
+                  <td><strong>Respawn Delay</strong></td>
+                  <td><span class="val-badge">2.5 SECONDS</span></td>
+                  <td>Standard competitive spawn wave delay.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <!-- Mode 2: Search & Destroy -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">MODE 02</span>
+                <span>Search &amp; Destroy Required Parameters</span>
+              </div>
+              <span class="val-badge">FIRST TO 6 ROUNDS</span>
+            </div>
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Setting</th>
+                  <th>Value</th>
+                  <th>Operational Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Round Win Limit</strong></td>
+                  <td><span class="val-badge">6 ROUNDS</span></td>
+                  <td>First squad to win 6 rounds claims the map.</td>
+                </tr>
+                <tr>
+                  <td><strong>Round Length</strong></td>
+                  <td><span class="val-badge">1.5 MINUTES (90S)</span></td>
+                  <td>Clock pauses once bomb is planted.</td>
+                </tr>
+                <tr>
+                  <td><strong>Bomb Timer</strong></td>
+                  <td><span class="val-badge">45 SECONDS</span></td>
+                  <td>Time allowed to defuse after plant.</td>
+                </tr>
+                <tr>
+                  <td><strong>Plant / Defuse Time</strong></td>
+                  <td><span class="val-badge">5.0S / 7.5S</span></td>
+                  <td>Standard 5-second plant, 7.5-second defuse.</td>
+                </tr>
+                <tr>
+                  <td><strong>Silent Plant</strong></td>
+                  <td><span class="val-badge">ENABLED</span></td>
+                  <td>No audible global plant announcement.</td>
+                </tr>
+                <tr>
+                  <td><strong>Round Switch</strong></td>
+                  <td><span class="val-badge">EVERY ROUND</span></td>
+                  <td>Teams alternate Offense/Defense each round.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <!-- Mode 3: Control -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">MODE 03</span>
+                <span>Control Required Parameters</span>
+              </div>
+              <span class="val-badge">FIRST TO 3 ROUNDS</span>
+            </div>
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Setting</th>
+                  <th>Value</th>
+                  <th>Operational Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Round Win Limit</strong></td>
+                  <td><span class="val-badge">3 ROUNDS</span></td>
+                  <td>First to 3 round wins takes the map.</td>
+                </tr>
+                <tr>
+                  <td><strong>Team Lives</strong></td>
+                  <td><span class="val-badge">30 LIVES</span></td>
+                  <td>30 shared squad lives per round.</td>
+                </tr>
+                <tr>
+                  <td><strong>Round Time</strong></td>
+                  <td><span class="val-badge">1.5 MINUTES (90S)</span></td>
+                  <td>Base clock before zone additions.</td>
+                </tr>
+                <tr>
+                  <td><strong>Capture Extra Time</strong></td>
+                  <td><span class="val-badge">+1.0 MINUTE</span></td>
+                  <td>Added when Zone A or B is successfully captured.</td>
+                </tr>
+                <tr>
+                  <td><strong>Respawn Delay</strong></td>
+                  <td><span class="val-badge">3.0 SECONDS</span></td>
+                  <td>Respawn wave timing.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- PANE 3: RESTRICTED & BANNED ITEMS                   -->
+        <!-- ==================================================== -->
+        <div id="pane-banned" class="rulebook-content-pane" style="display:none;" role="tabpanel" aria-labelledby="tab-btn-banned">
+          <div class="rule-section-head">
+            <div>
+              <h3>// 03. RESTRICTED &amp; BANNED ITEMS (CDL &amp; GAs)</h3>
+              <p>Comprehensive catalog of restricted weaponry, attachments, equipment, and scorestreaks barred from competitive play.</p>
+            </div>
+            <span class="val-badge warn">ENFORCED SANCTIONS</span>
+          </div>
+
+          <div class="rule-callout danger">
+            <strong>PENALTY DIRECTIVE:</strong> Equipping a restricted weapon, attachment, or equipment piece during a live match results in the immediate forfeit of that map upon video or screenshot verification submitted by opposing captains.
+          </div>
+
+          <div class="restriction-grid">
+            
+            <!-- Category 1: Banned Weapons -->
+            <div class="restriction-card">
+              <div class="restriction-card-head">
+                <h4>🔫 Banned Weapons</h4>
+                <span class="badge-banned">STRICTLY BANNED</span>
+              </div>
+              <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">The following complete weapon categories are prohibited:</p>
+              <div class="item-tag-list">
+                <span class="item-tag-pill banned-pill">❌ All Shotguns</span>
+                <span class="item-tag-pill banned-pill">❌ All LMGs (Light Machine Guns)</span>
+                <span class="item-tag-pill banned-pill">❌ All Rocket Launchers (RPG, PILA)</span>
+                <span class="item-tag-pill banned-pill">❌ Riot Shield</span>
+                <span class="item-tag-pill banned-pill">❌ Battle Rifles (BAS-B, Sidewinder)</span>
+                <span class="item-tag-pill banned-pill">❌ Burst Rifles (DG-58, FR 5.56)</span>
+                <span class="item-tag-pill banned-pill">❌ Heavy Snipers in Hardpoint / Control</span>
+              </div>
+              <div class="restriction-card-head" style="margin-top:16px;">
+                <h4 style="font-size:13px;">✅ Approved Weapons</h4>
+                <span class="badge-allowed">PERMITTED</span>
+              </div>
+              <div class="item-tag-list">
+                <span class="item-tag-pill allowed-pill">✓ Standard ARs (e.g. MCW)</span>
+                <span class="item-tag-pill allowed-pill">✓ Standard SMGs (Rival-9, Striker)</span>
+                <span class="item-tag-pill allowed-pill">✓ Approved Bolt-Action (SnD Only, Max 1)</span>
+                <span class="item-tag-pill allowed-pill">✓ Standard Combat Knife / Sidearm</span>
+              </div>
+            </div>
+
+            <!-- Category 2: Banned Attachments -->
+            <div class="restriction-card">
+              <div class="restriction-card-head">
+                <h4>⚙ Banned Attachments</h4>
+                <span class="badge-banned">ATTACHMENT GAs</span>
+              </div>
+              <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Weapon modifications that bypass radar or recoil dynamics:</p>
+              <div class="item-tag-list">
+                <span class="item-tag-pill banned-pill">❌ All Muzzle Suppressors &amp; Silencers</span>
+                <span class="item-tag-pill banned-pill">❌ All Visible Lasers &amp; Hip Lasers</span>
+                <span class="item-tag-pill banned-pill">❌ Thermal &amp; Target-Finding Optics</span>
+                <span class="item-tag-pill banned-pill">❌ High-Magnification Scopes (&gt;4.0x on AR)</span>
+                <span class="item-tag-pill banned-pill">❌ Extended Magazines (&gt;30 AR / &gt;40 SMG)</span>
+                <span class="item-tag-pill banned-pill">❌ Akimbo / Dual Wield Grips</span>
+                <span class="item-tag-pill banned-pill">❌ Incendiary / Explosive / Armor-Piercing Ammo</span>
+                <span class="item-tag-pill banned-pill">❌ Snake Shot &amp; High Grain Rounds</span>
+              </div>
+            </div>
+
+            <!-- Category 3: Lethals & Tacticals -->
+            <div class="restriction-card">
+              <div class="restriction-card-head">
+                <h4>💣 Lethals &amp; Tacticals</h4>
+                <span class="badge-banned">EQUIPMENT LIMITS</span>
+              </div>
+              <div class="item-tag-list">
+                <span class="item-tag-pill banned-pill">❌ Claymores &amp; Proximity Mines</span>
+                <span class="item-tag-pill banned-pill">❌ C4 &amp; Breacher Drones</span>
+                <span class="item-tag-pill banned-pill">❌ Drill Charges &amp; Thermite</span>
+                <span class="item-tag-pill banned-pill">❌ Flashbangs &amp; Shock Sticks</span>
+                <span class="item-tag-pill banned-pill">❌ Tear Gas &amp; Decoys</span>
+                <span class="item-tag-pill banned-pill">❌ Snapshot Grenades</span>
+              </div>
+              <div class="restriction-card-head" style="margin-top:16px;">
+                <h4 style="font-size:13px;">✅ Approved Equipment</h4>
+                <span class="badge-allowed">PERMITTED</span>
+              </div>
+              <div class="item-tag-list">
+                <span class="item-tag-pill allowed-pill">✓ Frag Grenade</span>
+                <span class="item-tag-pill allowed-pill">✓ Semtex Grenade</span>
+                <span class="item-tag-pill allowed-pill">✓ Stun Grenade (Max 2 per squad)</span>
+                <span class="item-tag-pill allowed-pill">✓ Smoke Grenade (SnD Only, Max 1)</span>
+              </div>
+            </div>
+
+            <!-- Category 4: Field Upgrades & Streaks -->
+            <div class="restriction-card">
+              <div class="restriction-card-head">
+                <h4>📡 Field Upgrades &amp; Streaks</h4>
+                <span class="badge-banned">RESTRICTED</span>
+              </div>
+              <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Artificial intelligence and radar assistance tools:</p>
+              <div class="item-tag-list">
+                <span class="item-tag-pill banned-pill">❌ Munitions Box &amp; Deployable Cover</span>
+                <span class="item-tag-pill banned-pill">❌ Portable Radar &amp; Heartbeat Sensor</span>
+                <span class="item-tag-pill banned-pill">❌ Inflatable Decoy &amp; Tactical Camera</span>
+                <span class="item-tag-pill banned-pill">❌ All AI Air Streaks (VTOL, Chopper)</span>
+                <span class="item-tag-pill banned-pill">❌ Sentry Turrets &amp; Wheelson</span>
+                <span class="item-tag-pill banned-pill">❌ UAV &amp; Counter-UAV</span>
+              </div>
+              <div class="restriction-card-head" style="margin-top:16px;">
+                <h4 style="font-size:13px;">✅ Approved Upgrades &amp; Streaks</h4>
+                <span class="badge-allowed">PERMITTED</span>
+              </div>
+              <div class="item-tag-list">
+                <span class="item-tag-pill allowed-pill">✓ Trophy System (Max 2 deployed per squad)</span>
+                <span class="item-tag-pill allowed-pill">✓ Cruise Missile / Hellstorm (500–600 Pts)</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- PANE 4: HOST, PING & DISCONNECTS                    -->
+        <!-- ==================================================== -->
+        <div id="pane-host" class="rulebook-content-pane" style="display:none;" role="tabpanel" aria-labelledby="tab-btn-host">
+          <div class="rule-section-head">
+            <div>
+              <h3>// 04. HOST DETERMINATION, PING &amp; DISCONNECTS</h3>
+              <p>Fair-play protocols regarding dedicated server hosting, regional ping balancing, and emergency match disconnect procedures.</p>
+            </div>
+            <span class="val-badge">SECTION 4 OF 5</span>
+          </div>
+
+          <!-- Host Protocol -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 4.1</span>
+                <span>Dedicated Server &amp; Host Selection Protocol</span>
+              </div>
+              <span class="val-badge">NEUTRAL SERVER</span>
+            </div>
+            <p class="rule-card-desc">
+              All series must be hosted on dedicated servers providing equitable ping for both teams.
+            </p>
+            <ul class="rule-card-list">
+              <li><strong>Regional Parity:</strong> If an NA East squad faces an NA West squad, the custom match must be hosted on a Central data center (e.g. Chicago, Dallas, or Kansas City) to balance ping latency.</li>
+              <li><strong>Alternating Host Order:</strong>
+                <br />• Map 1: Team A Host (Higher seed choice)
+                <br />• Map 2: Team B Host
+                <br />• Map 3: Team A Host
+                <br />• Map 4: Team B Host (if necessary)
+                <br />• Map 5: Neutral Central Server Host (Decider)
+              </li>
+              <li><strong>Ping Disparity Cap:</strong> If a player demonstrates persistent packet loss or latency exceeding 120ms due to host misrouting, captains must remake the lobby on an alternate neutral server.</li>
+            </ul>
+          </article>
+
+          <!-- Disconnect Protocol -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 4.2</span>
+                <span>Disconnection &amp; Remake Protocol</span>
+              </div>
+              <span class="val-badge warn">EVIDENCE MANDATORY</span>
+            </div>
+            <p class="rule-card-desc">
+              In the event a combatant disconnects or crashes during an active map, referees enforce the following protocols:
+            </p>
+            <ul class="rule-card-list">
+              <li><strong>First 30 Seconds / Pre-Combat:</strong> If a player disconnects prior to first blood or before the game clock reaches thirty (30) seconds, the lobby is immediately terminated and remade with identical rosters and classes.</li>
+              <li><strong>Mid-Game Hardpoint Crash:</strong> The remaining players continue until the current hill timer expires. The game is paused/ended, and a remake is launched with previous points recorded and carried forward to reach the 250-point target.</li>
+              <li><strong>Search &amp; Destroy Crash:</strong> The round in progress must be completed (no mid-round pauses). The lobby is remade for remaining rounds, retaining the exact round tally before the disconnect.</li>
+              <li><strong>Player Re-entry Window:</strong> A disconnected player has up to five (5) minutes to rejoin the lobby before the squad must substitute a registered reserve player or proceed 3v4.</li>
+            </ul>
+          </article>
+
+          <!-- Dispute Submission -->
+          <article class="rule-card">
+            <div class="rule-card-header">
+              <div class="rule-card-title">
+                <span class="rule-tag-id">§ 4.3</span>
+                <span>Match Disputes &amp; Proof Submission</span>
+              </div>
+              <span class="val-badge">DISCORD REFS</span>
+            </div>
+            <p class="rule-card-desc">
+              Match dispute tickets must be logged in the official Discord <code>#match-disputes</code> channel within thirty (30) minutes of series conclusion. All claims must include timestamped video recordings (Twitch/YouTube VOD) or clear scoreboard screenshots. Referees will not accept unsubstantiated hearsay.
+            </p>
+          </article>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- PANE 5: CAPTAIN'S MATCH CHECKLIST                   -->
+        <!-- ==================================================== -->
+        <div id="pane-checklist" class="rulebook-content-pane" style="display:none;" role="tabpanel" aria-labelledby="tab-btn-checklist">
+          <div class="rule-section-head">
+            <div>
+              <h3>// 05. CAPTAIN'S PRE-MATCH CHECKLIST</h3>
+              <p>Interactive verification protocol. Team captains should confirm each operational parameter prior to launching series.</p>
+            </div>
+            <span class="val-badge">INTERACTIVE CHECKLIST</span>
+          </div>
+
+          <div class="checklist-card">
+            <div class="check-item">
+              <input type="checkbox" id="chk-1" />
+              <div class="check-item-content">
+                <label for="chk-1" class="check-item-title">1. Discord Roster &amp; Gamertag Check</label>
+                <div class="check-item-desc">Confirm all 4 starters match the registered Activision IDs logged on the Frontline Team Profile.</div>
+              </div>
+            </div>
+
+            <div class="check-item">
+              <input type="checkbox" id="chk-2" />
+              <div class="check-item-content">
+                <label for="chk-2" class="check-item-title">2. Lobby Host &amp; Neutral Server Verification</label>
+                <div class="check-item-desc">Verify host region provides balanced ping (Central host for East vs West matchups).</div>
+              </div>
+            </div>
+
+            <div class="check-item">
+              <input type="checkbox" id="chk-3" />
+              <div class="check-item-content">
+                <label for="chk-3" class="check-item-title">3. Custom Game Presets Loaded</label>
+                <div class="check-item-desc">Double-check: Friendly Fire = ON, Killcam = OFF, Mounting = DISABLED, Health = 100.</div>
+              </div>
+            </div>
+
+            <div class="check-item">
+              <input type="checkbox" id="chk-4" />
+              <div class="check-item-content">
+                <label for="chk-4" class="check-item-title">4. Restricted Weapons &amp; Attachments Audit</label>
+                <div class="check-item-desc">Ensure zero suppressors, zero lasers, zero shotguns/LMGs, and approved lethal/tacticals only.</div>
+              </div>
+            </div>
+
+            <div class="check-item">
+              <input type="checkbox" id="chk-5" />
+              <div class="check-item-content">
+                <label for="chk-5" class="check-item-title">5. Official Map Pick/Ban Logged</label>
+                <div class="check-item-desc">Post the agreed Hardpoint, SnD, and Control maps in your official Discord match thread.</div>
+              </div>
+            </div>
+
+            <div class="check-item">
+              <input type="checkbox" id="chk-6" />
+              <div class="check-item-content">
+                <label for="chk-6" class="check-item-title">6. End-of-Map Scoreboard Capture</label>
+                <div class="check-item-desc">Take screenshots of final scoreboard after every map for official score recording and dispute defense.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-top:16px;">
+            <span style="font-size:12.5px; color:var(--muted);">All checks completed? You are cleared for live competitive combat.</span>
+            <button type="button" id="btn-reset-checklist" class="btn-submit-signup" style="background:#202418; color:var(--lime); border:1px solid #485223; padding:8px 16px; font-size:12px;">
+              Reset Checklist ↺
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <div class="footer-info">
+          <strong>FRONTLINE · COMMUNITY LEAGUE</strong>
+          <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
+        </div>
+        <div class="footer-links">
+          <a href="index.html#league">League</a>
+          <a href="index.html#standings">Standings</a>
+          <a href="schedule.html">Schedule</a>
+          <a href="teams.html">Teams</a>
+          <a href="players.html">Players</a>
+          <a href="brackets.html">Brackets</a>
+          <a href="draft.html">Draft HQ</a>
+          <a href="rules.html" style="color:var(--lime);">Rulebook</a>
+          <a href="livestreams.html">Livestreams</a>
+          <a href="vods.html">VODs</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Supabase JS Client, Data Loader & Bullet Impact Sparks -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js?v=2"></script>
+    <script src="./bullet-sparks.js"></script>
+    <script>
+      // ==========================================
+      // TAB CONTROLLER (TOP-LEFT TABS)
+      // ==========================================
+      const tabButtons = document.querySelectorAll(".rule-tab-btn");
+      const panes = {
+        league: document.getElementById("pane-league"),
+        settings: document.getElementById("pane-settings"),
+        banned: document.getElementById("pane-banned"),
+        host: document.getElementById("pane-host"),
+        checklist: document.getElementById("pane-checklist")
+      };
+
+      function switchRuleTab(targetTabId) {
+        tabButtons.forEach(btn => {
+          const isTarget = btn.getAttribute("data-tab") === targetTabId;
+          btn.classList.toggle("active", isTarget);
+          btn.setAttribute("aria-selected", isTarget ? "true" : "false");
+        });
+
+        Object.keys(panes).forEach(key => {
+          if (panes[key]) {
+            panes[key].style.display = key === targetTabId ? "block" : "none";
+          }
+        });
+
+        // Smooth scroll to container top if user switched from down below
+        const container = document.getElementById("rulebook-container");
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          if (rect.top < 0) {
+            container.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      }
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tab = btn.getAttribute("data-tab");
+          if (tab) {
+            switchRuleTab(tab);
+            window.location.hash = tab;
+          }
+        });
+      });
+
+      // Support direct URL hash linking (e.g. rules.html#settings, rules.html#banned)
+      const hash = window.location.hash.replace("#", "").toLowerCase();
+      if (hash && panes[hash]) {
+        switchRuleTab(hash);
+      }
+
+      // ==========================================
+      // REAL-TIME SEARCH FILTER
+      // ==========================================
+      const searchInput = document.getElementById("rule-search-input");
+      searchInput?.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const activePane = Object.values(panes).find(p => p && p.style.display !== "none");
+        if (!activePane) return;
+
+        const cards = activePane.querySelectorAll(".rule-card, .restriction-card, .check-item, table tbody tr");
+        cards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          if (!query || text.includes(query)) {
+            card.style.display = "";
+          } else {
+            card.style.display = "none";
+          }
+        });
+      });
+
+      // Reset Checklist
+      const btnResetChecklist = document.getElementById("btn-reset-checklist");
+      btnResetChecklist?.addEventListener("click", () => {
+        const checkboxes = document.querySelectorAll(".checklist-card input[type='checkbox']");
+        checkboxes.forEach(chk => chk.checked = false);
+      });
+
+      // User-Centered Navigation: Close dropdown on outside click or Escape key
+      document.addEventListener("click", (e) => {
+        const toggle = document.getElementById("menu-toggle");
+        const menuWrap = document.querySelector(".menu-toggle");
+        if (toggle && toggle.checked && menuWrap && !menuWrap.contains(e.target)) {
+          toggle.checked = false;
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const toggle = document.getElementById("menu-toggle");
+          if (toggle) toggle.checked = false;
+        }
+      });
+    </script>
+  </body>
+</html>
