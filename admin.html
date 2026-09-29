@@ -1776,6 +1776,14 @@
           if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
             const session = await window.LeagueDB.getAuthSession();
             if (session?.user) {
+              const role = session.user.app_metadata?.role || session.user.user_metadata?.role;
+              if (role === "player") {
+                // Deny player accounts from admin console
+                await lockConsole();
+                gateError.textContent = "Access Denied: You are logged in with a Combatant Player account. Staff credentials required.";
+                gateError.style.display = "block";
+                return;
+              }
               unlockConsole(session.user.email);
               return;
             }

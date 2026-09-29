@@ -2899,6 +2899,15 @@ window.LeagueDB = {
       if (error) {
         return { success: false, error: error.message };
       }
+      // Security Check: verify this is NOT a regular player account
+      const userRole = data.user?.app_metadata?.role || data.user?.user_metadata?.role;
+      if (userRole === "player") {
+        await dbClient.auth.signOut();
+        return {
+          success: false,
+          error: "Access Denied: This is a Combatant Player account. Staff credentials are required for the Admin Console."
+        };
+      }
       return { success: true, user: data.user, session: data.session };
     } catch (err) {
       return { success: false, error: err.message || "Sign-in error occurred." };
