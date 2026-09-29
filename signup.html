@@ -6,6 +6,155 @@
     <meta name="theme-color" content="#11120f" />
     <link rel="stylesheet" href="./styles.css" />
     <title>League Sign Up — Frontline Call of Duty League</title>
+    <style>
+      /* Account Gate & Combatant Auth Bar Styles */
+      .account-gate-card {
+        border: 1px solid #485223;
+        background: linear-gradient(135deg, #1b1e15 0%, #12130e 100%);
+        padding: 40px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(213, 244, 91, 0.08);
+        max-width: 620px;
+        margin: 20px auto 40px;
+        position: relative;
+        text-align: center;
+      }
+      .account-gate-card::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 30px;
+        width: 90px;
+        height: 2px;
+        background: var(--lime);
+      }
+      .gate-icon-badge {
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 16px;
+        background: #1e2017;
+        border: 1px solid var(--lime);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--lime);
+        font-size: 22px;
+        box-shadow: 0 0 20px rgba(213, 244, 91, 0.25);
+      }
+      .gate-kicker {
+        color: var(--lime);
+        font: 800 11px var(--admin-font, monospace);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .gate-title {
+        font: 800 30px/1.1 var(--display);
+        text-transform: uppercase;
+        margin: 0 0 12px;
+        color: var(--text);
+        letter-spacing: 0.5px;
+      }
+      .gate-subtitle {
+        color: var(--muted);
+        font-size: 13.5px;
+        line-height: 1.6;
+        margin: 0 0 24px;
+      }
+      .gate-tab-nav {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 12px;
+      }
+      .gate-tab-btn {
+        flex: 1;
+        background: #181a13;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font: 700 12px var(--body);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 11px 18px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .gate-tab-btn:hover {
+        color: var(--text);
+        border-color: #596138;
+      }
+      .gate-tab-btn.active {
+        background: #252a1b;
+        border-color: var(--lime);
+        color: var(--lime);
+      }
+      .gate-error-banner {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+        font-size: 13px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+        border-radius: 2px;
+        display: none;
+        text-align: left;
+      }
+      .gate-success-banner {
+        background: rgba(213, 244, 91, 0.12);
+        border: 1px solid rgba(213, 244, 91, 0.4);
+        color: var(--lime);
+        font-size: 13px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+        border-radius: 2px;
+        display: none;
+        text-align: left;
+      }
+      .combatant-auth-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        background: #181a12;
+        border: 1px solid #3c421f;
+        padding: 12px 18px;
+        margin-bottom: 24px;
+      }
+      .combatant-auth-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 12.5px;
+      }
+      .auth-kicker {
+        color: var(--lime);
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 11px;
+      }
+      .btn-player-signout {
+        background: transparent;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #f87171;
+        font: 700 11.5px var(--body);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 6px 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+      }
+      .btn-player-signout:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #ef4444;
+      }
+    </style>
   </head>
   <body>
     <header class="header">
@@ -85,7 +234,167 @@
     <main>
       <section class="join" style="padding: 40px 0 80px;">
         <div class="wrap">
-          <div class="signup-terminal">
+          <!-- ======================================================== -->
+          <!-- STEP 01: COMBATANT ACCOUNT GATE (SHOWN WHEN LOGGED OUT)  -->
+          <!-- ======================================================== -->
+          <div id="account-gate-container" class="account-gate-card">
+            <div class="gate-icon-badge">
+              <span class="gate-icon-lock">🔒</span>
+            </div>
+            <div class="gate-kicker">RECRUITMENT PROTOCOL // STEP 01</div>
+            <h2 class="gate-title">COMBATANT <span style="color:var(--lime);">ACCOUNT PORTAL</span></h2>
+            <p class="gate-subtitle">
+              To verify tournament eligibility and track your squad dossier, create or sign into your official Frontline combatant account below. Once authenticated, the Season 1 Registration Terminal will unlock automatically.
+            </p>
+
+            <!-- Gate Tabs: Register vs Sign In -->
+            <div class="gate-tab-nav" role="tablist">
+              <button type="button" id="tab-btn-create-acc" class="gate-tab-btn active" role="tab">
+                <span>★ Create New Account</span>
+              </button>
+              <button type="button" id="tab-btn-signin-acc" class="gate-tab-btn" role="tab">
+                <span>Sign In to Account</span>
+              </button>
+            </div>
+
+            <!-- Banners -->
+            <div id="gate-error-banner" class="gate-error-banner"></div>
+            <div id="gate-success-banner" class="gate-success-banner"></div>
+
+            <!-- Panel A: Create Account Form -->
+            <form id="form-create-account" class="signup-form" style="display:flex; flex-direction:column; gap:16px;">
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="reg-email">
+                  Player / Manager Email Address <span class="req">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="reg-email"
+                  class="form-control"
+                  placeholder="e.g. operative@frontlineleague.com"
+                  required
+                  autocomplete="email"
+                />
+                <span class="form-hint">Used for league confirmation dispatches and roster notifications</span>
+              </div>
+
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="reg-gamertag">
+                  Gamertag / Competitive Alias <span class="req">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="reg-gamertag"
+                  class="form-control"
+                  placeholder="e.g. Apex, Ghost, Shotzzy"
+                  required
+                  autocomplete="nickname"
+                />
+                <span class="form-hint">Your in-game combatant identity</span>
+              </div>
+
+              <div class="form-grid" style="gap:14px;">
+                <div class="form-group" style="text-align:left;">
+                  <label class="form-label" for="reg-password">
+                    Create Password <span class="req">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    id="reg-password"
+                    class="form-control"
+                    placeholder="Min. 6 characters"
+                    minlength="6"
+                    required
+                    autocomplete="new-password"
+                  />
+                </div>
+                <div class="form-group" style="text-align:left;">
+                  <label class="form-label" for="reg-password-confirm">
+                    Confirm Password <span class="req">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    id="reg-password-confirm"
+                    class="form-control"
+                    placeholder="Repeat password"
+                    minlength="6"
+                    required
+                    autocomplete="new-password"
+                  />
+                </div>
+              </div>
+
+              <button type="submit" id="btn-create-acc-submit" class="btn-submit-signup" style="width:100%; justify-content:center; margin-top:8px;">
+                <span>Create Account &amp; Unlock Registration</span>
+                <span style="font-size:16px;">⚡</span>
+              </button>
+
+              <div style="font-size:12px; color:var(--muted); text-align:center; margin-top:8px;">
+                Already have an account? <a href="javascript:void(0)" id="link-goto-signin" style="color:var(--lime); font-weight:700; text-decoration:underline;">Sign In here</a>
+              </div>
+            </form>
+
+            <!-- Panel B: Sign In Form -->
+            <form id="form-signin-account" class="signup-form" style="display:none; flex-direction:column; gap:16px;">
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="signin-email">
+                  Account Email Address <span class="req">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="signin-email"
+                  class="form-control"
+                  placeholder="e.g. operative@frontlineleague.com"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="signin-password">
+                  Password <span class="req">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="signin-password"
+                  class="form-control"
+                  placeholder="••••••••••••"
+                  required
+                  autocomplete="current-password"
+                />
+              </div>
+
+              <button type="submit" id="btn-signin-acc-submit" class="btn-submit-signup" style="width:100%; justify-content:center; margin-top:8px;">
+                <span>Sign In &amp; Unlock Registration</span>
+                <span style="font-size:16px;">↗</span>
+              </button>
+
+              <div style="font-size:12px; color:var(--muted); text-align:center; margin-top:8px;">
+                Don't have an account yet? <a href="javascript:void(0)" id="link-goto-create" style="color:var(--lime); font-weight:700; text-decoration:underline;">Create New Account</a>
+              </div>
+            </form>
+          </div>
+
+          <!-- ======================================================== -->
+          <!-- STEP 02: REGISTRATION TERMINAL (UNLOCKED AFTER AUTH)     -->
+          <!-- ======================================================== -->
+          <div id="registration-terminal" class="signup-terminal" style="display: none;">
+            <!-- Combatant Auth Status Bar -->
+            <div class="combatant-auth-bar">
+              <div class="combatant-auth-info">
+                <span class="live-pulse-dot" style="background:var(--lime); width:8px; height:8px;"></span>
+                <span class="auth-kicker">STEP 02: LEAGUE DOSSIER</span>
+                <span style="color:var(--muted); font-size:12px;">|</span>
+                <span style="color:var(--muted); font-size:12px;">VERIFIED COMBATANT:</span>
+                <strong id="combatant-display-email" style="color:#fff;">combatant@example.com</strong>
+                <span id="combatant-display-gamertag" style="color:var(--lime); font-weight:700;"></span>
+              </div>
+              <button type="button" id="btn-player-signout" class="btn-player-signout" title="Sign out of player account">
+                <span>Sign Out / Switch Account</span>
+                <span>⎋</span>
+              </button>
+            </div>
+
             <div class="signup-header">
               <div class="kicker">Frontline Recruitment Division</div>
               <h2>Enlist in the <em>League</em></h2>
@@ -632,6 +941,226 @@
     <script src="./supabase.js?v=2"></script>
     <script src="./bullet-sparks.js"></script>
     <script>
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>"']/g, (m) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        })[m]);
+      }
+
+      // ==========================================
+      // COMBATANT ACCOUNT GATE CONTROLLER
+      // ==========================================
+      const gateContainer = document.getElementById("account-gate-container");
+      const regTerminal = document.getElementById("registration-terminal");
+      const tabBtnCreate = document.getElementById("tab-btn-create-acc");
+      const tabBtnSignIn = document.getElementById("tab-btn-signin-acc");
+      const formCreate = document.getElementById("form-create-account");
+      const formSignIn = document.getElementById("form-signin-account");
+      const gateError = document.getElementById("gate-error-banner");
+      const gateSuccess = document.getElementById("gate-success-banner");
+      const linkGotoSignin = document.getElementById("link-goto-signin");
+      const linkGotoCreate = document.getElementById("link-goto-create");
+      const btnPlayerSignout = document.getElementById("btn-player-signout");
+      const displayEmail = document.getElementById("combatant-display-email");
+      const displayGamertag = document.getElementById("combatant-display-gamertag");
+
+      let currentCombatantUser = null;
+
+      function showGateError(msg) {
+        if (!gateError) return;
+        gateError.innerHTML = msg;
+        gateError.style.display = "block";
+        if (gateSuccess) gateSuccess.style.display = "none";
+      }
+
+      function showGateSuccess(msg) {
+        if (!gateSuccess) return;
+        gateSuccess.innerHTML = msg;
+        gateSuccess.style.display = "block";
+        if (gateError) gateError.style.display = "none";
+      }
+
+      function clearGateBanners() {
+        if (gateError) gateError.style.display = "none";
+        if (gateSuccess) gateSuccess.style.display = "none";
+      }
+
+      function switchGateTab(tab) {
+        clearGateBanners();
+        if (tab === "create") {
+          tabBtnCreate?.classList.add("active");
+          tabBtnSignIn?.classList.remove("active");
+          if (formCreate) formCreate.style.display = "flex";
+          if (formSignIn) formSignIn.style.display = "none";
+        } else {
+          tabBtnSignIn?.classList.add("active");
+          tabBtnCreate?.classList.remove("active");
+          if (formSignIn) formSignIn.style.display = "flex";
+          if (formCreate) formCreate.style.display = "none";
+        }
+      }
+
+      tabBtnCreate?.addEventListener("click", () => switchGateTab("create"));
+      tabBtnSignIn?.addEventListener("click", () => switchGateTab("signin"));
+      linkGotoSignin?.addEventListener("click", () => switchGateTab("signin"));
+      linkGotoCreate?.addEventListener("click", () => switchGateTab("create"));
+
+      function unlockRegistrationTerminal(user) {
+        currentCombatantUser = user;
+        const email = user.email || "";
+        const metaGamertag = user.user_metadata?.gamertag || "";
+
+        if (displayEmail) displayEmail.textContent = email;
+        if (displayGamertag) {
+          displayGamertag.textContent = metaGamertag ? `[${metaGamertag}]` : "";
+        }
+
+        // Prefill Gamertag in Solo Free Agent form if empty
+        const gamertagInput = document.getElementById("gamertag");
+        if (gamertagInput && !gamertagInput.value && metaGamertag) {
+          gamertagInput.value = metaGamertag;
+        }
+
+        // Prefill Contact Email in Team Franchise form if empty
+        const contactEmailInput = document.getElementById("contact_email");
+        if (contactEmailInput && !contactEmailInput.value && email) {
+          contactEmailInput.value = email;
+        }
+
+        if (gateContainer) gateContainer.style.display = "none";
+        if (regTerminal) {
+          regTerminal.style.display = "block";
+          regTerminal.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      function lockRegistrationTerminal() {
+        currentCombatantUser = null;
+        if (regTerminal) regTerminal.style.display = "none";
+        if (gateContainer) gateContainer.style.display = "block";
+        clearGateBanners();
+      }
+
+      // Check active player session on page load
+      async function checkInitialCombatantAuth() {
+        if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
+          const session = await window.LeagueDB.getAuthSession();
+          if (session?.user) {
+            unlockRegistrationTerminal(session.user);
+            return;
+          }
+        }
+        lockRegistrationTerminal();
+      }
+
+      // Handle Create Account Submission
+      formCreate?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearGateBanners();
+
+        const email = document.getElementById("reg-email")?.value.trim() || "";
+        const gamertag = document.getElementById("reg-gamertag")?.value.trim() || "";
+        const password = document.getElementById("reg-password")?.value || "";
+        const passwordConfirm = document.getElementById("reg-password-confirm")?.value || "";
+        const submitBtn = document.getElementById("btn-create-acc-submit");
+
+        if (password !== passwordConfirm) {
+          showGateError("Passwords do not match. Please verify and retype.");
+          return;
+        }
+
+        if (password.length < 6) {
+          showGateError("Password must be at least 6 characters long.");
+          return;
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span>CREATING ACCOUNT & INITIALIZING DOSSIER...</span><span>⏳</span>`;
+        }
+
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.signUpPlayer === "function") {
+            const res = await window.LeagueDB.signUpPlayer(email, password, gamertag);
+            if (res.success) {
+              if (res.requiresEmailConfirmation) {
+                showGateSuccess(`✓ Account registered for <strong>${escapeHtml(email)}</strong>! A confirmation email has been dispatched. Please check your inbox and confirm your email, then sign in below to unlock registration.`);
+                switchGateTab("signin");
+                const signinEmail = document.getElementById("signin-email");
+                if (signinEmail) signinEmail.value = email;
+              } else if (res.user) {
+                unlockRegistrationTerminal(res.user);
+              }
+            } else {
+              showGateError(res.error || "Failed to create account. Please try again.");
+            }
+          } else {
+            showGateError("Supabase authentication client not initialized.");
+          }
+        } catch (err) {
+          showGateError(err.message || "An unexpected error occurred during account creation.");
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Create Account &amp; Unlock Registration</span><span style="font-size:16px;">⚡</span>`;
+          }
+        }
+      });
+
+      // Handle Sign In Submission
+      formSignIn?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearGateBanners();
+
+        const email = document.getElementById("signin-email")?.value.trim() || "";
+        const password = document.getElementById("signin-password")?.value || "";
+        const submitBtn = document.getElementById("btn-signin-acc-submit");
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span>AUTHENTICATING ACCOUNT...</span><span>⏳</span>`;
+        }
+
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.signInPlayer === "function") {
+            const res = await window.LeagueDB.signInPlayer(email, password);
+            if (res.success && res.user) {
+              unlockRegistrationTerminal(res.user);
+            } else {
+              showGateError(res.error || "Invalid email or password. Please try again.");
+            }
+          } else {
+            showGateError("Supabase authentication client not initialized.");
+          }
+        } catch (err) {
+          showGateError(err.message || "Sign-in error occurred.");
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Sign In &amp; Unlock Registration</span><span style="font-size:16px;">↗</span>`;
+          }
+        }
+      });
+
+      // Handle Sign Out
+      btnPlayerSignout?.addEventListener("click", async () => {
+        if (confirm("Are you sure you want to sign out of your combatant account?")) {
+          if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
+            await window.LeagueDB.signOutPlayer();
+          }
+          lockRegistrationTerminal();
+          showGateSuccess("✓ Successfully signed out. Authenticate to enter the registration terminal.");
+        }
+      });
+
+      // Execute session verification on startup
+      checkInitialCombatantAuth();
+
       // ==========================================
       // TAB SWITCHING (SOLO VS TEAM/ORG FRANCHISE)
       // ==========================================
@@ -642,19 +1171,19 @@
 
       function switchTab(activeTab) {
         if (activeTab === "solo") {
-          tabSoloBtn.classList.add("active");
-          tabSoloBtn.setAttribute("aria-selected", "true");
-          tabTeamBtn.classList.remove("active");
-          tabTeamBtn.setAttribute("aria-selected", "false");
-          paneSolo.style.display = "block";
-          paneTeam.style.display = "none";
+          tabSoloBtn?.classList.add("active");
+          tabSoloBtn?.setAttribute("aria-selected", "true");
+          tabTeamBtn?.classList.remove("active");
+          tabTeamBtn?.setAttribute("aria-selected", "false");
+          if (paneSolo) paneSolo.style.display = "block";
+          if (paneTeam) paneTeam.style.display = "none";
         } else {
-          tabTeamBtn.classList.add("active");
-          tabTeamBtn.setAttribute("aria-selected", "true");
-          tabSoloBtn.classList.remove("active");
-          tabSoloBtn.setAttribute("aria-selected", "false");
-          paneTeam.style.display = "block";
-          paneSolo.style.display = "none";
+          tabTeamBtn?.classList.add("active");
+          tabTeamBtn?.setAttribute("aria-selected", "true");
+          tabSoloBtn?.classList.remove("active");
+          tabSoloBtn?.setAttribute("aria-selected", "false");
+          if (paneTeam) paneTeam.style.display = "block";
+          if (paneSolo) paneSolo.style.display = "none";
         }
       }
 
@@ -672,17 +1201,6 @@
       const signupForm = document.getElementById("league-signup-form");
       const alertBox = document.getElementById("signup-alert-box");
       const submitBtn = document.getElementById("btn-submit-signup");
-
-      function escapeHtml(str) {
-        if (!str) return "";
-        return String(str).replace(/[&<>"']/g, (m) => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        })[m]);
-      }
 
       const regTypeSelect = document.getElementById("registration_type");
       const teamNameInput = document.getElementById("team_name");
@@ -703,6 +1221,10 @@
         signupForm.addEventListener("submit", async (e) => {
           e.preventDefault();
 
+          const rawNotes = document.getElementById("notes").value.trim();
+          const accountTag = currentCombatantUser?.email ? `[Account: ${currentCombatantUser.email}] ` : "";
+          const finalNotes = rawNotes ? `${accountTag}${rawNotes}` : (accountTag ? accountTag.trim() : null);
+
           const signupData = {
             gamertag: document.getElementById("gamertag").value.trim(),
             discord_username: document.getElementById("discord_username").value.trim(),
@@ -712,7 +1234,7 @@
             role: document.getElementById("role").value,
             platform: document.getElementById("platform").value,
             region: document.getElementById("region").value,
-            notes: document.getElementById("notes").value.trim() || null,
+            notes: finalNotes,
             status: "Pending"
           };
 

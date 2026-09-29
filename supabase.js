@@ -2915,6 +2915,66 @@ window.LeagueDB = {
     }
   },
 
+  // ==========================================
+  // PLAYER / USER AUTHENTICATION (SUPABASE AUTH)
+  // ==========================================
+  async signUpPlayer(email, password, gamertag = "") {
+    if (!dbClient) {
+      return { success: false, error: "Database client is not connected." };
+    }
+    try {
+      const { data, error } = await dbClient.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            gamertag: gamertag.trim() || undefined,
+            role: "player"
+          }
+        }
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return {
+        success: true,
+        user: data.user,
+        session: data.session,
+        requiresEmailConfirmation: !data.session && !!data.user
+      };
+    } catch (err) {
+      return { success: false, error: err.message || "Account creation failed." };
+    }
+  },
+
+  async signInPlayer(email, password) {
+    if (!dbClient) {
+      return { success: false, error: "Database client is not connected." };
+    }
+    try {
+      const { data, error } = await dbClient.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true, user: data.user, session: data.session };
+    } catch (err) {
+      return { success: false, error: err.message || "Sign-in error occurred." };
+    }
+  },
+
+  async signOutPlayer() {
+    if (!dbClient) return { success: true };
+    try {
+      await dbClient.auth.signOut();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
   paypalConfig: PAYPAL_CONFIG,
   isConfigured: isSupabaseConfigured
 };
