@@ -2963,15 +2963,74 @@ window.LeagueDB = {
 })();
 
 // ==============================================================================
-// STEALTH ADMIN ACCESS TRIGGER (Ctrl+Shift+A only)
+// STEALTH ADMIN ACCESS TRIGGER
 // ==============================================================================
 (function setupStealthAdminTrigger() {
-  // Keyboard Shortcut: Ctrl + Shift + A (or Cmd + Shift + A on Mac)
-  document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "A" || e.key === "a")) {
-      e.preventDefault();
-      window.location.href = "admin.html";
-    }
-  });
+  if (window.__stealthAdminTriggerInstalled) return;
+  window.__stealthAdminTriggerInstalled = true;
+
+  let keyBuffer = "";
+
+  function triggerAdminRedirect() {
+    if (window.location.pathname.endsWith("admin.html")) return;
+    window.location.href = "admin.html";
+  }
+
+  // Use capture phase on window so nothing intercepts or prevents the event
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      const activeEl = document.activeElement;
+      const isInput =
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.tagName === "SELECT" ||
+          activeEl.isContentEditable);
+
+      const key = (e.key || "").toLowerCase();
+      const code = e.code || "";
+
+      // 1. Classic Call of Duty console key: Tilde / Backtick ` or ~ (when not in a text box)
+      if (!isInput && (key === "`" || key === "~" || code === "Backquote")) {
+        e.preventDefault();
+        triggerAdminRedirect();
+        return;
+      }
+
+      // 2. Secret word: typing "admin" anywhere on page (when not in a text box)
+      if (!isInput && key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        keyBuffer += key;
+        if (keyBuffer.length > 10) keyBuffer = keyBuffer.slice(-10);
+        if (keyBuffer.endsWith("admin")) {
+          keyBuffer = "";
+          triggerAdminRedirect();
+          return;
+        }
+      }
+
+      // 3. Ctrl + Shift + L (L for League / Login - completely free of browser conflicts)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === "l" || code === "KeyL")) {
+        e.preventDefault();
+        triggerAdminRedirect();
+        return;
+      }
+
+      // 4. Alt + A (Simple, fast, no browser conflict)
+      if (e.altKey && !e.ctrlKey && !e.shiftKey && (key === "a" || code === "KeyA")) {
+        e.preventDefault();
+        triggerAdminRedirect();
+        return;
+      }
+
+      // 5. Ctrl + Alt + A
+      if ((e.ctrlKey || e.metaKey) && e.altKey && (key === "a" || code === "KeyA")) {
+        e.preventDefault();
+        triggerAdminRedirect();
+        return;
+      }
+    },
+    true
+  );
 })();
 
