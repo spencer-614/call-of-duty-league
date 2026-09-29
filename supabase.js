@@ -86,6 +86,58 @@ const MOCK_DATA = {
     status_state: "active",
     status_text: "SEASON 1 ACTIVE"
   },
+  rulebook: {
+    version_tag: "CDL 2026 ALIGNED - V1.4",
+    headline: "LEAGUE RULEBOOK & MATCH DIRECTIVES",
+    intro_text: "Standardized operational regulations, mandatory custom lobby match settings, and restricted equipment directives for all Frontline Community League sanctioned matches.",
+    bulletin_active: false,
+    bulletin_text: "⚡ MID-SEASON NOTICE: Review the updated attachment and secondary weapon guidelines below.",
+    bulletin_type: "lime",
+    
+    roster_size: "4 active starters + up to 2 reserves",
+    forfeit_map1_min: 10,
+    forfeit_series_min: 15,
+    series_format: "Best of 5 (Hardpoint, SnD, Control, Hardpoint, SnD)",
+    conduct_policy: "Zero tolerance for hardware cheats (Cronus/XIM), macros, wallhacks, or toxic abuse. Violations trigger immediate forfeit and expulsion.",
+    
+    hardpoint_score_limit: 250,
+    hardpoint_time_limit: 5,
+    hardpoint_hill_timer: 60,
+    hardpoint_respawn_delay: 2.5,
+    
+    snd_round_win_limit: 6,
+    snd_round_length: 1.5,
+    snd_bomb_timer: 45,
+    snd_plant_time: 5.0,
+    snd_defuse_time: 7.5,
+    
+    control_round_win_limit: 3,
+    control_lives: 30,
+    control_round_time: 1.5,
+    control_capture_extra: 1.0,
+    control_respawn_delay: 3.0,
+    
+    friendly_fire: "Enabled",
+    killcam: "Disabled",
+    radar: "Sweeping (Standard)",
+    mounting: "Disabled",
+    third_person: "Disabled",
+    
+    banned_weapons: "All Shotguns, All LMGs (Light Machine Guns), All Rocket Launchers (RPG, PILA, JOKR), Riot Shield, Battle Rifles (BAS-B, Sidewinder), Burst Rifles (DG-58, FR 5.56), Heavy Snipers in Hardpoint / Control",
+    allowed_weapons: "Standard ARs (e.g. MCW), Standard SMGs (Rival-9, Striker), Approved Bolt-Action (SnD Only, Max 1), Standard Combat Knife / Sidearm",
+    
+    banned_attachments: "All Muzzle Suppressors & Silencers, All Visible Lasers & Hip Lasers, Thermal & Target-Finding Optics, High-Magnification Scopes (>4.0x on AR), Extended Magazines (>30 AR / >40 SMG), Akimbo / Dual Wield Grips, Incendiary / Explosive / Armor-Piercing Ammo, Snake Shot & High Grain Rounds",
+    
+    banned_equipment: "Claymores & Proximity Mines, C4 & Breacher Drones, Drill Charges & Thermite, Flashbangs & Shock Sticks, Tear Gas & Decoys, Snapshot Grenades",
+    allowed_equipment: "Frag Grenade, Semtex Grenade, Stun Grenade (Max 2 per squad), Smoke Grenade (SnD Only, Max 1)",
+    
+    banned_upgrades_streaks: "Munitions Box & Deployable Cover, Portable Radar & Heartbeat Sensor, Inflatable Decoy & Tactical Camera, All AI Air Streaks (VTOL, Chopper), Sentry Turrets & Wheelson, UAV & Counter-UAV",
+    allowed_upgrades_streaks: "Trophy System (Max 2 deployed per squad), Cruise Missile / Hellstorm (500–600 Pts)",
+    
+    host_rules: "Regional parity: Central host (Chicago/Dallas) for East vs West matchups. Alternating host order (Team A Maps 1/3, Team B Maps 2/4, neutral Map 5).",
+    disconnect_rules: "First 30 seconds / pre-combat crash: immediate remake. Mid-game Hardpoint: pause and carry forward scores. Search & Destroy: finish active round, remake with previous round score retained.",
+    dispute_rules: "Match dispute tickets must be logged in Discord #match-disputes within 30 minutes with timestamped video (Twitch/YouTube) or scoreboard screenshots."
+  },
   announcements: [
     {
       id: 1,
@@ -2203,6 +2255,169 @@ window.LeagueDB = {
       const boldColor = isComingSoon ? "#ffb300" : "var(--lime)";
       heroTag.innerHTML = `${topText}<b style="color:${boldColor};">${boldText}</b>`;
     }
+  },
+
+  // ==============================================================================
+  // RULEBOOK & MATCH DIRECTIVES ENGINE
+  // ==============================================================================
+  async getRulebook() {
+    // 1. Try Supabase cloud sync first if configured
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", "rulebook")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            MOCK_DATA.rulebook = { ...MOCK_DATA.rulebook, ...parsed };
+            try {
+              localStorage.setItem("frontline_rulebook_data", JSON.stringify(MOCK_DATA.rulebook));
+            } catch (e) {}
+            return MOCK_DATA.rulebook;
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn("Supabase getRulebook query error:", err);
+      }
+    }
+
+    // 2. Local storage check
+    try {
+      const saved = localStorage.getItem("frontline_rulebook_data");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        MOCK_DATA.rulebook = { ...MOCK_DATA.rulebook, ...parsed };
+        return MOCK_DATA.rulebook;
+      }
+    } catch (e) {}
+
+    // 3. Fallback to default
+    return MOCK_DATA.rulebook;
+  },
+
+  async updateRulebook(newRulebook) {
+    const merged = { ...MOCK_DATA.rulebook, ...newRulebook, updated_at: new Date().toISOString() };
+
+    // 1. Immediately cache to localStorage for instantaneous sync
+    try {
+      localStorage.setItem("frontline_rulebook_data", JSON.stringify(merged));
+    } catch (e) {}
+
+    // 2. In-memory update
+    MOCK_DATA.rulebook = { ...merged };
+
+    // 3. Immediately apply to current page DOM if on rules.html
+    this.applyRulebook(merged);
+
+    // 4. Persist to Supabase if configured
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .upsert({
+            id: "rulebook",
+            status_text: JSON.stringify(merged),
+            updated_at: new Date().toISOString()
+          })
+          .select();
+
+        if (error) {
+          console.error("Supabase upsert rulebook error:", error);
+          return { success: false, data: merged, error: error.message || String(error) };
+        }
+        return { success: true, data: merged };
+      } catch (err) {
+        console.error("Supabase updateRulebook network error:", err);
+        return { success: false, data: merged, error: err.message || String(err) };
+      }
+    }
+
+    return { success: true, data: merged, mock: true };
+  },
+
+  applyRulebook(data) {
+    if (!data) return;
+
+    // Version badge
+    const badgeEl = document.getElementById("ruleset-version-badge");
+    if (badgeEl && data.version_tag) badgeEl.textContent = data.version_tag;
+
+    // Headline & Intro
+    const headEl = document.getElementById("rulebook-headline");
+    if (headEl && data.headline) headEl.innerHTML = data.headline;
+    const introEl = document.getElementById("rulebook-intro");
+    if (introEl && data.intro_text) introEl.textContent = data.intro_text;
+
+    // Bulletin Banner
+    const bulletinEl = document.getElementById("rulebook-bulletin-banner");
+    if (bulletinEl) {
+      if (data.bulletin_active && data.bulletin_text) {
+        bulletinEl.style.display = "block";
+        bulletinEl.className = `rule-callout ${data.bulletin_type === "danger" ? "danger" : ""}`;
+        bulletinEl.innerHTML = `<strong>OFFICIAL LEAGUE BULLETIN:</strong> ${data.bulletin_text}`;
+      } else {
+        bulletinEl.style.display = "none";
+      }
+    }
+
+    // Match Settings Values
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) el.textContent = val;
+    };
+
+    setVal("val-hardpoint-score", `${data.hardpoint_score_limit || 250} POINTS`);
+    setVal("val-hardpoint-time", `${data.hardpoint_time_limit || 5} MINUTES (${(data.hardpoint_time_limit || 5) * 60}S)`);
+    setVal("val-hardpoint-hill", `${data.hardpoint_hill_timer || 60} SECONDS`);
+    setVal("val-hardpoint-respawn", `${data.hardpoint_respawn_delay || 2.5} SECONDS`);
+
+    setVal("val-snd-rounds", `${data.snd_round_win_limit || 6} ROUNDS`);
+    setVal("val-snd-time", `${data.snd_round_length || 1.5} MINUTES (${Math.round((data.snd_round_length || 1.5) * 60)}S)`);
+    setVal("val-snd-bomb", `${data.snd_bomb_timer || 45} SECONDS`);
+    setVal("val-snd-plant", `${data.snd_plant_time || 5.0}S / ${data.snd_defuse_time || 7.5}S`);
+
+    setVal("val-control-rounds", `${data.control_round_win_limit || 3} ROUNDS`);
+    setVal("val-control-lives", `${data.control_lives || 30} LIVES`);
+    setVal("val-control-time", `${data.control_round_time || 1.5} MINUTES (${Math.round((data.control_round_time || 1.5) * 60)}S)`);
+    setVal("val-control-extra", `+${data.control_capture_extra || 1.0} MINUTE`);
+
+    setVal("val-friendly-fire", (data.friendly_fire || "ENABLED").toUpperCase());
+    setVal("val-killcam", (data.killcam || "DISABLED").toUpperCase());
+    setVal("val-mounting", (data.mounting || "DISABLED").toUpperCase());
+
+    // Regulations
+    setVal("val-roster-size", data.roster_size);
+    setVal("val-forfeit-map1", `${data.forfeit_map1_min || 10} MIN`);
+    setVal("val-forfeit-series", `${data.forfeit_series_min || 15} MIN`);
+    setVal("val-series-format", data.series_format);
+    setVal("val-conduct-policy", data.conduct_policy);
+    setVal("val-host-rules", data.host_rules);
+    setVal("val-disconnect-rules", data.disconnect_rules);
+    setVal("val-dispute-rules", data.dispute_rules);
+
+    // Banned items lists
+    const setTags = (containerId, textList, isBanned) => {
+      const container = document.getElementById(containerId);
+      if (!container || !textList) return;
+      const items = textList.split(",").map(s => s.trim()).filter(Boolean);
+      container.innerHTML = items.map(item => `
+        <span class="item-tag-pill ${isBanned ? 'banned-pill' : 'allowed-pill'}">
+          ${isBanned ? '❌' : '✓'} ${item.replace(/^[❌✓]\s*/, '')}
+        </span>
+      `).join("");
+    };
+
+    setTags("container-banned-weapons", data.banned_weapons, true);
+    setTags("container-allowed-weapons", data.allowed_weapons, false);
+    setTags("container-banned-attachments", data.banned_attachments, true);
+    setTags("container-banned-equipment", data.banned_equipment, true);
+    setTags("container-allowed-equipment", data.allowed_equipment, false);
+    setTags("container-banned-upgrades", data.banned_upgrades_streaks, true);
+    setTags("container-allowed-upgrades", data.allowed_upgrades_streaks, false);
   },
 
   // ==============================================================================

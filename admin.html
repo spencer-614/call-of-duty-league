@@ -747,6 +747,9 @@
           <button type="button" class="admin-nav-btn" data-tab="tab-season">
             ⚡ Season Status
           </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-rulebook">
+            📜 Rulebook Manager
+          </button>
         </nav>
 
         <!-- ========================================== -->
@@ -1503,6 +1506,282 @@
             </div>
           </div>
         </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 10: RULEBOOK & MATCH DIRECTIVES        -->
+        <!-- ========================================== -->
+        <div id="tab-rulebook" class="admin-tab-content" style="display:none;">
+          
+          <!-- Card 1: Header & Quick Actions -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+              <div>
+                <h3 class="admin-card-title" style="margin:0 0 6px;">📜 League Rulebook &amp; Match Directives Manager</h3>
+                <p style="color:var(--muted); font-size:13px; margin:0;">
+                  Update competitive regulations, mandatory custom lobby settings, restricted weapons/attachments (CDL &amp; GAs), and emergency bulletins. All modifications broadcast live to <a href="rules.html" target="_blank" style="color:var(--lime);">rules.html</a> and synchronize across all active user sessions.
+                </p>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <a href="rules.html" target="_blank" class="btn-action-sm" style="color:var(--lime); border-color:var(--lime); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                  <span>Open Public Rulebook</span>
+                  <span>↗</span>
+                </a>
+                <button type="button" id="btn-reset-rulebook" class="btn-action-sm" style="border-color:#ef444460; color:#f87171;">
+                  ↻ Restore CDL Defaults
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Rulebook Edit Form -->
+          <form id="form-admin-rulebook">
+            
+            <!-- Card 2: Versioning & Rulebook Branding -->
+            <div class="admin-panel-card">
+              <h3 class="admin-card-title">🏷 Ruleset Identity &amp; Metadata</h3>
+              <div class="admin-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="rulebook-version-tag">Ruleset Version Badge Label *</label>
+                  <input type="text" id="rulebook-version-tag" class="form-control" placeholder="e.g. CDL 2026 ALIGNED - V1.4" required />
+                  <small style="color:#b5b8a8; font-size:12px; margin-top:4px; display:block;">Displays in top-right badge on rules.html</small>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rulebook-headline-input">Rulebook Page Headline *</label>
+                  <input type="text" id="rulebook-headline-input" class="form-control" placeholder="e.g. LEAGUE RULEBOOK &amp; MATCH DIRECTIVES" required />
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rulebook-intro-input">Introductory Description</label>
+                  <textarea id="rulebook-intro-input" class="form-control" rows="2" placeholder="Brief summary displayed under the main title..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Emergency League Directive / Bulletin Banner -->
+            <div class="admin-panel-card">
+              <h3 class="admin-card-title">⚡ Official Directive / Emergency Bulletin Banner</h3>
+              <p style="color:var(--muted); font-size:13px; margin-bottom:18px;">
+                Broadcast high-priority notices, mid-season weapon bans, or urgent rule clarifications pinned directly to the top of the Rulebook.
+              </p>
+              <div class="admin-form-grid">
+                <div class="form-group" style="display:flex; align-items:center; gap:12px; margin-bottom:0;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="rulebook-bulletin-active" style="width:18px; height:18px; accent-color:var(--lime);" />
+                    <span style="font-weight:700; color:#f1f0e9; font-size:13.5px;">Display Bulletin Banner on Rulebook</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rulebook-bulletin-type">Banner Alert Style</label>
+                  <select id="rulebook-bulletin-type" class="form-control">
+                    <option value="lime">Standard Informational (Lime Glow)</option>
+                    <option value="danger">Urgent / Critical Directive (Red Warning)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rulebook-bulletin-text">Directive Banner Message</label>
+                  <input type="text" id="rulebook-bulletin-text" class="form-control" placeholder="e.g. ⚡ MID-SEASON NOTICE: Review the updated attachment and secondary weapon guidelines below." />
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Lobby Match Settings (Hardpoint, SnD, Control & Universal) -->
+            <div class="admin-panel-card">
+              <h3 class="admin-card-title">🎮 Required Custom Lobby Match Settings</h3>
+              <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+                Specify the mandatory lobby game parameters that match hosts are required to configure.
+              </p>
+
+              <!-- Hardpoint -->
+              <h4 style="color:var(--lime); font-size:14px; text-transform:uppercase; letter-spacing:1px; margin:0 0 12px; border-bottom:1px solid #282d1b; padding-bottom:6px;">
+                1. Mode 01: Hardpoint Parameters
+              </h4>
+              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
+                <div class="form-group">
+                  <label class="form-label" for="rb-hp-score">Score Limit (Points)</label>
+                  <input type="number" id="rb-hp-score" class="form-control" value="250" min="50" step="25" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-hp-time">Time Limit (Minutes)</label>
+                  <input type="number" id="rb-hp-time" class="form-control" value="5" min="1" step="0.5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-hp-hill">Hill Lifetime (Seconds)</label>
+                  <input type="number" id="rb-hp-hill" class="form-control" value="60" min="10" step="5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-hp-respawn">Respawn Delay (Seconds)</label>
+                  <input type="number" id="rb-hp-respawn" class="form-control" value="2.5" min="0" step="0.5" required />
+                </div>
+              </div>
+
+              <!-- Search & Destroy -->
+              <h4 style="color:var(--lime); font-size:14px; text-transform:uppercase; letter-spacing:1px; margin:0 0 12px; border-bottom:1px solid #282d1b; padding-bottom:6px;">
+                2. Mode 02: Search &amp; Destroy Parameters
+              </h4>
+              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
+                <div class="form-group">
+                  <label class="form-label" for="rb-snd-rounds">Round Win Limit</label>
+                  <input type="number" id="rb-snd-rounds" class="form-control" value="6" min="1" max="15" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-snd-time">Round Length (Minutes)</label>
+                  <input type="number" id="rb-snd-time" class="form-control" value="1.5" min="0.5" step="0.5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-snd-bomb">Bomb Timer (Seconds)</label>
+                  <input type="number" id="rb-snd-bomb" class="form-control" value="45" min="15" step="5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-snd-plant">Plant Time (Seconds)</label>
+                  <input type="number" id="rb-snd-plant" class="form-control" value="5.0" min="1" step="0.5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-snd-defuse">Defuse Time (Seconds)</label>
+                  <input type="number" id="rb-snd-defuse" class="form-control" value="7.5" min="1" step="0.5" required />
+                </div>
+              </div>
+
+              <!-- Control -->
+              <h4 style="color:var(--lime); font-size:14px; text-transform:uppercase; letter-spacing:1px; margin:0 0 12px; border-bottom:1px solid #282d1b; padding-bottom:6px;">
+                3. Mode 03: Control Parameters
+              </h4>
+              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
+                <div class="form-group">
+                  <label class="form-label" for="rb-ctrl-rounds">Round Win Limit</label>
+                  <input type="number" id="rb-ctrl-rounds" class="form-control" value="3" min="1" max="10" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-ctrl-lives">Squad Lives (Per Round)</label>
+                  <input type="number" id="rb-ctrl-lives" class="form-control" value="30" min="5" step="5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-ctrl-time">Round Time (Minutes)</label>
+                  <input type="number" id="rb-ctrl-time" class="form-control" value="1.5" min="0.5" step="0.5" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-ctrl-extra">Zone Capture Bonus (Min)</label>
+                  <input type="number" id="rb-ctrl-extra" class="form-control" value="1.0" min="0" step="0.5" required />
+                </div>
+              </div>
+
+              <!-- Universal Lobby Rules -->
+              <h4 style="color:var(--lime); font-size:14px; text-transform:uppercase; letter-spacing:1px; margin:0 0 12px; border-bottom:1px solid #282d1b; padding-bottom:6px;">
+                4. Universal Lobby Rules
+              </h4>
+              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <div class="form-group">
+                  <label class="form-label" for="rb-friendly-fire">Friendly Fire</label>
+                  <select id="rb-friendly-fire" class="form-control">
+                    <option value="Enabled" selected>Enabled (Standard)</option>
+                    <option value="Disabled">Disabled</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-killcam">Killcam</label>
+                  <select id="rb-killcam" class="form-control">
+                    <option value="Disabled" selected>Disabled (Standard)</option>
+                    <option value="Enabled">Enabled</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-mounting">Weapon Mounting</label>
+                  <select id="rb-mounting" class="form-control">
+                    <option value="Disabled" selected>Disabled (Standard)</option>
+                    <option value="Enabled">Enabled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 5: Restricted & Banned Items (CDL & GAs) -->
+            <div class="admin-panel-card">
+              <h3 class="admin-card-title">⛔ Restricted &amp; Banned Items (CDL &amp; GAs)</h3>
+              <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+                Enter items as comma-separated lists. These generate the interactive visual tags on the rulebook page.
+              </p>
+
+              <div class="admin-form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-banned-weapons">❌ Banned Weapons (Comma Separated)</label>
+                  <textarea id="rb-banned-weapons" class="form-control" rows="3" placeholder="e.g. All Shotguns, All LMGs, Rocket Launchers, Riot Shield..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-allowed-weapons">✅ Approved / Permitted Weapons (Comma Separated)</label>
+                  <textarea id="rb-allowed-weapons" class="form-control" rows="2" placeholder="e.g. Standard ARs (MCW), Standard SMGs (Rival-9, Striker)..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-banned-attachments">⚙ Banned Attachments &amp; Ammo (Comma Separated)</label>
+                  <textarea id="rb-banned-attachments" class="form-control" rows="3" placeholder="e.g. All Suppressors, Visible Lasers, Thermal Optics, Akimbo..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-banned-equipment">💣 Banned Lethal &amp; Tactical Equipment (Comma Separated)</label>
+                  <textarea id="rb-banned-equipment" class="form-control" rows="2" placeholder="e.g. Claymores, C4, Drill Charges, Flashbangs, Tear Gas..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-allowed-equipment">✅ Approved Lethal &amp; Tactical Equipment (Comma Separated)</label>
+                  <textarea id="rb-allowed-equipment" class="form-control" rows="2" placeholder="e.g. Frag Grenade, Semtex Grenade, Stun Grenade (Max 2), Smoke Grenade (SnD Only)..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-banned-upgrades">📡 Banned Field Upgrades &amp; Streaks (Comma Separated)</label>
+                  <textarea id="rb-banned-upgrades" class="form-control" rows="2" placeholder="e.g. Munitions Box, Portable Radar, Tactical Camera, VTOL, Sentry Turrets..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-allowed-upgrades">✅ Approved Field Upgrades &amp; Streaks (Comma Separated)</label>
+                  <textarea id="rb-allowed-upgrades" class="form-control" rows="2" placeholder="e.g. Trophy System (Max 2), Cruise Missile / Hellstorm..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 6: Regulations & Protocols -->
+            <div class="admin-panel-card">
+              <h3 class="admin-card-title">⚖ League Regulations &amp; Match Governance</h3>
+              <div class="admin-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="rb-roster-size">Roster Composition Directive</label>
+                  <input type="text" id="rb-roster-size" class="form-control" placeholder="e.g. 4 active starters + up to 2 reserves" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-forfeit-map1">Map 1 Forfeit Grace (Minutes)</label>
+                  <input type="number" id="rb-forfeit-map1" class="form-control" value="10" min="1" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="rb-forfeit-series">Series Forfeit Grace (Minutes)</label>
+                  <input type="number" id="rb-forfeit-series" class="form-control" value="15" min="1" />
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-host-rules">Host &amp; Dedicated Server Directives</label>
+                  <textarea id="rb-host-rules" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-disconnect-rules">Disconnection &amp; Remake Protocol</label>
+                  <textarea id="rb-disconnect-rules" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="rb-dispute-rules">Match Dispute &amp; Evidence Protocol</label>
+                  <textarea id="rb-dispute-rules" class="form-control" rows="2"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Action Bar -->
+            <div class="admin-panel-card" style="background:#14170f; border-color:var(--lime);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                  <button type="submit" id="btn-save-rulebook" class="btn-paypal-submit" style="width:auto; padding:12px 28px;">
+                    <span>Save &amp; Broadcast Rulebook Changes</span>
+                    <span>✓</span>
+                  </button>
+                  <span id="rulebook-save-status" style="font-size:12.5px; color:var(--lime); display:none; font-weight:bold;">
+                    ✓ Rulebook synchronized and broadcasted across all user sessions!
+                  </span>
+                </div>
+                <a href="rules.html" target="_blank" style="color:var(--lime); font-size:13px; text-decoration:none;">
+                  View Live Rulebook ↗
+                </a>
+              </div>
+            </div>
+
+          </form>
+        </div>
       </section>
     </main>
 
@@ -1890,7 +2169,7 @@
         // 3. LOAD DATA & POPULATE UI
         // ==========================================
         async function loadAllData() {
-          await Promise.all([loadTeams(), loadPlayers(), loadSignups(), loadAnnouncements(), loadSeasonSettings(), loadAdminSchedule()]);
+          await Promise.all([loadTeams(), loadPlayers(), loadSignups(), loadAnnouncements(), loadSeasonSettings(), loadAdminSchedule(), loadAdminRulebook()]);
           updateAnnouncementPreview();
         }
 
@@ -3639,6 +3918,198 @@
             }
           });
         }
+
+        // ==========================================
+        // RULEBOOK & MATCH DIRECTIVES ENGINE LOGIC
+        // ==========================================
+        let cachedAdminRulebook = null;
+
+        function setFormVal(id, val) {
+          const el = document.getElementById(id);
+          if (el && val !== undefined && val !== null) {
+            el.value = val;
+          }
+        }
+
+        async function loadAdminRulebook() {
+          try {
+            if (!window.LeagueDB || !window.LeagueDB.getRulebook) return;
+            const rb = await window.LeagueDB.getRulebook();
+            cachedAdminRulebook = rb || {};
+
+            // Meta
+            setFormVal("rulebook-version-tag", rb.version_tag || "CDL 2026 ALIGNED - V1.4");
+            setFormVal("rulebook-headline-input", rb.headline || "LEAGUE RULEBOOK & MATCH DIRECTIVES");
+            setFormVal("rulebook-intro-input", rb.intro_text || "");
+
+            // Bulletin
+            const bulletinActive = document.getElementById("rulebook-bulletin-active");
+            if (bulletinActive) bulletinActive.checked = !!rb.bulletin_active;
+            setFormVal("rulebook-bulletin-type", rb.bulletin_type || "lime");
+            setFormVal("rulebook-bulletin-text", rb.bulletin_text || "");
+
+            // Hardpoint
+            setFormVal("rb-hp-score", rb.hardpoint_score_limit ?? 250);
+            setFormVal("rb-hp-time", rb.hardpoint_time_limit ?? 5);
+            setFormVal("rb-hp-hill", rb.hardpoint_hill_timer ?? 60);
+            setFormVal("rb-hp-respawn", rb.hardpoint_respawn_delay ?? 2.5);
+
+            // SnD
+            setFormVal("rb-snd-rounds", rb.snd_round_win_limit ?? 6);
+            setFormVal("rb-snd-time", rb.snd_round_length ?? 1.5);
+            setFormVal("rb-snd-bomb", rb.snd_bomb_timer ?? 45);
+            setFormVal("rb-snd-plant", rb.snd_plant_time ?? 5.0);
+            setFormVal("rb-snd-defuse", rb.snd_defuse_time ?? 7.5);
+
+            // Control
+            setFormVal("rb-ctrl-rounds", rb.control_round_win_limit ?? 3);
+            setFormVal("rb-ctrl-lives", rb.control_lives ?? 30);
+            setFormVal("rb-ctrl-time", rb.control_round_time ?? 1.5);
+            setFormVal("rb-ctrl-extra", rb.control_capture_extra ?? 1.0);
+
+            // Universal
+            setFormVal("rb-friendly-fire", rb.friendly_fire || "Enabled");
+            setFormVal("rb-killcam", rb.killcam || "Disabled");
+            setFormVal("rb-mounting", rb.mounting || "Disabled");
+
+            // Restricted & Banned Items
+            setFormVal("rb-banned-weapons", rb.banned_weapons || "");
+            setFormVal("rb-allowed-weapons", rb.allowed_weapons || "");
+            setFormVal("rb-banned-attachments", rb.banned_attachments || "");
+            setFormVal("rb-banned-equipment", rb.banned_equipment || "");
+            setFormVal("rb-allowed-equipment", rb.allowed_equipment || "");
+            setFormVal("rb-banned-upgrades", rb.banned_upgrades_streaks || "");
+            setFormVal("rb-allowed-upgrades", rb.allowed_upgrades_streaks || "");
+
+            // Regulations
+            setFormVal("rb-roster-size", rb.roster_size || "4 active starters + up to 2 reserves");
+            setFormVal("rb-forfeit-map1", rb.forfeit_map1_min ?? 10);
+            setFormVal("rb-forfeit-series", rb.forfeit_series_min ?? 15);
+            setFormVal("rb-host-rules", rb.host_rules || "");
+            setFormVal("rb-disconnect-rules", rb.disconnect_rules || "");
+            setFormVal("rb-dispute-rules", rb.dispute_rules || "");
+          } catch (err) {
+            console.error("Error loading admin rulebook:", err);
+          }
+        }
+
+        // Form submit listener
+        document.getElementById("form-admin-rulebook")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const saveBtn = document.getElementById("btn-save-rulebook");
+          const statusMsg = document.getElementById("rulebook-save-status");
+
+          const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : "";
+          };
+          const getNum = (id, fallback) => {
+            const el = document.getElementById(id);
+            const val = el ? parseFloat(el.value) : NaN;
+            return isNaN(val) ? fallback : val;
+          };
+
+          const bulletinActive = !!document.getElementById("rulebook-bulletin-active")?.checked;
+
+          const updatedRulebook = {
+            version_tag: getVal("rulebook-version-tag") || "CDL 2026 ALIGNED - V1.4",
+            headline: getVal("rulebook-headline-input") || "LEAGUE RULEBOOK & MATCH DIRECTIVES",
+            intro_text: getVal("rulebook-intro-input"),
+            bulletin_active: bulletinActive,
+            bulletin_type: getVal("rulebook-bulletin-type") || "lime",
+            bulletin_text: getVal("rulebook-bulletin-text"),
+
+            hardpoint_score_limit: getNum("rb-hp-score", 250),
+            hardpoint_time_limit: getNum("rb-hp-time", 5),
+            hardpoint_hill_timer: getNum("rb-hp-hill", 60),
+            hardpoint_respawn_delay: getNum("rb-hp-respawn", 2.5),
+
+            snd_round_win_limit: getNum("rb-snd-rounds", 6),
+            snd_round_length: getNum("rb-snd-time", 1.5),
+            snd_bomb_timer: getNum("rb-snd-bomb", 45),
+            snd_plant_time: getNum("rb-snd-plant", 5.0),
+            snd_defuse_time: getNum("rb-snd-defuse", 7.5),
+
+            control_round_win_limit: getNum("rb-ctrl-rounds", 3),
+            control_lives: getNum("rb-ctrl-lives", 30),
+            control_round_time: getNum("rb-ctrl-time", 1.5),
+            control_capture_extra: getNum("rb-ctrl-extra", 1.0),
+
+            friendly_fire: getVal("rb-friendly-fire") || "Enabled",
+            killcam: getVal("rb-killcam") || "Disabled",
+            mounting: getVal("rb-mounting") || "Disabled",
+
+            banned_weapons: getVal("rb-banned-weapons"),
+            allowed_weapons: getVal("rb-allowed-weapons"),
+            banned_attachments: getVal("rb-banned-attachments"),
+            banned_equipment: getVal("rb-banned-equipment"),
+            allowed_equipment: getVal("rb-allowed-equipment"),
+            banned_upgrades_streaks: getVal("rb-banned-upgrades"),
+            allowed_upgrades_streaks: getVal("rb-allowed-upgrades"),
+
+            roster_size: getVal("rb-roster-size") || "4 active starters + up to 2 reserves",
+            forfeit_map1_min: getNum("rb-forfeit-map1", 10),
+            forfeit_series_min: getNum("rb-forfeit-series", 15),
+            host_rules: getVal("rb-host-rules"),
+            disconnect_rules: getVal("rb-disconnect-rules"),
+            dispute_rules: getVal("rb-dispute-rules"),
+            series_format: cachedAdminRulebook?.series_format || "Best of 5 (Hardpoint, SnD, Control, Hardpoint, SnD)",
+            conduct_policy: cachedAdminRulebook?.conduct_policy || "Zero tolerance for hardware cheats (Cronus/XIM), macros, wallhacks, or toxic abuse. Violations trigger immediate forfeit and expulsion."
+          };
+
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span>Saving & Broadcasting...</span><span>⏳</span>`;
+          }
+
+          try {
+            const res = await window.LeagueDB.updateRulebook(updatedRulebook);
+            if (res.success) {
+              cachedAdminRulebook = { ...updatedRulebook };
+              showToast("✓ Rulebook Published Globally to Database & rules.html!");
+              if (statusMsg) {
+                statusMsg.style.display = "inline";
+                statusMsg.style.color = "var(--lime)";
+                statusMsg.textContent = `✓ Published & synchronized: "${updatedRulebook.version_tag}"`;
+                setTimeout(() => { statusMsg.style.display = "none"; }, 5000);
+              }
+            } else {
+              showToast(`⚠ Saved locally, database note: ${res.error || "Check permissions"}`);
+              if (statusMsg) {
+                statusMsg.style.display = "inline";
+                statusMsg.style.color = "#ff4a4a";
+                statusMsg.textContent = `⚠ Saved locally only. Database: ${res.error || ""}`;
+                setTimeout(() => { statusMsg.style.display = "none"; }, 5000);
+              }
+            }
+          } catch (err) {
+            console.error("Save rulebook error:", err);
+            alert("Error saving rulebook: " + (err.message || err));
+          } finally {
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = `<span>Save & Broadcast Rulebook Changes</span><span>✓</span>`;
+            }
+          }
+        });
+
+        // Restore CDL Defaults listener
+        document.getElementById("btn-reset-rulebook")?.addEventListener("click", async () => {
+          if (!confirm("Are you sure you want to restore official CDL default rules and settings? Any unsaved edits will be replaced.")) {
+            return;
+          }
+          try {
+            // Restore from MOCK_DATA.rulebook in supabase.js or clear localStorage
+            localStorage.removeItem("frontline_rulebook_data");
+            if (window.MOCK_DATA && window.MOCK_DATA.rulebook) {
+              cachedAdminRulebook = { ...window.MOCK_DATA.rulebook };
+            }
+            await loadAdminRulebook();
+            showToast("↻ Restored official CDL defaults. Click 'Save & Broadcast' to publish.");
+          } catch (err) {
+            console.error("Reset rulebook error:", err);
+          }
+        });
       })();
 
       // User-Centered Navigation: Close dropdown on outside click or Escape key

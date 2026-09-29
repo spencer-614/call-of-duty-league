@@ -516,10 +516,11 @@
       <!-- Page Header Banner -->
       <section class="rulebook-header-section">
         <div class="kicker">OFFICIAL COD LEAGUE CODEX // 2026 COMPETITIVE RULESET</div>
-        <h2>LEAGUE RULEBOOK &amp; <span style="color:var(--lime);">MATCH DIRECTIVES</span></h2>
-        <p class="intro">
+        <h2 id="rulebook-headline">LEAGUE RULEBOOK &amp; <span style="color:var(--lime);">MATCH DIRECTIVES</span></h2>
+        <p class="intro" id="rulebook-intro">
           Standardized operational regulations, mandatory custom lobby match settings, and restricted equipment directives for all Frontline Community League sanctioned matches. Click the tabs below to inspect specific directives.
         </p>
+        <div id="rulebook-bulletin-banner" style="display:none; margin:16px 0 20px;"></div>
       </section>
 
       <!-- ======================================================== -->
@@ -559,7 +560,7 @@
               <span class="rule-search-icon">🔍</span>
               <input type="text" id="rule-search-input" placeholder="Search rules or items..." aria-label="Filter rules" />
             </div>
-            <span class="ruleset-badge">CDL 2026 ALIGNED</span>
+            <span class="ruleset-badge" id="ruleset-version-badge">CDL 2026 ALIGNED - V1.4</span>
           </div>
         </div>
 
@@ -582,7 +583,7 @@
                 <span class="rule-tag-id">§ 1.1</span>
                 <span>Roster Composition &amp; Combatant Eligibility</span>
               </div>
-              <span class="val-badge">4V4 SQUAD</span>
+              <span class="val-badge" id="val-roster-size">4V4 SQUAD</span>
             </div>
             <p class="rule-card-desc">
               All official Frontline League matches are contested in a 4v4 format across permitted cross-platform systems (PC, PlayStation, Xbox).
@@ -608,8 +609,8 @@
             </p>
             <ul class="rule-card-list">
               <li><strong>Discord Check-In:</strong> Both team captains must check into the designated Discord match thread at least fifteen (15) minutes prior to the scheduled broadcast start time.</li>
-              <li><strong>Map 1 Forfeit (10 Min):</strong> If a team does not have four players present in the custom lobby ten (10) minutes after scheduled start time, Map 1 is officially forfeited.</li>
-              <li><strong>Series Forfeit (15 Min):</strong> If a team fails to field four players fifteen (15) minutes past scheduled match time, the entire Best-of-5 series is forfeited as a 3–0 loss.</li>
+              <li><strong>Map 1 Forfeit (<span id="val-forfeit-map1">10 MIN</span>):</strong> If a team does not have four players present in the custom lobby ten (10) minutes after scheduled start time, Map 1 is officially forfeited.</li>
+              <li><strong>Series Forfeit (<span id="val-forfeit-series">15 MIN</span>):</strong> If a team fails to field four players fifteen (15) minutes past scheduled match time, the entire Best-of-5 series is forfeited as a 3–0 loss.</li>
               <li><strong>Emergency Reschedule:</strong> Reschedule requests must be submitted to league administrators at least twenty-four (24) hours in advance and mutually agreed upon in writing by both captains.</li>
             </ul>
           </article>
@@ -621,7 +622,7 @@
                 <span class="rule-tag-id">§ 1.3</span>
                 <span>Best-of-5 Match Sequence &amp; Map Vetoes</span>
               </div>
-              <span class="val-badge">BO5 ROTATION</span>
+              <span class="val-badge" id="val-series-format">BO5 ROTATION</span>
             </div>
             <p class="rule-card-desc">
               All regular season and playoff matches follow the standardized 5-map competitive rotation:
@@ -669,7 +670,7 @@
               </div>
               <span class="val-badge warn">ZERO TOLERANCE</span>
             </div>
-            <div class="rule-callout danger">
+            <div class="rule-callout danger" id="val-conduct-policy">
               <strong>CRITICAL WARNING:</strong> Any use of hardware-based aim adapters (Cronus Zen, XIM, Titan), strike-pack recoil macros, third-party wallhacks, or memory injection triggers immediate permanent disqualification and player expulsion from the Frontline League.
             </div>
             <ul class="rule-card-list">
@@ -711,12 +712,12 @@
               <tbody>
                 <tr>
                   <td><strong>Friendly Fire</strong></td>
-                  <td><span class="val-badge">ENABLED</span></td>
+                  <td><span class="val-badge" id="val-friendly-fire">ENABLED</span></td>
                   <td>Teammate weapon damage is active. 3 team-kills resets streak.</td>
                 </tr>
                 <tr>
                   <td><strong>Killcam</strong></td>
-                  <td><span class="val-badge warn">DISABLED</span></td>
+                  <td><span class="val-badge warn" id="val-killcam">DISABLED</span></td>
                   <td>Killcam replay must be OFF to prevent ghost comms.</td>
                 </tr>
                 <tr>
@@ -736,7 +737,7 @@
                 </tr>
                 <tr>
                   <td><strong>Weapon Mounting</strong></td>
-                  <td><span class="val-badge warn">DISABLED</span></td>
+                  <td><span class="val-badge warn" id="val-mounting">DISABLED</span></td>
                   <td>Ledge &amp; wall mounting is strictly forbidden.</td>
                 </tr>
                 <tr>
@@ -773,17 +774,17 @@
               <tbody>
                 <tr>
                   <td><strong>Time Limit</strong></td>
-                  <td><span class="val-badge">5 MINUTES (300S)</span></td>
+                  <td><span class="val-badge" id="val-hardpoint-time">5 MINUTES (300S)</span></td>
                   <td>Time elapses only when hill is uncontested.</td>
                 </tr>
                 <tr>
                   <td><strong>Score Limit</strong></td>
-                  <td><span class="val-badge">250 POINTS</span></td>
+                  <td><span class="val-badge" id="val-hardpoint-score">250 POINTS</span></td>
                   <td>First team to 250 captures victory.</td>
                 </tr>
                 <tr>
                   <td><strong>Hill Lifetime</strong></td>
-                  <td><span class="val-badge">60 SECONDS</span></td>
+                  <td><span class="val-badge" id="val-hardpoint-hill">60 SECONDS</span></td>
                   <td>Rotates every minute in linear sequence.</td>
                 </tr>
                 <tr>
@@ -793,7 +794,7 @@
                 </tr>
                 <tr>
                   <td><strong>Respawn Delay</strong></td>
-                  <td><span class="val-badge">2.5 SECONDS</span></td>
+                  <td><span class="val-badge" id="val-hardpoint-respawn">2.5 SECONDS</span></td>
                   <td>Standard competitive spawn wave delay.</td>
                 </tr>
               </tbody>
@@ -820,22 +821,22 @@
               <tbody>
                 <tr>
                   <td><strong>Round Win Limit</strong></td>
-                  <td><span class="val-badge">6 ROUNDS</span></td>
+                  <td><span class="val-badge" id="val-snd-rounds">6 ROUNDS</span></td>
                   <td>First squad to win 6 rounds claims the map.</td>
                 </tr>
                 <tr>
                   <td><strong>Round Length</strong></td>
-                  <td><span class="val-badge">1.5 MINUTES (90S)</span></td>
+                  <td><span class="val-badge" id="val-snd-time">1.5 MINUTES (90S)</span></td>
                   <td>Clock pauses once bomb is planted.</td>
                 </tr>
                 <tr>
                   <td><strong>Bomb Timer</strong></td>
-                  <td><span class="val-badge">45 SECONDS</span></td>
+                  <td><span class="val-badge" id="val-snd-bomb">45 SECONDS</span></td>
                   <td>Time allowed to defuse after plant.</td>
                 </tr>
                 <tr>
                   <td><strong>Plant / Defuse Time</strong></td>
-                  <td><span class="val-badge">5.0S / 7.5S</span></td>
+                  <td><span class="val-badge" id="val-snd-plant">5.0S / 7.5S</span></td>
                   <td>Standard 5-second plant, 7.5-second defuse.</td>
                 </tr>
                 <tr>
@@ -872,22 +873,22 @@
               <tbody>
                 <tr>
                   <td><strong>Round Win Limit</strong></td>
-                  <td><span class="val-badge">3 ROUNDS</span></td>
+                  <td><span class="val-badge" id="val-control-rounds">3 ROUNDS</span></td>
                   <td>First to 3 round wins takes the map.</td>
                 </tr>
                 <tr>
                   <td><strong>Team Lives</strong></td>
-                  <td><span class="val-badge">30 LIVES</span></td>
+                  <td><span class="val-badge" id="val-control-lives">30 LIVES</span></td>
                   <td>30 shared squad lives per round.</td>
                 </tr>
                 <tr>
                   <td><strong>Round Time</strong></td>
-                  <td><span class="val-badge">1.5 MINUTES (90S)</span></td>
+                  <td><span class="val-badge" id="val-control-time">1.5 MINUTES (90S)</span></td>
                   <td>Base clock before zone additions.</td>
                 </tr>
                 <tr>
                   <td><strong>Capture Extra Time</strong></td>
-                  <td><span class="val-badge">+1.0 MINUTE</span></td>
+                  <td><span class="val-badge" id="val-control-extra">+1.0 MINUTE</span></td>
                   <td>Added when Zone A or B is successfully captured.</td>
                 </tr>
                 <tr>
@@ -925,7 +926,7 @@
                 <span class="badge-banned">STRICTLY BANNED</span>
               </div>
               <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">The following complete weapon categories are prohibited:</p>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-banned-weapons">
                 <span class="item-tag-pill banned-pill">❌ All Shotguns</span>
                 <span class="item-tag-pill banned-pill">❌ All LMGs (Light Machine Guns)</span>
                 <span class="item-tag-pill banned-pill">❌ All Rocket Launchers (RPG, PILA)</span>
@@ -938,7 +939,7 @@
                 <h4 style="font-size:13px;">✅ Approved Weapons</h4>
                 <span class="badge-allowed">PERMITTED</span>
               </div>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-allowed-weapons">
                 <span class="item-tag-pill allowed-pill">✓ Standard ARs (e.g. MCW)</span>
                 <span class="item-tag-pill allowed-pill">✓ Standard SMGs (Rival-9, Striker)</span>
                 <span class="item-tag-pill allowed-pill">✓ Approved Bolt-Action (SnD Only, Max 1)</span>
@@ -953,7 +954,7 @@
                 <span class="badge-banned">ATTACHMENT GAs</span>
               </div>
               <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Weapon modifications that bypass radar or recoil dynamics:</p>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-banned-attachments">
                 <span class="item-tag-pill banned-pill">❌ All Muzzle Suppressors &amp; Silencers</span>
                 <span class="item-tag-pill banned-pill">❌ All Visible Lasers &amp; Hip Lasers</span>
                 <span class="item-tag-pill banned-pill">❌ Thermal &amp; Target-Finding Optics</span>
@@ -971,7 +972,7 @@
                 <h4>💣 Lethals &amp; Tacticals</h4>
                 <span class="badge-banned">EQUIPMENT LIMITS</span>
               </div>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-banned-equipment">
                 <span class="item-tag-pill banned-pill">❌ Claymores &amp; Proximity Mines</span>
                 <span class="item-tag-pill banned-pill">❌ C4 &amp; Breacher Drones</span>
                 <span class="item-tag-pill banned-pill">❌ Drill Charges &amp; Thermite</span>
@@ -983,7 +984,7 @@
                 <h4 style="font-size:13px;">✅ Approved Equipment</h4>
                 <span class="badge-allowed">PERMITTED</span>
               </div>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-allowed-equipment">
                 <span class="item-tag-pill allowed-pill">✓ Frag Grenade</span>
                 <span class="item-tag-pill allowed-pill">✓ Semtex Grenade</span>
                 <span class="item-tag-pill allowed-pill">✓ Stun Grenade (Max 2 per squad)</span>
@@ -998,7 +999,7 @@
                 <span class="badge-banned">RESTRICTED</span>
               </div>
               <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Artificial intelligence and radar assistance tools:</p>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-banned-upgrades">
                 <span class="item-tag-pill banned-pill">❌ Munitions Box &amp; Deployable Cover</span>
                 <span class="item-tag-pill banned-pill">❌ Portable Radar &amp; Heartbeat Sensor</span>
                 <span class="item-tag-pill banned-pill">❌ Inflatable Decoy &amp; Tactical Camera</span>
@@ -1010,7 +1011,7 @@
                 <h4 style="font-size:13px;">✅ Approved Upgrades &amp; Streaks</h4>
                 <span class="badge-allowed">PERMITTED</span>
               </div>
-              <div class="item-tag-list">
+              <div class="item-tag-list" id="container-allowed-upgrades">
                 <span class="item-tag-pill allowed-pill">✓ Trophy System (Max 2 deployed per squad)</span>
                 <span class="item-tag-pill allowed-pill">✓ Cruise Missile / Hellstorm (500–600 Pts)</span>
               </div>
@@ -1040,7 +1041,7 @@
               </div>
               <span class="val-badge">NEUTRAL SERVER</span>
             </div>
-            <p class="rule-card-desc">
+            <p class="rule-card-desc" id="val-host-rules">
               All series must be hosted on dedicated servers providing equitable ping for both teams.
             </p>
             <ul class="rule-card-list">
@@ -1065,7 +1066,7 @@
               </div>
               <span class="val-badge warn">EVIDENCE MANDATORY</span>
             </div>
-            <p class="rule-card-desc">
+            <p class="rule-card-desc" id="val-disconnect-rules">
               In the event a combatant disconnects or crashes during an active map, referees enforce the following protocols:
             </p>
             <ul class="rule-card-list">
@@ -1085,7 +1086,7 @@
               </div>
               <span class="val-badge">DISCORD REFS</span>
             </div>
-            <p class="rule-card-desc">
+            <p class="rule-card-desc" id="val-dispute-rules">
               Match dispute tickets must be logged in the official Discord <code>#match-disputes</code> channel within thirty (30) minutes of series conclusion. All claims must include timestamped video recordings (Twitch/YouTube VOD) or clear scoreboard screenshots. Referees will not accept unsubstantiated hearsay.
             </p>
           </article>
@@ -1268,6 +1269,38 @@
       btnResetChecklist?.addEventListener("click", () => {
         const checkboxes = document.querySelectorAll(".checklist-card input[type='checkbox']");
         checkboxes.forEach(chk => chk.checked = false);
+      });
+
+      // ==========================================
+      // RULEBOOK DYNAMIC HYDRATION & REAL-TIME SYNC
+      // ==========================================
+      async function hydrateRulebookData() {
+        if (window.LeagueDB && window.LeagueDB.getRulebook) {
+          try {
+            const data = await window.LeagueDB.getRulebook();
+            window.LeagueDB.applyRulebook(data);
+          } catch (err) {
+            console.error("Failed to hydrate rulebook:", err);
+          }
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", hydrateRulebookData);
+      } else {
+        hydrateRulebookData();
+      }
+
+      // Cross-tab live update listener
+      window.addEventListener("storage", (e) => {
+        if (e.key === "frontline_rulebook_data" && e.newValue) {
+          try {
+            const data = JSON.parse(e.newValue);
+            if (window.LeagueDB && window.LeagueDB.applyRulebook) {
+              window.LeagueDB.applyRulebook(data);
+            }
+          } catch (err) {}
+        }
       });
 
       // User-Centered Navigation: Close dropdown on outside click or Escape key
