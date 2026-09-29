@@ -628,7 +628,6 @@
                   <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
                   <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
-                  <a href="admin.html" style="color:var(--lime);"><span class="nav-icon">⚙</span> Admin Console</a>
                 </div>
               </div>
             </nav>
@@ -640,33 +639,47 @@
     </header>
 
     <main class="admin-wrap">
-      <!-- 1. SECURITY PASSKEY GATE (Shown when logged out) -->
+      <!-- 1. SUPABASE AUTH GATE (Shown when logged out) -->
       <section id="gate-container" class="admin-gate-card">
         <div class="admin-gate-icon">🔒</div>
         <div class="kicker">RESTRICTED ACCESS // OPS CONSOLE</div>
         <h2 class="admin-gate-title">LEAGUE DIRECTOR <span style="color:var(--lime);">LOGIN</span></h2>
         <p class="admin-gate-subtitle">
-          Enter your authorized Frontline Admin Passcode to manage teams, enlist players, record match scores, and approve registrations.
+          Authenticate with your authorized Staff Email & Password to manage teams, match schedules, player stats, and league dispatches.
         </p>
 
         <form id="gate-form" style="display:flex; flex-direction:column; gap:16px;">
           <div class="form-group" style="text-align:left;">
-            <label class="form-label" for="admin-passcode">Admin Passphrase / Master Key</label>
+            <label class="form-label" for="admin-email">Staff Admin Email *</label>
+            <input
+              type="email"
+              id="admin-email"
+              class="form-control"
+              placeholder="e.g. director@frontlineleague.com"
+              required
+              autocomplete="username"
+            />
+          </div>
+          <div class="form-group" style="text-align:left;">
+            <label class="form-label" for="admin-password">Staff Password *</label>
             <input
               type="password"
-              id="admin-passcode"
+              id="admin-password"
               class="form-control"
-              placeholder="Enter passcode (default: frontline2026)"
+              placeholder="••••••••••••"
               required
               autocomplete="current-password"
             />
           </div>
-          <button type="submit" class="btn-paypal-submit" style="width:100%; justify-content:center;">
+          <button type="submit" id="btn-login-submit" class="btn-paypal-submit" style="width:100%; justify-content:center;">
             <span>Authenticate & Enter Console</span>
             <span>↗</span>
           </button>
-          <div id="gate-error" style="color:#ff4a4a; font-size:12px; display:none; font-weight:bold;">
-            Invalid passcode. Access denied.
+          <div id="gate-error" style="color:#ff4a4a; font-size:12.5px; display:none; font-weight:bold; background:rgba(255,74,74,0.08); border:1px solid #ff4a4a40; padding:10px 14px; text-align:left; border-radius:2px;">
+            Invalid email or password. Access denied.
+          </div>
+          <div style="font-size:11.5px; color:var(--muted); line-height:1.5; text-align:left; border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+            🛡 <strong>Protected by Supabase Auth:</strong> Admin accounts are managed directly inside your Supabase project under <em>Authentication ➔ Users</em>.
           </div>
         </form>
       </section>
@@ -682,6 +695,8 @@
             </div>
             <span style="color:var(--muted); font-size:12px;">|</span>
             <span style="color:var(--muted); font-size:12px;" id="db-status-display">Connected to Supabase</span>
+            <span style="color:var(--muted); font-size:12px;">|</span>
+            <span style="color:var(--lime); font-size:12px; font-weight:700;" id="staff-user-display">Staff Session</span>
           </div>
 
           <div style="display:flex; align-items:center; gap:12px;">
@@ -1727,41 +1742,93 @@
         }
 
         // ==========================================
-        // 1. AUTHENTICATION & GATE
+        // 1. SUPABASE AUTHENTICATION & GATE
         // ==========================================
         const gateContainer = document.getElementById("gate-container");
         const dashboardContainer = document.getElementById("dashboard-container");
         const gateForm = document.getElementById("gate-form");
-        const passcodeInput = document.getElementById("admin-passcode");
         const gateError = document.getElementById("gate-error");
         const logoutBtn = document.getElementById("btn-logout");
+        const staffUserDisplay = document.getElementById("staff-user-display");
 
-        function unlockConsole() {
+        function unlockConsole(userEmail) {
           gateContainer.style.display = "none";
           dashboardContainer.style.display = "block";
+          if (staffUserDisplay) {
+            staffUserDisplay.textContent = userEmail ? `Staff: ${userEmail}` : "Staff Session";
+          }
           loadAllData();
         }
 
-        function lockConsole() {
+        async function lockConsole() {
+          if (window.LeagueDB && typeof window.LeagueDB.signOutAdmin === "function") {
+            await window.LeagueDB.signOutAdmin();
+          }
           sessionStorage.removeItem("frontline_admin_session");
+          sessionStorage.removeItem("frontline_admin_email");
           gateContainer.style.display = "block";
           dashboardContainer.style.display = "none";
         }
 
-        if (sessionStorage.getItem("frontline_admin_session") === "authorized") {
-          unlockConsole();
+        // Automatic session check on load
+        async function checkInitialAuth() {
+          // 1. Check Supabase Auth active session
+          if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
+            const session = await window.LeagueDB.getAuthSession();
+            if (session?.user) {
+              unlockConsole(session.user.email);
+              return;
+            }
+          }
+          // 2. Fallback check for active browser session
+          const savedEmail = sessionStorage.getItem("frontline_admin_email");
+          if (sessionStorage.getItem("frontline_admin_session") === "authorized" && savedEmail) {
+            unlockConsole(savedEmail);
+          }
         }
 
-        gateForm?.addEventListener("submit", (e) => {
+        checkInitialAuth();
+
+        gateForm?.addEventListener("submit", async (e) => {
           e.preventDefault();
-          const entered = passcodeInput.value.trim();
-          if (entered === DEFAULT_PASSCODE || entered === "admin" || (window.LeagueDB && entered === window.LeagueDB.adminSecret)) {
-            sessionStorage.setItem("frontline_admin_session", "authorized");
-            gateError.style.display = "none";
-            unlockConsole();
-            showToast("Welcome, Commander. Admin console authenticated.");
-          } else {
+          const emailInput = document.getElementById("admin-email");
+          const passwordInput = document.getElementById("admin-password");
+          const submitBtn = document.getElementById("btn-login-submit");
+          const email = emailInput?.value.trim() || "";
+          const password = passwordInput?.value || "";
+
+          gateError.style.display = "none";
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Authenticating Staff Account...</span><span>⏳</span>`;
+          }
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.signInAdmin === "function") {
+              const res = await window.LeagueDB.signInAdmin(email, password);
+              if (res.success && res.user) {
+                const userEmail = res.user.email || email;
+                sessionStorage.setItem("frontline_admin_session", "authorized");
+                sessionStorage.setItem("frontline_admin_email", userEmail);
+                unlockConsole(userEmail);
+                showToast(`Welcome, Commander. Authenticated as ${userEmail}`);
+              } else {
+                gateError.textContent = res.error || "Invalid staff credentials. Check your email & password.";
+                gateError.style.display = "block";
+              }
+            } else {
+              gateError.textContent = "Supabase Auth client not initialized. Please refresh.";
+              gateError.style.display = "block";
+            }
+          } catch (err) {
+            gateError.textContent = err.message || "An unexpected sign-in error occurred.";
             gateError.style.display = "block";
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>Authenticate & Enter Console</span><span>↗</span>`;
+            }
           }
         });
 

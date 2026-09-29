@@ -2873,6 +2873,48 @@ window.LeagueDB = {
     return { success: true };
   },
 
+  // ==========================================
+  // STAFF & ADMIN AUTHENTICATION (SUPABASE AUTH)
+  // ==========================================
+  client: dbClient,
+  async getAuthSession() {
+    if (!dbClient) return null;
+    try {
+      const { data } = await dbClient.auth.getSession();
+      return data?.session || null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async signInAdmin(email, password) {
+    if (!dbClient) {
+      return { success: false, error: "Database client is not connected." };
+    }
+    try {
+      const { data, error } = await dbClient.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true, user: data.user, session: data.session };
+    } catch (err) {
+      return { success: false, error: err.message || "Sign-in error occurred." };
+    }
+  },
+
+  async signOutAdmin() {
+    if (!dbClient) return { success: true };
+    try {
+      await dbClient.auth.signOut();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
   paypalConfig: PAYPAL_CONFIG,
   isConfigured: isSupabaseConfigured
 };
@@ -2916,6 +2958,19 @@ window.LeagueDB = {
       try {
         window.LeagueDB.applySeasonBadge(JSON.parse(e.newValue));
       } catch (err) {}
+    }
+  });
+})();
+
+// ==============================================================================
+// STEALTH ADMIN ACCESS TRIGGER (Ctrl+Shift+A only)
+// ==============================================================================
+(function setupStealthAdminTrigger() {
+  // Keyboard Shortcut: Ctrl + Shift + A (or Cmd + Shift + A on Mac)
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "A" || e.key === "a")) {
+      e.preventDefault();
+      window.location.href = "admin.html";
     }
   });
 })();
