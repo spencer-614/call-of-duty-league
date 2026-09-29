@@ -107,7 +107,35 @@
             <div class="orbit">
               <img src="images/leaguelogo_1.png" alt="Frontline League Emblem" class="hero-emblem" />
             </div>
-            <div class="tag top">NEXT SEASON<b>COMING SOON</b></div>
+            <div class="tag top" id="hero-season-tag">SEASON 1<b>NOW ACTIVE</b></div>
+            <script>
+              (function(){
+                try {
+                  var s = JSON.parse(localStorage.getItem('frontline_season_settings'));
+                  if (s) {
+                    var el = document.getElementById('hero-season-tag');
+                    if (el) {
+                      var num = s.season_number || 1;
+                      var isSoon = s.status_state === 'coming_soon';
+                      var topTxt = 'SEASON ' + num;
+                      var boldTxt = isSoon ? 'COMING SOON' : 'NOW ACTIVE';
+                      if (s.status_text) {
+                        var u = s.status_text.toUpperCase().trim();
+                        if (u.includes('COMING SOON')) {
+                          topTxt = u.replace('COMING SOON', '').trim() || ('SEASON ' + num);
+                          boldTxt = 'COMING SOON';
+                        } else if (u.includes('ACTIVE')) {
+                          topTxt = u.replace('ACTIVE', '').trim() || ('SEASON ' + num);
+                          boldTxt = 'NOW ACTIVE';
+                        }
+                      }
+                      var col = isSoon ? '#ffb300' : 'var(--lime)';
+                      el.innerHTML = topTxt + '<b style="color:' + col + ';">' + boldTxt + '</b>';
+                    }
+                  }
+                } catch(e){}
+              })();
+            </script>
             <div class="tag bottom">BUILT BY PLAYERS<b>PLAY AS A TEAM</b></div>
           </div>
         </div>

@@ -2169,6 +2169,7 @@ window.LeagueDB = {
     const isComingSoon = settings.status_state === "coming_soon";
     const labelText = settings.status_text || (isComingSoon ? `SEASON ${seasonNum} COMING SOON` : `SEASON ${seasonNum} ACTIVE`);
 
+    // 1. Update Brand Status badges (Top-left corner across all pages)
     const badges = document.querySelectorAll(".brand-status");
     badges.forEach(badge => {
       if (isComingSoon) {
@@ -2183,6 +2184,25 @@ window.LeagueDB = {
         <span>${labelText}</span>
       `;
     });
+
+    // 2. Update Floating Hero Tag (next to floating logo emblem on index.html)
+    const heroTag = document.getElementById("hero-season-tag") || document.querySelector(".art .tag.top");
+    if (heroTag) {
+      let topText = `SEASON ${seasonNum}`;
+      let boldText = isComingSoon ? "COMING SOON" : "NOW ACTIVE";
+      if (settings.status_text) {
+        const upper = settings.status_text.toUpperCase().trim();
+        if (upper.includes("COMING SOON")) {
+          topText = upper.replace("COMING SOON", "").trim() || `SEASON ${seasonNum}`;
+          boldText = "COMING SOON";
+        } else if (upper.includes("ACTIVE")) {
+          topText = upper.replace("ACTIVE", "").trim() || `SEASON ${seasonNum}`;
+          boldText = "NOW ACTIVE";
+        }
+      }
+      const boldColor = isComingSoon ? "#ffb300" : "var(--lime)";
+      heroTag.innerHTML = `${topText}<b style="color:${boldColor};">${boldText}</b>`;
+    }
   },
 
   // ==============================================================================
