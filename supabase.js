@@ -136,7 +136,121 @@ const MOCK_DATA = {
     
     host_rules: "Regional parity: Central host (Chicago/Dallas) for East vs West matchups. Alternating host order (Team A Maps 1/3, Team B Maps 2/4, neutral Map 5).",
     disconnect_rules: "First 30 seconds / pre-combat crash: immediate remake. Mid-game Hardpoint: pause and carry forward scores. Search & Destroy: finish active round, remake with previous round score retained.",
-    dispute_rules: "Match dispute tickets must be logged in Discord #match-disputes within 30 minutes with timestamped video (Twitch/YouTube) or scoreboard screenshots."
+    dispute_rules: "Match dispute tickets must be logged in Discord #match-disputes within 30 minutes with timestamped video (Twitch/YouTube) or scoreboard screenshots.",
+
+    rules_list: [
+      {
+        id: "rule_1_1",
+        section: "league",
+        tag: "§ 1.1",
+        title: "Roster Composition & Combatant Eligibility",
+        badge: "4V4 SQUAD",
+        badge_type: "lime",
+        description: "All official Frontline League matches are contested in a 4v4 format across permitted cross-platform systems (PC, PlayStation, Xbox).",
+        bullets: [
+          "Roster Size: Each franchise team may register four (4) active starting players and up to two (2) designated reserve/substitute players.",
+          "Player Verification: All players must have a verified Frontline Combatant Account with their active Activision ID (including tag numbers) and Discord handle logged in the league database.",
+          "Cross-Team Roster Lock: A player may not compete for more than one franchise team within the same division during the regular season without an official front-office trade approved by the League Director."
+        ]
+      },
+      {
+        id: "rule_1_2",
+        section: "league",
+        tag: "§ 1.2",
+        title: "Match Scheduling & 10-Minute Forfeit Grace Period",
+        badge: "STRICT DEADLINE",
+        badge_type: "warn",
+        description: "Match fixtures are published weekly on the official Schedule HQ. Team captains bear primary responsibility for confirming match start times.",
+        bullets: [
+          "Discord Check-In: Both team captains must check into the designated Discord match thread at least fifteen (15) minutes prior to the scheduled broadcast start time.",
+          "Map 1 Forfeit (10 Min): If a team does not have four players present in the custom lobby ten (10) minutes after scheduled start time, Map 1 is officially forfeited.",
+          "Series Forfeit (15 Min): If a team fails to field four players fifteen (15) minutes past scheduled match time, the entire Best-of-5 series is forfeited as a 3–0 loss.",
+          "Emergency Reschedule: Reschedule requests must be submitted to league administrators at least twenty-four (24) hours in advance and mutually agreed upon in writing by both captains."
+        ]
+      },
+      {
+        id: "rule_1_3",
+        section: "league",
+        tag: "§ 1.3",
+        title: "Best-of-5 Match Sequence & Map Vetoes",
+        badge: "BO5 ROTATION",
+        badge_type: "lime",
+        description: "All regular season and playoff matches follow the standardized 5-map competitive rotation:",
+        callout: "<strong>Official Best-of-5 Order:</strong><br />• Map 1: <strong>Hardpoint</strong><br />• Map 2: <strong>Search & Destroy</strong><br />• Map 3: <strong>Control</strong><br />• Map 4: <strong>Hardpoint</strong> (if required)<br />• Map 5: <strong>Search & Destroy</strong> (decider)",
+        callout_type: "info",
+        bullets: [
+          "Higher Seed Privilege: The higher-seeded team (or coin-flip winner in Week 1) selects whether to choose Map 1 host/side or initiate map vetos.",
+          "No Repeated Maps: No map may be played more than once in the same Best-of-5 series."
+        ]
+      },
+      {
+        id: "rule_1_4",
+        section: "league",
+        tag: "§ 1.4",
+        title: "Standings Points & Tiebreaker Hierarchy",
+        badge: "SCORING MATRIX",
+        badge_type: "lime",
+        description: "Standings and postseason tournament seedings are determined strictly by the following hierarchy:",
+        bullets: [
+          "Match Series Wins: Primary rank sorted by total series won (3 pts per win, 0 pts per loss).",
+          "Map Differential (Net +/-): Total maps won minus total maps lost across all played matches.",
+          "Head-to-Head Record: Direct series and map score between tied squads.",
+          "Total Maps Won: Cumulative volume of map victories."
+        ]
+      },
+      {
+        id: "rule_1_5",
+        section: "league",
+        tag: "§ 1.5",
+        title: "Competitive Integrity, Hardware & Conduct",
+        badge: "ZERO TOLERANCE",
+        badge_type: "warn",
+        callout: "<strong>CRITICAL WARNING:</strong> Any use of hardware-based aim adapters (Cronus Zen, XIM, Titan), strike-pack recoil macros, third-party wallhacks, or memory injection triggers immediate permanent disqualification and player expulsion from the Frontline League.",
+        callout_type: "danger",
+        bullets: [
+          "PC Verification: PC combatants are required to run official anti-cheat background monitoring and must be able to provide Discord screen share or gameplay recording if requested by referees.",
+          "Communication Conduct: Racial slurs, hate speech, severe harassment, or intentional stream-sniping in broadcasted matches results in immediate match forfeit and minimum 2-week player suspension."
+        ]
+      },
+      {
+        id: "rule_4_1",
+        section: "host",
+        tag: "§ 4.1",
+        title: "Dedicated Server & Host Selection Protocol",
+        badge: "NEUTRAL SERVER",
+        badge_type: "lime",
+        description: "All series must be hosted on dedicated servers providing equitable ping for both teams.",
+        bullets: [
+          "Regional Parity: If an NA East squad faces an NA West squad, the custom match must be hosted on a Central data center (e.g. Chicago, Dallas, or Kansas City) to balance ping latency.",
+          "Alternating Host Order:<br />• Map 1: Team A Host (Higher seed choice)<br />• Map 2: Team B Host<br />• Map 3: Team A Host<br />• Map 4: Team B Host (if necessary)<br />• Map 5: Neutral Central Server Host (Decider)",
+          "Ping Disparity Cap: If a player demonstrates persistent packet loss or latency exceeding 120ms due to host misrouting, captains must remake the lobby on an alternate neutral server."
+        ]
+      },
+      {
+        id: "rule_4_2",
+        section: "host",
+        tag: "§ 4.2",
+        title: "Disconnection & Remake Protocol",
+        badge: "EVIDENCE MANDATORY",
+        badge_type: "warn",
+        description: "In the event a combatant disconnects or crashes during an active map, referees enforce the following protocols:",
+        bullets: [
+          "First 30 Seconds / Pre-Combat: If a player disconnects prior to first blood or before the game clock reaches thirty (30) seconds, the lobby is immediately terminated and remade with identical rosters and classes.",
+          "Mid-Game Hardpoint Crash: The remaining players continue until the current hill timer expires. The game is paused/ended, and a remake is launched with previous points recorded and carried forward to reach the 250-point target.",
+          "Search & Destroy Crash: The round in progress must be completed (no mid-round pauses). The lobby is remade for remaining rounds, retaining the exact round tally before the disconnect.",
+          "Player Re-entry Window: A disconnected player has up to five (5) minutes to rejoin the lobby before the squad must substitute a registered reserve player or proceed 3v4."
+        ]
+      },
+      {
+        id: "rule_4_3",
+        section: "host",
+        tag: "§ 4.3",
+        title: "Match Disputes & Proof Submission",
+        badge: "DISCORD REFS",
+        badge_type: "lime",
+        description: "Match dispute tickets must be logged in the official Discord #match-disputes channel within thirty (30) minutes of series conclusion. All claims must include timestamped video recordings (Twitch/YouTube VOD) or clear scoreboard screenshots. Referees will not accept unsubstantiated hearsay."
+      }
+    ]
   },
   announcements: [
     {
@@ -2418,6 +2532,86 @@ window.LeagueDB = {
     setTags("container-allowed-equipment", data.allowed_equipment, false);
     setTags("container-banned-upgrades", data.banned_upgrades_streaks, true);
     setTags("container-allowed-upgrades", data.allowed_upgrades_streaks, false);
+
+    // Dynamic Rules Articles (Add & Remove system)
+    const rulesList = Array.isArray(data.rules_list) ? data.rules_list : (MOCK_DATA.rulebook ? MOCK_DATA.rulebook.rules_list : []);
+    if (rulesList && Array.isArray(rulesList)) {
+      const renderSection = (containerId, sectionKey) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const matching = rulesList.filter(r => (r.section || "league") === sectionKey);
+        if (matching.length === 0) {
+          container.innerHTML = `<div style="padding:24px; text-align:center; color:var(--muted); font-size:13px; border:1px dashed #333a20; margin:16px 0;">No active rules listed under this section. Use Admin Console to add rules.</div>`;
+          return;
+        }
+        container.innerHTML = matching.map(rule => {
+          const badgeHtml = rule.badge ? `<span class="val-badge ${rule.badge_type === 'warn' ? 'warn' : ''}">${rule.badge}</span>` : '';
+          const calloutHtml = rule.callout ? `<div class="rule-callout ${rule.callout_type === 'danger' ? 'danger' : ''}">${rule.callout}</div>` : '';
+          const descHtml = rule.description ? `<p class="rule-card-desc">${rule.description}</p>` : '';
+          const bulletsHtml = (Array.isArray(rule.bullets) && rule.bullets.length > 0)
+            ? `<ul class="rule-card-list">${rule.bullets.map(b => `<li>${b}</li>`).join('')}</ul>`
+            : '';
+
+          return `
+            <article class="rule-card" data-rule-id="${rule.id || ''}">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">${rule.tag || '§'}</span>
+                  <span>${rule.title || 'Rule'}</span>
+                </div>
+                ${badgeHtml}
+              </div>
+              ${calloutHtml}
+              ${descHtml}
+              ${bulletsHtml}
+            </article>
+          `;
+        }).join("");
+      };
+
+      renderSection("rules-container-league", "league");
+      renderSection("rules-container-host", "host");
+    }
+  },
+
+  async addRule(ruleData) {
+    const rb = await this.getRulebook();
+    const rules = Array.isArray(rb.rules_list) ? [...rb.rules_list] : (Array.isArray(MOCK_DATA.rulebook.rules_list) ? [...MOCK_DATA.rulebook.rules_list] : []);
+    const newRule = {
+      id: "rule_" + Date.now(),
+      section: ruleData.section || "league",
+      tag: ruleData.tag || "§",
+      title: ruleData.title || "New Regulation",
+      badge: ruleData.badge || "",
+      badge_type: ruleData.badge_type || "lime",
+      description: ruleData.description || "",
+      bullets: Array.isArray(ruleData.bullets) ? ruleData.bullets : [],
+      callout: ruleData.callout || "",
+      callout_type: ruleData.callout_type || "info"
+    };
+    rules.push(newRule);
+    const updated = { ...rb, rules_list: rules };
+    return await this.updateRulebook(updated);
+  },
+
+  async updateRule(ruleId, updatedData) {
+    const rb = await this.getRulebook();
+    const rules = Array.isArray(rb.rules_list) ? [...rb.rules_list] : (Array.isArray(MOCK_DATA.rulebook.rules_list) ? [...MOCK_DATA.rulebook.rules_list] : []);
+    const idx = rules.findIndex(r => String(r.id) === String(ruleId));
+    if (idx !== -1) {
+      rules[idx] = { ...rules[idx], ...updatedData };
+      const updated = { ...rb, rules_list: rules };
+      return await this.updateRulebook(updated);
+    }
+    return { success: false, error: "Rule not found" };
+  },
+
+  async removeRule(ruleId) {
+    const rb = await this.getRulebook();
+    const rules = Array.isArray(rb.rules_list) ? [...rb.rules_list] : (Array.isArray(MOCK_DATA.rulebook.rules_list) ? [...MOCK_DATA.rulebook.rules_list] : []);
+    const filtered = rules.filter(r => String(r.id) !== String(ruleId));
+    const updated = { ...rb, rules_list: filtered };
+    return await this.updateRulebook(updated);
   },
 
   // ==============================================================================

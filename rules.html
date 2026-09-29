@@ -576,108 +576,110 @@
             <span class="val-badge">SECTION 1 OF 5</span>
           </div>
 
-          <!-- Article 1.1 -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 1.1</span>
-                <span>Roster Composition &amp; Combatant Eligibility</span>
+          <div id="rules-container-league">
+            <!-- Article 1.1 -->
+            <article class="rule-card" data-rule-id="rule_1_1">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 1.1</span>
+                  <span>Roster Composition &amp; Combatant Eligibility</span>
+                </div>
+                <span class="val-badge" id="val-roster-size">4V4 SQUAD</span>
               </div>
-              <span class="val-badge" id="val-roster-size">4V4 SQUAD</span>
-            </div>
-            <p class="rule-card-desc">
-              All official Frontline League matches are contested in a 4v4 format across permitted cross-platform systems (PC, PlayStation, Xbox).
-            </p>
-            <ul class="rule-card-list">
-              <li><strong>Roster Size:</strong> Each franchise team may register four (4) active starting players and up to two (2) designated reserve/substitute players.</li>
-              <li><strong>Player Verification:</strong> All players must have a verified Frontline Combatant Account with their active Activision ID (including tag numbers) and Discord handle logged in the league database.</li>
-              <li><strong>Cross-Team Roster Lock:</strong> A player may not compete for more than one franchise team within the same division during the regular season without an official front-office trade approved by the League Director.</li>
-            </ul>
-          </article>
+              <p class="rule-card-desc">
+                All official Frontline League matches are contested in a 4v4 format across permitted cross-platform systems (PC, PlayStation, Xbox).
+              </p>
+              <ul class="rule-card-list">
+                <li><strong>Roster Size:</strong> Each franchise team may register four (4) active starting players and up to two (2) designated reserve/substitute players.</li>
+                <li><strong>Player Verification:</strong> All players must have a verified Frontline Combatant Account with their active Activision ID (including tag numbers) and Discord handle logged in the league database.</li>
+                <li><strong>Cross-Team Roster Lock:</strong> A player may not compete for more than one franchise team within the same division during the regular season without an official front-office trade approved by the League Director.</li>
+              </ul>
+            </article>
 
-          <!-- Article 1.2 -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 1.2</span>
-                <span>Match Scheduling &amp; 10-Minute Forfeit Grace Period</span>
+            <!-- Article 1.2 -->
+            <article class="rule-card" data-rule-id="rule_1_2">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 1.2</span>
+                  <span>Match Scheduling &amp; 10-Minute Forfeit Grace Period</span>
+                </div>
+                <span class="val-badge warn">STRICT DEADLINE</span>
               </div>
-              <span class="val-badge warn">STRICT DEADLINE</span>
-            </div>
-            <p class="rule-card-desc">
-              Match fixtures are published weekly on the official Schedule HQ. Team captains bear primary responsibility for confirming match start times.
-            </p>
-            <ul class="rule-card-list">
-              <li><strong>Discord Check-In:</strong> Both team captains must check into the designated Discord match thread at least fifteen (15) minutes prior to the scheduled broadcast start time.</li>
-              <li><strong>Map 1 Forfeit (<span id="val-forfeit-map1">10 MIN</span>):</strong> If a team does not have four players present in the custom lobby ten (10) minutes after scheduled start time, Map 1 is officially forfeited.</li>
-              <li><strong>Series Forfeit (<span id="val-forfeit-series">15 MIN</span>):</strong> If a team fails to field four players fifteen (15) minutes past scheduled match time, the entire Best-of-5 series is forfeited as a 3–0 loss.</li>
-              <li><strong>Emergency Reschedule:</strong> Reschedule requests must be submitted to league administrators at least twenty-four (24) hours in advance and mutually agreed upon in writing by both captains.</li>
-            </ul>
-          </article>
+              <p class="rule-card-desc">
+                Match fixtures are published weekly on the official Schedule HQ. Team captains bear primary responsibility for confirming match start times.
+              </p>
+              <ul class="rule-card-list">
+                <li><strong>Discord Check-In:</strong> Both team captains must check into the designated Discord match thread at least fifteen (15) minutes prior to the scheduled broadcast start time.</li>
+                <li><strong>Map 1 Forfeit (<span id="val-forfeit-map1">10 MIN</span>):</strong> If a team does not have four players present in the custom lobby ten (10) minutes after scheduled start time, Map 1 is officially forfeited.</li>
+                <li><strong>Series Forfeit (<span id="val-forfeit-series">15 MIN</span>):</strong> If a team fails to field four players fifteen (15) minutes past scheduled match time, the entire Best-of-5 series is forfeited as a 3–0 loss.</li>
+                <li><strong>Emergency Reschedule:</strong> Reschedule requests must be submitted to league administrators at least twenty-four (24) hours in advance and mutually agreed upon in writing by both captains.</li>
+              </ul>
+            </article>
 
-          <!-- Article 1.3 -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 1.3</span>
-                <span>Best-of-5 Match Sequence &amp; Map Vetoes</span>
+            <!-- Article 1.3 -->
+            <article class="rule-card" data-rule-id="rule_1_3">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 1.3</span>
+                  <span>Best-of-5 Match Sequence &amp; Map Vetoes</span>
+                </div>
+                <span class="val-badge" id="val-series-format">BO5 ROTATION</span>
               </div>
-              <span class="val-badge" id="val-series-format">BO5 ROTATION</span>
-            </div>
-            <p class="rule-card-desc">
-              All regular season and playoff matches follow the standardized 5-map competitive rotation:
-            </p>
-            <div class="rule-callout">
-              <strong>Official Best-of-5 Order:</strong><br />
-              • Map 1: <strong>Hardpoint</strong><br />
-              • Map 2: <strong>Search &amp; Destroy</strong><br />
-              • Map 3: <strong>Control</strong><br />
-              • Map 4: <strong>Hardpoint</strong> (if required)<br />
-              • Map 5: <strong>Search &amp; Destroy</strong> (decider)
-            </div>
-            <ul class="rule-card-list">
-              <li><strong>Higher Seed Privilege:</strong> The higher-seeded team (or coin-flip winner in Week 1) selects whether to choose Map 1 host/side or initiate map vetos.</li>
-              <li><strong>No Repeated Maps:</strong> No map may be played more than once in the same Best-of-5 series.</li>
-            </ul>
-          </article>
+              <p class="rule-card-desc">
+                All regular season and playoff matches follow the standardized 5-map competitive rotation:
+              </p>
+              <div class="rule-callout">
+                <strong>Official Best-of-5 Order:</strong><br />
+                • Map 1: <strong>Hardpoint</strong><br />
+                • Map 2: <strong>Search &amp; Destroy</strong><br />
+                • Map 3: <strong>Control</strong><br />
+                • Map 4: <strong>Hardpoint</strong> (if required)<br />
+                • Map 5: <strong>Search &amp; Destroy</strong> (decider)
+              </div>
+              <ul class="rule-card-list">
+                <li><strong>Higher Seed Privilege:</strong> The higher-seeded team (or coin-flip winner in Week 1) selects whether to choose Map 1 host/side or initiate map vetos.</li>
+                <li><strong>No Repeated Maps:</strong> No map may be played more than once in the same Best-of-5 series.</li>
+              </ul>
+            </article>
 
-          <!-- Article 1.4 -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 1.4</span>
-                <span>Standings Points &amp; Tiebreaker Hierarchy</span>
+            <!-- Article 1.4 -->
+            <article class="rule-card" data-rule-id="rule_1_4">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 1.4</span>
+                  <span>Standings Points &amp; Tiebreaker Hierarchy</span>
+                </div>
+                <span class="val-badge">SCORING MATRIX</span>
               </div>
-              <span class="val-badge">SCORING MATRIX</span>
-            </div>
-            <p class="rule-card-desc">
-              Standings and postseason tournament seedings are determined strictly by the following hierarchy:
-            </p>
-            <ul class="rule-card-list">
-              <li><strong>Match Series Wins:</strong> Primary rank sorted by total series won (3 pts per win, 0 pts per loss).</li>
-              <li><strong>Map Differential (Net +/-):</strong> Total maps won minus total maps lost across all played matches.</li>
-              <li><strong>Head-to-Head Record:</strong> Direct series and map score between tied squads.</li>
-              <li><strong>Total Maps Won:</strong> Cumulative volume of map victories.</li>
-            </ul>
-          </article>
+              <p class="rule-card-desc">
+                Standings and postseason tournament seedings are determined strictly by the following hierarchy:
+              </p>
+              <ul class="rule-card-list">
+                <li><strong>Match Series Wins:</strong> Primary rank sorted by total series won (3 pts per win, 0 pts per loss).</li>
+                <li><strong>Map Differential (Net +/-):</strong> Total maps won minus total maps lost across all played matches.</li>
+                <li><strong>Head-to-Head Record:</strong> Direct series and map score between tied squads.</li>
+                <li><strong>Total Maps Won:</strong> Cumulative volume of map victories.</li>
+              </ul>
+            </article>
 
-          <!-- Article 1.5 -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 1.5</span>
-                <span>Competitive Integrity, Hardware &amp; Conduct</span>
+            <!-- Article 1.5 -->
+            <article class="rule-card" data-rule-id="rule_1_5">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 1.5</span>
+                  <span>Competitive Integrity, Hardware &amp; Conduct</span>
+                </div>
+                <span class="val-badge warn">ZERO TOLERANCE</span>
               </div>
-              <span class="val-badge warn">ZERO TOLERANCE</span>
-            </div>
-            <div class="rule-callout danger" id="val-conduct-policy">
-              <strong>CRITICAL WARNING:</strong> Any use of hardware-based aim adapters (Cronus Zen, XIM, Titan), strike-pack recoil macros, third-party wallhacks, or memory injection triggers immediate permanent disqualification and player expulsion from the Frontline League.
-            </div>
-            <ul class="rule-card-list">
-              <li><strong>PC Verification:</strong> PC combatants are required to run official anti-cheat background monitoring and must be able to provide Discord screen share or gameplay recording if requested by referees.</li>
-              <li><strong>Communication Conduct:</strong> Racial slurs, hate speech, severe harassment, or intentional stream-sniping in broadcasted matches results in immediate match forfeit and minimum 2-week player suspension.</li>
-            </ul>
-          </article>
+              <div class="rule-callout danger" id="val-conduct-policy">
+                <strong>CRITICAL WARNING:</strong> Any use of hardware-based aim adapters (Cronus Zen, XIM, Titan), strike-pack recoil macros, third-party wallhacks, or memory injection triggers immediate permanent disqualification and player expulsion from the Frontline League.
+              </div>
+              <ul class="rule-card-list">
+                <li><strong>PC Verification:</strong> PC combatants are required to run official anti-cheat background monitoring and must be able to provide Discord screen share or gameplay recording if requested by referees.</li>
+                <li><strong>Communication Conduct:</strong> Racial slurs, hate speech, severe harassment, or intentional stream-sniping in broadcasted matches results in immediate match forfeit and minimum 2-week player suspension.</li>
+              </ul>
+            </article>
+          </div>
         </div>
 
         <!-- ==================================================== -->
@@ -1032,64 +1034,66 @@
             <span class="val-badge">SECTION 4 OF 5</span>
           </div>
 
-          <!-- Host Protocol -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 4.1</span>
-                <span>Dedicated Server &amp; Host Selection Protocol</span>
+          <div id="rules-container-host">
+            <!-- Host Protocol -->
+            <article class="rule-card" data-rule-id="rule_4_1">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 4.1</span>
+                  <span>Dedicated Server &amp; Host Selection Protocol</span>
+                </div>
+                <span class="val-badge">NEUTRAL SERVER</span>
               </div>
-              <span class="val-badge">NEUTRAL SERVER</span>
-            </div>
-            <p class="rule-card-desc" id="val-host-rules">
-              All series must be hosted on dedicated servers providing equitable ping for both teams.
-            </p>
-            <ul class="rule-card-list">
-              <li><strong>Regional Parity:</strong> If an NA East squad faces an NA West squad, the custom match must be hosted on a Central data center (e.g. Chicago, Dallas, or Kansas City) to balance ping latency.</li>
-              <li><strong>Alternating Host Order:</strong>
-                <br />• Map 1: Team A Host (Higher seed choice)
-                <br />• Map 2: Team B Host
-                <br />• Map 3: Team A Host
-                <br />• Map 4: Team B Host (if necessary)
-                <br />• Map 5: Neutral Central Server Host (Decider)
-              </li>
-              <li><strong>Ping Disparity Cap:</strong> If a player demonstrates persistent packet loss or latency exceeding 120ms due to host misrouting, captains must remake the lobby on an alternate neutral server.</li>
-            </ul>
-          </article>
+              <p class="rule-card-desc" id="val-host-rules">
+                All series must be hosted on dedicated servers providing equitable ping for both teams.
+              </p>
+              <ul class="rule-card-list">
+                <li><strong>Regional Parity:</strong> If an NA East squad faces an NA West squad, the custom match must be hosted on a Central data center (e.g. Chicago, Dallas, or Kansas City) to balance ping latency.</li>
+                <li><strong>Alternating Host Order:</strong>
+                  <br />• Map 1: Team A Host (Higher seed choice)
+                  <br />• Map 2: Team B Host
+                  <br />• Map 3: Team A Host
+                  <br />• Map 4: Team B Host (if necessary)
+                  <br />• Map 5: Neutral Central Server Host (Decider)
+                </li>
+                <li><strong>Ping Disparity Cap:</strong> If a player demonstrates persistent packet loss or latency exceeding 120ms due to host misrouting, captains must remake the lobby on an alternate neutral server.</li>
+              </ul>
+            </article>
 
-          <!-- Disconnect Protocol -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 4.2</span>
-                <span>Disconnection &amp; Remake Protocol</span>
+            <!-- Disconnect Protocol -->
+            <article class="rule-card" data-rule-id="rule_4_2">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 4.2</span>
+                  <span>Disconnection &amp; Remake Protocol</span>
+                </div>
+                <span class="val-badge warn">EVIDENCE MANDATORY</span>
               </div>
-              <span class="val-badge warn">EVIDENCE MANDATORY</span>
-            </div>
-            <p class="rule-card-desc" id="val-disconnect-rules">
-              In the event a combatant disconnects or crashes during an active map, referees enforce the following protocols:
-            </p>
-            <ul class="rule-card-list">
-              <li><strong>First 30 Seconds / Pre-Combat:</strong> If a player disconnects prior to first blood or before the game clock reaches thirty (30) seconds, the lobby is immediately terminated and remade with identical rosters and classes.</li>
-              <li><strong>Mid-Game Hardpoint Crash:</strong> The remaining players continue until the current hill timer expires. The game is paused/ended, and a remake is launched with previous points recorded and carried forward to reach the 250-point target.</li>
-              <li><strong>Search &amp; Destroy Crash:</strong> The round in progress must be completed (no mid-round pauses). The lobby is remade for remaining rounds, retaining the exact round tally before the disconnect.</li>
-              <li><strong>Player Re-entry Window:</strong> A disconnected player has up to five (5) minutes to rejoin the lobby before the squad must substitute a registered reserve player or proceed 3v4.</li>
-            </ul>
-          </article>
+              <p class="rule-card-desc" id="val-disconnect-rules">
+                In the event a combatant disconnects or crashes during an active map, referees enforce the following protocols:
+              </p>
+              <ul class="rule-card-list">
+                <li><strong>First 30 Seconds / Pre-Combat:</strong> If a player disconnects prior to first blood or before the game clock reaches thirty (30) seconds, the lobby is immediately terminated and remade with identical rosters and classes.</li>
+                <li><strong>Mid-Game Hardpoint Crash:</strong> The remaining players continue until the current hill timer expires. The game is paused/ended, and a remake is launched with previous points recorded and carried forward to reach the 250-point target.</li>
+                <li><strong>Search &amp; Destroy Crash:</strong> The round in progress must be completed (no mid-round pauses). The lobby is remade for remaining rounds, retaining the exact round tally before the disconnect.</li>
+                <li><strong>Player Re-entry Window:</strong> A disconnected player has up to five (5) minutes to rejoin the lobby before the squad must substitute a registered reserve player or proceed 3v4.</li>
+              </ul>
+            </article>
 
-          <!-- Dispute Submission -->
-          <article class="rule-card">
-            <div class="rule-card-header">
-              <div class="rule-card-title">
-                <span class="rule-tag-id">§ 4.3</span>
-                <span>Match Disputes &amp; Proof Submission</span>
+            <!-- Dispute Submission -->
+            <article class="rule-card" data-rule-id="rule_4_3">
+              <div class="rule-card-header">
+                <div class="rule-card-title">
+                  <span class="rule-tag-id">§ 4.3</span>
+                  <span>Match Disputes &amp; Proof Submission</span>
+                </div>
+                <span class="val-badge">DISCORD REFS</span>
               </div>
-              <span class="val-badge">DISCORD REFS</span>
-            </div>
-            <p class="rule-card-desc" id="val-dispute-rules">
-              Match dispute tickets must be logged in the official Discord <code>#match-disputes</code> channel within thirty (30) minutes of series conclusion. All claims must include timestamped video recordings (Twitch/YouTube VOD) or clear scoreboard screenshots. Referees will not accept unsubstantiated hearsay.
-            </p>
-          </article>
+              <p class="rule-card-desc" id="val-dispute-rules">
+                Match dispute tickets must be logged in the official Discord <code>#match-disputes</code> channel within thirty (30) minutes of series conclusion. All claims must include timestamped video recordings (Twitch/YouTube VOD) or clear scoreboard screenshots. Referees will not accept unsubstantiated hearsay.
+              </p>
+            </article>
+          </div>
         </div>
 
         <!-- ==================================================== -->
