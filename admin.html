@@ -273,6 +273,65 @@
         border-radius: 2px;
       }
 
+      /* 7c. Role-Based Access Control (RBAC) Badges & Chips */
+      .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 9px;
+        font-family: var(--admin-font);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        border-radius: 2px;
+        line-height: 1;
+      }
+      .role-badge-commissioner {
+        background: rgba(213, 244, 91, 0.15);
+        border: 1px solid var(--lime);
+        color: var(--lime);
+        box-shadow: 0 0 10px rgba(213, 244, 91, 0.12);
+      }
+      .role-badge-referee {
+        background: rgba(251, 146, 60, 0.15);
+        border: 1px solid #fb923c;
+        color: #fb923c;
+      }
+      .role-badge-roster {
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid #38bdf8;
+        color: #38bdf8;
+      }
+      .role-badge-recruiter {
+        background: rgba(168, 85, 247, 0.15);
+        border: 1px solid #c084fc;
+        color: #c084fc;
+      }
+      .role-badge-broadcaster {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid #f87171;
+        color: #f87171;
+      }
+      .role-badge-rulebook {
+        background: rgba(234, 179, 8, 0.15);
+        border: 1px solid #eab308;
+        color: #facc15;
+      }
+      .module-chip {
+        display: inline-block;
+        background: #191b14;
+        border: 1px solid #2f3323;
+        color: #b5b8a8;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 2px;
+        margin: 2px 3px 2px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
       /* 7b. Schedule Management Specific Styles */
       .btn-week-filter {
         background: #191b15;
@@ -697,7 +756,9 @@
             <span style="color:var(--muted); font-size:12px;">|</span>
             <span style="color:var(--muted); font-size:12px;" id="db-status-display">Connected to Supabase</span>
             <span style="color:var(--muted); font-size:12px;">|</span>
-            <span style="color:var(--lime); font-size:12px; font-weight:700;" id="staff-user-display">Staff Session</span>
+            <span id="staff-role-badge" class="role-badge role-badge-commissioner">LEAGUE COMMISSIONER</span>
+            <span style="color:#ffffff; font-size:12px; font-weight:700;" id="staff-user-display">Staff Session</span>
+            <span id="staff-permission-count" style="font-size:11.5px; color:var(--muted);">(All Modules Authorized)</span>
           </div>
 
           <div style="display:flex; align-items:center; gap:12px;">
@@ -749,6 +810,9 @@
           </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-rulebook">
             📜 Rulebook Manager
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-staff" id="nav-btn-staff" style="display:none;">
+            👥 Staff &amp; Roles
           </button>
         </nav>
 
@@ -1782,6 +1846,164 @@
 
           </form>
         </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 11: STAFF ROLES & ROLE-BASED ACCESS    -->
+        <!-- ========================================== -->
+        <div id="tab-staff" class="admin-tab-content" style="display:none;">
+          <!-- Card 1: Role Overview & Info -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+              <div>
+                <h3 class="admin-card-title" style="margin:0 0 6px;">👥 Staff Roles &amp; Role-Based Access Control (RBAC)</h3>
+                <p style="color:var(--muted); font-size:13.5px; margin:0; line-height:1.6; max-width:850px;">
+                  Assign dedicated responsibilities to your league staff. Each staff account can only view and edit the specific modules designated to their role. Unauthorized sections remain completely hidden and locked.
+                </p>
+              </div>
+              <span class="role-badge role-badge-commissioner">COMMISSIONER PRIVILEGES ACTIVE</span>
+            </div>
+
+            <!-- Role Definitions Grid -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-top:20px;">
+              <div style="background:#13150f; border:1px solid #2e3321; padding:14px 16px; border-radius:2px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span class="role-badge role-badge-referee">Match Referee</span>
+                </div>
+                <div style="font-size:12px; color:#b5b8a8; line-height:1.5;">
+                  Authorized for <strong>Match Scoring</strong>, <strong>Player Map Stats</strong>, and <strong>8-Week Schedule</strong>. Cannot touch squads or rulebook.
+                </div>
+              </div>
+
+              <div style="background:#13150f; border:1px solid #2e3321; padding:14px 16px; border-radius:2px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span class="role-badge role-badge-roster">Roster Admin</span>
+                </div>
+                <div style="font-size:12px; color:#b5b8a8; line-height:1.5;">
+                  Authorized for <strong>Teams &amp; Standings</strong> and <strong>Players &amp; Rosters</strong>. Enlists players and manages franchises.
+                </div>
+              </div>
+
+              <div style="background:#13150f; border:1px solid #2e3321; padding:14px 16px; border-radius:2px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span class="role-badge role-badge-recruiter">Recruitment Officer</span>
+                </div>
+                <div style="font-size:12px; color:#b5b8a8; line-height:1.5;">
+                  Authorized for <strong>Review Signups Queue</strong> and <strong>Free Agent Roster</strong>. Approves registrations from site and Discord bot.
+                </div>
+              </div>
+
+              <div style="background:#13150f; border:1px solid #2e3321; padding:14px 16px; border-radius:2px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span class="role-badge role-badge-broadcaster">Broadcast Media Lead</span>
+                </div>
+                <div style="font-size:12px; color:#b5b8a8; line-height:1.5;">
+                  Authorized for <strong>Live Broadcast Controller</strong> and <strong>Announcements</strong>. Manages Twitch stream status and bulletins.
+                </div>
+              </div>
+
+              <div style="background:#13150f; border:1px solid #2e3321; padding:14px 16px; border-radius:2px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span class="role-badge role-badge-rulebook">Rules Officer</span>
+                </div>
+                <div style="font-size:12px; color:#b5b8a8; line-height:1.5;">
+                  Authorized for <strong>Rulebook Manager</strong>. Configures competitive lobby settings and banned weapons / GAs.
+                </div>
+              </div>
+
+              <div style="background:#13150f; border:1px solid #2e3321; padding:14px 16px; border-radius:2px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span class="role-badge role-badge-commissioner">League Commissioner</span>
+                </div>
+                <div style="font-size:12px; color:#b5b8a8; line-height:1.5;">
+                  <strong>Master Administrator</strong>. Unrestricted access to all 11 modules and staff account assignment.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Enlist / Assign Staff Role -->
+          <div class="admin-panel-card">
+            <h3 class="admin-card-title">＋ Assign or Update Staff Role</h3>
+            <form id="form-manage-staff">
+              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                <div class="form-group">
+                  <label class="form-label" for="staff-input-email">Staff Account Email *</label>
+                  <input type="email" id="staff-input-email" class="form-control" placeholder="e.g. referee@frontlineleague.com" required />
+                  <small style="color:#b5b8a8; font-size:11.5px; margin-top:4px; display:block;">Must match the email used for Supabase Auth login</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="staff-input-name">Display Name / Gamertag</label>
+                  <input type="text" id="staff-input-name" class="form-control" placeholder="e.g. Ref Spartan" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="staff-input-role">Assigned Staff Role *</label>
+                  <select id="staff-input-role" class="form-control" required>
+                    <option value="referee">⚔ Match Referee (Scores, Stats, Schedule)</option>
+                    <option value="roster_manager">🎯 Roster Admin (Teams, Rosters, Enlistment)</option>
+                    <option value="recruiter">📋 Recruitment Officer (Review Signups, Free Agents)</option>
+                    <option value="broadcaster">🔴 Broadcast Media Lead (Livestreams, VODs, Announcements)</option>
+                    <option value="rulebook_admin">📜 Rules Officer (CDL Rulebook, Lobby Settings)</option>
+                    <option value="commissioner">🛡 League Commissioner (Full Access to Everything)</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="staff-input-notes">Operational Notes / Responsibilities</label>
+                  <input type="text" id="staff-input-notes" class="form-control" placeholder="e.g. North America East weekend referee" />
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:16px;">
+                <button type="submit" id="btn-save-staff-role" class="btn-paypal-submit">
+                  <span>Save Staff Role &amp; Permissions</span>
+                  <span>✓</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card 3: Active Staff Directory Table -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <h3 class="admin-card-title" style="margin:0;">👥 Active League Staff Directory</h3>
+              <button type="button" id="btn-refresh-staff-list" class="btn-action-sm">
+                ↻ Refresh Directory
+              </button>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table class="admin-table" id="table-staff-directory">
+                <thead>
+                  <tr>
+                    <th>Staff Member</th>
+                    <th>Role Badge</th>
+                    <th>Authorized Modules</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-directory-tbody">
+                  <tr>
+                    <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">
+                      Loading staff directory...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top:20px; padding:14px 18px; background:rgba(213,244,91,0.05); border:1px solid rgba(213,244,91,0.2); font-size:12.5px; line-height:1.6; color:#dce0cf;">
+              💡 <strong>How to grant a staff member login access:</strong>
+              <ol style="margin:8px 0 0 18px; padding:0;">
+                <li>Assign their role in the form above using their email address.</li>
+                <li>In your <a href="https://supabase.com/dashboard/project/sllilxkbmxheclhgstcq/auth/users" target="_blank" rel="noopener" style="color:var(--lime);">Supabase Dashboard ➔ Authentication ➔ Users</a>, click <strong>"Add user" ➔ "Create user"</strong> with that same email and a password of your choice.</li>
+                <li>When that staff member logs in on <code>admin.html</code>, the system recognizes their role and automatically restricts the console to only their assigned modules!</li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -2031,13 +2253,83 @@
         const logoutBtn = document.getElementById("btn-logout");
         const staffUserDisplay = document.getElementById("staff-user-display");
 
-        function unlockConsole(userEmail) {
+        let activeStaffProfile = null;
+        let activeAllowedTabs = [];
+
+        async function unlockConsole(userEmail) {
           gateContainer.style.display = "none";
           dashboardContainer.style.display = "block";
-          if (staffUserDisplay) {
-            staffUserDisplay.textContent = userEmail ? `Staff: ${userEmail}` : "Staff Session";
+
+          // 1. Fetch or resolve staff profile & permissions
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.getStaffProfile === "function") {
+              activeStaffProfile = await window.LeagueDB.getStaffProfile(userEmail);
+            }
+          } catch(e) {
+            console.warn("Could not load staff profile, defaulting:", e);
           }
+          if (!activeStaffProfile) {
+            activeStaffProfile = { email: userEmail, role: "commissioner", display_name: userEmail.split("@")[0] };
+          }
+
+          const roleKey = activeStaffProfile.role || "commissioner";
+          const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
+            ? window.LeagueDB.STAFF_ROLES[roleKey] 
+            : { title: "Staff Member", badgeClass: "role-badge-commissioner" };
+
+          activeAllowedTabs = (window.LeagueDB && typeof window.LeagueDB.getRoleTabs === "function")
+            ? window.LeagueDB.getRoleTabs(roleKey, activeStaffProfile.custom_permissions)
+            : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff"];
+
+          // 2. Update Top Status Bar
+          const staffRoleBadge = document.getElementById("staff-role-badge");
+          const staffPermissionCount = document.getElementById("staff-permission-count");
+          if (staffRoleBadge) {
+            staffRoleBadge.className = `role-badge ${roleDef.badgeClass || 'role-badge-commissioner'}`;
+            staffRoleBadge.textContent = roleDef.title;
+          }
+          if (staffUserDisplay) {
+            staffUserDisplay.textContent = activeStaffProfile.display_name 
+              ? `${activeStaffProfile.display_name} (${userEmail})` 
+              : userEmail;
+          }
+          if (staffPermissionCount) {
+            staffPermissionCount.textContent = (roleKey === "commissioner")
+              ? "(All Modules Authorized)"
+              : `(${activeAllowedTabs.length} Modules Authorized)`;
+          }
+
+          // 3. Show/Hide Staff Management Tab (Commissioners only)
+          const staffNavBtn = document.getElementById("nav-btn-staff");
+          if (staffNavBtn) {
+            staffNavBtn.style.display = (roleKey === "commissioner") ? "inline-flex" : "none";
+          }
+
+          // 4. Filter Tab Navigation Buttons based on Role Permissions
+          let firstAllowedTabId = null;
+          navBtns.forEach(btn => {
+            const tabId = btn.getAttribute("data-tab");
+            if (activeAllowedTabs.includes(tabId)) {
+              btn.style.display = "inline-flex";
+              if (!firstAllowedTabId) firstAllowedTabId = tabId;
+            } else {
+              btn.style.display = "none";
+            }
+          });
+
+          // 5. Ensure active tab is within allowed tabs (auto-redirect if default tab is hidden)
+          const currentActiveBtn = document.querySelector(".admin-nav-btn.active");
+          const currentActiveTabId = currentActiveBtn ? currentActiveBtn.getAttribute("data-tab") : null;
+          if (!currentActiveTabId || !activeAllowedTabs.includes(currentActiveTabId) || (currentActiveBtn && currentActiveBtn.style.display === "none")) {
+            const targetTabToActivate = firstAllowedTabId || "tab-teams";
+            switchActiveTab(targetTabToActivate);
+          }
+
+          // 6. Load relevant data
           loadAllData();
+          if (roleKey === "commissioner") {
+            loadStaffDirectory();
+          }
         }
 
         async function lockConsole() {
@@ -2046,6 +2338,8 @@
           }
           sessionStorage.removeItem("frontline_admin_session");
           sessionStorage.removeItem("frontline_admin_email");
+          activeStaffProfile = null;
+          activeAllowedTabs = [];
           gateContainer.style.display = "block";
           dashboardContainer.style.display = "none";
         }
@@ -2064,14 +2358,14 @@
                 gateError.style.display = "block";
                 return;
               }
-              unlockConsole(session.user.email);
+              await unlockConsole(session.user.email);
               return;
             }
           }
           // 2. Fallback check for active browser session
           const savedEmail = sessionStorage.getItem("frontline_admin_email");
           if (sessionStorage.getItem("frontline_admin_session") === "authorized" && savedEmail) {
-            unlockConsole(savedEmail);
+            await unlockConsole(savedEmail);
           }
         }
 
@@ -2099,7 +2393,7 @@
                 const userEmail = res.user.email || email;
                 sessionStorage.setItem("frontline_admin_session", "authorized");
                 sessionStorage.setItem("frontline_admin_email", userEmail);
-                unlockConsole(userEmail);
+                await unlockConsole(userEmail);
                 showToast(`Welcome, Commander. Authenticated as ${userEmail}`);
               } else {
                 gateError.textContent = res.error || "Invalid staff credentials. Check your email & password.";
@@ -2134,36 +2428,177 @@
         }
 
         // ==========================================
-        // 2. TAB SWITCHING
+        // 2. TAB SWITCHING (RBAC-AWARE)
         // ==========================================
         const navBtns = document.querySelectorAll(".admin-nav-btn");
         const tabContents = document.querySelectorAll(".admin-tab-content");
 
+        function switchActiveTab(targetId) {
+          if (activeAllowedTabs.length > 0 && !activeAllowedTabs.includes(targetId)) {
+            showToast("Access Restricted: Your staff role is not authorized for this section.");
+            return;
+          }
+
+          navBtns.forEach(b => b.classList.remove("active"));
+          tabContents.forEach(c => c.style.display = "none");
+
+          const targetBtn = document.querySelector(`.admin-nav-btn[data-tab="${targetId}"]`);
+          if (targetBtn) targetBtn.classList.add("active");
+          const targetContent = document.getElementById(targetId);
+          if (targetContent) targetContent.style.display = "block";
+
+          if (targetId === "tab-player-stats" && currentSelectedPlayerId) {
+            renderSelectedPlayerTelemetry(currentSelectedPlayerId);
+          }
+          if (targetId === "tab-announcements") {
+            loadAnnouncements();
+            updateAnnouncementPreview();
+          }
+          if (targetId === "tab-season") {
+            loadSeasonSettings();
+          }
+          if (targetId === "tab-schedule") {
+            loadAdminSchedule();
+          }
+          if (targetId === "tab-rulebook") {
+            loadAdminRulebook();
+          }
+          if (targetId === "tab-staff") {
+            loadStaffDirectory();
+          }
+        }
+
         navBtns.forEach(btn => {
           btn.addEventListener("click", () => {
             const targetId = btn.getAttribute("data-tab");
-            navBtns.forEach(b => b.classList.remove("active"));
-            tabContents.forEach(c => c.style.display = "none");
-
-            btn.classList.add("active");
-            const targetContent = document.getElementById(targetId);
-            if (targetContent) targetContent.style.display = "block";
-
-            if (targetId === "tab-player-stats" && currentSelectedPlayerId) {
-              renderSelectedPlayerTelemetry(currentSelectedPlayerId);
-            }
-            if (targetId === "tab-announcements") {
-              loadAnnouncements();
-              updateAnnouncementPreview();
-            }
-            if (targetId === "tab-season") {
-              loadSeasonSettings();
-            }
-            if (targetId === "tab-schedule") {
-              loadAdminSchedule();
-            }
+            switchActiveTab(targetId);
           });
         });
+
+        // ==========================================
+        // STAFF DIRECTORY & ROLES MANAGEMENT LOGIC
+        // ==========================================
+        async function loadStaffDirectory() {
+          const tbody = document.getElementById("staff-directory-tbody");
+          if (!tbody) return;
+          try {
+            const list = await window.LeagueDB.getAllStaffMembers();
+            if (!list || list.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">No staff accounts listed yet. Assign a role above to get started.</td></tr>`;
+              return;
+            }
+
+            tbody.innerHTML = list.map(s => {
+              const roleKey = s.role || "referee";
+              const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
+                ? window.LeagueDB.STAFF_ROLES[roleKey] 
+                : { title: roleKey, badgeClass: "role-badge-commissioner" };
+              const allowedTabs = window.LeagueDB.getRoleTabs(roleKey, s.custom_permissions);
+              const isCurrentUser = activeStaffProfile && activeStaffProfile.email && activeStaffProfile.email.toLowerCase() === (s.email || "").toLowerCase();
+
+              const modulesHtml = allowedTabs.map(t => {
+                const cleanName = t.replace("tab-", "").replace("-", " ");
+                return `<span class="module-chip">${cleanName.toUpperCase()}</span>`;
+              }).join("");
+
+              return `
+                <tr>
+                  <td>
+                    <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(s.display_name || s.email.split('@')[0])}</strong>
+                    <div style="font-size:12px; color:var(--muted);">${escapeHtml(s.email)}</div>
+                  </td>
+                  <td>
+                    <span class="role-badge ${roleDef.badgeClass}">${escapeHtml(roleDef.title)}</span>
+                  </td>
+                  <td>
+                    <div style="max-width:340px; line-height:1.4;">${modulesHtml}</div>
+                  </td>
+                  <td style="color:#b5b8a8; font-size:12px;">
+                    ${escapeHtml(s.notes || '—')}
+                  </td>
+                  <td>
+                    <button type="button" class="btn-action-sm btn-edit-staff" data-email="${escapeHtml(s.email)}" data-name="${escapeHtml(s.display_name || '')}" data-role="${escapeHtml(s.role)}" data-notes="${escapeHtml(s.notes || '')}">Edit</button>
+                    ${!isCurrentUser ? `<button type="button" class="btn-action-sm btn-action-danger btn-delete-staff" data-id="${s.id}" data-email="${escapeHtml(s.email)}">Remove</button>` : `<span style="font-size:11px; color:var(--lime); margin-left:6px; font-weight:bold;">(You)</span>`}
+                  </td>
+                </tr>
+              `;
+            }).join("");
+
+            // Edit button handler
+            tbody.querySelectorAll(".btn-edit-staff").forEach(btn => {
+              btn.addEventListener("click", () => {
+                document.getElementById("staff-input-email").value = btn.getAttribute("data-email");
+                document.getElementById("staff-input-name").value = btn.getAttribute("data-name");
+                document.getElementById("staff-input-role").value = btn.getAttribute("data-role");
+                document.getElementById("staff-input-notes").value = btn.getAttribute("data-notes");
+                document.getElementById("form-manage-staff").scrollIntoView({ behavior: "smooth", block: "center" });
+              });
+            });
+
+            // Delete button handler
+            tbody.querySelectorAll(".btn-delete-staff").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const email = btn.getAttribute("data-email");
+                const id = btn.getAttribute("data-id");
+                if (!confirm(`Are you sure you want to remove staff privileges for ${email}?`)) return;
+                const res = await window.LeagueDB.deleteStaffRole(id || email);
+                if (res.success) {
+                  showToast(`✓ Removed staff privileges for ${email}`);
+                  loadStaffDirectory();
+                } else {
+                  alert("Failed to remove staff member: " + (res.error || "Unknown error"));
+                }
+              });
+            });
+
+          } catch(err) {
+            console.error("loadStaffDirectory error:", err);
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#ff4a4a;">Failed to load staff directory. Check console.</td></tr>`;
+          }
+        }
+
+        // Staff form submit listener
+        document.getElementById("form-manage-staff")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("staff-input-email")?.value.trim();
+          const name = document.getElementById("staff-input-name")?.value.trim();
+          const role = document.getElementById("staff-input-role")?.value;
+          const notes = document.getElementById("staff-input-notes")?.value.trim();
+          const submitBtn = document.getElementById("btn-save-staff-role");
+
+          if (!email) return;
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Saving Role...</span><span>⏳</span>`;
+          }
+
+          try {
+            const res = await window.LeagueDB.saveStaffRole({
+              email: email,
+              display_name: name,
+              role: role,
+              notes: notes
+            });
+
+            if (res.success) {
+              showToast(`✓ Staff role configured for ${email}!`);
+              document.getElementById("form-manage-staff").reset();
+              loadStaffDirectory();
+            } else {
+              alert("Failed to save staff role: " + (res.error || "Unknown error"));
+            }
+          } catch(err) {
+            alert("Error saving staff role: " + (err.message || err));
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>Save Staff Role &amp; Permissions</span><span>✓</span>`;
+            }
+          }
+        });
+
+        document.getElementById("btn-refresh-staff-list")?.addEventListener("click", loadStaffDirectory);
 
         // ==========================================
         // 3. LOAD DATA & POPULATE UI

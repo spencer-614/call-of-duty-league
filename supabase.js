@@ -81,6 +81,13 @@ const MOCK_DATA = {
       created_at: new Date().toISOString()
     }
   ],
+  staffRoles: [
+    { id: 1, email: "admin@frontlineleague.com", display_name: "League Director", role: "commissioner", notes: "Primary commissioner" },
+    { id: 2, email: "referee@frontlineleague.com", display_name: "Head Referee", role: "referee", notes: "Match scoring & map stats" },
+    { id: 3, email: "roster@frontlineleague.com", display_name: "Roster GM", role: "roster_manager", notes: "Squad rosters & enlistment" },
+    { id: 4, email: "recruiter@frontlineleague.com", display_name: "Recruitment Lead", role: "recruiter", notes: "Signup queue & free agents" },
+    { id: 5, email: "broadcast@frontlineleague.com", display_name: "Media Crew", role: "broadcaster", notes: "Livestreams & announcements" }
+  ],
   seasonSettings: {
     season_number: 1,
     status_state: "active",
@@ -3403,6 +3410,35 @@ window.LeagueDB = {
     }
   },
 
+  async signInWithDiscord(redirectUrl) {
+    if (!dbClient) {
+      return { success: false, error: "Database client is not connected." };
+    }
+    try {
+      const targetRedirect = redirectUrl || (window.location.origin + window.location.pathname);
+      const { data, error } = await dbClient.auth.signInWithOAuth({
+        provider: "discord",
+        options: {
+          redirectTo: targetRedirect,
+          scopes: "identify email"
+        }
+      });
+      if (error) {
+        if (error.message && (error.message.toLowerCase().includes("not enabled") || error.code === "validation_failed")) {
+          return {
+            success: false,
+            error: "Discord OAuth is not yet enabled in your Supabase project. In your Supabase Dashboard, go to Authentication -> Providers -> Discord to enable it.",
+            unsupported: true
+          };
+        }
+        return { success: false, error: error.message };
+      }
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message || "Failed to initiate Discord authentication." };
+    }
+  },
+
   async signOutPlayer() {
     if (!dbClient) return { success: true };
     try {
@@ -3410,6 +3446,227 @@ window.LeagueDB = {
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
+    }
+  },
+
+  // ==========================================
+  // STAFF ROLES & PERMISSIONS (RBAC)
+  // ==========================================
+  STAFF_ROLES: {
+    commissioner: {
+      key: "commissioner",
+      title: "League Commissioner",
+      badgeClass: "role-badge-commissioner",
+      description: "Full command console access to all operations, league settings, and staff management.",
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff"]
+    },
+    referee: {
+      key: "referee",
+      title: "Match Referee",
+      badgeClass: "role-badge-referee",
+      description: "Authorized to record match series scores, enter map statistics, and manage match schedules.",
+      tabs: ["tab-matches", "tab-player-stats", "tab-schedule"]
+    },
+    roster_manager: {
+      key: "roster_manager",
+      title: "Roster Admin",
+      badgeClass: "role-badge-roster",
+      description: "Authorized to manage teams/franchises, enlist players, and update squad rosters.",
+      tabs: ["tab-teams", "tab-players"]
+    },
+    recruiter: {
+      key: "recruiter",
+      title: "Recruitment Officer",
+      badgeClass: "role-badge-recruiter",
+      description: "Authorized to review pending signups from website & Discord bot, evaluate free agents, and approve enlistments.",
+      tabs: ["tab-signups", "tab-players"]
+    },
+    broadcaster: {
+      key: "broadcaster",
+      title: "Broadcast Media Lead",
+      badgeClass: "role-badge-broadcaster",
+      description: "Authorized to toggle livestream online/offline, update Twitch channels, stream titles, and post announcements.",
+      tabs: ["tab-broadcast", "tab-announcements"]
+    },
+    rulebook_admin: {
+      key: "rulebook_admin",
+      title: "Rules Officer",
+      badgeClass: "role-badge-rulebook",
+      description: "Authorized to edit CDL competitive regulations, custom lobby settings, and restricted item directives.",
+      tabs: ["tab-rulebook"]
+    }
+  },
+
+  getRoleTabs(roleKey, customPermissions) {
+    if (Array.isArray(customPermissions) && customPermissions.length > 0) {
+      return customPermissions;
+    }
+    const roleDef = this.STAFF_ROLES[roleKey];
+    if (roleDef) return roleDef.tabs;
+    return this.STAFF_ROLES.commissioner.tabs;
+  },
+
+  async getStaffProfile(email) {
+    if (!email) return null;
+    const cleanEmail = email.toLowerCase().trim();
+
+    // 1. Try Supabase staff_roles table
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("staff_roles")
+          .select("*")
+          .ilike("email", cleanEmail)
+          .maybeSingle();
+
+        if (!error && data) {
+          return {
+            id: data.id,
+            email: data.email,
+            display_name: data.display_name || cleanEmail.split("@")[0],
+            role: data.role || "commissioner",
+            custom_permissions: data.custom_permissions || null,
+            notes: data.notes || ""
+          };
+        }
+      } catch (err) {
+        console.warn("Error querying staff_roles table from Supabase:", err);
+      }
+    }
+
+    // 2. Try localStorage cache
+    try {
+      const cached = localStorage.getItem("frontline_staff_roles_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const match = parsed.find(s => s.email && s.email.toLowerCase() === cleanEmail);
+        if (match) return match;
+      }
+    } catch (e) {}
+
+    // 3. Fallback to mock list
+    const mock = (MOCK_DATA.staffRoles || []).find(s => s.email.toLowerCase() === cleanEmail);
+    if (mock) return mock;
+
+    // 4. Default: If user is the primary admin or no role exists yet, give commissioner role
+    return {
+      id: 0,
+      email: cleanEmail,
+      display_name: cleanEmail.split("@")[0],
+      role: "commissioner",
+      notes: "Default Administrator"
+    };
+  },
+
+  async getAllStaffMembers() {
+    let list = [];
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("staff_roles")
+          .select("*")
+          .order("created_at", { ascending: true });
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          list = data;
+          try {
+            localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
+          } catch (e) {}
+          return list;
+        }
+      } catch (err) {
+        console.warn("Supabase getAllStaffMembers error:", err);
+      }
+    }
+
+    // Local storage fallback
+    try {
+      const cached = localStorage.getItem("frontline_staff_roles_cache");
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {}
+
+    return MOCK_DATA.staffRoles || [];
+  },
+
+  async saveStaffRole(staffData) {
+    const cleanEmail = (staffData.email || "").toLowerCase().trim();
+    if (!cleanEmail) {
+      return { success: false, error: "Valid staff email is required." };
+    }
+
+    const payload = {
+      email: cleanEmail,
+      display_name: staffData.display_name?.trim() || cleanEmail.split("@")[0],
+      role: staffData.role || "referee",
+      custom_permissions: staffData.custom_permissions || null,
+      notes: staffData.notes?.trim() || null,
+      updated_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("staff_roles")
+          .upsert(payload, { onConflict: "email" })
+          .select();
+
+        if (error) {
+          console.error("Supabase upsert staff_roles error:", error);
+          return { success: false, error: error.message };
+        }
+
+        await this.getAllStaffMembers();
+        return { success: true, data: data?.[0] || payload };
+      } catch (err) {
+        console.error("saveStaffRole network error:", err);
+        return { success: false, error: err.message || err };
+      }
+    }
+
+    // Local fallback
+    try {
+      let list = await this.getAllStaffMembers();
+      const existingIdx = list.findIndex(s => s.email.toLowerCase() === cleanEmail);
+      if (existingIdx !== -1) {
+        list[existingIdx] = { ...list[existingIdx], ...payload };
+      } else {
+        list.push({ id: Date.now(), ...payload });
+      }
+      localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
+      return { success: true, data: payload, mock: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  async deleteStaffRole(staffIdOrEmail) {
+    if (dbClient) {
+      try {
+        let query = dbClient.from("staff_roles").delete();
+        if (typeof staffIdOrEmail === "number" || /^\d+$/.test(String(staffIdOrEmail))) {
+          query = query.eq("id", staffIdOrEmail);
+        } else {
+          query = query.ilike("email", String(staffIdOrEmail).toLowerCase().trim());
+        }
+        const { error } = await query;
+        if (error) return { success: false, error: error.message };
+        await this.getAllStaffMembers();
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+
+    // Local fallback
+    try {
+      let list = await this.getAllStaffMembers();
+      list = list.filter(s => s.id != staffIdOrEmail && s.email.toLowerCase() !== String(staffIdOrEmail).toLowerCase());
+      localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
+      return { success: true, mock: true };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   },
 
