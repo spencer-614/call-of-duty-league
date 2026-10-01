@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline Arena — Competitive Call of Duty Circuit & Ladders</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+  </head>
+  <body class="gb-body">
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER (WITH RED LOGO & PLATFORM SWITCH)
+         ========================================================================= -->
+    <header class="header" style="background:#0a0c10; border-bottom:1px solid #1e2430;">
+      <div class="wrap nav">
+        <!-- Brand with Crimson Red Logo -->
+        <a class="brand" href="arena.html">
+          <img src="images/arenalogo_1.png" alt="Frontline Arena Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title" style="color:#ffffff; text-shadow:0 0 14px rgba(255,30,68,0.45);">FRONTLINE</span>
+            <small class="brand-sub" style="color:#ff1e44; font-weight:800; letter-spacing:1px;">ARENA</small>
+            <div class="brand-status status-arena">
+              <span class="nav-beacon"></span>
+              <span>CIRCUIT ACTIVE</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Header Center Hub with Welcome Above Mode Switcher -->
+        <div class="header-center-hub">
+          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+            <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+              <span>🛡</span> <span>League</span>
+            </a>
+            <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+              <span>⚔</span> <span>Arena</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <!-- Explore Arena Dropdown Menu (Only ONE link taking you to Ladders!) -->
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn arena" aria-label="Toggle Arena navigation menu">
+              <span>☰</span>
+              <span>Explore Arena</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Arena navigation">
+              <div class="nav-dropdown-grid" style="grid-template-columns: 1fr; min-width: 270px;">
+                <div class="nav-dropdown-col">
+                  <a href="ladders.html" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
+                    <span class="nav-icon">⚔</span> <span>Competitive Ladders &amp; Match Finder</span>
+                  </a>
+                  <a href="profile.html#my-teams" id="nav-arena-my-teams-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
+                    <span class="nav-icon">🛡</span> <span>My Teams</span>
+                  </a>
+                  <a href="profile.html" id="nav-arena-profile-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
+                    <span class="nav-icon" id="nav-arena-profile-icon">🔑</span>
+                    <span id="nav-arena-profile-text">Login</span>
+                  </a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <!-- Active Squad Pill or Create Team CTA -->
+          <div id="arena-header-squad-container">
+            <a href="ladders.html" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
+              <span>⚔</span> <span>Enter Ladders ↗</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- =======================================================================
+           ARENA SHOWCASE HERO SECTION
+           ======================================================================= -->
+      <section style="position:relative; padding:70px 0 50px; background:radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 30, 68, 0.22), transparent 70%), #080a0f; border-bottom:1px solid #1a2230;">
+        <div class="wrap" style="max-width:1240px; margin:0 auto; text-align:center;">
+          <div class="arena-hero-badge">
+            <span>⚡</span>
+            <span>OFFICIAL COMPETITIVE CIRCUIT · ELO RATINGS &amp; LADDERS</span>
+          </div>
+
+          <h1 style="font-family:var(--display); font-size:clamp(38px, 6vw, 76px); line-height:0.95; text-transform:uppercase; margin:16px 0 20px; color:#ffffff; letter-spacing:1px;">
+            FRONTLINE <span style="color:#ff1e44; text-shadow:0 0 28px rgba(255,30,68,0.5);">ARENA</span>
+          </h1>
+
+          <p style="font-size:clamp(15px, 1.8vw, 18px); color:#cbd5e1; max-width:720px; margin:0 auto 32px; line-height:1.6;">
+            The grassroots competitive arena for Call of Duty. Form a team, accept open challenges on the Match Finder board, strike maps in private CDL veto rooms, and climb division tiers to Apex Prestige.
+          </p>
+
+          <!-- Core Call to Actions -->
+          <div style="display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap;">
+            <a href="ladders.html" class="btn-crimson" style="padding:14px 28px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
+              <span>⚔</span> <span>Go to Competitive Ladders ↗</span>
+            </a>
+            <a href="ladders.html?tab=match-finder" class="btn-crimson-outline" style="padding:14px 26px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
+              <span>🎯</span> <span>Open Match Finder</span>
+            </a>
+            <a href="ladders.html#register" class="btn-crimson-outline" style="padding:14px 22px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+              <span>🛡</span> <span>Register Team</span>
+            </a>
+          </div>
+
+          <!-- Key Metrics Row -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; max-width:960px; margin:50px auto 0; text-align:center;">
+            <div style="background:#0e131d; border:1px solid #1e283a; padding:18px; border-radius:4px;">
+              <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">Active Ladders</span>
+              <div style="font:900 28px var(--body); color:#ffffff; margin-top:4px;">3 Circuits</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">4v4, 2v2 SnD, 1v1 Radar</div>
+            </div>
+
+            <div style="background:#0e131d; border:1px solid #1e283a; padding:18px; border-radius:4px;">
+              <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">Registered Squads</span>
+              <div style="font:900 28px var(--body); color:#ffffff; margin-top:4px;" id="stat-squads-count">18+ Teams</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">Custom Emblems &amp; Rosters</div>
+            </div>
+
+            <div style="background:#0e131d; border:1px solid #1e283a; padding:18px; border-radius:4px;">
+              <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">Match System</span>
+              <div style="font:900 28px var(--body); color:#22c55e; margin-top:4px;">Live Board</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">Instant CDL Veto Room</div>
+            </div>
+
+            <div style="background:#0e131d; border:1px solid #1e283a; padding:18px; border-radius:4px;">
+              <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">Dispute Protection</span>
+              <div style="font:900 28px var(--body); color:#f59e0b; margin-top:4px;">Automated</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">Conflict Detection &amp; Admin</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================================
+           FEATURED COMPETITIVE LADDERS SECTION
+           ======================================================================= -->
+      <section style="padding:60px 0; max-width:1240px; margin:0 auto; width:calc(100% - 32px);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:30px;">
+          <div>
+            <span class="gb-meta-tag accent">ACTIVE LADDER CIRCUITS</span>
+            <h2 style="font-family:var(--display); font-size:32px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">
+              Choose Your Ladder
+            </h2>
+            <p style="color:#94a3b8; font-size:14px; margin:0;">
+              Select a competitive ladder to view team standings, accept open challenges, and post matches.
+            </p>
+          </div>
+          <a href="ladders.html" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+            <span>⚔</span> <span>View Full Standings Table ↗</span>
+          </a>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
+          <!-- Ladder 1: 4v4 CDL Variant -->
+          <div class="gb-card-box" style="display:flex; flex-direction:column; overflow:hidden;">
+            <div style="position:relative; height:160px; overflow:hidden;">
+              <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.65);" alt="4v4 CDL Variant" />
+              <div style="position:absolute; top:12px; left:12px;">
+                <span class="gb-meta-tag accent">FLAGSHIP CIRCUIT</span>
+              </div>
+              <div style="position:absolute; bottom:12px; left:12px; right:12px;">
+                <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">4v4 CDL Variant</h3>
+                <span style="font-size:12px; color:#cbd5e1;">Hardpoint · SnD · Control (Best of 5)</span>
+              </div>
+            </div>
+
+            <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+              <div style="margin-bottom:16px;">
+                <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin:0 0 14px;">
+                  The premier 4v4 team ladder played under official Call of Duty League rules, map pool, and equipment bans.
+                </p>
+                <div style="background:#090d14; border:1px solid #192233; padding:10px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:11px; color:#94a3b8;">Ladder Leader:</span>
+                  <strong style="color:#ff1e44; font-size:12px;">[APEX] Apex Predators (2045 ELO)</strong>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:10px;">
+                <a href="ladders.html?ladder=4v4_variant" class="btn-crimson" style="flex:1; text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                  <span>⚔</span> <span>View Ladder</span>
+                </a>
+                <a href="ladders.html?ladder=4v4_variant&tab=match-finder" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                  Find Match
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ladder 2: 2v2 Search & Destroy -->
+          <div class="gb-card-box" style="display:flex; flex-direction:column; overflow:hidden;">
+            <div style="position:relative; height:160px; overflow:hidden;">
+              <img src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=500&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.65);" alt="2v2 SnD" />
+              <div style="position:absolute; top:12px; left:12px;">
+                <span class="gb-meta-tag">TACTICAL DUOS</span>
+              </div>
+              <div style="position:absolute; bottom:12px; left:12px; right:12px;">
+                <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">2v2 Search &amp; Destroy</h3>
+                <span style="font-size:12px; color:#cbd5e1;">Pure SnD · First to 6 Rounds</span>
+              </div>
+            </div>
+
+            <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+              <div style="margin-bottom:16px;">
+                <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin:0 0 14px;">
+                  High-stakes tactical duos. Test your bomb site execution, timing, communication, and clutch 1v2 ice.
+                </p>
+                <div style="background:#090d14; border:1px solid #192233; padding:10px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:11px; color:#94a3b8;">Ladder Leader:</span>
+                  <strong style="color:#ff1e44; font-size:12px;">[PHNTM] Phantom Five (1680 ELO)</strong>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:10px;">
+                <a href="ladders.html?ladder=2v2_snd" class="btn-crimson" style="flex:1; text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                  <span>⚔</span> <span>View Ladder</span>
+                </a>
+                <a href="ladders.html?ladder=2v2_snd&tab=match-finder" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                  Find Match
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ladder 3: 1v1 Radar / Gunfight -->
+          <div class="gb-card-box" style="display:flex; flex-direction:column; overflow:hidden;">
+            <div style="position:relative; height:160px; overflow:hidden;">
+              <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.65);" alt="1v1 Radar Gunfight" />
+              <div style="position:absolute; top:12px; left:12px;">
+                <span class="gb-meta-tag">SOLO DUELS</span>
+              </div>
+              <div style="position:absolute; bottom:12px; left:12px; right:12px;">
+                <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">1v1 Radar / Gunfight</h3>
+                <span style="font-size:12px; color:#cbd5e1;">Constant Radar · Pure Gunskill</span>
+              </div>
+            </div>
+
+            <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+              <div style="margin-bottom:16px;">
+                <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin:0 0 14px;">
+                  Solo showdowns with radar sweep active. Zero hiding, zero luck—pure centering, strafe mechanics, and shot accuracy.
+                </p>
+                <div style="background:#090d14; border:1px solid #192233; padding:10px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:11px; color:#94a3b8;">Ladder Leader:</span>
+                  <strong style="color:#ff1e44; font-size:12px;">[NYSL] Subliners Academy (1540 ELO)</strong>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:10px;">
+                <a href="ladders.html?ladder=1v1_radar" class="btn-crimson" style="flex:1; text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                  <span>⚔</span> <span>View Ladder</span>
+                </a>
+                <a href="ladders.html?ladder=1v1_radar&tab=match-finder" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                  Find Match
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================================
+           HOW THE ARENA WORKS (4-STEP WORKFLOW)
+           ======================================================================= -->
+      <section style="padding:60px 0; background:#0c1017; border-top:1px solid #1c2536; border-bottom:1px solid #1c2536;">
+        <div class="wrap" style="max-width:1240px; margin:0 auto;">
+          <div style="text-align:center; margin-bottom:40px;">
+            <span class="gb-meta-tag accent">SIMPLE COMPETITIVE CIRCUIT</span>
+            <h2 style="font-family:var(--display); font-size:32px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">
+              How Frontline Arena Works
+            </h2>
+            <p style="color:#94a3b8; font-size:14px; margin:0;">From registration to match completion, the process is streamlined and automated.</p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:24px;">
+            <div style="background:#111622; border:1px solid #1f2b3e; padding:24px; border-radius:4px;">
+              <div style="font:900 24px var(--body); color:#ff1e44; margin-bottom:8px;">01</div>
+              <h3 style="font:900 15px var(--body); color:#fff; text-transform:uppercase; margin:0 0 6px;">Register Team</h3>
+              <p style="font-size:13px; color:#94a3b8; margin:0; line-height:1.6;">
+                Choose your clan tag, upload a custom emblem avatar, assign your captain gamertag and Discord username.
+              </p>
+            </div>
+
+            <div style="background:#111622; border:1px solid #1f2b3e; padding:24px; border-radius:4px;">
+              <div style="font:900 24px var(--body); color:#ff1e44; margin-bottom:8px;">02</div>
+              <h3 style="font:900 15px var(--body); color:#fff; text-transform:uppercase; margin:0 0 6px;">Match Finder</h3>
+              <p style="font-size:13px; color:#94a3b8; margin:0; line-height:1.6;">
+                Browse open challenges or post your own match settings with host location and start time directly on the challenge board.
+              </p>
+            </div>
+
+            <div style="background:#111622; border:1px solid #1f2b3e; padding:24px; border-radius:4px;">
+              <div style="font:900 24px var(--body); color:#ff1e44; margin-bottom:8px;">03</div>
+              <h3 style="font:900 15px var(--body); color:#fff; text-transform:uppercase; margin:0 0 6px;">Private CDL Veto</h3>
+              <p style="font-size:13px; color:#94a3b8; margin:0; line-height:1.6;">
+                Both teams enter the private match room. 3D coin toss decides advantage, followed by turn-by-turn map striking and chat.
+              </p>
+            </div>
+
+            <div style="background:#111622; border:1px solid #1f2b3e; padding:24px; border-radius:4px;">
+              <div style="font:900 24px var(--body); color:#ff1e44; margin-bottom:8px;">04</div>
+              <h3 style="font:900 15px var(--body); color:#fff; text-transform:uppercase; margin:0 0 6px;">Report &amp; Dispute Protection</h3>
+              <p style="font-size:13px; color:#94a3b8; margin:0; line-height:1.6;">
+                Report scores. If conflicting scores are submitted, our engine automatically files a dispute to admin referees with evidence.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================================
+           BANNER: JUMP INTO LADDERS
+           ======================================================================= -->
+      <section style="padding:60px 0; text-align:center;">
+        <div class="wrap" style="max-width:800px; margin:0 auto; background:#12070a; border:1px solid #3d141d; padding:40px 24px; border-radius:4px; box-shadow:0 0 30px rgba(255,30,68,0.15);">
+          <img src="images/arenalogo_1.png" style="width:72px; height:72px; object-fit:contain; margin-bottom:12px;" alt="Frontline Arena Emblem" />
+          <h2 style="font-family:var(--display); font-size:32px; text-transform:uppercase; color:#fff; margin:0 0 8px;">
+            Ready to Prove Your Squad?
+          </h2>
+          <p style="color:#cbd5e1; font-size:14px; max-width:540px; margin:0 auto 24px; line-height:1.6;">
+            Join the competitive circuit today. Register your squad, post open challenges, and start climbing the official CDL Variant ladders.
+          </p>
+          <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+            <a href="ladders.html" class="btn-crimson" style="padding:12px 24px; font-size:13px; text-decoration:none;">
+              <span>⚔</span> <span>Go to Ladders ↗</span>
+            </a>
+            <a href="ladders.html#register" class="btn-crimson-outline" style="padding:12px 20px; font-size:13px; text-decoration:none;">
+              <span>🛡</span> <span>Register Team</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer style="background:#0c1017; border-top:1px solid #1a2333; padding:32px 24px; text-align:center; color:#64748b; font-size:12px;">
+      <div style="max-width:1240px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="images/arenalogo_1.png" style="width:24px; height:24px; object-fit:contain;" alt="Arena Logo" />
+          <strong style="color:#fff;">FRONTLINE ARENA</strong> · Competitive Ladder Circuit
+        </div>
+        <div style="display:flex; gap:16px;">
+          <a href="arena.html" style="color:#ff1e44; text-decoration:none;">Arena HQ</a>
+          <a href="ladders.html" style="color:#94a3b8; text-decoration:none;">Ladders</a>
+          <a href="ladders.html?tab=match-finder" style="color:#94a3b8; text-decoration:none;">Match Finder</a>
+          <a href="match.html" style="color:#94a3b8; text-decoration:none;">Match Room</a>
+          <a href="index.html" style="color:#d5f45b; text-decoration:none;">Franchise League ↗</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Load squad count for hero
+      async function updateArenaHeroStats() {
+        try {
+          const teams4v4 = await window.LadderDB.getLadderTeams('4v4_variant');
+          const teams2v2 = await window.LadderDB.getLadderTeams('2v2_snd');
+          const teams1v1 = await window.LadderDB.getLadderTeams('1v1_radar');
+          const total = teams4v4.length + teams2v2.length + teams1v1.length;
+          const statEl = document.getElementById('stat-squads-count');
+          if (statEl && total > 0) {
+            statEl.textContent = `${total} Teams`;
+          }
+        } catch (e) {}
+      }
+      updateArenaHeroStats();
+    </script>
+  </body>
+</html>

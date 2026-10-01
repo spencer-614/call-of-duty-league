@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content="0; url=ladders.html?tab=match-finder" />
+    <title>Redirecting to Frontline Arena Match Finder...</title>
+    <script>
+      const q = new URLSearchParams(window.location.search);
+      q.set("tab", "match-finder");
+      window.location.replace("ladders.html?" + q.toString());
+    </script>
+  </head>
+  <body style="background:#080a0f; color:#fff; font-family:sans-serif; text-align:center; padding-top:100px;">
+    <p>Redirecting to Frontline Arena Match Finder...</p>
+    <a href="ladders.html?tab=match-finder" style="color:#ff1e44;">Click here if not redirected automatically.</a>
+  </body>
+</html>

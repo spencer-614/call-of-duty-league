@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline Arena — Competitive Ladders & Match Finder</title>
+    <style>
+      .team-clickable {
+        cursor: pointer;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      .team-clickable:hover .team-link-hover {
+        color: #ff1e44 !important;
+        text-decoration: underline;
+      }
+      .team-clickable:hover img {
+        border-color: #ff1e44 !important;
+        box-shadow: 0 0 10px rgba(255, 30, 68, 0.45);
+      }
+      .roster-player-card {
+        background: #090d14;
+        border: 1px solid #1a2333;
+        border-radius: 6px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .roster-player-card:hover {
+        border-color: #ff1e44;
+        background: #0e1420;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+  </head>
+  <body class="gb-body">
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER (WITH RED LOGO & PLATFORM SWITCH)
+         ========================================================================= -->
+    <header class="header" style="background:#0a0c10; border-bottom:1px solid #1e2430;">
+      <div class="wrap nav">
+        <!-- Brand with Crimson Red Logo -->
+        <a class="brand" href="arena.html">
+          <img src="images/arenalogo_1.png" alt="Frontline Arena Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title" style="color:#ffffff; text-shadow:0 0 14px rgba(255,30,68,0.45);">FRONTLINE</span>
+            <small class="brand-sub" style="color:#ff1e44; font-weight:800; letter-spacing:1px;">ARENA</small>
+            <div class="brand-status status-arena">
+              <span class="nav-beacon"></span>
+              <span>LADDERS ACTIVE</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Header Center Hub with Welcome Above Mode Switcher -->
+        <div class="header-center-hub">
+          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+            <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+              <span>🛡</span> <span>League</span>
+            </a>
+            <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+              <span>⚔</span> <span>Arena</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <!-- Explore Arena Dropdown Menu (Only ONE link taking you to Ladders!) -->
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn arena" aria-label="Toggle Arena navigation menu">
+              <span>☰</span>
+              <span>Explore Arena</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Arena navigation">
+              <div class="nav-dropdown-grid" style="grid-template-columns: 1fr; min-width: 270px;">
+                <div class="nav-dropdown-col">
+                  <a href="ladders.html" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
+                    <span class="nav-icon">⚔</span> <span>Competitive Ladders &amp; Match Finder</span>
+                  </a>
+                  <a href="profile.html#my-teams" id="nav-arena-my-teams-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
+                    <span class="nav-icon">🛡</span> <span>My Teams</span>
+                  </a>
+                  <a href="profile.html" id="nav-arena-profile-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
+                    <span class="nav-icon" id="nav-arena-profile-icon">🔑</span>
+                    <span id="nav-arena-profile-text">Login</span>
+                  </a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <!-- Active Squad Pill or Create Team CTA -->
+          <div id="gb-header-squad-container">
+            <!-- Loaded via renderHeaderSquad() -->
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- GameBattles Breadcrumb Bar -->
+    <div class="gb-breadcrumb-bar">
+      <div class="gb-breadcrumb-inner">
+        <a href="arena.html">Arena Home</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <a href="ladders.html">Ladders</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <strong style="color:#ffffff;" id="gb-breadcrumb-ladder-name">4v4 CDL Variant Ladder</strong>
+      </div>
+    </div>
+
+    <main>
+      <!-- =======================================================================
+           COMPETITIVE LADDER HERO BANNER
+           ======================================================================= -->
+      <section class="gb-ladder-hero">
+        <img id="gb-ladder-cover-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=250&auto=format&fit=crop&q=80" alt="Ladder Cover Art" class="gb-ladder-cover-art" />
+
+        <div class="gb-ladder-title-area">
+          <div style="font-size:12px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">
+            FRONTLINE ARENA OFFICIAL COMPETITIVE LADDER
+          </div>
+          <h1 id="gb-hero-ladder-title">4V4 CDL VARIANT LADDER</h1>
+          <p style="font-size:13px; color:#94a3b8; margin:0; line-height:1.5;">
+            Official Call of Duty competitive ladder. Form a team, accept open challenges, veto CDL maps, and climb division tiers from Recruit to Apex Prestige.
+          </p>
+
+          <div class="gb-ladder-meta-row">
+            <span class="gb-meta-tag accent">SEASON 1 ACTIVE</span>
+            <span class="gb-meta-tag">CROSSPLAY (PC, PS5, XBOX)</span>
+            <span class="gb-meta-tag" id="gb-format-tag">4V4 TEAM FORMAT</span>
+            <span class="gb-meta-tag">OFFICIAL CDL RULES</span>
+            <span class="gb-meta-tag" id="gb-team-count-badge">TEAMS: 6</span>
+          </div>
+
+          <!-- Quick Ladder Switcher -->
+          <div class="gb-ladder-switcher">
+            <button type="button" class="gb-ladder-btn active" id="btn-ladder-4v4" onclick="selectLadder('4v4_variant')">
+              <span>⚔</span> <span>4v4 CDL Variant</span>
+            </button>
+            <button type="button" class="gb-ladder-btn" id="btn-ladder-2v2" onclick="selectLadder('2v2_snd')">
+              <span>💣</span> <span>2v2 Search &amp; Destroy</span>
+            </button>
+            <button type="button" class="gb-ladder-btn" id="btn-ladder-1v1" onclick="selectLadder('1v1_radar')">
+              <span>🎯</span> <span>1v1 Radar / Gunfight</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Side Hero Action: Active Squad Status or Create Team CTA -->
+        <div id="gb-hero-action-container">
+          <!-- Populated via renderHeroAction() -->
+        </div>
+      </section>
+
+      <!-- =======================================================================
+           IN-LADDER "FIND OR POST MATCH" PROMINENT BANNER
+           ======================================================================= -->
+      <div class="gb-find-post-banner">
+        <div class="gb-find-post-info">
+          <div class="gb-find-post-icon">⚔</div>
+          <div>
+            <div style="font:900 16px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px; margin:0 0 4px;" id="gb-find-post-title">
+              LOOKING FOR A MATCH?
+            </div>
+            <p style="font-size:13px; color:#94a3b8; margin:0;">
+              Browse open challenges or post your match settings on the <span id="gb-find-post-ladder-label" style="color:#ffffff; font-weight:700;">4v4 CDL Variant</span> ladder.
+            </p>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button type="button" class="btn-crimson" onclick="switchGbTab('match-finder');" style="padding:10px 20px; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
+            <span>🎯</span> <span>Find or Post Match ↗</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           THE 5 ICONIC GAMEBATTLES LADDER SUB-NAVIGATION TABS
+           ======================================================================= -->
+      <nav class="gb-tabs-nav" role="tablist" aria-label="GameBattles Ladder Tabs">
+        <button type="button" class="gb-tab-btn active" id="tab-btn-standings" onclick="switchGbTab('standings')">
+          <span>📊</span> <span>Standings</span> <span class="gb-tab-count" id="count-standings">6</span>
+        </button>
+        <button type="button" class="gb-tab-btn" id="tab-btn-match-finder" onclick="switchGbTab('match-finder')">
+          <span>⚔</span> <span>Match Finder</span> <span class="gb-tab-count" id="count-match-finder">0</span>
+        </button>
+        <button type="button" class="gb-tab-btn" id="tab-btn-matches" onclick="switchGbTab('matches')">
+          <span>📅</span> <span>Recent Matches</span> <span class="gb-tab-count" id="count-matches">1</span>
+        </button>
+        <button type="button" class="gb-tab-btn" id="tab-btn-rules" onclick="switchGbTab('rules')">
+          <span>📜</span> <span>Rules &amp; Settings</span>
+        </button>
+        <button type="button" class="gb-tab-btn" id="tab-btn-my-team" onclick="switchGbTab('my-team')">
+          <span>🛡</span> <span>My Team</span>
+        </button>
+      </nav>
+
+      <!-- =======================================================================
+           TAB CONTENT SECTIONS
+           ======================================================================= -->
+      <div class="gb-content-wrap">
+        <!-- TAB 1: STANDINGS -->
+        <section id="gb-view-standings" class="gb-card-box">
+          <div class="gb-card-header-bar">
+            <div style="font:900 13px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:8px;">
+              <span id="standings-table-title">4v4 CDL Variant Standings</span>
+              <small style="color:#64748b; font-weight:normal;">(Ranked by ELO &amp; Wins)</small>
+            </div>
+            <div>
+              <input type="text" id="standings-search-input" placeholder="Search team or tag..." class="ladder-input" style="padding:6px 12px; width:240px; font-size:12px; background:#080a0f;" oninput="filterStandingsTable()" />
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="gb-table">
+              <thead>
+                <tr>
+                  <th style="width:60px;">Rank</th>
+                  <th>Team</th>
+                  <th>Division Tier</th>
+                  <th>Record (W-L)</th>
+                  <th>Win %</th>
+                  <th>Streak</th>
+                  <th>Ladder ELO</th>
+                  <th style="text-align:right;">Challenge</th>
+                </tr>
+              </thead>
+              <tbody id="standings-tbody">
+                <tr>
+                  <td colspan="8" style="text-align:center; padding:30px; color:#64748b;">Loading ladder standings...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- TAB 2: MATCH FINDER (CHALLENGE BOARD) -->
+        <section id="gb-view-match-finder" class="gb-card-box" style="display:none;">
+          <div class="gb-card-header-bar">
+            <div>
+              <div style="font:900 14px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px;">
+                Open Challenge Board
+              </div>
+              <small style="color:#94a3b8;">Accept a challenge from competing squads to enter the private match room and begin CDL map vetos.</small>
+            </div>
+            <!-- Top Right Corner "Post Match" Button -->
+            <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="padding:10px 20px; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
+              <span>🎯</span> <span>Post Match</span>
+            </button>
+          </div>
+
+          <div id="match-finder-list-container">
+            <!-- Loaded via renderMatchFinder() -->
+          </div>
+        </section>
+
+        <!-- TAB 3: RECENT & IN-PROGRESS MATCHES -->
+        <section id="gb-view-matches" class="gb-card-box" style="display:none;">
+          <div class="gb-card-header-bar">
+            <div style="font:900 13px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px;">
+              Recent &amp; Live Ladder Matches
+            </div>
+            <small style="color:#94a3b8;">Matches currently in progress or recently finalized on this ladder.</small>
+          </div>
+          <div id="recent-matches-container">
+            <!-- Loaded via renderRecentMatches() -->
+          </div>
+        </section>
+
+        <!-- TAB 4: RULES & SETTINGS -->
+        <section id="gb-view-rules" class="gb-card-box" style="display:none; padding:32px;">
+          <div style="margin-bottom:24px; border-bottom:1px solid #1e283a; padding-bottom:16px;">
+            <span class="gb-meta-tag accent">OFFICIAL CDL RULES</span>
+            <h2 style="font-family:var(--display); font-size:28px; text-transform:uppercase; margin:8px 0; color:#fff;">Arena CDL Variant Ruleset</h2>
+            <p style="color:#94a3b8; font-size:14px; margin:0;">All ladder matches are played under official Call of Duty League (CDL) rules, settings, and gentlemen's agreements.</p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <div style="background:#111724; border:1px solid #1c2738; padding:20px; border-radius:4px;">
+              <h3 style="font:900 14px var(--body); color:#ff1e44; text-transform:uppercase; margin:0 0 10px;">CDL Map Rotation (Best of 5)</h3>
+              <ul style="color:#cbd5e1; font-size:13px; line-height:1.8; margin:0; padding-left:18px;">
+                <li><strong>Game 1:</strong> Hardpoint (Sub Base, Karachi, Invasion, Skidrow, Terminal)</li>
+                <li><strong>Game 2:</strong> Search &amp; Destroy (Karachi, Highrise, Invasion, Terminal, Rio)</li>
+                <li><strong>Game 3:</strong> Control (Karachi, Invasion, Highrise)</li>
+                <li><strong>Game 4:</strong> Hardpoint (Remaining unplayed map)</li>
+                <li><strong>Game 5:</strong> Search &amp; Destroy (Decider map)</li>
+              </ul>
+            </div>
+
+            <div style="background:#111724; border:1px solid #1c2738; padding:20px; border-radius:4px;">
+              <h3 style="font:900 14px var(--body); color:#ff1e44; text-transform:uppercase; margin:0 0 10px;">Hosting &amp; 15-Minute Rule</h3>
+              <ul style="color:#cbd5e1; font-size:13px; line-height:1.8; margin:0; padding-left:18px;">
+                <li><strong>Coin Flip Winner:</strong> Choice of first map veto and hosts Games 1, 3, 5.</li>
+                <li><strong>Opponent Host:</strong> Hosts Games 2, 4.</li>
+                <li><strong>15-Minute Grace Period:</strong> Teams have exactly 15 minutes past scheduled start time to join lobby. A forfeit dispute may be submitted if opponent fails to appear.</li>
+                <li><strong>Dedicated Server:</strong> Central / Dallas server preferred for crossplay equity.</li>
+              </ul>
+            </div>
+
+            <div style="background:#111724; border:1px solid #1c2738; padding:20px; border-radius:4px;">
+              <h3 style="font:900 14px var(--body); color:#ff1e44; text-transform:uppercase; margin:0 0 10px;">Banned Equipment &amp; GAs</h3>
+              <ul style="color:#cbd5e1; font-size:13px; line-height:1.8; margin:0; padding-left:18px;">
+                <li>Shotguns, Launchers, LMGs, Riot Shields are strictly prohibited.</li>
+                <li>All Battle Rifles and Marksman Rifles banned.</li>
+                <li>Thermobaric Grenades, Breacher Drones, Claymores, Prox Mines banned.</li>
+                <li>Killstreaks: All streaks except Cruise Missile / Predator Missile are banned.</li>
+              </ul>
+            </div>
+
+            <div style="background:#111724; border:1px solid #1c2738; padding:20px; border-radius:4px;">
+              <h3 style="font:900 14px var(--body); color:#ff1e44; text-transform:uppercase; margin:0 0 10px;">Score Reporting &amp; Disputes</h3>
+              <ul style="color:#cbd5e1; font-size:13px; line-height:1.8; margin:0; padding-left:18px;">
+                <li>Both captains must report the series outcome immediately after Game 3, 4, or 5.</li>
+                <li><strong>Automatic Dispute:</strong> If scores conflict, the match is locked and immediately transmitted to the Admin Console.</li>
+                <li><strong>Proof Required:</strong> In any dispute, video clip (Twitch/YouTube/Medal) or scoreboard screenshot must be provided.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: MY TEAM -->
+        <section id="gb-view-my-team" class="gb-card-box" style="display:none; padding:32px;">
+          <div id="gb-my-team-content">
+            <!-- Loaded via renderMyTeamTab() -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="background:#0c1017; border-top:1px solid #1a2333; padding:32px 24px; text-align:center; color:#64748b; font-size:12px;">
+      <div style="max-width:1360px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="images/arenalogo_1.png" style="width:24px; height:24px; object-fit:contain;" alt="Arena Logo" />
+          <strong style="color:#fff;">FRONTLINE ARENA</strong> · Competitive Ladder Circuit
+        </div>
+        <div style="display:flex; gap:16px;">
+          <a href="arena.html" style="color:#94a3b8; text-decoration:none;">Arena HQ</a>
+          <a href="ladders.html" style="color:#ff1e44; text-decoration:none;">Ladders</a>
+          <a href="ladders.html?tab=match-finder" style="color:#94a3b8; text-decoration:none;">Match Finder</a>
+          <a href="match.html" style="color:#94a3b8; text-decoration:none;">Match Room</a>
+          <a href="index.html" style="color:#d5f45b; text-decoration:none;">Franchise League ↗</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- CREATE TEAM MODAL -->
+    <div class="modal-overlay" id="modal-create-squad" role="dialog" aria-modal="true" aria-labelledby="modal-squad-title">
+      <div class="ladder-modal-box">
+        <button type="button" class="modal-close-btn" onclick="closeCreateTeamModal()" aria-label="Close Modal">✕</button>
+        <div style="margin-bottom: 20px;">
+          <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44;">ARENA TEAM REGISTRATION</span>
+          <h2 id="modal-squad-title" style="font-family:var(--display); font-size:26px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">Register Arena Team</h2>
+          <p style="font-size:13px; color:var(--muted); margin:0;">Create your team on this ladder and start climbing the leaderboard.</p>
+        </div>
+
+        <form id="form-create-squad" onsubmit="handleCreateTeam(event)">
+          <div class="ladder-form-group">
+            <label for="squad-name">Team Name *</label>
+            <input type="text" id="squad-name" class="ladder-input" placeholder="e.g. Apex Predators" required maxlength="30" />
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="ladder-form-group">
+              <label for="squad-tag">Clan Tag (2-5 Chars) *</label>
+              <input type="text" id="squad-tag" class="ladder-input" placeholder="APEX" required maxlength="5" style="text-transform:uppercase;" />
+            </div>
+            <div class="ladder-form-group">
+              <label for="squad-ladder-type">Target Ladder *</label>
+              <select id="squad-ladder-type" class="ladder-input" required>
+                <option value="4v4_variant">4v4 CDL Variant</option>
+                <option value="2v2_snd">2v2 Search &amp; Destroy</option>
+                <option value="1v1_radar">1v1 Radar Gunfight</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Avatar / Emblem Selector with Live Preview -->
+          <div class="ladder-form-group">
+            <label>Team Emblem / Avatar</label>
+            <div class="avatar-preview-box">
+              <img id="squad-avatar-preview" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Emblem Preview" class="avatar-preview-img" />
+              <div style="flex:1;">
+                <input type="url" id="squad-avatar-url" class="ladder-input" placeholder="Paste image URL (Discord, Imgur, etc.)" oninput="updateAvatarPreview(this.value)" style="margin-bottom:6px; font-size:12px;" />
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:11px; color:var(--muted);">OR upload image:</span>
+                  <input type="file" id="squad-avatar-file" accept="image/*" onchange="handleAvatarFileUpload(event)" style="font-size:11px; color:var(--muted);" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="ladder-form-group">
+              <label for="squad-captain-name">Captain Gamertag *</label>
+              <input type="text" id="squad-captain-name" class="ladder-input" placeholder="e.g. Scump" required />
+            </div>
+            <div class="ladder-form-group">
+              <label for="squad-captain-discord">Discord Username *</label>
+              <input type="text" id="squad-captain-discord" class="ladder-input" placeholder="e.g. scump#0001" required />
+            </div>
+          </div>
+
+          <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn-crimson-outline" onclick="closeCreateTeamModal()">Cancel</button>
+            <button type="submit" class="btn-crimson" id="btn-submit-squad"><span>⚔</span> <span>Create Team &amp; Join Ladder</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- POST OPEN CHALLENGE MODAL -->
+    <div class="modal-overlay" id="modal-post-challenge" role="dialog" aria-modal="true" aria-labelledby="modal-challenge-title">
+      <div class="ladder-modal-box">
+        <button type="button" class="modal-close-btn" onclick="closePostChallengeModal()" aria-label="Close Modal">✕</button>
+        <div style="margin-bottom: 20px;">
+          <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44;">MATCH FINDER</span>
+          <h2 id="modal-challenge-title" style="font-family:var(--display); font-size:26px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">Post Match Challenge</h2>
+          <p style="font-size:13px; color:var(--muted); margin:0;">Create a match challenge for competing teams to accept on this ladder.</p>
+        </div>
+
+        <form id="form-post-challenge" onsubmit="handlePostChallenge(event)">
+          <div class="ladder-form-group">
+            <label for="chal-team-select">Your Team *</label>
+            <select id="chal-team-select" class="ladder-input" required>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="chal-best-of">Match Format *</label>
+            <select id="chal-best-of" class="ladder-input" required>
+              <option value="5">Best of 5 (CDL Standard: HP, SnD, CTL, HP, SnD)</option>
+              <option value="3">Best of 3 (Quick: HP, SnD, CTL)</option>
+              <option value="1">Best of 1 (Single Map SnD / Gunfight)</option>
+            </select>
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="chal-time">Scheduled Start Time *</label>
+            <input type="text" id="chal-time" class="ladder-input" placeholder="e.g. Ready Now / ASAP or Tonight @ 9:00 PM EST" required />
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="chal-notes">Host &amp; Server Notes</label>
+            <input type="text" id="chal-notes" class="ladder-input" placeholder="e.g. Dallas Central host, CDL Rules, Karachi/Sub Base" />
+          </div>
+
+          <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn-crimson-outline" onclick="closePostChallengeModal()">Cancel</button>
+            <button type="submit" class="btn-crimson" id="btn-submit-challenge"><span>🎯</span> <span>Post Match</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SWITCH TEAM MODAL -->
+    <div class="modal-overlay" id="modal-switch-squad" role="dialog" aria-modal="true" aria-labelledby="modal-switch-title">
+      <div class="ladder-modal-box">
+        <button type="button" class="modal-close-btn" onclick="closeSwitchTeamModal()" aria-label="Close Modal">✕</button>
+        <div style="margin-bottom: 20px;">
+          <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44;">TEAM SELECTOR</span>
+          <h2 id="modal-switch-title" style="font-family:var(--display); font-size:24px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">Select Active Team</h2>
+          <p style="font-size:13px; color:var(--muted); margin:0;">Switch between teams registered on this ladder.</p>
+        </div>
+
+        <div id="switch-team-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:280px; overflow-y:auto;">
+          <!-- Loaded via JS -->
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e283a; padding-top:16px;">
+          <button type="button" class="btn-crimson-outline" onclick="openCreateTeamModal(); closeSwitchTeamModal();">
+            + Register New Team
+          </button>
+          <button type="button" class="btn-crimson-outline" onclick="closeSwitchTeamModal()">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEAM ROSTER & PLAYER STATS MODAL -->
+    <div class="modal-overlay" id="modal-team-roster" role="dialog" aria-modal="true" aria-labelledby="modal-roster-title">
+      <div class="ladder-modal-box" style="max-width: 720px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <button type="button" class="modal-close-btn" onclick="closeTeamRosterModal()" aria-label="Close Modal">✕</button>
+        
+        <!-- Header with Team Banner / Info -->
+        <div id="roster-modal-team-header" style="margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #1c2638;">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <!-- Section Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding: 0 4px;">
+          <div>
+            <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44; font-size:10px;">TACTICAL ROSTER</span>
+            <h3 id="modal-roster-title" style="font-family:var(--display); font-size:18px; text-transform:uppercase; margin:4px 0 0; color:#fff;">
+              COMBATANT ROSTER &amp; STATS
+            </h3>
+          </div>
+          <span id="roster-modal-format-badge" style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">
+            4 STARTERS
+          </span>
+        </div>
+
+        <!-- Scrollable Players List -->
+        <div id="roster-modal-players-list" style="display:flex; flex-direction:column; gap:12px; overflow-y:auto; padding-right:6px; margin-bottom:16px;">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <!-- Footer -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1c2638; padding-top:14px; margin-top:auto;">
+          <div style="font-size:11px; color:#64748b;">
+            <span>🛡 Frontline Competitive Record Verified</span>
+          </div>
+          <div style="display:flex; gap:10px;" id="roster-modal-actions">
+            <!-- Action buttons: Challenge or Switch -->
+            <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal()" style="font-size:12px; padding:8px 16px;">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentLadder = "4v4_variant";
+      let currentTab = "standings";
+      let cachedTeams = [];
+
+      const LADDER_INFO = {
+        "4v4_variant": {
+          title: "4V4 CDL VARIANT LADDER",
+          formatTag: "4V4 TEAM FORMAT",
+          cover: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=250&auto=format&fit=crop&q=80",
+          breadcrumb: "4v4 CDL Variant Ladder"
+        },
+        "2v2_snd": {
+          title: "2V2 SEARCH & DESTROY LADDER",
+          formatTag: "2V2 DUO FORMAT",
+          cover: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=250&auto=format&fit=crop&q=80",
+          breadcrumb: "2v2 Search & Destroy Ladder"
+        },
+        "1v1_radar": {
+          title: "1V1 RADAR / GUNFIGHT LADDER",
+          formatTag: "1V1 SOLO FORMAT",
+          cover: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=250&auto=format&fit=crop&q=80",
+          breadcrumb: "1v1 Radar Gunfight Ladder"
+        }
+      };
+
+      // Read URL Query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const ladderParam = urlParams.get("ladder");
+      if (ladderParam && LADDER_INFO[ladderParam]) currentLadder = ladderParam;
+      const tabParam = urlParams.get("tab");
+      if (tabParam && ["standings", "match-finder", "matches", "rules", "my-team"].includes(tabParam)) {
+        currentTab = tabParam;
+      }
+
+      function selectLadder(ladderType) {
+        currentLadder = ladderType;
+
+        ["4v4_variant", "2v2_snd", "1v1_radar"].forEach(t => {
+          const btn = document.getElementById(t === "4v4_variant" ? "btn-ladder-4v4" : t === "2v2_snd" ? "btn-ladder-2v2" : "btn-ladder-1v1");
+          if (btn) btn.classList.toggle("active", t === ladderType);
+        });
+
+        const info = LADDER_INFO[ladderType];
+        document.getElementById("gb-hero-ladder-title").textContent = info.title;
+        document.getElementById("gb-format-tag").textContent = info.formatTag;
+        document.getElementById("gb-ladder-cover-img").src = info.cover;
+        document.getElementById("gb-breadcrumb-ladder-name").textContent = info.breadcrumb;
+        document.getElementById("gb-find-post-ladder-label").textContent = info.breadcrumb;
+        document.getElementById("standings-table-title").textContent = `${info.breadcrumb} Standings`;
+
+        renderHeaderSquad();
+        renderHeroAction();
+        loadStandings();
+        loadMatchFinder();
+        loadRecentMatches();
+        renderMyTeamTab();
+      }
+
+      function switchGbTab(tabName, event) {
+        if (event) event.preventDefault();
+        currentTab = tabName;
+
+        ["standings", "match-finder", "matches", "rules", "my-team"].forEach(t => {
+          const btn = document.getElementById("tab-btn-" + t);
+          if (btn) btn.classList.toggle("active", t === tabName);
+          const view = document.getElementById("gb-view-" + t);
+          if (view) view.style.display = t === tabName ? "block" : "none";
+        });
+
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set("ladder", currentLadder);
+        newUrl.searchParams.set("tab", tabName);
+        window.history.replaceState({}, "", newUrl);
+
+        if (tabName === "match-finder") loadMatchFinder();
+        if (tabName === "matches") loadRecentMatches();
+        if (tabName === "my-team") renderMyTeamTab();
+      }
+
+      function renderHeaderSquad() {
+        const container = document.getElementById("gb-header-squad-container");
+        if (!container) return;
+
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        const currentPlayer = window.LadderDB.getCurrentPlayer ? window.LadderDB.getCurrentPlayer() : null;
+
+        if (myTeam) {
+          container.innerHTML = `
+            <div class="gb-my-squad-pill" title="Your Active Team">
+              <img src="${myTeam.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="gb-my-squad-avatar" />
+              <div>
+                <strong style="color:#ffffff;">[${myTeam.tag || 'TAG'}] ${myTeam.name}</strong>
+                <span style="color:#ff1e44; font-size:11px; margin-left:4px;">${myTeam.elo || 1200} ELO</span>
+              </div>
+            </div>
+          `;
+        } else if (currentPlayer) {
+          container.innerHTML = `
+            <a href="profile.html" class="gb-my-squad-pill" title="View Combatant Profile" style="text-decoration:none;">
+              <img src="${currentPlayer.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="gb-my-squad-avatar" />
+              <div>
+                <strong style="color:#ffffff;">[${currentPlayer.tag || 'TAG'}] ${currentPlayer.gamertag}</strong>
+                <span style="color:#ff1e44; font-size:11px; margin-left:4px;">${currentPlayer.elo || 1200} ELO</span>
+              </div>
+            </a>
+          `;
+        } else {
+          container.innerHTML = `
+            <button type="button" class="btn-crimson" onclick="openCreateTeamModal()" style="font-size:11px; padding:6px 12px;">
+              <span>🛡</span> <span>+ Create Team</span>
+            </button>
+          `;
+        }
+      }
+
+      function renderHeroAction() {
+        const container = document.getElementById("gb-hero-action-container");
+        if (!container) return;
+
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        if (myTeam) {
+          container.innerHTML = `
+            <div class="gb-hero-my-team-card">
+              <div style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; margin-bottom:6px;">
+                ACTIVE ARENA TEAM
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <img src="${myTeam.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:4px; border:1px solid #ff1e44; object-fit:cover;" />
+                <div>
+                  <h3 style="font:900 16px var(--body); color:#ffffff; margin:0;">[${myTeam.tag}] ${myTeam.name}</h3>
+                  <div style="font-size:12px; color:#94a3b8;">${myTeam.wins || 0}W – ${myTeam.losses || 0}L • <span style="color:#ff1e44; font-weight:bold;">${myTeam.elo || 1200} ELO</span></div>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="flex:1; padding:8px 12px; font-size:11px;">
+                  <span>🎯</span> <span>Post Match</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="openSwitchTeamModal()" style="padding:8px 12px; font-size:11px;">
+                  Switch
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="gb-hero-cta-box">
+              <div style="font:900 14px var(--body); color:#fff; text-transform:uppercase; margin-bottom:4px;">
+                NOT ON THIS LADDER?
+              </div>
+              <p style="font-size:12px; color:#94a3b8; margin:0 0 12px;">
+                Register your team to post match challenges and appear in rankings.
+              </p>
+              <button type="button" class="btn-crimson" onclick="openCreateTeamModal()" style="width:100%; padding:10px 14px; font-size:12px;">
+                <span>🛡</span> <span>+ Create Arena Team</span>
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      async function loadStandings() {
+        const tbody = document.getElementById("standings-tbody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#64748b;">Loading ladder standings...</td></tr>`;
+
+        try {
+          const teams = await window.LadderDB.getLadderTeams(currentLadder);
+          cachedTeams = teams;
+          document.getElementById("count-standings").textContent = teams.length;
+          document.getElementById("gb-team-count-badge").textContent = `TEAMS: ${teams.length}`;
+
+          renderStandingsRows(teams);
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#ef4444;">Failed to load standings: ${err.message}</td></tr>`;
+        }
+      }
+
+      function renderStandingsRows(teams) {
+        const tbody = document.getElementById("standings-tbody");
+        if (!tbody) return;
+
+        if (teams.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align:center; padding:30px; color:#64748b;">
+                No teams registered yet on this ladder. Be the first to register!
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+
+        tbody.innerHTML = teams.map((team, idx) => {
+          const isMyTeam = myTeam && String(myTeam.id) === String(team.id);
+          const winRate = (team.wins + team.losses) > 0 
+            ? Math.round((team.wins / (team.wins + team.losses)) * 100) 
+            : 0;
+          const streakStr = team.streak > 0 ? `+${team.streak}W` : team.streak < 0 ? `${team.streak}L` : '-';
+          const tier = (window.LadderDB.getDivisionTier ? window.LadderDB.getDivisionTier(team.elo) : (window.LadderDB.getTier ? window.LadderDB.getTier(team.elo) : null)) || { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+
+          return `
+            <tr class="${isMyTeam ? 'is-my-team-row' : ''}">
+              <td class="rank-col">#${idx + 1}</td>
+              <td>
+                <div class="team-cell team-clickable" onclick="openTeamRosterModal('${team.id}')" title="Click to view team roster &amp; player stats">
+                  <img src="${team.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="team-avatar-sm" alt="${team.name}" />
+                  <div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <strong class="team-link-hover" style="color:#ffffff;">[${team.tag}] ${team.name}</strong>
+                      ${isMyTeam ? '<span class="pill-my-team">YOUR TEAM</span>' : ''}
+                    </div>
+                    <div style="font-size:11px; color:#64748b;">
+                      Capt: <span style="color:#cbd5e1;">${team.captain_name}</span> • <span style="color:#ff1e44; text-decoration:underline;">View Roster &raquo;</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="val-badge ${tier.badgeClass}">
+                  ${tier.icon} ${tier.name}
+                </span>
+              </td>
+              <td style="font-weight:700; color:#fff;">${team.wins} - ${team.losses}</td>
+              <td style="color:#cbd5e1;">${winRate}%</td>
+              <td style="color:${team.streak > 0 ? '#22c55e' : '#94a3b8'}; font-weight:700;">${streakStr}</td>
+              <td style="color:#ff1e44; font-weight:900; font-size:14px;">${team.elo}</td>
+              <td style="text-align:right;">
+                ${isMyTeam ? `
+                  <button type="button" class="btn-crimson-outline" onclick="switchGbTab('match-finder')" style="padding:4px 10px; font-size:11px;">
+                    Post Match
+                  </button>
+                ` : `
+                  <button type="button" class="btn-crimson" onclick="directChallengeTeam(${team.id})" style="padding:4px 10px; font-size:11px;">
+                    Challenge ⚔
+                  </button>
+                `}
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      function filterStandingsTable() {
+        const query = document.getElementById("standings-search-input").value.toLowerCase();
+        if (!cachedTeams) return;
+        const filtered = cachedTeams.filter(t => 
+          t.name.toLowerCase().includes(query) || 
+          t.tag.toLowerCase().includes(query) ||
+          t.captain_name.toLowerCase().includes(query)
+        );
+        renderStandingsRows(filtered);
+      }
+
+      async function loadMatchFinder() {
+        const container = document.getElementById("match-finder-list-container");
+        if (!container) return;
+
+        try {
+          const challenges = await window.LadderDB.getChallenges(currentLadder);
+          document.getElementById("count-match-finder").textContent = challenges.length;
+
+          if (challenges.length === 0) {
+            container.innerHTML = `
+              <div style="text-align:center; padding:50px 20px; color:#64748b; background:#080a0f;">
+                <div style="font-size:36px; margin-bottom:12px;">🎯</div>
+                <h3 style="font:900 16px var(--body); color:#fff; text-transform:uppercase; margin:0 0 6px;">
+                  No Open Challenges Posted
+                </h3>
+                <p style="font-size:13px; color:#94a3b8; max-width:400px; margin:0 auto 16px;">
+                  Be the first squad to post a match challenge on this ladder. Other teams can accept your settings and jump right into map vetos!
+                </p>
+                <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="padding:9px 18px; font-size:12px;">
+                  <span>🎯</span> <span>Post Open Challenge</span>
+                </button>
+              </div>
+            `;
+            return;
+          }
+
+          const myTeam = window.LadderDB.getMyTeam(currentLadder);
+
+          container.innerHTML = challenges.map(chal => {
+            const isMyChal = myTeam && String(myTeam.id) === String(chal.team_a_id);
+            const team = chal.team_a || { name: 'Challenger', tag: 'CHAL', elo: 1200 };
+
+            return `
+              <div class="gb-challenge-row">
+                <div class="chal-team-info team-clickable" onclick="openTeamRosterModal('${team.id || chal.team_a_id}')" title="Click to view team roster &amp; player stats">
+                  <img src="${team.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="team-avatar-sm" />
+                  <div>
+                    <div style="font:900 14px var(--body); color:#ffffff;" class="team-link-hover">
+                      [${team.tag}] ${team.name}
+                      ${isMyChal ? '<span class="pill-my-team" style="margin-left:6px;">YOUR POST</span>' : ''}
+                    </div>
+                    <div style="font-size:12px; color:#94a3b8;">
+                      Rating: <strong style="color:#ff1e44;">${team.elo || 1200} ELO</strong> · Captain: ${team.captain_name || 'N/A'} • <span style="color:#ff1e44; text-decoration:underline; font-size:11px;">Roster &raquo;</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="chal-meta-col">
+                  <div><strong>Format:</strong> Best of ${chal.best_of || 5} (CDL Rules)</div>
+                  <div><strong>Time:</strong> <span style="color:#f59e0b; font-weight:bold;">${chal.notes && chal.notes.includes('Time:') ? chal.notes.split('Time:')[1].split('|')[0] : 'Ready Now'}</span></div>
+                  <div style="color:#64748b; font-size:11px;">${chal.notes || 'Central / Dallas Host'}</div>
+                </div>
+
+                <div class="chal-action-col">
+                  ${isMyChal ? `
+                    <button type="button" class="btn-crimson-outline" style="font-size:11px; padding:6px 14px;" disabled>
+                      Waiting for Opponent...
+                    </button>
+                  ` : `
+                    <button type="button" class="btn-crimson" onclick="acceptLadderChallenge(${chal.id})" style="font-size:12px; padding:8px 16px;">
+                      <span>⚔</span> <span>Accept Match</span>
+                    </button>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join("");
+        } catch (err) {
+          container.innerHTML = `<div style="padding:20px; color:#ef4444;">Error loading challenges: ${err.message}</div>`;
+        }
+      }
+
+      async function acceptLadderChallenge(challengeId) {
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        if (!myTeam) {
+          alert("You must create or select a team first before accepting a match!");
+          openCreateTeamModal();
+          return;
+        }
+
+        if (!confirm(`Accept this match with your team [${myTeam.tag}] ${myTeam.name}? Both teams will enter the match room for CDL map vetoing.`)) {
+          return;
+        }
+
+        try {
+          const match = await window.LadderDB.acceptChallenge(challengeId, myTeam);
+          alert("✓ Match Accepted! Entering the private match room for map vetos...");
+          window.location.href = `match.html?id=${match.id}`;
+        } catch (err) {
+          alert("Error accepting match: " + err.message);
+        }
+      }
+
+      async function loadRecentMatches() {
+        const container = document.getElementById("recent-matches-container");
+        if (!container) return;
+
+        try {
+          const matches = await window.LadderDB.getActiveMatches(currentLadder);
+          document.getElementById("count-matches").textContent = matches.length;
+
+          if (matches.length === 0) {
+            container.innerHTML = `
+              <div style="text-align:center; padding:40px 20px; color:#64748b; background:#080a0f;">
+                No matches currently recorded on this ladder.
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = matches.map(m => {
+            const teamA = m.team_a || { name: 'Team A', tag: 'A' };
+            const teamB = m.team_b || { name: 'Team B', tag: 'B' };
+            const isCompleted = m.status === 'completed';
+            const isDisputed = m.status === 'disputed';
+
+            return `
+              <div class="gb-challenge-row">
+                <div style="display:flex; align-items:center; gap:16px; flex:1;">
+                  <div class="team-clickable" onclick="openTeamRosterModal('${teamA.id}')" title="Click to view ${teamA.name} roster" style="display:flex; align-items:center; gap:8px;">
+                    <img src="${teamA.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="team-avatar-sm" />
+                    <strong style="color:#ffffff;" class="team-link-hover">[${teamA.tag}] ${teamA.name}</strong>
+                  </div>
+                  <span style="font-weight:900; color:#ff1e44; font-size:16px;">
+                    ${isCompleted ? `${m.team_a_score} – ${m.team_b_score}` : 'VS'}
+                  </span>
+                  <div class="team-clickable" onclick="openTeamRosterModal('${teamB.id}')" title="Click to view ${teamB.name} roster" style="display:flex; align-items:center; gap:8px;">
+                    <img src="${teamB.avatar_url || 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80'}" class="team-avatar-sm" />
+                    <strong style="color:#ffffff;" class="team-link-hover">[${teamB.tag}] ${teamB.name}</strong>
+                  </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:14px;">
+                  <span class="val-badge" style="background:${isDisputed ? '#330e15' : isCompleted ? '#0f2416' : '#141d2e'}; color:${isDisputed ? '#ef4444' : isCompleted ? '#22c55e' : '#38bdf8'};">
+                    ${isDisputed ? '⚠️ DISPUTED' : isCompleted ? '✓ COMPLETED' : '⚔ IN PROGRESS'}
+                  </span>
+                  <a href="match.html?id=${m.id}" class="btn-crimson" style="padding:6px 12px; font-size:11px; text-decoration:none;">
+                    <span>👁</span> <span>View Match ↗</span>
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join("");
+        } catch (err) {
+          container.innerHTML = `<div style="padding:20px; color:#ef4444;">Error loading matches: ${err.message}</div>`;
+        }
+      }
+
+      function renderMyTeamTab() {
+        const container = document.getElementById("gb-my-team-content");
+        if (!container) return;
+
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+
+        if (!myTeam) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:50px 20px; max-width:480px; margin:0 auto;">
+              <div style="font-size:48px; margin-bottom:12px;">🛡</div>
+              <h2 style="font-family:var(--display); font-size:24px; text-transform:uppercase; color:#fff; margin:0 0 8px;">
+                No Team Selected on this Ladder
+              </h2>
+              <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin-bottom:20px;">
+                Form a squad, upload a custom emblem, and start challenging other teams on the ${LADDER_INFO[currentLadder].breadcrumb}.
+              </p>
+              <div style="display:flex; justify-content:center; gap:10px;">
+                <button type="button" class="btn-crimson" onclick="openCreateTeamModal()">
+                  <span>🛡</span> <span>+ Create Arena Team</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="openSwitchTeamModal()">
+                  <span>🔄</span> <span>Select Existing</span>
+                </button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const tier = (window.LadderDB.getDivisionTier ? window.LadderDB.getDivisionTier(myTeam.elo) : (window.LadderDB.getTier ? window.LadderDB.getTier(myTeam.elo) : null)) || { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+
+        container.innerHTML = `
+          <div style="display:grid; grid-template-columns:300px 1fr; gap:32px; align-items:start;">
+            <div style="background:#0c1017; border:1px solid #1c2536; padding:24px; border-radius:4px; text-align:center;">
+              <div style="font-size:10px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:12px;">
+                ● ACTIVE TEAM (1 TEAM PER LADDER)
+              </div>
+              <img src="${myTeam.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=250&auto=format&fit=crop&q=80'}" style="width:140px; height:140px; border-radius:8px; border:2px solid #ff1e44; object-fit:cover; margin:0 auto 16px; display:block; cursor:pointer;" onclick="openTeamRosterModal('${myTeam.id}')" title="Click to view squad roster" />
+              <h2 style="font-family:var(--display); font-size:24px; text-transform:uppercase; color:#fff; margin:0 0 4px; cursor:pointer;" onclick="openTeamRosterModal('${myTeam.id}')">
+                [${myTeam.tag}] ${myTeam.name}
+              </h2>
+              <div style="margin-bottom:12px;">
+                <span class="val-badge ${tier.badgeClass}">${tier.icon} ${tier.name}</span>
+              </div>
+              <div style="font-size:12px; color:#94a3b8; margin-bottom:16px;">
+                Captain: <strong style="color:#fff;">${myTeam.captain_name || 'N/A'}</strong><br/>
+                Discord: <span style="color:#cbd5e1;">${myTeam.captain_discord || 'N/A'}</span>
+              </div>
+              <button type="button" class="btn-crimson" onclick="openTeamRosterModal('${myTeam.id}')" style="width:100%; font-size:12px; padding:10px 12px; margin-bottom:8px; justify-content:center;">
+                <span>👥</span> <span>View Squad Roster &amp; Stats</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" onclick="openSwitchTeamModal()" style="width:100%; font-size:12px; padding:8px 12px; margin-bottom:8px;">
+                Switch Active Team
+              </button>
+              <a href="profile.html#my-teams" class="btn-crimson" style="width:100%; box-sizing:border-box; font-size:11px; padding:8px 12px; text-decoration:none; justify-content:center;">
+                <span>🛡</span> <span>View All My Teams ↗</span>
+              </a>
+            </div>
+
+            <div>
+              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:24px;">
+                <div style="background:#0c1017; border:1px solid #1c2536; padding:16px; border-radius:4px; text-align:center;">
+                  <span style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Ladder ELO</span>
+                  <div style="font:900 24px var(--body); color:#ff1e44; margin-top:4px;">${myTeam.elo || 1200}</div>
+                </div>
+                <div style="background:#0c1017; border:1px solid #1c2536; padding:16px; border-radius:4px; text-align:center;">
+                  <span style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Wins</span>
+                  <div style="font:900 24px var(--body); color:#22c55e; margin-top:4px;">${myTeam.wins || 0}</div>
+                </div>
+                <div style="background:#0c1017; border:1px solid #1c2536; padding:16px; border-radius:4px; text-align:center;">
+                  <span style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Losses</span>
+                  <div style="font:900 24px var(--body); color:#ef4444; margin-top:4px;">${myTeam.losses || 0}</div>
+                </div>
+                <div style="background:#0c1017; border:1px solid #1c2536; padding:16px; border-radius:4px; text-align:center;">
+                  <span style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Win Streak</span>
+                  <div style="font:900 24px var(--body); color:#f59e0b; margin-top:4px;">${myTeam.streak || 0}W</div>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:12px; margin-bottom:24px;">
+                <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="padding:10px 18px; font-size:12px;">
+                  <span>🎯</span> <span>Post Open Challenge</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="switchGbTab('standings')" style="padding:10px 18px; font-size:12px;">
+                  <span>📊</span> <span>View Ladder Standings</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Modals
+      function openCreateTeamModal() {
+        document.getElementById("squad-ladder-type").value = currentLadder;
+        const modal = document.getElementById("modal-create-squad");
+        if (modal) modal.classList.add("active");
+      }
+
+      function closeCreateTeamModal() {
+        const modal = document.getElementById("modal-create-squad");
+        if (modal) modal.classList.remove("active");
+      }
+
+      function updateAvatarPreview(url) {
+        if (!url) return;
+        document.getElementById("squad-avatar-preview").src = url;
+      }
+
+      function handleAvatarFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            document.getElementById("squad-avatar-preview").src = e.target.result;
+            document.getElementById("squad-avatar-url").value = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      async function handleCreateTeam(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btn-submit-squad");
+        if (btn) btn.disabled = true;
+
+        const name = document.getElementById("squad-name").value.trim();
+        const tag = document.getElementById("squad-tag").value.trim().toUpperCase();
+        const ladderType = document.getElementById("squad-ladder-type").value;
+        const avatarUrl = document.getElementById("squad-avatar-url").value.trim() || document.getElementById("squad-avatar-preview").src;
+        const captainName = document.getElementById("squad-captain-name").value.trim();
+        const captainDiscord = document.getElementById("squad-captain-discord").value.trim();
+
+        try {
+          const newTeam = await window.LadderDB.createLadderTeam({
+            name,
+            tag,
+            ladder_type: ladderType,
+            avatar_url: avatarUrl,
+            captain_name: captainName,
+            captain_discord: captainDiscord,
+            elo: 1200
+          });
+
+          window.LadderDB.setMyTeam(ladderType, newTeam);
+          closeCreateTeamModal();
+          alert(`✓ Team [${newTeam.tag}] ${newTeam.name} successfully registered on the ladder!`);
+
+          if (ladderType !== currentLadder) {
+            selectLadder(ladderType);
+          } else {
+            renderHeaderSquad();
+            renderHeroAction();
+            loadStandings();
+            renderMyTeamTab();
+          }
+        } catch (err) {
+          alert("Error creating team: " + err.message);
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function openPostChallengeModal() {
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        if (!myTeam) {
+          alert("You must create or select a team first before posting a match challenge!");
+          openCreateTeamModal();
+          return;
+        }
+
+        const teamSelect = document.getElementById("chal-team-select");
+        if (teamSelect) {
+          teamSelect.innerHTML = `<option value="${myTeam.id}">[${myTeam.tag}] ${myTeam.name} (${myTeam.elo || 1200} ELO)</option>`;
+        }
+
+        const modal = document.getElementById("modal-post-challenge");
+        if (modal) modal.classList.add("active");
+      }
+
+      function closePostChallengeModal() {
+        const modal = document.getElementById("modal-post-challenge");
+        if (modal) modal.classList.remove("active");
+      }
+
+      async function handlePostChallenge(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btn-submit-challenge");
+        if (btn) btn.disabled = true;
+
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        const bestOf = parseInt(document.getElementById("chal-best-of").value, 10);
+        const time = document.getElementById("chal-time").value.trim();
+        const notes = document.getElementById("chal-notes").value.trim();
+
+        try {
+          await window.LadderDB.postChallenge({
+            ladder_type: currentLadder,
+            team_a_id: myTeam.id,
+            best_of: bestOf,
+            notes: `Time: ${time} | ${notes}`
+          });
+
+          closePostChallengeModal();
+          alert("✓ Match Challenge posted to the Challenge Board! Other squads can now accept.");
+          switchGbTab("match-finder");
+        } catch (err) {
+          alert("Error posting challenge: " + err.message);
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function openSwitchTeamModal() {
+        const list = document.getElementById("switch-team-list");
+        if (!list) return;
+
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+
+        if (!cachedTeams || cachedTeams.length === 0) {
+          list.innerHTML = `<div style="color:#64748b; padding:10px;">No teams registered on this ladder yet.</div>`;
+        } else {
+          list.innerHTML = cachedTeams.map(t => {
+            const isSelected = myTeam && String(myTeam.id) === String(t.id);
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#121824; border:1px solid ${isSelected ? '#ff1e44' : '#1e293b'}; padding:10px 14px; border-radius:4px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <img src="${t.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:4px; object-fit:cover;" />
+                  <div>
+                    <strong style="color:#ffffff;">[${t.tag}] ${t.name}</strong>
+                    <div style="font-size:11px; color:#94a3b8;">${t.elo || 1200} ELO · Capt: ${t.captain_name}</div>
+                  </div>
+                </div>
+                ${isSelected ? `
+                  <span class="val-badge" style="background:#20090e; color:#ff1e44; border-color:#ff1e44;">Active</span>
+                ` : `
+                  <button type="button" class="btn-crimson-outline" onclick="selectActiveTeam(${t.id})" style="font-size:11px; padding:4px 10px;">
+                    Select
+                  </button>
+                `}
+              </div>
+            `;
+          }).join("");
+        }
+
+        const modal = document.getElementById("modal-switch-squad");
+        if (modal) modal.classList.add("active");
+      }
+
+      function selectActiveTeam(teamId) {
+        const team = cachedTeams.find(t => String(t.id) === String(teamId));
+        if (team) {
+          window.LadderDB.setMyTeam(currentLadder, team);
+          closeSwitchTeamModal();
+          renderHeaderSquad();
+          renderHeroAction();
+          renderStandingsRows(cachedTeams);
+          renderMyTeamTab();
+        }
+      }
+
+      function closeSwitchTeamModal() {
+        const modal = document.getElementById("modal-switch-squad");
+        if (modal) modal.classList.remove("active");
+      }
+
+      // Open Team Roster & Player Stats Modal
+      async function openTeamRosterModal(teamIdOrName) {
+        if (!window.LadderDB) return;
+        const modal = document.getElementById("modal-team-roster");
+        const headerEl = document.getElementById("roster-modal-team-header");
+        const listEl = document.getElementById("roster-modal-players-list");
+        const formatBadge = document.getElementById("roster-modal-format-badge");
+        const actionsEl = document.getElementById("roster-modal-actions");
+        if (!modal || !headerEl || !listEl) return;
+
+        // Find team
+        let team = null;
+        if (cachedTeams && cachedTeams.length > 0) {
+          team = cachedTeams.find(t => String(t.id) === String(teamIdOrName) || t.name === teamIdOrName);
+        }
+        if (!team && window.LadderDB.getTeamById) {
+          team = window.LadderDB.getTeamById(teamIdOrName);
+        }
+        if (!team) {
+          team = window.LadderDB.getMyTeam(currentLadder);
+        }
+        if (!team) return;
+
+        const roster = window.LadderDB.getTeamRoster ? window.LadderDB.getTeamRoster(team) : [];
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        const isMyTeam = myTeam && String(myTeam.id) === String(team.id);
+        const teamTier = (window.LadderDB.getDivisionTier ? window.LadderDB.getDivisionTier(team.elo) : (window.LadderDB.getTier ? window.LadderDB.getTier(team.elo) : null)) || { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+        const winRate = (team.wins + team.losses) > 0 ? Math.round((team.wins / (team.wins + team.losses)) * 100) : 0;
+        const streakStr = team.streak > 0 ? `+${team.streak}W` : team.streak < 0 ? `${team.streak}L` : '-';
+
+        // Render Team Header
+        headerEl.innerHTML = `
+          <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+            <img src="${team.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:68px; height:68px; border-radius:8px; border:2px solid #ff1e44; object-fit:cover;" alt="${team.name}" />
+            <div style="flex:1; min-width:200px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                <h2 style="font-family:var(--display); font-size:24px; text-transform:uppercase; color:#fff; margin:0;">
+                  [${team.tag}] ${team.name}
+                </h2>
+                ${isMyTeam ? '<span class="pill-my-team">YOUR SQUAD</span>' : ''}
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px;">
+                <span class="val-badge ${teamTier.badgeClass}" style="padding:2px 8px; font-size:10px;">
+                  ${teamTier.icon} ${teamTier.name}
+                </span>
+                <span style="color:#ff1e44; font-weight:900;">${team.elo} ELO</span>
+                <span style="color:#64748b;">•</span>
+                <span style="color:#cbd5e1;">Record: <strong style="color:#fff;">${team.wins}W - ${team.losses}L</strong> (${winRate}%)</span>
+                <span style="color:#64748b;">•</span>
+                <span style="color:${team.streak > 0 ? '#22c55e' : '#94a3b8'}; font-weight:700;">Streak: ${streakStr}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (formatBadge) {
+          formatBadge.textContent = `${roster.length} COMBATANTS (${(team.ladder_type || currentLadder).toUpperCase().replace("_", " ")})`;
+        }
+
+        // Render Players Cards
+        if (!roster || roster.length === 0) {
+          listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">No registered combatants found for this team roster.</div>`;
+        } else {
+          listEl.innerHTML = roster.map((player, idx) => {
+            const pTier = player.tier || (window.LadderDB.getDivisionTier ? window.LadderDB.getDivisionTier(player.elo) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" });
+            const pWinRate = player.win_rate !== undefined ? player.win_rate : ((player.wins + player.losses) > 0 ? Math.round((player.wins / (player.wins + player.losses)) * 100) : 0);
+            const isCaptain = idx === 0 || (player.role && player.role.toLowerCase().includes("captain"));
+
+            return `
+              <div class="roster-player-card">
+                <!-- Left: Avatar & Identity -->
+                <div style="display:flex; align-items:center; gap:14px; min-width:200px;">
+                  <div style="position:relative;">
+                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'};" alt="${player.gamertag}" />
+                    <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#22c55e; border:2px solid #090d14; border-radius:50%;" title="Verified Combatant"></span>
+                  </div>
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <strong style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px;">${player.gamertag}</strong>
+                      <span style="font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:3px; background:${isCaptain ? '#3b0d16' : '#141d2e'}; color:${isCaptain ? '#ff4d6d' : '#7dd3fc'}; border:1px solid ${isCaptain ? '#ff1e44' : '#223654'};">
+                        ${player.role || (isCaptain ? 'Captain' : 'Starter')}
+                      </span>
+                    </div>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:3px; display:flex; align-items:center; gap:6px;">
+                      <span>🆔 ${player.activision_id || (player.gamertag + '#1234567')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Rank, Individual Elo, W/L Ratio -->
+                <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+                  
+                  <!-- Rank / Tier -->
+                  <div style="text-align:right;">
+                    <div style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; margin-bottom:3px;">RANK &amp; TIER</div>
+                    <span class="val-badge ${pTier.badgeClass}" style="font-size:10px; padding:3px 8px;">
+                      ${pTier.icon} ${pTier.name}
+                    </span>
+                  </div>
+
+                  <!-- Individual Elo -->
+                  <div style="text-align:center; min-width:70px; background:#04060a; padding:6px 12px; border-radius:4px; border:1px solid #1c2638;">
+                    <div style="font-size:9px; color:#64748b; font-weight:800; text-transform:uppercase;">INDIVIDUAL ELO</div>
+                    <div style="font-size:15px; font-weight:900; color:#ff1e44; font-family:var(--display);">${player.elo}</div>
+                  </div>
+
+                  <!-- Individual W/L Ratio -->
+                  <div style="min-width:115px; text-align:right;">
+                    <div style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; margin-bottom:2px;">W/L RECORD</div>
+                    <div style="font-size:13px; font-weight:800; color:#ffffff;">
+                      ${player.wins}W - ${player.losses}L
+                      <span style="font-size:11px; color:#22c55e; margin-left:4px;">(${pWinRate}%)</span>
+                    </div>
+                    <!-- Mini progress bar -->
+                    <div style="width:100%; height:4px; background:#1c2638; border-radius:2px; margin-top:4px; overflow:hidden;">
+                      <div style="width:${pWinRate}%; height:100%; background:linear-gradient(90deg, #ff1e44, #22c55e); border-radius:2px;"></div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            `;
+          }).join("");
+        }
+
+        // Render Action Buttons
+        if (actionsEl) {
+          if (!isMyTeam) {
+            actionsEl.innerHTML = `
+              <button type="button" class="btn-crimson" onclick="closeTeamRosterModal(); directChallengeTeam(${team.id});" style="font-size:12px; padding:8px 16px;">
+                <span>⚔</span> <span>Challenge Squad</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal()" style="font-size:12px; padding:8px 16px;">
+                Close
+              </button>
+            `;
+          } else {
+            actionsEl.innerHTML = `
+              <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal(); openSwitchTeamModal();" style="font-size:12px; padding:8px 16px;">
+                <span>🔄</span> <span>Switch Active Team</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal()" style="font-size:12px; padding:8px 16px;">
+                Close
+              </button>
+            `;
+          }
+        }
+
+        modal.classList.add("active");
+      }
+
+      function closeTeamRosterModal() {
+        const modal = document.getElementById("modal-team-roster");
+        if (modal) modal.classList.remove("active");
+      }
+
+      function directChallengeTeam(teamId) {
+        const myTeam = window.LadderDB.getMyTeam(currentLadder);
+        if (!myTeam) {
+          alert("Create or select your team first before challenging!");
+          openCreateTeamModal();
+          return;
+        }
+        openPostChallengeModal();
+      }
+
+      // Initial Execution
+      selectLadder(currentLadder);
+      switchGbTab(currentTab);
+
+      // Check URL for action=register or hash
+      if (urlParams.get("action") === "register" || window.location.hash === "#register") {
+        setTimeout(openCreateTeamModal, 300);
+      }
+
+      // Close modal on Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeCreateTeamModal();
+          closePostChallengeModal();
+          closeSwitchTeamModal();
+          closeTeamRosterModal();
+        }
+      });
+    </script>
+  </body>
+</html>

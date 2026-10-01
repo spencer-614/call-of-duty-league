@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline Arena — GameBattles Match Room &amp; CDL Veto</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+  </head>
+  <body class="gb-body">
+    <!-- Arena Top Navigation Header with Red Logo and Platform Switch -->
+    <header class="header" style="background:#0a0c10; border-bottom:1px solid #1e2430;">
+      <div class="wrap nav">
+        <!-- Brand with Crimson Red Logo -->
+        <a class="brand" href="arena.html">
+          <img src="images/arenalogo_1.png" alt="Frontline Arena Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title" style="color:#ffffff; text-shadow:0 0 14px rgba(255,30,68,0.45);">FRONTLINE</span>
+            <small class="brand-sub" style="color:#ff1e44; font-weight:800; letter-spacing:1px;">ARENA</small>
+            <div class="brand-status status-arena">
+              <span class="nav-beacon"></span>
+              <span>MATCH ROOM ACTIVE</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Header Center Hub with Welcome Above Mode Switcher -->
+        <div class="header-center-hub">
+          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+            <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+              <span>🛡</span> <span>League</span>
+            </a>
+            <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+              <span>⚔</span> <span>Arena</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn arena" aria-label="Toggle Arena navigation menu">
+              <span>☰</span>
+              <span>Explore Arena</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Arena navigation">
+              <div class="nav-dropdown-grid" style="grid-template-columns: 1fr; min-width: 270px;">
+                <div class="nav-dropdown-col">
+                  <a href="ladders.html" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
+                    <span class="nav-icon">⚔</span> <span>Competitive Ladders &amp; Match Finder</span>
+                  </a>
+                  <a href="profile.html#my-teams" id="nav-arena-my-teams-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
+                    <span class="nav-icon">🛡</span> <span>My Teams</span>
+                  </a>
+                  <a href="profile.html" id="nav-arena-profile-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
+                    <span class="nav-icon" id="nav-arena-profile-icon">🔑</span>
+                    <span id="nav-arena-profile-text">Login</span>
+                  </a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <div id="observer-role-indicator" style="font-size:12px; color:#94a3b8;"></div>
+          <a href="ladders.html" class="btn-crimson-outline" style="font-size:11px; padding:6px 12px; text-decoration:none;">
+            ← Ladders
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- GameBattles Breadcrumb Bar -->
+    <div class="gb-breadcrumb-bar">
+      <div class="gb-breadcrumb-inner">
+        <a href="arena.html">Arena Home</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <a href="ladders.html">Ladders</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <span id="breadcrumb-match-id">Match #FR-1049</span>
+      </div>
+    </div>
+
+    <main class="gb-content-wrap" style="padding-top: 24px;">
+      <!-- =====================================================================
+           CHECKMATE GAMING PRIVACY GATE: LOCKED FOR NON-PARTICIPANTS
+           ===================================================================== -->
+      <div id="private-match-lock-screen" class="private-match-lock-card" style="display:none;">
+        <div class="private-match-lock-icon">🔒</div>
+        <span class="gb-meta-tag accent">RESTRICTED MATCH ROOM</span>
+        <h2 style="font-family:var(--display); font-size:32px; text-transform:uppercase; margin:14px 0 8px; color:#ffffff;">Private Match Room</h2>
+        <p style="color:#94a3b8; font-size:14px; max-width:540px; margin:0 auto 20px; line-height:1.6;">
+          This match room and active CDL map veto process is restricted exclusively to the competing teams and official Arena referees.
+        </p>
+
+        <div class="private-match-team-preview">
+          <div class="private-team-block">
+            <img id="lock-team1-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Team 1" />
+            <div class="private-team-name" id="lock-team1-name">Apex Predators</div>
+            <span class="val-badge" id="lock-team1-tag">[APEX]</span>
+          </div>
+          <div class="private-vs-divider">VS</div>
+          <div class="private-team-block">
+            <img id="lock-team2-img" src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80" alt="Team 2" />
+            <div class="private-team-name" id="lock-team2-name">Crimson Syndicate</div>
+            <span class="val-badge" id="lock-team2-tag">[CRIM]</span>
+          </div>
+        </div>
+
+        <!-- Testing & Referee Viewport Switcher -->
+        <div class="referee-override-box">
+          <div style="font:900 11px var(--body); color:#f59e0b; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+            ⚡ Observer &amp; Test Simulator Mode
+          </div>
+          <p style="font-size:12px; color:#94a3b8; margin:0 0 14px;">
+            Switch your active perspective to test the map veto, live match chat, and dispute systems:
+          </p>
+          <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn-crimson-outline" onclick="simulatePerspective('team_a')" id="btn-sim-team-a" style="font-size:12px; padding:8px 14px;">
+              View as Team 1
+            </button>
+            <button type="button" class="btn-crimson-outline" onclick="simulatePerspective('team_b')" id="btn-sim-team-b" style="font-size:12px; padding:8px 14px;">
+              View as Team 2
+            </button>
+            <button type="button" class="btn-crimson" onclick="simulatePerspective('referee')" style="font-size:12px; padding:8px 14px;">
+              View as Arena Referee
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           AUTHORIZED MATCH ROOM (VISIBLE ONLY TO PARTICIPATING TEAMS)
+           ===================================================================== -->
+      <div id="authorized-match-room" style="display:none;">
+        <!-- Top Match Room Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+          <div>
+            <div style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:1px;">FRONTLINE ARENA MATCH HUB</div>
+            <h2 style="font:900 28px/1 var(--display); color:#fff; text-transform:uppercase; margin:4px 0 6px;">Active Match &amp; CDL Veto Room</h2>
+            <p style="color:#94a3b8; font-size:13px; margin:0;">
+              Turn-by-turn CDL map striking, 3D coin toss, live tactical match chat, and official score reporting with auto-dispute protection.
+            </p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn-crimson-outline" onclick="runAutoVeto()" style="padding:9px 14px; font-size:11px;">
+              <span>⚡</span> <span>Auto-Veto</span>
+            </button>
+            <button type="button" class="btn-crimson-outline" onclick="resetVetoTool()" style="padding:9px 14px; font-size:11px;">
+              <span>🔄</span> <span>Reset Veto</span>
+            </button>
+            <button type="button" class="btn-crimson" id="btn-copy-veto" onclick="copyVetoToClipboard()" style="padding:9px 16px; font-size:11px;">
+              <span>📋</span> <span>Copy Rotation to Discord</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Dispute Alert Banner (If Disputed) -->
+        <div id="dispute-banner" class="dispute-alert-banner" style="display:none;">
+          <div style="font-size:24px;">⚠️</div>
+          <div style="flex:1;">
+            <h3 id="dispute-banner-title">MATCH UNDER LEAGUE DISPUTE</h3>
+            <p id="dispute-banner-msg">
+              A score conflict or rule violation has been submitted. This match is locked under administrative review.
+            </p>
+          </div>
+          <a href="admin.html" class="btn-crimson" style="padding:8px 14px; font-size:11px; text-decoration:none; white-space:nowrap;">
+            Admin Console ↗
+          </a>
+        </div>
+
+        <!-- Match Room Box -->
+        <div class="match-room-card">
+          <!-- Top Match Header Bar -->
+          <div class="match-room-header-bar">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <span style="font:900 14px var(--body); color:#fff; letter-spacing:0.8px;" id="match-room-id">MATCH #FR-1049</span>
+              <span class="val-badge" id="match-room-format">CDL BEST OF 5</span>
+              <span style="font-size:11px; color:#f59e0b; font-weight:700;" id="match-server-info">SERVER: DALLAS (CENTRAL HOST)</span>
+            </div>
+            <div>
+              <span class="match-status-badge status-veto" id="match-room-status-badge">
+                <span class="veto-hud-beacon"></span>
+                <span id="match-room-status-text">VETO IN PROGRESS</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Top Matchup & 3D Coin Toss Panel -->
+          <div class="veto-top-panel">
+            <!-- Team 1 -->
+            <div class="veto-team-card" id="team1-card">
+              <img id="veto-team1-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Team 1" class="squad-avatar-img" style="width:52px; height:52px;" />
+              <div>
+                <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase;" id="team1-role-badge">TEAM 1 (HOST ADVANTAGE)</span>
+                <div class="veto-team-name" id="veto-team1-name">Apex Predators <span class="squad-tag">[APEX]</span></div>
+                <div style="font-size:11px; color:#94a3b8;" id="veto-team1-tier">Apex Prestige • 2045 ELO</div>
+              </div>
+            </div>
+
+            <!-- 3D Coin Toss Center -->
+            <div class="veto-coin-section">
+              <div class="coin-wrapper" onclick="flipVetoCoin()" title="Click to Flip Coin for First Pick / Host">
+                <div class="coin-disc" id="veto-coin">
+                  <div class="coin-face heads">HEADS</div>
+                  <div class="coin-face tails">TAILS</div>
+                </div>
+              </div>
+              <button type="button" class="btn-crimson-outline" onclick="flipVetoCoin()" style="font-size:11px; padding:5px 12px;" id="btn-flip-coin">
+                🪙 Flip Coin
+              </button>
+              <span style="font-size:11px; color:#94a3b8; font-weight:bold;" id="coin-result-label">Click coin to flip</span>
+            </div>
+
+            <!-- Team 2 -->
+            <div class="veto-team-card team-b" id="team2-card">
+              <div>
+                <span style="font-size:11px; color:#3b82f6; font-weight:800; text-transform:uppercase;" id="team2-role-badge">TEAM 2 (CHALLENGER)</span>
+                <div class="veto-team-name" id="veto-team2-name">Crimson Syndicate <span class="squad-tag">[CRIM]</span></div>
+                <div style="font-size:11px; color:#94a3b8;" id="veto-team2-tier">Commander • 1880 ELO</div>
+              </div>
+              <img id="veto-team2-img" src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80" alt="Team 2" class="squad-avatar-img" style="width:52px; height:52px;" />
+            </div>
+          </div>
+
+          <!-- Two-Column Operational Layout: CDL Map Veto + Tactical Chat & Score Report -->
+          <div class="veto-grid-layout">
+            <!-- Left: Turn Indicator & Map Cards -->
+            <div class="veto-main-process">
+              <div class="veto-turn-indicator" id="veto-turn-banner">
+                <span id="veto-turn-text">👉 Apex Predators' Turn to Strike Hardpoint Map</span>
+              </div>
+
+              <!-- 5 CDL Maps Rotation Grid -->
+              <div class="cdl-map-series" id="cdl-map-cards-container">
+                <!-- Loaded via JavaScript renderVetoCards() -->
+              </div>
+            </div>
+
+            <!-- Right: Checkmate Gaming Match Chat & Score Report -->
+            <div class="cmg-match-ops">
+              <!-- Match Chat Box -->
+              <div class="match-chat-box">
+                <div class="match-chat-header">
+                  <span>💬 Tactical Match Chat</span>
+                  <small style="color:#94a3b8; font-weight:normal;">Real-Time Coordination</small>
+                </div>
+                <div class="match-chat-messages" id="match-chat-messages">
+                  <!-- Loaded via renderChat() -->
+                </div>
+                <div class="match-chat-input-bar">
+                  <input type="text" id="match-chat-input" placeholder="Type tactical message or lobby code..." onkeydown="handleChatKey(event)" />
+                  <button type="button" class="btn-chat-send" onclick="sendChatMessage()">Send</button>
+                </div>
+              </div>
+
+              <!-- Score Report Form Box -->
+              <div class="score-report-card">
+                <div class="score-report-title">
+                  <span>Official Score Report</span>
+                  <span class="pill" style="font-size:9px; background:#1f090d; color:#ff1e44; border-color:#ff1e44;">AUTO-DISPUTE ARMED</span>
+                </div>
+
+                <form id="form-report-score" onsubmit="handleScoreSubmit(event)">
+                  <div class="ladder-form-group">
+                    <label for="score-reporting-team">Submitting As *</label>
+                    <select id="score-reporting-team" class="ladder-input" required>
+                      <option value="team_a">Team 1</option>
+                      <option value="team_b">Team 2</option>
+                    </select>
+                  </div>
+
+                  <div class="score-input-grid">
+                    <div style="text-align:center;">
+                      <div style="font-size:11px; color:#ff1e44; font-weight:bold; margin-bottom:4px;" id="score-label-team1">TEAM 1</div>
+                      <input type="number" id="score-input-a" class="score-number-input" min="0" max="3" value="3" required />
+                    </div>
+                    <div style="font:900 18px var(--body); color:#64748b;">-</div>
+                    <div style="text-align:center;">
+                      <div style="font-size:11px; color:#3b82f6; font-weight:bold; margin-bottom:4px;" id="score-label-team2">TEAM 2</div>
+                      <input type="number" id="score-input-b" class="score-number-input" min="0" max="3" value="1" required />
+                    </div>
+                  </div>
+
+                  <div class="ladder-form-group">
+                    <label for="score-proof-url">Match Proof / Screenshot / VOD (Recommended)</label>
+                    <input type="url" id="score-proof-url" class="ladder-input" placeholder="https://twitch.tv/videos/... or https://imgur.com/..." />
+                  </div>
+
+                  <button type="submit" class="btn-crimson" style="width:100%; padding:12px; font-size:12px;" id="btn-submit-score">
+                    <span>🏆</span> <span>Submit Official Match Score</span>
+                  </button>
+                </form>
+
+                <!-- Dispute Action Button -->
+                <div style="margin-top:14px; text-align:center; border-top:1px solid #290f15; padding-top:12px;">
+                  <button type="button" class="btn-crimson-outline" onclick="openDisputeModal()" style="width:100%; font-size:11px; padding:8px; border-color:#ff4444; color:#ff5555;">
+                    <span>⚠️</span> <span>Dispute Match / Report Rule Violation</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         DISPUTE SUBMISSION MODAL
+         ========================================================================= -->
+    <div class="modal-overlay" id="modal-file-dispute" role="dialog" aria-modal="true" aria-labelledby="modal-dispute-title">
+      <div class="ladder-modal-box" style="border-color:#ff1e44;">
+        <button type="button" class="modal-close-btn" onclick="closeDisputeModal()" aria-label="Close Modal">✕</button>
+        <div style="margin-bottom: 20px;">
+          <span class="pill" style="background:#3d0810; color:#ff4444; border-color:#ff4444;">OFFICIAL LEAGUE PROTEST</span>
+          <h2 id="modal-dispute-title" style="font-family:var(--display); font-size:26px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">File Match Dispute</h2>
+          <p style="font-size:13px; color:#94a3b8; margin:0;">Disputes are locked immediately and sent to League Referees on the Admin Console.</p>
+        </div>
+
+        <form id="form-file-dispute" onsubmit="handleDisputeSubmit(event)">
+          <div class="ladder-form-group">
+            <label for="dispute-submitting-team">Filing Squad *</label>
+            <select id="dispute-submitting-team" class="ladder-input" required>
+              <option value="team_a">Team 1</option>
+              <option value="team_b">Team 2</option>
+            </select>
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="dispute-category">Dispute Category *</label>
+            <select id="dispute-category" class="ladder-input" required>
+              <option value="Score Discrepancy">Score Discrepancy / Fake Score Reported</option>
+              <option value="CDL GA Rule Violation">Illegal Weapon / Perk (CDL GA Violation)</option>
+              <option value="No Show / Delay">Opponent No-Show (Over 15 Min Grace Period)</option>
+              <option value="Unsportsmanlike Conduct">Toxicity / Unsportsmanlike Conduct</option>
+              <option value="Ringing / Account Sharing">Illegal Player / Account Sharing</option>
+              <option value="Other">Other Violation</option>
+            </select>
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="dispute-details">Detailed Explanation *</label>
+            <textarea id="dispute-details" class="ladder-input" rows="3" placeholder="Provide full context: map/round count, specific rule violated, gamertags involved..." required></textarea>
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="dispute-proof-input">Evidence Proof Link (Video / Screenshots) *</label>
+            <input type="url" id="dispute-proof-input" class="ladder-input" placeholder="https://twitch.tv/videos/... or https://medal.tv/... or https://imgur.com/..." required />
+          </div>
+
+          <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn-crimson-outline" onclick="closeDisputeModal()">Cancel</button>
+            <button type="submit" class="btn-crimson" id="btn-submit-dispute" style="background:#ff1e44;">
+              <span>🚨</span> <span>Submit Dispute to Admin Console</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // CDL Competitive Map Pool
+      const CDL_MAP_POOL = {
+        Hardpoint: [
+          { name: "Sub Base", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
+          { name: "Karachi", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
+          { name: "Invasion", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
+          { name: "Skidrow", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
+          { name: "Terminal", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" }
+        ],
+        SearchAndDestroy: [
+          { name: "Karachi", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
+          { name: "Highrise", image: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=400&auto=format&fit=crop&q=80" },
+          { name: "Invasion", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
+          { name: "Terminal", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" },
+          { name: "Rio", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" }
+        ],
+        Control: [
+          { name: "Karachi", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
+          { name: "Invasion", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
+          { name: "Highrise", image: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=400&auto=format&fit=crop&q=80" }
+        ]
+      };
+
+      let activeMatch = null;
+      let observerPerspective = null; // 'team_a', 'team_b', 'referee', or null
+      let coinFlipped = false;
+      let coinWinner = "team_a";
+      let vetoStep = 0;
+
+      // 5-game CDL series state
+      let vetoSeries = [
+        { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
+        { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
+        { game: 3, mode: "Control", map: null, status: "pending", pool: [...CDL_MAP_POOL.Control], struckBy: [] },
+        { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
+        { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
+      ];
+
+      // Parse match ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const matchId = urlParams.get("id") || "1049";
+
+      async function initMatchRoom() {
+        try {
+          activeMatch = await window.LadderDB.getMatch(matchId);
+          if (!activeMatch) {
+            alert("Match not found!");
+            window.location.href = "arena.html?tab=match-finder";
+            return;
+          }
+
+          document.getElementById("breadcrumb-match-id").textContent = `Match #FR-${activeMatch.id}`;
+
+          // Restore veto state if match already has saved veto data
+          if (activeMatch.veto_data && activeMatch.veto_data.series) {
+            vetoSeries = activeMatch.veto_data.series;
+            coinFlipped = activeMatch.veto_data.coinFlipped || false;
+            coinWinner = activeMatch.veto_data.coinWinner || "team_a";
+            vetoStep = activeMatch.veto_data.vetoStep || 0;
+          }
+
+          renderMatchHeader();
+          evaluateAccessAndRender();
+        } catch (err) {
+          console.error("Failed to load match room:", err);
+        }
+      }
+
+      function renderMatchHeader() {
+        if (!activeMatch) return;
+        const teamA = activeMatch.team_a || { name: "Team 1", tag: "T1", elo: 1200 };
+        const teamB = activeMatch.team_b || { name: "Team 2", tag: "T2", elo: 1200 };
+
+        document.getElementById("match-room-id").textContent = `MATCH #FR-${activeMatch.id}`;
+        document.getElementById("match-room-format").textContent = `CDL BEST OF ${activeMatch.best_of || 5}`;
+        if (activeMatch.server_info) {
+          document.getElementById("match-server-info").textContent = `SERVER: ${activeMatch.server_info.toUpperCase()}`;
+        }
+
+        // Populate locked screen preview
+        document.getElementById("lock-team1-name").textContent = teamA.name;
+        document.getElementById("lock-team1-tag").textContent = `[${teamA.tag || 'TAG'}]`;
+        if (teamA.avatar_url) document.getElementById("lock-team1-img").src = teamA.avatar_url;
+
+        document.getElementById("lock-team2-name").textContent = teamB.name;
+        document.getElementById("lock-team2-tag").textContent = `[${teamB.tag || 'TAG'}]`;
+        if (teamB.avatar_url) document.getElementById("lock-team2-img").src = teamB.avatar_url;
+
+        document.getElementById("btn-sim-team-a").textContent = `View as ${teamA.name}`;
+        document.getElementById("btn-sim-team-b").textContent = `View as ${teamB.name}`;
+
+        // Populate authorized screen teams
+        document.getElementById("veto-team1-name").innerHTML = `${teamA.name} <span class="squad-tag">[${teamA.tag || 'TAG'}]</span>`;
+        document.getElementById("veto-team2-name").innerHTML = `${teamB.name} <span class="squad-tag">[${teamB.tag || 'TAG'}]</span>`;
+        if (teamA.avatar_url) document.getElementById("veto-team1-img").src = teamA.avatar_url;
+        if (teamB.avatar_url) document.getElementById("veto-team2-img").src = teamB.avatar_url;
+
+        const tierA = window.LadderDB.getTier(teamA.elo || 1200);
+        const tierB = window.LadderDB.getTier(teamB.elo || 1200);
+        document.getElementById("veto-team1-tier").textContent = `${tierA.name} • ${teamA.elo || 1200} ELO`;
+        document.getElementById("veto-team2-tier").textContent = `${tierB.name} • ${teamB.elo || 1200} ELO`;
+
+        // Update score reporting team dropdown
+        const scoreSelect = document.getElementById("score-reporting-team");
+        if (scoreSelect) {
+          scoreSelect.innerHTML = `
+            <option value="team_a">${teamA.name} [${teamA.tag}]</option>
+            <option value="team_b">${teamB.name} [${teamB.tag}]</option>
+          `;
+        }
+        document.getElementById("score-label-team1").textContent = (teamA.tag || teamA.name).toUpperCase();
+        document.getElementById("score-label-team2").textContent = (teamB.tag || teamB.name).toUpperCase();
+
+        // Update dispute dropdown
+        const dispSelect = document.getElementById("dispute-submitting-team");
+        if (dispSelect) {
+          dispSelect.innerHTML = `
+            <option value="team_a">${teamA.name} [${teamA.tag}]</option>
+            <option value="team_b">${teamB.name} [${teamB.tag}]</option>
+          `;
+        }
+
+        // Status badge
+        updateStatusBadge(activeMatch.status);
+      }
+
+      function updateStatusBadge(status) {
+        const badge = document.getElementById("match-room-status-badge");
+        const text = document.getElementById("match-room-status-text");
+        const banner = document.getElementById("dispute-banner");
+        if (!badge || !text) return;
+
+        badge.className = "match-status-badge";
+
+        if (status === "disputed") {
+          badge.classList.add("status-disputed");
+          text.textContent = "⚠️ MATCH DISPUTED";
+          if (banner) banner.style.display = "flex";
+        } else if (status === "completed") {
+          badge.classList.add("status-completed");
+          text.textContent = "✓ COMPLETED";
+          if (banner) banner.style.display = "none";
+        } else if (allMapsDecided()) {
+          badge.classList.add("status-live");
+          text.textContent = "● LIVE IN PLAY";
+          if (banner) banner.style.display = "none";
+        } else {
+          badge.classList.add("status-veto");
+          text.textContent = "VETO IN PROGRESS";
+          if (banner) banner.style.display = "none";
+        }
+      }
+
+      // Checkmate Gaming Access Control Gate
+      function evaluateAccessAndRender() {
+        const myTeam = window.LadderDB.getMyTeam(activeMatch.ladder_type);
+        const teamA = activeMatch.team_a;
+        const teamB = activeMatch.team_b;
+
+        let isAuthorized = false;
+        let roleText = "";
+
+        const currentPlayer = window.LadderDB.getCurrentPlayer ? window.LadderDB.getCurrentPlayer() : null;
+
+        if (observerPerspective) {
+          isAuthorized = true;
+          roleText = observerPerspective === "referee" 
+            ? "🛡 Official Referee / Observer Mode" 
+            : observerPerspective === "team_a" 
+            ? `Viewing as: ${teamA.name}` 
+            : `Viewing as: ${teamB.name}`;
+        } else if (myTeam || currentPlayer) {
+          const checkTeam = myTeam || {
+            id: currentPlayer?.team_id,
+            name: currentPlayer?.team_name,
+            tag: currentPlayer?.tag,
+            captain_name: currentPlayer?.gamertag
+          };
+          const isTeamA = String(checkTeam.id) === String(teamA?.id) || 
+                          checkTeam.name === teamA?.name || 
+                          checkTeam.tag === teamA?.tag || 
+                          (currentPlayer && currentPlayer.gamertag?.toLowerCase() === teamA?.captain_name?.toLowerCase());
+          const isTeamB = String(checkTeam.id) === String(teamB?.id) || 
+                          checkTeam.name === teamB?.name || 
+                          checkTeam.tag === teamB?.tag || 
+                          (currentPlayer && currentPlayer.gamertag?.toLowerCase() === teamB?.captain_name?.toLowerCase());
+          if (isTeamA || isTeamB) {
+            isAuthorized = true;
+            roleText = isTeamA ? `Your Team: ${teamA.name}` : `Your Team: ${teamB.name}`;
+            const sel = document.getElementById("score-reporting-team");
+            if (sel) sel.value = isTeamA ? "team_a" : "team_b";
+          }
+        }
+
+        const lockScreen = document.getElementById("private-match-lock-screen");
+        const authRoom = document.getElementById("authorized-match-room");
+        const roleIndicator = document.getElementById("observer-role-indicator");
+
+        if (roleIndicator) roleIndicator.innerHTML = roleText ? `<span>● ${roleText}</span>` : "";
+
+        if (isAuthorized) {
+          lockScreen.style.display = "none";
+          authRoom.style.display = "block";
+          renderVetoCards();
+          updateVetoTurnBanner();
+          renderChat();
+        } else {
+          lockScreen.style.display = "block";
+          authRoom.style.display = "none";
+        }
+      }
+
+      function simulatePerspective(role) {
+        observerPerspective = role;
+        if (role === "team_a" && activeMatch.team_a) {
+          window.LadderDB.setMyTeam(activeMatch.ladder_type, activeMatch.team_a);
+        } else if (role === "team_b" && activeMatch.team_b) {
+          window.LadderDB.setMyTeam(activeMatch.ladder_type, activeMatch.team_b);
+        }
+        evaluateAccessAndRender();
+      }
+
+      // 3D Coin Flip Logic
+      function flipVetoCoin() {
+        const coin = document.getElementById("veto-coin");
+        const label = document.getElementById("coin-result-label");
+        const btn = document.getElementById("btn-flip-coin");
+        if (!coin) return;
+
+        if (btn) btn.disabled = true;
+        label.textContent = "Flipping coin...";
+
+        const isHeads = Math.random() >= 0.5;
+        const spins = 5;
+        const finalRotation = spins * 360 + (isHeads ? 0 : 180);
+
+        coin.style.transform = `rotateY(${finalRotation}deg)`;
+
+        setTimeout(() => {
+          coinFlipped = true;
+          coinWinner = isHeads ? "team_a" : "team_b";
+          const winningTeam = coinWinner === "team_a" ? activeMatch.team_a : activeMatch.team_b;
+
+          label.innerHTML = `<span style="color:#22c55e;">${isHeads ? 'HEADS' : 'TAILS'}:</span> ${winningTeam.name} won toss!`;
+          if (btn) btn.disabled = false;
+
+          updateVetoTurnBanner();
+          saveMatchVetoState();
+        }, 1100);
+      }
+
+      // Map Veto Striking & Pick Process
+      function allMapsDecided() {
+        return vetoSeries.every(g => g.status === "decided");
+      }
+
+      function updateVetoTurnBanner() {
+        const banner = document.getElementById("veto-turn-text");
+        if (!banner || !activeMatch) return;
+
+        if (allMapsDecided()) {
+          banner.innerHTML = `🏁 <strong>CDL MAP ROTATION LOCKED IN</strong> — Proceed to Game Lobby`;
+          return;
+        }
+
+        const teamA = activeMatch.team_a;
+        const teamB = activeMatch.team_b;
+        const activeTeam = (vetoStep % 2 === 0) ? (coinWinner === "team_a" ? teamA : teamB) : (coinWinner === "team_a" ? teamB : teamA);
+
+        const curGame = vetoSeries.find(g => g.status !== "decided") || vetoSeries[0];
+        banner.innerHTML = `👉 <strong>${activeTeam.name}</strong>'s Turn to Strike ${curGame.mode} Maps`;
+      }
+
+      function renderVetoCards() {
+        const container = document.getElementById("cdl-map-cards-container");
+        if (!container) return;
+
+        container.innerHTML = vetoSeries.map(game => {
+          const isDecided = game.status === "decided";
+          const decidedMap = game.map || game.pool[0];
+
+          return `
+            <div class="cdl-map-card ${isDecided ? 'locked' : ''}">
+              <div class="cdl-map-thumb">
+                <img src="${decidedMap.image}" alt="${decidedMap.name}" />
+                <span class="game-badge">GAME ${game.game} • ${game.mode.toUpperCase()}</span>
+                ${isDecided ? '<span class="status-overlay decided">LOCKED IN</span>' : '<span class="status-overlay striking">VETO PHASE</span>'}
+              </div>
+              <div class="cdl-map-content">
+                <div style="font:900 16px var(--body); color:#ffffff; margin-bottom:4px;">
+                  ${isDecided ? decidedMap.name : 'Vetoing ' + game.mode}
+                </div>
+                <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">
+                  ${isDecided ? `Official Map Selected` : `${game.pool.length} maps remaining in pool`}
+                </div>
+
+                <div class="strike-options-list">
+                  ${game.pool.map(m => {
+                    const isStruck = (game.struckBy || []).some(s => s.mapName === m.name);
+                    const isPicked = game.map && game.map.name === m.name;
+
+                    if (isPicked) {
+                      return `<span class="val-badge" style="background:#142918; color:#22c55e; border-color:#22c55e;">✓ ${m.name} (PICKED)</span>`;
+                    }
+                    if (isStruck) {
+                      return `<span class="val-badge" style="background:#260a10; color:#ef4444; border-color:#591624; text-decoration:line-through;">✕ ${m.name}</span>`;
+                    }
+                    return `
+                      <button type="button" class="btn-strike-map" onclick="strikeMap(${game.game}, '${m.name}')" title="Strike / Ban ${m.name}">
+                        <span>✕</span> <span>${m.name}</span>
+                      </button>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function strikeMap(gameNumber, mapName) {
+        const game = vetoSeries.find(g => g.game === gameNumber);
+        if (!game || game.status === "decided") return;
+
+        const teamA = activeMatch.team_a;
+        const teamB = activeMatch.team_b;
+        const currentStrikingTeam = (vetoStep % 2 === 0) ? (coinWinner === "team_a" ? teamA : teamB) : (coinWinner === "team_a" ? teamB : teamA);
+
+        if (!game.struckBy) game.struckBy = [];
+        game.struckBy.push({ mapName, teamName: currentStrikingTeam.name });
+
+        game.pool = game.pool.filter(m => m.name !== mapName);
+
+        if (game.pool.length === 1) {
+          game.map = game.pool[0];
+          game.status = "decided";
+        }
+
+        vetoStep++;
+        renderVetoCards();
+        updateVetoTurnBanner();
+        saveMatchVetoState();
+
+        if (allMapsDecided()) {
+          updateStatusBadge("in_progress");
+        }
+      }
+
+      function runAutoVeto() {
+        vetoSeries.forEach(game => {
+          const randMap = game.pool[Math.floor(Math.random() * game.pool.length)];
+          game.map = randMap;
+          game.status = "decided";
+        });
+        coinFlipped = true;
+        renderVetoCards();
+        updateVetoTurnBanner();
+        updateStatusBadge("in_progress");
+        saveMatchVetoState();
+      }
+
+      function resetVetoTool() {
+        vetoSeries = [
+          { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
+          { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
+          { game: 3, mode: "Control", map: null, status: "pending", pool: [...CDL_MAP_POOL.Control], struckBy: [] },
+          { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
+          { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
+        ];
+        coinFlipped = false;
+        vetoStep = 0;
+        renderVetoCards();
+        updateVetoTurnBanner();
+        updateStatusBadge("in_progress");
+        saveMatchVetoState();
+      }
+
+      async function saveMatchVetoState() {
+        if (!activeMatch) return;
+        activeMatch.veto_data = {
+          series: vetoSeries,
+          coinFlipped,
+          coinWinner,
+          vetoStep
+        };
+        await window.LadderDB.saveMatch(activeMatch);
+      }
+
+      function copyVetoToClipboard() {
+        const teamA = activeMatch.team_a;
+        const teamB = activeMatch.team_b;
+        const lines = [
+          `🏆 FRONTLINE ARENA CDL ROTATION — MATCH #FR-${activeMatch.id}`,
+          `⚔ ${teamA.name} [${teamA.tag}] vs ${teamB.name} [${teamB.tag}]`,
+          `🪙 Coin Toss: ${coinWinner === "team_a" ? teamA.name : teamB.name} (First Strike Advantage)`,
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+        ];
+
+        vetoSeries.forEach(g => {
+          const mapName = g.map ? g.map.name : "VETO PENDING";
+          lines.push(`Game ${g.game}: ${g.mode} — ${mapName}`);
+        });
+        lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+        lines.push(`Official Pick & Ban Logged via Frontline Arena Match Room`);
+
+        navigator.clipboard.writeText(lines.join("\n")).then(() => {
+          alert("📋 CDL Map Rotation copied to clipboard! Paste directly into Discord match chat.");
+        }).catch(() => {
+          alert(lines.join("\n"));
+        });
+      }
+
+      // Tactical Match Chat
+      function renderChat() {
+        const container = document.getElementById("match-chat-messages");
+        if (!container || !activeMatch) return;
+
+        const messages = window.LadderDB.getMatchChat(activeMatch.id);
+        container.innerHTML = messages.map(msg => `
+          <div class="chat-msg ${msg.isSystem ? 'system-msg' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <span class="chat-author" style="color:${msg.isSystem ? '#f59e0b' : '#ff1e44'};">
+                ${msg.tag ? `[${msg.tag}] ` : ''}${msg.sender}
+              </span>
+              <span class="chat-time">${msg.timestamp || 'Now'}</span>
+            </div>
+            <div class="chat-text">${msg.text}</div>
+          </div>
+        `).join("");
+
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function sendChatMessage() {
+        const input = document.getElementById("match-chat-input");
+        if (!input || !input.value.trim() || !activeMatch) return;
+
+        const text = input.value.trim();
+        const myTeam = window.LadderDB.getMyTeam(activeMatch.ladder_type);
+        const senderName = myTeam ? (myTeam.captain_name || myTeam.name) : "Official";
+        const tag = myTeam ? myTeam.tag : "SYS";
+
+        window.LadderDB.sendMatchChat(activeMatch.id, {
+          sender: senderName,
+          tag: tag,
+          text: text,
+          isSystem: false,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+
+        input.value = "";
+        renderChat();
+      }
+
+      function handleChatKey(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendChatMessage();
+        }
+      }
+
+      // Score Reporting & Automatic Conflict Dispute Detection
+      async function handleScoreSubmit(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btn-submit-score");
+        if (btn) btn.disabled = true;
+
+        const reportingRole = document.getElementById("score-reporting-team")?.value;
+        const scoreA = document.getElementById("score-input-a")?.value;
+        const scoreB = document.getElementById("score-input-b")?.value;
+        const proof = document.getElementById("score-proof-url")?.value.trim();
+
+        const reportingTeam = reportingRole === "team_a" ? activeMatch.team_a : activeMatch.team_b;
+
+        try {
+          const res = await window.LadderDB.reportMatchScore({
+            matchId: activeMatch.id,
+            reportingTeamId: reportingTeam.id,
+            reportingTeamName: reportingTeam.name,
+            teamAScore: scoreA,
+            teamBScore: scoreB,
+            proofUrl: proof
+          });
+
+          if (res.autoDispute) {
+            alert(`🚨 ${res.message}`);
+            activeMatch.status = "disputed";
+            updateStatusBadge("disputed");
+          } else if (res.status === "completed") {
+            alert(`🏆 MATCH COMPLETED! Scores verified (${scoreA}-${scoreB}). ELO updated.`);
+            activeMatch.status = "completed";
+            updateStatusBadge("completed");
+          } else {
+            alert(`✓ Score reported: ${scoreA}-${scoreB}. Waiting for opponent confirmation.`);
+          }
+        } catch (err) {
+          alert("Error submitting score: " + err.message);
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      // Manual Dispute Submission
+      function openDisputeModal() {
+        const modal = document.getElementById("modal-file-dispute");
+        if (modal) modal.classList.add("active");
+      }
+
+      function closeDisputeModal() {
+        const modal = document.getElementById("modal-file-dispute");
+        if (modal) modal.classList.remove("active");
+      }
+
+      async function handleDisputeSubmit(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btn-submit-dispute");
+        if (btn) btn.disabled = true;
+
+        const role = document.getElementById("dispute-submitting-team")?.value;
+        const category = document.getElementById("dispute-category")?.value;
+        const details = document.getElementById("dispute-details")?.value.trim();
+        const proof = document.getElementById("dispute-proof-input")?.value.trim();
+
+        const team = role === "team_a" ? activeMatch.team_a : activeMatch.team_b;
+
+        try {
+          await window.LadderDB.fileDispute({
+            matchId: activeMatch.id,
+            submittedBy: `${team.name} [${team.tag}]`,
+            disputeReason: `[${category}] ${details}`,
+            proofUrl: proof,
+            team_a_name: activeMatch.team_a.name,
+            team_b_name: activeMatch.team_b.name,
+            team_a_score: document.getElementById("score-input-a")?.value || 0,
+            team_b_score: document.getElementById("score-input-b")?.value || 0
+          });
+
+          closeDisputeModal();
+          alert("🚨 Match dispute submitted! This match is now locked for League Administrator review on the Admin Console.");
+
+          activeMatch.status = "disputed";
+          updateStatusBadge("disputed");
+        } catch (err) {
+          alert("Error filing dispute: " + err.message);
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      // Initialize on Load
+      initMatchRoom();
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeDisputeModal();
+        }
+      });
+    </script>
+  </body>
+</html>

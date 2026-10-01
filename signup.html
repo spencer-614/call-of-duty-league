@@ -154,6 +154,47 @@
         background: rgba(239, 68, 68, 0.15);
         border-color: #ef4444;
       }
+      .btn-discord-auth {
+        background: #5865F2;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        font: 800 13px/1 var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 14px 20px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        box-shadow: 0 4px 20px rgba(88, 101, 242, 0.35);
+        transition: all 0.2s ease;
+      }
+      .btn-discord-auth:hover {
+        background: #4752C4;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 24px rgba(88, 101, 242, 0.5);
+      }
+      .auth-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 18px 0 16px;
+        color: var(--muted);
+        font: 700 11px var(--admin-font, monospace);
+        letter-spacing: 1.5px;
+      }
+      .auth-divider::before,
+      .auth-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid var(--line);
+      }
+      .auth-divider span {
+        padding: 0 12px;
+      }
     </style>
   </head>
   <body>
@@ -248,6 +289,18 @@
               To verify tournament eligibility and track your squad dossier, create or sign into your official Frontline combatant account below. Once authenticated, the Season 1 Registration Terminal will unlock automatically.
             </p>
 
+            <!-- 1-Click Discord OAuth Login -->
+            <button type="button" id="btn-discord-auth" class="btn-discord-auth" title="Authenticate instantly using Discord">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+              <span>1-Click Continue with Discord</span>
+            </button>
+
+            <div class="auth-divider">
+              <span>OR USE EMAIL ACCOUNT</span>
+            </div>
+
             <!-- Gate Tabs: Register vs Sign In -->
             <div class="gate-tab-nav" role="tablist">
               <button type="button" id="tab-btn-create-acc" class="gate-tab-btn active" role="tab">
@@ -264,9 +317,10 @@
 
             <!-- Panel A: Create Account Form -->
             <form id="form-create-account" class="signup-form" style="display:flex; flex-direction:column; gap:16px;">
+              <!-- 1. Email Address -->
               <div class="form-group" style="text-align:left;">
                 <label class="form-label" for="reg-email">
-                  Player / Manager Email Address <span class="req">*</span>
+                  Email Address <span class="req">*</span>
                 </label>
                 <input
                   type="email"
@@ -279,25 +333,11 @@
                 <span class="form-hint">Used for league confirmation dispatches and roster notifications</span>
               </div>
 
-              <div class="form-group" style="text-align:left;">
-                <label class="form-label" for="reg-gamertag">
-                  Gamertag / Competitive Alias <span class="req">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="reg-gamertag"
-                  class="form-control"
-                  placeholder="e.g. Apex, Ghost, Shotzzy"
-                  required
-                  autocomplete="nickname"
-                />
-                <span class="form-hint">Your in-game combatant identity</span>
-              </div>
-
+              <!-- 2. Password -->
               <div class="form-grid" style="gap:14px;">
                 <div class="form-group" style="text-align:left;">
                   <label class="form-label" for="reg-password">
-                    Create Password <span class="req">*</span>
+                    Password <span class="req">*</span>
                   </label>
                   <input
                     type="password"
@@ -323,6 +363,38 @@
                     autocomplete="new-password"
                   />
                 </div>
+              </div>
+
+              <!-- 3. Choose a Username for the Website -->
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="reg-gamertag">
+                  Choose a Username for the Website <span class="req">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="reg-gamertag"
+                  class="form-control"
+                  placeholder="e.g. Apex, Ghost, Shotzzy"
+                  required
+                  autocomplete="nickname"
+                />
+                <span class="form-hint">Choose your public username and competitive alias on Frontline</span>
+              </div>
+
+              <!-- 4. Activision ID -->
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="reg-activision-id">
+                  Activision ID <span class="req">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="reg-activision-id"
+                  class="form-control"
+                  placeholder="e.g. Apex#1928374"
+                  required
+                  autocomplete="off"
+                />
+                <span class="form-hint">Enter your Activision ID with hashtag numbers (e.g. Name#1234567) for match invitations & stats</span>
               </div>
 
               <button type="submit" id="btn-create-acc-submit" class="btn-submit-signup" style="width:100%; justify-content:center; margin-top:8px;">
@@ -1015,17 +1087,53 @@
       function unlockRegistrationTerminal(user) {
         currentCombatantUser = user;
         const email = user.email || "";
-        const metaGamertag = user.user_metadata?.gamertag || "";
+        const meta = user.user_metadata || {};
+        
+        // Extract gamertag / discord alias cleanly
+        const metaGamertag = meta.gamertag || meta.username || meta.custom_claims?.global_name || meta.full_name || meta.name || (email ? email.split("@")[0] : "Operative");
+        const metaDiscord = meta.custom_claims?.global_name || meta.full_name || meta.name || meta.discord_username || metaGamertag;
+        const metaActivision = meta.activision_id || "";
+        const metaDiscordId = meta.provider_id || meta.sub || meta.discord_user_id || "";
 
-        if (displayEmail) displayEmail.textContent = email;
+        if (displayEmail) displayEmail.textContent = email || metaDiscord;
         if (displayGamertag) {
           displayGamertag.textContent = metaGamertag ? `[${metaGamertag}]` : "";
         }
 
         // Prefill Gamertag in Solo Free Agent form if empty
         const gamertagInput = document.getElementById("gamertag");
-        if (gamertagInput && !gamertagInput.value && metaGamertag) {
+        if (gamertagInput && (!gamertagInput.value || gamertagInput.value === "Operative")) {
           gamertagInput.value = metaGamertag;
+        }
+
+        // Prefill Discord Username in Solo Free Agent form
+        const discordInput = document.getElementById("discord_username");
+        if (discordInput && (!discordInput.value || discordInput.value === "Operative")) {
+          discordInput.value = metaDiscord;
+        }
+
+        // Prefill Activision ID in Solo Free Agent form if empty
+        const activisionInput = document.getElementById("activision_id");
+        if (activisionInput && !activisionInput.value && metaActivision) {
+          activisionInput.value = metaActivision;
+        }
+
+        // Prefill Captain Gamertag & Activision ID in Team Franchise form if empty
+        const ownerGamertagInput = document.getElementById("owner_gamertag");
+        if (ownerGamertagInput && !ownerGamertagInput.value) {
+          ownerGamertagInput.value = metaGamertag;
+        }
+        const ownerDiscordInput = document.getElementById("owner_discord");
+        if (ownerDiscordInput && !ownerDiscordInput.value) {
+          ownerDiscordInput.value = metaDiscord;
+        }
+        const p1GamertagInput = document.getElementById("p1_gamertag");
+        if (p1GamertagInput && !p1GamertagInput.value) {
+          p1GamertagInput.value = metaGamertag;
+        }
+        const p1ActivisionInput = document.getElementById("p1_activision");
+        if (p1ActivisionInput && !p1ActivisionInput.value && metaActivision) {
+          p1ActivisionInput.value = metaActivision;
         }
 
         // Prefill Contact Email in Team Franchise form if empty
@@ -1048,8 +1156,15 @@
         clearGateBanners();
       }
 
-      // Check active player session on page load
+      // Check active player session on page load & OAuth redirect returns
       async function checkInitialCombatantAuth() {
+        if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
+          const res = await window.LeagueDB.getAuthUser();
+          if (res?.success && res.user) {
+            unlockRegistrationTerminal(res.user);
+            return;
+          }
+        }
         if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
           const session = await window.LeagueDB.getAuthSession();
           if (session?.user) {
@@ -1060,16 +1175,62 @@
         lockRegistrationTerminal();
       }
 
+      // Listen to real-time auth changes (e.g. when returning from Discord redirect)
+      if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
+        try {
+          dbClient.auth.onAuthStateChange((event, session) => {
+            if (session?.user) {
+              unlockRegistrationTerminal(session.user);
+            }
+          });
+        } catch (e) {}
+      }
+
+      // Handle Discord 1-Click OAuth Button
+      const btnDiscordAuth = document.getElementById("btn-discord-auth");
+      btnDiscordAuth?.addEventListener("click", async () => {
+        clearGateBanners();
+        btnDiscordAuth.disabled = true;
+        const originalHtml = btnDiscordAuth.innerHTML;
+        btnDiscordAuth.innerHTML = `<span>Connecting to Discord Authorization...</span> <span>⏳</span>`;
+
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
+            const redirectUrl = window.location.origin + window.location.pathname;
+            const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
+            if (!res.success) {
+              showGateError(res.error || "Failed to initiate Discord authentication.");
+              btnDiscordAuth.disabled = false;
+              btnDiscordAuth.innerHTML = originalHtml;
+            }
+          } else {
+            showGateError("Database client is not initialized.");
+            btnDiscordAuth.disabled = false;
+            btnDiscordAuth.innerHTML = originalHtml;
+          }
+        } catch (err) {
+          showGateError(err.message || "An unexpected error occurred during Discord authentication.");
+          btnDiscordAuth.disabled = false;
+          btnDiscordAuth.innerHTML = originalHtml;
+        }
+      });
+
       // Handle Create Account Submission
       formCreate?.addEventListener("submit", async (e) => {
         e.preventDefault();
         clearGateBanners();
 
         const email = document.getElementById("reg-email")?.value.trim() || "";
-        const gamertag = document.getElementById("reg-gamertag")?.value.trim() || "";
         const password = document.getElementById("reg-password")?.value || "";
         const passwordConfirm = document.getElementById("reg-password-confirm")?.value || "";
+        const gamertag = document.getElementById("reg-gamertag")?.value.trim() || "";
+        const activisionId = document.getElementById("reg-activision-id")?.value.trim() || "";
         const submitBtn = document.getElementById("btn-create-acc-submit");
+
+        if (!email) {
+          showGateError("Email address is required.");
+          return;
+        }
 
         if (password !== passwordConfirm) {
           showGateError("Passwords do not match. Please verify and retype.");
@@ -1081,6 +1242,16 @@
           return;
         }
 
+        if (!gamertag) {
+          showGateError("Please choose a username for the website.");
+          return;
+        }
+
+        if (!activisionId) {
+          showGateError("Activision ID is required (e.g. Username#1234567).");
+          return;
+        }
+
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.innerHTML = `<span>CREATING ACCOUNT & INITIALIZING DOSSIER...</span><span>⏳</span>`;
@@ -1088,21 +1259,29 @@
 
         try {
           if (window.LeagueDB && typeof window.LeagueDB.signUpPlayer === "function") {
-            const res = await window.LeagueDB.signUpPlayer(email, password, gamertag);
+            const res = await window.LeagueDB.signUpPlayer(email, password, gamertag, activisionId);
             if (res.success) {
+              const activeUser = res.user || {
+                email,
+                user_metadata: { gamertag, username: gamertag, activision_id: activisionId }
+              };
+              if (!activeUser.user_metadata) activeUser.user_metadata = {};
+              activeUser.user_metadata.gamertag = gamertag;
+              activeUser.user_metadata.username = gamertag;
+              activeUser.user_metadata.activision_id = activisionId;
+
+              unlockRegistrationTerminal(activeUser);
+
               if (res.requiresEmailConfirmation) {
-                showGateSuccess(`✓ Account registered for <strong>${escapeHtml(email)}</strong>! A confirmation email has been dispatched. Please check your inbox and confirm your email, then sign in below to unlock registration.`);
-                switchGateTab("signin");
-                const signinEmail = document.getElementById("signin-email");
-                if (signinEmail) signinEmail.value = email;
-              } else if (res.user) {
-                unlockRegistrationTerminal(res.user);
+                showGateSuccess(`✓ Account registered and placed in the recruitment queue for <strong>${escapeHtml(email)}</strong>! A confirmation email has been dispatched. You can now finalize your squad details below.`);
+              } else {
+                showGateSuccess(`✓ Account created &amp; placed in the recruitment queue! Registration terminal unlocked below.`);
               }
             } else {
               showGateError(res.error || "Failed to create account. Please try again.");
             }
           } else {
-            showGateError("Supabase authentication client not initialized.");
+            showGateError("Authentication client not initialized.");
           }
         } catch (err) {
           showGateError(err.message || "An unexpected error occurred during account creation.");
@@ -1227,7 +1406,11 @@
           const accountTag = currentCombatantUser?.email ? `[Account: ${currentCombatantUser.email}] ` : "";
           const finalNotes = rawNotes ? `${accountTag}${rawNotes}` : (accountTag ? accountTag.trim() : null);
 
+          const discordSnowflake = currentCombatantUser?.user_metadata?.provider_id || currentCombatantUser?.user_metadata?.sub || currentCombatantUser?.user_metadata?.discord_user_id || null;
+
           const signupData = {
+            user_id: currentCombatantUser?.id || null,
+            discord_user_id: discordSnowflake,
             gamertag: document.getElementById("gamertag").value.trim(),
             discord_username: document.getElementById("discord_username").value.trim(),
             activision_id: document.getElementById("activision_id").value.trim() || null,

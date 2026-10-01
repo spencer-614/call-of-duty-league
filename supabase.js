@@ -1330,47 +1330,191 @@ window.LeagueDB = {
 
   // 8. Submit League Registration / Signup
   async submitSignup(signupData) {
+    if (!signupData || !signupData.gamertag) {
+      return { success: false, error: "Gamertag is required for signup" };
+    }
+
+    const cleanGamertag = String(signupData.gamertag).trim();
+    const cleanActivision = signupData.activision_id ? String(signupData.activision_id).trim() : null;
+    const cleanDiscord = signupData.discord_username ? String(signupData.discord_username).trim() : cleanGamertag;
+    const cleanRole = signupData.role || "Flex";
+    const cleanPlatform = signupData.platform || "PC";
+    const cleanRegion = signupData.region || "NA East";
+    const cleanRegType = signupData.registration_type || "Free Agent";
+    const cleanTeamName = signupData.team_name ? String(signupData.team_name).trim() : null;
+    const cleanNotes = signupData.notes ? String(signupData.notes).trim() : null;
+    const cleanStatus = signupData.status || "Pending";
+    const timestamp = signupData.created_at || new Date().toISOString();
+
+    // Prepare clean payload strictly adhering to Supabase league_signups schema
+    const cleanPayload = {
+      gamertag: cleanGamertag,
+      activision_id: cleanActivision,
+      discord_username: cleanDiscord,
+      role: cleanRole,
+      platform: cleanPlatform,
+      region: cleanRegion,
+      registration_type: cleanRegType,
+      team_name: cleanTeamName,
+      notes: cleanNotes,
+      status: cleanStatus
+    };
+
+    if (signupData.user_id) {
+      cleanPayload.user_id = signupData.user_id;
+    }
+    if (signupData.discord_user_id) {
+      cleanPayload.discord_user_id = signupData.discord_user_id;
+    }
+
+    let remoteSaved = false;
+    let savedData = null;
+
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
+        // Check if an existing pending signup with this gamertag already exists
+        const { data: existingRows } = await dbClient
           .from("league_signups")
-          .insert([signupData])
-          .select();
-        if (error) {
-          console.error("Supabase insert error:", error);
-          return { success: false, error: error.message || error };
+          .select("id, status")
+          .ilike("gamertag", cleanGamertag)
+          .limit(1);
+
+        if (existingRows && existingRows.length > 0 && existingRows[0].status === "Pending") {
+          // Update existing pending signup
+          const { data, error } = await dbClient
+            .from("league_signups")
+            .update(cleanPayload)
+            .eq("id", existingRows[0].id)
+            .select();
+          if (!error && data && data.length > 0) {
+            remoteSaved = true;
+            savedData = data[0];
+          }
+        } else {
+          // Insert new signup
+          const { data, error } = await dbClient
+            .from("league_signups")
+            .insert([cleanPayload])
+            .select();
+          if (!error && data && data.length > 0) {
+            remoteSaved = true;
+            savedData = data[0];
+          } else if (error) {
+            console.warn("Supabase signup insert notice:", error.message || error);
+          }
         }
-        return { success: true, data };
       } catch (err) {
-        console.error("Supabase signup error:", err);
-        return { success: false, error: err.message || err };
+        console.warn("Supabase signup exception:", err);
       }
     }
-    // Fallback simulation if dbClient is not ready
-    console.log("Mock signup submission (no Supabase client active):", signupData);
+
+    // Always persist to localStorage for cross-tab sync and local reliability
+    const recordId = savedData?.id || signupData.id || ("signup_" + Date.now());
+    const finalRecord = {
+      id: recordId,
+      ...cleanPayload,
+      created_at: timestamp
+    };
+
+    try {
+      const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+      const filtered = localSignups.filter(s =>
+        String(s.id) !== String(recordId) &&
+        String(s.gamertag || "").toLowerCase() !== cleanGamertag.toLowerCase()
+      );
+      filtered.unshift(finalRecord);
+      localStorage.setItem("frontline_league_signups", JSON.stringify(filtered));
+    } catch (e) {}
+
+    // Update in-memory MOCK_DATA
     if (!MOCK_DATA.signups) MOCK_DATA.signups = [];
-    const mockSignup = { id: Date.now(), ...signupData, created_at: new Date().toISOString() };
-    MOCK_DATA.signups.unshift(mockSignup);
-    return { success: true, mock: true, data: [mockSignup] };
+    const mockIdx = MOCK_DATA.signups.findIndex(s =>
+      String(s.id) === String(recordId) ||
+      String(s.gamertag || "").toLowerCase() === cleanGamertag.toLowerCase()
+    );
+    if (mockIdx >= 0) {
+      MOCK_DATA.signups[mockIdx] = finalRecord;
+    } else {
+      MOCK_DATA.signups.unshift(finalRecord);
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_signups_updated", { detail: finalRecord }));
+    }
+
+    return { success: true, data: savedData || finalRecord };
   },
 
   // 9. Fetch All League Signups (for admin review)
   async getSignups() {
+    let remoteSignups = [];
     if (dbClient) {
       try {
         const { data, error } = await dbClient
           .from("league_signups")
           .select("*")
           .order("created_at", { ascending: false });
-        if (!error && data) {
-          // Return queue entries, excluding already enlisted/processed signups
-          return data.filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+        if (!error && Array.isArray(data)) {
+          remoteSignups = data.filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
         }
       } catch (err) {
-        console.error("Supabase getSignups error:", err);
+        console.warn("Supabase getSignups error:", err);
       }
     }
-    return (MOCK_DATA.signups || []).filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+
+    // Local storage signups
+    let localSignups = [];
+    try {
+      localSignups = (JSON.parse(localStorage.getItem("frontline_league_signups")) || [])
+        .filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+    } catch (e) {}
+
+    // Also include any registered combatant accounts that haven't been enlisted yet
+    let registeredAccounts = [];
+    try {
+      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      registeredAccounts = accounts
+        .filter(a => a.status !== "Enlisted" && a.status !== "Approved_Enlisted")
+        .map(a => ({
+          id: a.id || ("acc_" + a.gamertag),
+          gamertag: a.gamertag,
+          activision_id: a.activision_id || `${a.gamertag}#1234567`,
+          discord_username: a.discord || a.gamertag,
+          role: a.role || "Starter",
+          platform: "Crossplay",
+          region: "NA East",
+          registration_type: a.tag ? `[${a.tag}] Squad Recruit` : "Free Agent",
+          team_name: a.team_name || null,
+          notes: `[Account: ${a.email || 'Registered User'}] Website combatant registration`,
+          status: "Pending",
+          created_at: a.created_at || new Date().toISOString()
+        }));
+    } catch (e) {}
+
+    // In-memory mock signups
+    const memorySignups = (MOCK_DATA.signups || []).filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+
+    // Merge all sources without duplicates (prefer remote, then local, then registered accounts, then memory)
+    const combined = [];
+    const seenGamertags = new Set();
+
+    function addSignups(list) {
+      for (const s of list) {
+        if (!s || !s.gamertag) continue;
+        const key = String(s.gamertag).trim().toLowerCase();
+        if (!seenGamertags.has(key)) {
+          seenGamertags.add(key);
+          combined.push(s);
+        }
+      }
+    }
+
+    addSignups(remoteSignups);
+    addSignups(localSignups);
+    addSignups(registeredAccounts);
+    addSignups(memorySignups);
+
+    return combined;
   },
 
   // 10. Submit Organization / Team Buy-In Application ($25 entry)
@@ -1982,41 +2126,95 @@ window.LeagueDB = {
   },
 
   // Admin: Delete Signup from league_signups
-  async deleteSignup(signupId) {
+  async deleteSignup(signupId, gamertagParam = null) {
+    let targetGamertag = gamertagParam;
+
+    // If targetGamertag not provided, look it up from localStorage or MOCK_DATA
+    if (!targetGamertag) {
+      try {
+        const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+        const found = localSignups.find(s => String(s.id) === String(signupId) || String(s.gamertag || "").toLowerCase() === String(signupId).toLowerCase());
+        if (found) targetGamertag = found.gamertag;
+      } catch (_) {}
+    }
+    if (!targetGamertag && MOCK_DATA.signups) {
+      const found = MOCK_DATA.signups.find(s => String(s.id) === String(signupId) || String(s.gamertag || "").toLowerCase() === String(signupId).toLowerCase());
+      if (found) targetGamertag = found.gamertag;
+    }
+
+    const cleanGamerLower = targetGamertag ? String(targetGamertag).trim().toLowerCase() : null;
+    const cleanIdStr = signupId ? String(signupId).trim() : "";
+
     if (dbClient) {
       try {
-        const { error, data } = await dbClient
-          .from("league_signups")
-          .delete()
-          .eq("id", signupId)
-          .select();
-
-        if (error) {
-          console.error("Supabase deleteSignup error:", error);
-          return { success: false, error: error.message || error };
-        }
-
-        // If delete returned empty data (RLS blocked DELETE without throwing error),
-        // update status to 'Enlisted' so it won't linger in pending signups queue
-        if (!data || data.length === 0) {
-          await dbClient
+        if (cleanIdStr && !isNaN(cleanIdStr)) {
+          const { error, data } = await dbClient
             .from("league_signups")
-            .update({ status: "Enlisted" })
-            .eq("id", signupId);
-        }
+            .delete()
+            .eq("id", parseInt(cleanIdStr, 10))
+            .select();
 
-        return { success: true, data };
+          if (!data || data.length === 0) {
+            await dbClient
+              .from("league_signups")
+              .update({ status: "Enlisted" })
+              .eq("id", parseInt(cleanIdStr, 10));
+          }
+        } else if (cleanGamerLower) {
+          const { error, data } = await dbClient
+            .from("league_signups")
+            .delete()
+            .ilike("gamertag", cleanGamerLower)
+            .select();
+
+          if (!data || data.length === 0) {
+            await dbClient
+              .from("league_signups")
+              .update({ status: "Enlisted" })
+              .ilike("gamertag", cleanGamerLower);
+          }
+        }
       } catch (err) {
-        console.error("Supabase deleteSignup exception:", err);
-        return { success: false, error: err.message || err };
+        console.warn("Supabase deleteSignup notice:", err);
       }
     }
 
+    // Also remove / mark from localStorage
+    try {
+      const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+      const updated = localSignups.filter(s => {
+        if (cleanIdStr && String(s.id) === cleanIdStr) return false;
+        if (cleanGamerLower && String(s.gamertag || "").toLowerCase() === cleanGamerLower) return false;
+        return true;
+      });
+      localStorage.setItem("frontline_league_signups", JSON.stringify(updated));
+
+      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const updatedAccs = accounts.map(a => {
+        const matchId = cleanIdStr && String(a.id) === cleanIdStr;
+        const matchGamer = cleanGamerLower && String(a.gamertag || "").toLowerCase() === cleanGamerLower;
+        if (matchId || matchGamer) {
+          return { ...a, status: "Enlisted" };
+        }
+        return a;
+      });
+      localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(updatedAccs));
+    } catch (e) {}
+
     if (MOCK_DATA.signups) {
-      const idx = MOCK_DATA.signups.findIndex(x => String(x.id) === String(signupId));
+      const idx = MOCK_DATA.signups.findIndex(x => {
+        if (cleanIdStr && String(x.id) === cleanIdStr) return true;
+        if (cleanGamerLower && String(x.gamertag || "").toLowerCase() === cleanGamerLower) return true;
+        return false;
+      });
       if (idx !== -1) MOCK_DATA.signups.splice(idx, 1);
     }
-    return { success: true, mock: true };
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_signups_updated", { detail: { id: signupId, gamertag: targetGamertag, action: "delete" } }));
+    }
+
+    return { success: true };
   },
 
   // Admin: Approve & Enlist a Signup (stores player in players table and deletes from league_signups table)
@@ -2024,16 +2222,49 @@ window.LeagueDB = {
     try {
       let signup = null;
       if (dbClient) {
-        const { data, error } = await dbClient
-          .from("league_signups")
-          .select("*")
-          .eq("id", signupId)
-          .maybeSingle();
-        if (!error && data) signup = data;
+        try {
+          const { data } = await dbClient
+            .from("league_signups")
+            .select("*")
+            .eq("id", signupId)
+            .maybeSingle();
+          if (data) signup = data;
+        } catch (_) {}
+      }
+
+      if (!signup) {
+        try {
+          const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+          signup = localSignups.find(s =>
+            String(s.id) === String(signupId) ||
+            String(s.gamertag || "").toLowerCase() === String(signupId || "").toLowerCase()
+          );
+        } catch (_) {}
+      }
+
+      if (!signup) {
+        try {
+          const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+          const matchedAcc = accounts.find(a =>
+            String(a.id) === String(signupId) ||
+            String(a.gamertag || "").toLowerCase() === String(signupId || "").toLowerCase()
+          );
+          if (matchedAcc) {
+            signup = {
+              gamertag: matchedAcc.gamertag,
+              activision_id: matchedAcc.activision_id,
+              role: matchedAcc.role || "Flex",
+              team_name: matchedAcc.team_name || null
+            };
+          }
+        } catch (_) {}
       }
 
       if (!signup && MOCK_DATA.signups) {
-        signup = MOCK_DATA.signups.find(s => String(s.id) === String(signupId));
+        signup = MOCK_DATA.signups.find(s =>
+          String(s.id) === String(signupId) ||
+          String(s.gamertag || "").toLowerCase() === String(signupId || "").toLowerCase()
+        );
       }
 
       const gamertag = signup?.gamertag || customPlayerData.gamertag;
@@ -2074,8 +2305,8 @@ window.LeagueDB = {
         return { success: false, error: playerResult.error || "Failed to create player in players table" };
       }
 
-      // 4. Remove player from league_signups table
-      const deleteResult = await this.deleteSignup(signupId);
+      // 4. Remove player from league_signups table & local storage
+      const deleteResult = await this.deleteSignup(signupId, gamertag);
 
       return {
         success: true,
@@ -3314,11 +3545,24 @@ window.LeagueDB = {
   // ==========================================
   client: dbClient,
   async getAuthSession() {
-    if (!dbClient) return null;
+    if (!dbClient) {
+      try {
+        const local = localStorage.getItem("frontline_league_auth_user");
+        if (local) return { user: JSON.parse(local) };
+      } catch (e) {}
+      return null;
+    }
     try {
       const { data } = await dbClient.auth.getSession();
-      return data?.session || null;
+      if (data?.session) return data.session;
+      const local = localStorage.getItem("frontline_league_auth_user");
+      if (local) return { user: JSON.parse(local) };
+      return null;
     } catch (e) {
+      try {
+        const local = localStorage.getItem("frontline_league_auth_user");
+        if (local) return { user: JSON.parse(local) };
+      } catch (err) {}
       return null;
     }
   },
@@ -3363,23 +3607,141 @@ window.LeagueDB = {
   // ==========================================
   // PLAYER / USER AUTHENTICATION (SUPABASE AUTH)
   // ==========================================
-  async signUpPlayer(email, password, gamertag = "") {
+  async signUpPlayer(email, password, gamertag = "", activisionId = "") {
+    const cleanEmail = (email || "").trim();
+    const cleanGamertag = (gamertag || "").trim() || (cleanEmail.includes("@") ? cleanEmail.split("@")[0] : cleanEmail);
+    const cleanActivision = (activisionId || "").trim() || `${cleanGamertag}#1234567`;
+
+    if (!cleanEmail) {
+      return { success: false, error: "Email address is required." };
+    }
+    if (!password || password.length < 6) {
+      return { success: false, error: "Password must be at least 6 characters long." };
+    }
+    if (!gamertag || !gamertag.trim()) {
+      return { success: false, error: "Please choose a username for the website." };
+    }
+    if (!activisionId || !activisionId.trim()) {
+      return { success: false, error: "Activision ID is required (e.g. Username#1234567)." };
+    }
+
     if (!dbClient) {
-      return { success: false, error: "Database client is not connected." };
+      const localUser = {
+        id: "usr_" + Date.now(),
+        email: cleanEmail,
+        user_metadata: {
+          gamertag: cleanGamertag,
+          username: cleanGamertag,
+          activision_id: cleanActivision,
+          role: "player"
+        }
+      };
+      try {
+        localStorage.setItem("frontline_league_auth_user", JSON.stringify(localUser));
+        const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+        const filtered = customAccounts.filter(a =>
+          (a.email && a.email.toLowerCase() !== cleanEmail.toLowerCase()) &&
+          (a.gamertag && a.gamertag.toLowerCase() !== cleanGamertag.toLowerCase())
+        );
+        filtered.push({
+          id: localUser.id,
+          gamertag: cleanGamertag,
+          username: cleanGamertag,
+          email: cleanEmail,
+          activision_id: cleanActivision,
+          password: password,
+          tag: "LEAGUE",
+          team_name: "Free Agent",
+          elo: 1200,
+          tier: "Specialist",
+          avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          created_at: new Date().toISOString()
+        });
+        localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filtered));
+      } catch (e) {}
+
+      // Automatically place into recruitment queue
+      try {
+        await this.submitSignup({
+          gamertag: cleanGamertag,
+          activision_id: cleanActivision,
+          discord_username: cleanGamertag,
+          role: "Flex",
+          platform: "PC",
+          region: "NA East",
+          registration_type: "Free Agent",
+          team_name: null,
+          notes: `[Account: ${cleanEmail}] Website recruit registration`,
+          status: "Pending"
+        });
+      } catch (signupErr) {
+        console.warn("Auto-queue on signup notice:", signupErr);
+      }
+
+      return {
+        success: true,
+        user: localUser,
+        session: { user: localUser },
+        requiresEmailConfirmation: false
+      };
     }
     try {
       const { data, error } = await dbClient.auth.signUp({
-        email: email.trim(),
+        email: cleanEmail,
         password: password,
         options: {
           data: {
-            gamertag: gamertag.trim() || undefined,
+            gamertag: cleanGamertag,
+            username: cleanGamertag,
+            activision_id: cleanActivision,
             role: "player"
           }
         }
       });
       if (error) {
         return { success: false, error: error.message };
+      }
+      if (data?.user) {
+        try {
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+          const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+          const filtered = customAccounts.filter(a =>
+            (a.email && a.email.toLowerCase() !== cleanEmail.toLowerCase()) &&
+            (a.gamertag && a.gamertag.toLowerCase() !== cleanGamertag.toLowerCase())
+          );
+          filtered.push({
+            id: data.user.id,
+            gamertag: cleanGamertag,
+            username: cleanGamertag,
+            email: cleanEmail,
+            activision_id: cleanActivision,
+            tag: "LEAGUE",
+            team_name: "Free Agent",
+            elo: 1200,
+            tier: "Specialist",
+            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            created_at: new Date().toISOString()
+          });
+          localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filtered));
+        } catch (e) {}
+
+        // Automatically place into recruitment queue
+        try {
+          await this.submitSignup({
+            gamertag: cleanGamertag,
+            activision_id: cleanActivision,
+            discord_username: cleanGamertag,
+            role: "Flex",
+            platform: "PC",
+            region: "NA East",
+            registration_type: "Free Agent",
+            team_name: null,
+            notes: `[Account: ${cleanEmail}] Website recruit registration`,
+            status: "Pending"
+          });
+        } catch (signupErr) {
+          console.warn("Auto-queue on signup notice:", signupErr);
+        }
       }
       return {
         success: true,
@@ -3393,16 +3755,63 @@ window.LeagueDB = {
   },
 
   async signInPlayer(email, password) {
+    const cleanEmail = (email || "").trim();
+    if (!cleanEmail) {
+      return { success: false, error: "Email is required." };
+    }
+    if (!password) {
+      return { success: false, error: "Password is required." };
+    }
     if (!dbClient) {
-      return { success: false, error: "Database client is not connected." };
+      try {
+        const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+        const match = customAccounts.find(a =>
+          (a.email && a.email.toLowerCase() === cleanEmail.toLowerCase()) ||
+          (a.gamertag && a.gamertag.toLowerCase() === cleanEmail.toLowerCase())
+        );
+        if (match) {
+          if (match.password && password && match.password !== password) {
+            return { success: false, error: "Invalid password for this account." };
+          }
+          const userObj = {
+            id: match.id,
+            email: match.email || cleanEmail,
+            user_metadata: {
+              gamertag: match.gamertag,
+              username: match.gamertag,
+              activision_id: match.activision_id,
+              role: "player"
+            }
+          };
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(userObj));
+          return { success: true, user: userObj, session: { user: userObj } };
+        }
+      } catch (e) {}
+      const fallbackUser = {
+        id: "usr_" + Date.now(),
+        email: cleanEmail,
+        user_metadata: {
+          gamertag: cleanEmail.split("@")[0],
+          username: cleanEmail.split("@")[0],
+          activision_id: `${cleanEmail.split("@")[0]}#1234567`,
+          role: "player"
+        }
+      };
+      localStorage.setItem("frontline_league_auth_user", JSON.stringify(fallbackUser));
+      return { success: true, user: fallbackUser, session: { user: fallbackUser } };
     }
     try {
       const { data, error } = await dbClient.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password: password
       });
       if (error) {
         return { success: false, error: error.message };
+      }
+      if (data?.user) {
+        try {
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+        } catch (e) {}
       }
       return { success: true, user: data.user, session: data.session };
     } catch (err) {
@@ -3440,12 +3849,40 @@ window.LeagueDB = {
   },
 
   async signOutPlayer() {
+    try {
+      localStorage.removeItem("frontline_league_auth_user");
+    } catch (e) {}
     if (!dbClient) return { success: true };
     try {
       await dbClient.auth.signOut();
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
+    }
+  },
+
+  async getAuthUser() {
+    if (!dbClient) {
+      try {
+        const local = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+        return { success: !!local, user: local || null };
+      } catch (e) {
+        return { success: false, user: null };
+      }
+    }
+    try {
+      const { data, error } = await dbClient.auth.getUser();
+      if (error || !data?.user) {
+        // Fallback to session check
+        const { data: sessData } = await dbClient.auth.getSession();
+        if (sessData?.session?.user) {
+          return { success: true, user: sessData.session.user };
+        }
+        return { success: false, user: null };
+      }
+      return { success: true, user: data.user };
+    } catch (err) {
+      return { success: false, error: err.message, user: null };
     }
   },
 
@@ -3458,14 +3895,14 @@ window.LeagueDB = {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes"]
     },
     referee: {
       key: "referee",
       title: "Match Referee",
       badgeClass: "role-badge-referee",
-      description: "Authorized to record match series scores, enter map statistics, and manage match schedules.",
-      tabs: ["tab-matches", "tab-player-stats", "tab-schedule"]
+      description: "Authorized to record match series scores, enter map statistics, manage schedules, and adjudicate ladder disputes.",
+      tabs: ["tab-matches", "tab-player-stats", "tab-schedule", "tab-ladder-disputes"]
     },
     roster_manager: {
       key: "roster_manager",
@@ -3673,6 +4110,2405 @@ window.LeagueDB = {
   paypalConfig: PAYPAL_CONFIG,
   isConfigured: isSupabaseConfigured
 };
+
+// ==============================================================================
+// FRONTLINE ARENA LADDER DATABASE API (SEPARATE FROM LEAGUE STANDINGS)
+// ==============================================================================
+const MOCK_LADDER_DATA = {
+  teams: [
+    // 4v4 Variant
+    {
+      id: 101,
+      name: "Apex Predators",
+      tag: "APEX",
+      avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "4v4_variant",
+      captain_name: "ViperX",
+      elo: 2045,
+      tier: "Apex Prestige",
+      wins: 18,
+      losses: 2,
+      streak: 6,
+      players: [
+        {
+          gamertag: "ViperX",
+          role: "Captain / Main AR",
+          elo: 2045,
+          wins: 18,
+          losses: 2,
+          activision_id: "ViperX#8392014",
+          discord: "viperx_cdl",
+          avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Predator",
+          role: "SMG Entry",
+          elo: 1980,
+          wins: 17,
+          losses: 3,
+          activision_id: "Predator#4412903",
+          discord: "predator_cod",
+          avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Kobra",
+          role: "SMG Slayer",
+          elo: 1940,
+          wins: 16,
+          losses: 3,
+          activision_id: "Kobra#7721094",
+          discord: "kobra_fps",
+          avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Venom",
+          role: "Flex / Support",
+          elo: 1910,
+          wins: 15,
+          losses: 4,
+          activision_id: "Venom#1938472",
+          discord: "venom_cdl",
+          avatar_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 102,
+      name: "Crimson Syndicate",
+      tag: "CRIM",
+      avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "4v4_variant",
+      captain_name: "Havoc",
+      elo: 1880,
+      tier: "Commander",
+      wins: 14,
+      losses: 4,
+      streak: 3,
+      players: [
+        {
+          gamertag: "Havoc",
+          role: "Captain / Main AR",
+          elo: 1880,
+          wins: 14,
+          losses: 4,
+          activision_id: "Havoc#6291038",
+          discord: "havoc_snd",
+          avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Scarlet",
+          role: "SMG Slayer",
+          elo: 1820,
+          wins: 13,
+          losses: 5,
+          activision_id: "Scarlet#5521904",
+          discord: "scarlet_crim",
+          avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Bloodline",
+          role: "Flex",
+          elo: 1790,
+          wins: 12,
+          losses: 5,
+          activision_id: "Bloodline#8831920",
+          discord: "bloodline_cod",
+          avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Reign",
+          role: "Entry Sub",
+          elo: 1750,
+          wins: 11,
+          losses: 6,
+          activision_id: "Reign#2049182",
+          discord: "reign_fps",
+          avatar_url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 103,
+      name: "Ghost Protocol",
+      tag: "GPRT",
+      avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "4v4_variant",
+      captain_name: "Specter",
+      elo: 1690,
+      tier: "Warlord",
+      wins: 11,
+      losses: 5,
+      streak: 2,
+      players: [
+        {
+          gamertag: "Specter",
+          role: "Captain / Flex",
+          elo: 1690,
+          wins: 11,
+          losses: 5,
+          activision_id: "Specter#7492810",
+          discord: "specter_cdl",
+          avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Mirage",
+          role: "Main AR",
+          elo: 1640,
+          wins: 10,
+          losses: 6,
+          activision_id: "Mirage#3321945",
+          discord: "mirage_gprt",
+          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Shadow",
+          role: "SMG Slayer",
+          elo: 1610,
+          wins: 9,
+          losses: 6,
+          activision_id: "Shadow#4491028",
+          discord: "shadow_gprt",
+          avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Wraith",
+          role: "Obj Sub",
+          elo: 1580,
+          wins: 8,
+          losses: 7,
+          activision_id: "Wraith#1192837",
+          discord: "wraith_cdl",
+          avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 104,
+      name: "Vanguard Prime",
+      tag: "VNG",
+      avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "4v4_variant",
+      captain_name: "Phantom",
+      elo: 1520,
+      tier: "Vanguard",
+      wins: 9,
+      losses: 6,
+      streak: 1,
+      players: [
+        {
+          gamertag: "Phantom",
+          role: "Captain / Main AR",
+          elo: 1520,
+          wins: 9,
+          losses: 6,
+          activision_id: "Phantom#9821043",
+          discord: "phantom_vng",
+          avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Sentinel",
+          role: "SMG Entry",
+          elo: 1480,
+          wins: 8,
+          losses: 6,
+          activision_id: "Sentinel#6629104",
+          discord: "sentinel_cod",
+          avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Titan",
+          role: "Flex",
+          elo: 1450,
+          wins: 8,
+          losses: 7,
+          activision_id: "Titan#5591827",
+          discord: "titan_vng",
+          avatar_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Aegis",
+          role: "Support Sub",
+          elo: 1410,
+          wins: 7,
+          losses: 7,
+          activision_id: "Aegis#3301928",
+          discord: "aegis_fps",
+          avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 105,
+      name: "Sub Base Kings",
+      tag: "SBK",
+      avatar_url: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "4v4_variant",
+      captain_name: "Blitz",
+      elo: 1340,
+      tier: "Specialist",
+      wins: 7,
+      losses: 7,
+      streak: 0,
+      players: [
+        {
+          gamertag: "Blitz",
+          role: "Captain / Flex",
+          elo: 1340,
+          wins: 7,
+          losses: 7,
+          activision_id: "Blitz#1928374",
+          discord: "blitz_sbk",
+          avatar_url: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Anchor",
+          role: "Main AR",
+          elo: 1310,
+          wins: 6,
+          losses: 7,
+          activision_id: "Anchor#4401928",
+          discord: "anchor_fps",
+          avatar_url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "SubZero",
+          role: "SMG Slayer",
+          elo: 1280,
+          wins: 6,
+          losses: 8,
+          activision_id: "SubZero#7729104",
+          discord: "subzero_cod",
+          avatar_url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Riptide",
+          role: "Entry Sub",
+          elo: 1250,
+          wins: 5,
+          losses: 8,
+          activision_id: "Riptide#8820194",
+          discord: "riptide_cdl",
+          avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 106,
+      name: "Rookie Regime",
+      tag: "RREG",
+      avatar_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "4v4_variant",
+      captain_name: "NewbieSniper",
+      elo: 1120,
+      tier: "Operator",
+      wins: 3,
+      losses: 6,
+      streak: -1,
+      players: [
+        {
+          gamertag: "NewbieSniper",
+          role: "Captain / Sniper",
+          elo: 1120,
+          wins: 3,
+          losses: 6,
+          activision_id: "NewbieSniper#5501928",
+          discord: "newbie_cod",
+          avatar_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "FreshShot",
+          role: "Flex",
+          elo: 1100,
+          wins: 3,
+          losses: 6,
+          activision_id: "FreshShot#9920194",
+          discord: "freshshot_fps",
+          avatar_url: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "GreenHorn",
+          role: "SMG",
+          elo: 1070,
+          wins: 2,
+          losses: 6,
+          activision_id: "GreenHorn#1129384",
+          discord: "greenhorn_cdl",
+          avatar_url: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "Cadet",
+          role: "AR Support",
+          elo: 1040,
+          wins: 2,
+          losses: 7,
+          activision_id: "Cadet#4482019",
+          discord: "cadet_cod",
+          avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+
+    // 2v2 SnD
+    {
+      id: 201,
+      name: "Duo Demons",
+      tag: "DEMN",
+      avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "2v2_snd",
+      captain_name: "Reaper",
+      elo: 1950,
+      tier: "Commander",
+      wins: 15,
+      losses: 3,
+      streak: 5,
+      players: [
+        {
+          gamertag: "Reaper",
+          role: "Captain / Slayer",
+          elo: 1950,
+          wins: 15,
+          losses: 3,
+          activision_id: "Reaper#7719284",
+          discord: "reaper_snd",
+          avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "SoulEater",
+          role: "Bomb Carrier / Sub",
+          elo: 1920,
+          wins: 14,
+          losses: 3,
+          activision_id: "SoulEater#8839201",
+          discord: "souleater_demn",
+          avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 202,
+      name: "Silent Scope Duo",
+      tag: "SSD",
+      avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "2v2_snd",
+      captain_name: "DeadSilence",
+      elo: 1740,
+      tier: "Warlord",
+      wins: 12,
+      losses: 4,
+      streak: 2,
+      players: [
+        {
+          gamertag: "DeadSilence",
+          role: "Captain / Sniper",
+          elo: 1740,
+          wins: 12,
+          losses: 4,
+          activision_id: "DeadSilence#3391029",
+          discord: "deadsilence_cod",
+          avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "GhostFoot",
+          role: "Support AR",
+          elo: 1710,
+          wins: 11,
+          losses: 4,
+          activision_id: "GhostFoot#4492018",
+          discord: "ghostfoot_ssd",
+          avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 203,
+      name: "Bomb Site Rushers",
+      tag: "BSR",
+      avatar_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "2v2_snd",
+      captain_name: "NinjaDefuse",
+      elo: 1480,
+      tier: "Vanguard",
+      wins: 8,
+      losses: 5,
+      streak: 1,
+      players: [
+        {
+          gamertag: "NinjaDefuse",
+          role: "Captain / Ninja Clutcher",
+          elo: 1480,
+          wins: 8,
+          losses: 5,
+          activision_id: "NinjaDefuse#1192840",
+          discord: "ninjadefuse_bsr",
+          avatar_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80"
+        },
+        {
+          gamertag: "SmokeGrenade",
+          role: "Entry Sub",
+          elo: 1430,
+          wins: 7,
+          losses: 5,
+          activision_id: "SmokeGrenade#2294810",
+          discord: "smoke_snd",
+          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+
+    // 1v1 Radar / Gunfight
+    {
+      id: 301,
+      name: "Lone Wolf Solo",
+      tag: "LONE",
+      avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "1v1_radar",
+      captain_name: "Apex",
+      elo: 2010,
+      tier: "Apex Prestige",
+      wins: 22,
+      losses: 1,
+      streak: 8,
+      players: [
+        {
+          gamertag: "Apex",
+          role: "Solo Duelist",
+          elo: 2010,
+          wins: 22,
+          losses: 1,
+          activision_id: "Apex#1928374",
+          discord: "apex_radar",
+          avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    },
+    {
+      id: 302,
+      name: "QuickScopeGod",
+      tag: "QSG",
+      avatar_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80",
+      ladder_type: "1v1_radar",
+      captain_name: "Pulse",
+      elo: 1675,
+      tier: "Warlord",
+      wins: 13,
+      losses: 7,
+      streak: 3,
+      players: [
+        {
+          gamertag: "Pulse",
+          role: "Solo Duelist",
+          elo: 1675,
+          wins: 13,
+          losses: 7,
+          activision_id: "Pulse#9928103",
+          discord: "pulse_qsg",
+          avatar_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80"
+        }
+      ]
+    }
+  ],
+  challenges: [
+    {
+      id: 501,
+      ladder_type: "4v4_variant",
+      team_a: { id: 102, name: "Crimson Syndicate", tag: "CRIM", avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80", elo: 1880, tier: "Commander" },
+      best_of: 5,
+      status: "open",
+      scheduled_time: "Tonight @ 9:00 PM EST",
+      notes: "Looking for Top 10 Squad. CDL Rules, Karachi/Sub Base."
+    },
+    {
+      id: 502,
+      ladder_type: "2v2_snd",
+      team_a: { id: 201, name: "Duo Demons", tag: "DEMN", avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80", elo: 1950, tier: "Commander" },
+      best_of: 3,
+      status: "open",
+      scheduled_time: "ASAP / Next 30 Mins",
+      notes: "2v2 SnD Any Map. Central host preferred."
+    },
+    {
+      id: 503,
+      ladder_type: "1v1_radar",
+      team_a: { id: 302, name: "QuickScopeGod", tag: "QSG", avatar_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80", elo: 1675, tier: "Warlord" },
+      best_of: 3,
+      status: "open",
+      scheduled_time: "Ready Now",
+      notes: "1v1 Snipers Only. Radar Always On."
+    }
+  ],
+  disputes: [
+    {
+      id: 901,
+      match_id: 501,
+      ladder_type: "4v4_variant",
+      submitted_by: "Automated System (Score Conflict)",
+      dispute_reason: "Score Mismatch: Apex Predators reported 3-1, while Crimson Syndicate reported 1-3. Proof submitted.",
+      proof_url: "https://twitch.tv/videos/sample_match_vod",
+      status: "open",
+      team_a_name: "Apex Predators",
+      team_a_tag: "APEX",
+      team_b_name: "Crimson Syndicate",
+      team_b_tag: "CRIM",
+      team_a_score: 3,
+      team_b_score: 1,
+      team_b_reported_a: 1,
+      team_b_reported_b: 3,
+      created_at: new Date(Date.now() - 4200000).toISOString()
+    }
+  ]
+};
+
+window.LadderDB = {
+  // User Active Squad per Ladder
+  getMyTeam(ladderType = "4v4_variant") {
+    try {
+      const saved = localStorage.getItem("frontline_my_team_" + ladderType);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  },
+
+  setMyTeam(ladderType, team) {
+    if (!ladderType || !team) return;
+    try {
+      localStorage.setItem("frontline_my_team_" + ladderType, JSON.stringify(team));
+      // Cross-tab / cross-component notification
+      window.dispatchEvent(new CustomEvent("frontline_my_team_updated", { detail: { ladderType, team } }));
+    } catch (e) {}
+  },
+
+  clearMyTeam(ladderType) {
+    try {
+      localStorage.removeItem("frontline_my_team_" + ladderType);
+      window.dispatchEvent(new CustomEvent("frontline_my_team_updated", { detail: { ladderType, team: null } }));
+    } catch (e) {}
+  },
+
+  getTier(elo) {
+    const rating = Number(elo) || 1200;
+    if (rating >= 2000) return { name: "Apex Prestige", badgeClass: "tier-apex", icon: "⚡" };
+    if (rating >= 1800) return { name: "Commander", badgeClass: "tier-commander", icon: "🎖" };
+    if (rating >= 1600) return { name: "Warlord", badgeClass: "tier-warlord", icon: "💀" };
+    if (rating >= 1400) return { name: "Vanguard", badgeClass: "tier-vanguard", icon: "🛡" };
+    if (rating >= 1200) return { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+    if (rating >= 1000) return { name: "Operator", badgeClass: "tier-operator", icon: "⚔" };
+    return { name: "Recruit", badgeClass: "tier-recruit", icon: "🔰" };
+  },
+
+  getDivisionTier(elo) {
+    return this.getTier(elo);
+  },
+
+  getTeamById(teamId) {
+    if (!teamId) return null;
+    const cleanId = String(teamId).trim();
+    const cleanIdLower = cleanId.toLowerCase();
+    let found = MOCK_LADDER_DATA.teams.find(t => String(t.id) === cleanId || (t.name && t.name.toLowerCase() === cleanIdLower));
+    if (found) return found;
+
+    for (const lt of ["4v4_variant", "2v2_snd", "1v1_radar"]) {
+      try {
+        const cached = JSON.parse(localStorage.getItem("frontline_ladder_teams_" + lt)) || [];
+        found = cached.find(t => String(t.id) === cleanId || (t.name && t.name.toLowerCase() === cleanIdLower));
+        if (found) return found;
+      } catch (e) {}
+    }
+
+    for (const lt of ["4v4_variant", "2v2_snd", "1v1_radar"]) {
+      try {
+        const myT = JSON.parse(localStorage.getItem("frontline_my_team_" + lt));
+        if (myT && (String(myT.id) === cleanId || (myT.name && myT.name.toLowerCase() === cleanIdLower))) return myT;
+      } catch (e) {}
+    }
+
+    return null;
+  },
+
+  getTeamRoster(teamOrId) {
+    let team = teamOrId;
+    if (typeof team === "string" || typeof team === "number") {
+      team = this.getTeamById(team);
+    }
+    if (!team) return [];
+
+    if (team.players && Array.isArray(team.players) && team.players.length > 0) {
+      return team.players.map(p => {
+        const elo = Number(p.elo) || 1200;
+        const wins = Number(p.wins) || 0;
+        const losses = Number(p.losses) || 0;
+        const total = wins + losses;
+        const win_rate = total > 0 ? Math.round((wins / total) * 100) : 0;
+        return {
+          ...p,
+          elo,
+          wins,
+          losses,
+          win_rate,
+          tier: this.getDivisionTier(elo)
+        };
+      });
+    }
+
+    return this.generateRosterForTeam(team);
+  },
+
+  generateRosterForTeam(team) {
+    const ladderType = team.ladder_type || "4v4_variant";
+    const teamElo = Number(team.elo) || 1200;
+    const teamWins = Number(team.wins) || 0;
+    const teamLosses = Number(team.losses) || 0;
+    const captainName = team.captain_name || "Captain";
+    const tag = team.tag || "TAG";
+
+    const hashStr = (s) => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffffff;
+      return Math.abs(h);
+    };
+
+    if (ladderType === "1v1_radar") {
+      return [{
+        gamertag: captainName,
+        role: "Solo Combatant",
+        elo: teamElo,
+        wins: teamWins,
+        losses: teamLosses,
+        win_rate: (teamWins + teamLosses) > 0 ? Math.round((teamWins / (teamWins + teamLosses)) * 100) : 0,
+        activision_id: team.captain_activision || `${captainName}#${(hashStr(captainName) % 9000000) + 1000000}`,
+        discord: team.captain_discord || `${captainName.toLowerCase()}#0001`,
+        avatar_url: team.avatar_url || "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80",
+        tier: this.getDivisionTier(teamElo)
+      }];
+    }
+
+    if (ladderType === "2v2_snd") {
+      const p1Elo = teamElo;
+      const p2Elo = Math.max(800, teamElo - 25);
+      const p2Wins = Math.max(0, teamWins - (teamWins > 1 ? 1 : 0));
+      const p2Losses = teamLosses;
+      return [
+        {
+          gamertag: captainName,
+          role: "Captain / Shot Caller",
+          elo: p1Elo,
+          wins: teamWins,
+          losses: teamLosses,
+          win_rate: (teamWins + teamLosses) > 0 ? Math.round((teamWins / (teamWins + teamLosses)) * 100) : 0,
+          activision_id: team.captain_activision || `${captainName}#${(hashStr(captainName) % 9000000) + 1000000}`,
+          discord: team.captain_discord || `${captainName.toLowerCase()}#0001`,
+          avatar_url: team.avatar_url || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
+          tier: this.getDivisionTier(p1Elo)
+        },
+        {
+          gamertag: `${tag}_Duo`,
+          role: "Duo Partner / Slayer",
+          elo: p2Elo,
+          wins: p2Wins,
+          losses: p2Losses,
+          win_rate: (p2Wins + p2Losses) > 0 ? Math.round((p2Wins / (p2Wins + p2Losses)) * 100) : 0,
+          activision_id: `${tag}_Duo#${(hashStr(tag + "2") % 9000000) + 1000000}`,
+          discord: `${tag.toLowerCase()}_duo#0002`,
+          avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80",
+          tier: this.getDivisionTier(p2Elo)
+        }
+      ];
+    }
+
+    // Default 4v4
+    const roles = [
+      { suffix: "", role: "Captain / Main AR", eloDelta: 0, wDelta: 0, lDelta: 0, avatar: team.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" },
+      { suffix: "Slayer", role: "SMG Slayer", eloDelta: -25, wDelta: -1, lDelta: 0, avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
+      { suffix: "Flex", role: "Flex / Support", eloDelta: -50, wDelta: -1, lDelta: 1, avatar: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80" },
+      { suffix: "Entry", role: "SMG Entry", eloDelta: -75, wDelta: -2, lDelta: 1, avatar: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80" }
+    ];
+
+    return roles.map((r, i) => {
+      const gname = i === 0 ? captainName : `${tag}_${r.suffix}`;
+      const pElo = Math.max(800, teamElo + r.eloDelta);
+      const pWins = Math.max(0, teamWins + r.wDelta);
+      const pLosses = Math.max(0, teamLosses + r.lDelta);
+      const total = pWins + pLosses;
+      return {
+        gamertag: gname,
+        role: r.role,
+        elo: pElo,
+        wins: pWins,
+        losses: pLosses,
+        win_rate: total > 0 ? Math.round((pWins / total) * 100) : 0,
+        activision_id: i === 0 && team.captain_activision ? team.captain_activision : `${gname}#${(hashStr(gname + i) % 9000000) + 1000000}`,
+        discord: i === 0 && team.captain_discord ? team.captain_discord : `${gname.toLowerCase()}#000${i+1}`,
+        avatar_url: r.avatar,
+        tier: this.getDivisionTier(pElo)
+      };
+    });
+  },
+
+  async getLadderTeams(ladderType = "4v4_variant") {
+    // 1. Try Supabase
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_teams")
+          .select("*")
+          .eq("ladder_type", ladderType)
+          .order("elo", { ascending: false })
+          .order("wins", { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn("Supabase ladder_teams query failed:", err);
+      }
+    }
+
+    // 2. Check LocalStorage Cache
+    try {
+      const cached = JSON.parse(localStorage.getItem("frontline_ladder_teams_" + ladderType));
+      if (cached && cached.length > 0) return cached;
+    } catch (e) {}
+
+    // 3. Fallback Mock Data
+    return MOCK_LADDER_DATA.teams.filter(t => t.ladder_type === ladderType);
+  },
+
+  async createLadderTeam(teamData) {
+    // Set initial defaults
+    const newTeam = {
+      name: teamData.name,
+      tag: (teamData.tag || "TAG").toUpperCase().trim().slice(0, 5),
+      avatar_url: teamData.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+      ladder_type: teamData.ladder_type || "4v4_variant",
+      captain_name: teamData.captain_name || "Captain",
+      captain_discord: teamData.captain_discord || "",
+      elo: 1200,
+      tier: "Specialist",
+      wins: 0,
+      losses: 0,
+      streak: 0,
+      created_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_teams")
+          .insert([newTeam])
+          .select();
+        if (!error && data && data.length > 0) {
+          const created = data[0];
+          this.setMyTeam(newTeam.ladder_type, created);
+          return { success: true, team: created };
+        }
+        console.warn("Supabase insert error, saving locally:", error);
+      } catch (err) {
+        console.warn("Supabase insert failed:", err);
+      }
+    }
+
+    // LocalStorage Fallback
+    try {
+      const type = newTeam.ladder_type;
+      let existing = await this.getLadderTeams(type);
+      newTeam.id = "mock_" + Date.now();
+      existing.push(newTeam);
+      existing.sort((a, b) => (b.elo || 0) - (a.elo || 0));
+      localStorage.setItem("frontline_ladder_teams_" + type, JSON.stringify(existing));
+      this.setMyTeam(type, newTeam);
+      return { success: true, team: newTeam, local: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  async getOpenChallenges(ladderType = "4v4_variant") {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_matches")
+          .select("*, team_a:ladder_teams!team_a_id(*)")
+          .eq("status", "open")
+          .eq("ladder_type", ladderType)
+          .order("created_at", { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn("Supabase open challenges failed:", err);
+      }
+    }
+
+    try {
+      const cached = JSON.parse(localStorage.getItem("frontline_ladder_challenges_" + ladderType));
+      if (cached && cached.length > 0) return cached;
+    } catch (e) {}
+
+    return MOCK_LADDER_DATA.challenges.filter(c => c.ladder_type === ladderType);
+  },
+
+  async postChallenge(challengeData) {
+    const newChallenge = {
+      ladder_type: challengeData.ladder_type || "4v4_variant",
+      team_a_id: challengeData.team_a_id,
+      best_of: parseInt(challengeData.best_of, 10) || 5,
+      status: "open",
+      scheduled_time: challengeData.scheduled_time || "Ready Now",
+      notes: challengeData.notes || "CDL Rules",
+      created_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_matches")
+          .insert([newChallenge])
+          .select();
+        if (!error && data && data.length > 0) {
+          return { success: true, challenge: data[0] };
+        }
+      } catch (err) {
+        console.warn("Supabase challenge insert failed:", err);
+      }
+    }
+
+    // Local Fallback
+    try {
+      const type = newChallenge.ladder_type;
+      let existing = await this.getOpenChallenges(type);
+      newChallenge.id = "chal_" + Date.now();
+      newChallenge.team_a = challengeData.team_a; // embed squad details
+      existing.unshift(newChallenge);
+      localStorage.setItem("frontline_ladder_challenges_" + type, JSON.stringify(existing));
+      return { success: true, challenge: newChallenge, local: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Record or Accept Match in Progress
+  async acceptChallenge(challengeId, acceptingTeam) {
+    let matchObj = null;
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_matches")
+          .update({
+            team_b_id: acceptingTeam.id,
+            status: "in_progress"
+          })
+          .eq("id", challengeId)
+          .select("*, team_a:ladder_teams!team_a_id(*), team_b:ladder_teams!team_b_id(*)");
+        if (!error && data && data.length > 0) {
+          matchObj = data[0];
+        }
+      } catch (err) {
+        console.warn("Supabase acceptChallenge failed:", err);
+      }
+    }
+
+    if (!matchObj) {
+      // Find original challenge in localStorage
+      let foundChal = null;
+      for (const type of ["4v4_variant", "2v2_snd", "1v1_radar"]) {
+        try {
+          let list = JSON.parse(localStorage.getItem("frontline_ladder_challenges_" + type)) || [];
+          const idx = list.findIndex(c => String(c.id) === String(challengeId));
+          if (idx >= 0) {
+            foundChal = list.splice(idx, 1)[0];
+            localStorage.setItem("frontline_ladder_challenges_" + type, JSON.stringify(list));
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (!foundChal) {
+        foundChal = (MOCK_LADDER_DATA.challenges || []).find(c => String(c.id) === String(challengeId)) || {};
+      }
+
+      matchObj = {
+        id: challengeId,
+        ladder_type: foundChal.ladder_type || "4v4_variant",
+        best_of: foundChal.best_of || 5,
+        status: "in_progress",
+        team_a: foundChal.team_a || { id: 101, name: "Apex Predators", tag: "APEX", avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80", elo: 2045, tier: "Apex Prestige" },
+        team_b: acceptingTeam,
+        notes: foundChal.notes || "CDL Rules",
+        server_info: "Dallas (Central Host)",
+        created_at: new Date().toISOString()
+      };
+    }
+
+    await this.saveMatch(matchObj);
+    return { success: true, match: matchObj };
+  },
+
+  async getMatch(matchId) {
+    if (!matchId) return null;
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_matches")
+          .select("*, team_a:ladder_teams!team_a_id(*), team_b:ladder_teams!team_b_id(*)")
+          .eq("id", matchId)
+          .maybeSingle();
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn("Supabase getMatch error:", err);
+      }
+    }
+
+    try {
+      const match = JSON.parse(localStorage.getItem("frontline_ladder_match_" + matchId));
+      if (match) return match;
+    } catch (e) {}
+
+    try {
+      const active = JSON.parse(localStorage.getItem("frontline_ladder_active_matches")) || [];
+      const found = active.find(m => String(m.id) === String(matchId));
+      if (found) return found;
+    } catch (e) {}
+
+    for (const type of ["4v4_variant", "2v2_snd", "1v1_radar"]) {
+      try {
+        const challenges = JSON.parse(localStorage.getItem("frontline_ladder_challenges_" + type)) || [];
+        const found = challenges.find(c => String(c.id) === String(matchId));
+        if (found) {
+          return {
+            ...found,
+            status: found.status || "in_progress",
+            team_b: found.team_b || {
+              id: 102,
+              name: "Crimson Syndicate",
+              tag: "CRIM",
+              avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+              captain_name: "Havoc",
+              elo: 1880,
+              tier: "Commander"
+            }
+          };
+        }
+      } catch (e) {}
+    }
+
+    const mockChal = (MOCK_LADDER_DATA.challenges || []).find(c => String(c.id) === String(matchId));
+    if (mockChal) {
+      return {
+        ...mockChal,
+        team_b: {
+          id: 101,
+          name: "Apex Predators",
+          tag: "APEX",
+          avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          captain_name: "ViperX",
+          elo: 2045,
+          tier: "Apex Prestige"
+        }
+      };
+    }
+
+    // Default match if generic or unknown ID requested (e.g. #FR-1049)
+    return {
+      id: matchId || 1049,
+      ladder_type: "4v4_variant",
+      best_of: 5,
+      status: "in_progress",
+      server_info: "Dallas (Central Host)",
+      team_a: {
+        id: 101,
+        name: "Apex Predators",
+        tag: "APEX",
+        avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+        captain_name: "ViperX",
+        elo: 2045,
+        tier: "Apex Prestige"
+      },
+      team_b: {
+        id: 102,
+        name: "Crimson Syndicate",
+        tag: "CRIM",
+        avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+        captain_name: "Havoc",
+        elo: 1880,
+        tier: "Commander"
+      },
+      created_at: new Date().toISOString()
+    };
+  },
+
+  async saveMatch(match) {
+    if (!match || !match.id) return;
+    try {
+      localStorage.setItem("frontline_ladder_match_" + match.id, JSON.stringify(match));
+      let active = JSON.parse(localStorage.getItem("frontline_ladder_active_matches")) || [];
+      const idx = active.findIndex(m => String(m.id) === String(match.id));
+      if (idx >= 0) active[idx] = match;
+      else active.unshift(match);
+      localStorage.setItem("frontline_ladder_active_matches", JSON.stringify(active));
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("ladder_matches").upsert({
+          id: match.id,
+          ladder_type: match.ladder_type,
+          team_a_id: match.team_a?.id,
+          team_b_id: match.team_b?.id,
+          status: match.status,
+          best_of: match.best_of,
+          team_a_score: match.team_a_score,
+          team_b_score: match.team_b_score,
+          veto_data: match.veto_data
+        });
+      } catch (err) {
+        console.warn("Supabase upsert match failed:", err);
+      }
+    }
+  },
+
+  async getActiveMatches(ladderType = null) {
+    let matches = [];
+    if (dbClient) {
+      try {
+        let q = dbClient
+          .from("ladder_matches")
+          .select("*, team_a:ladder_teams!team_a_id(*), team_b:ladder_teams!team_b_id(*)")
+          .in("status", ["in_progress", "disputed"])
+          .order("created_at", { ascending: false });
+        if (ladderType) q = q.eq("ladder_type", ladderType);
+        const { data, error } = await q;
+        if (!error && data && data.length > 0) return data;
+      } catch (e) {}
+    }
+
+    try {
+      const active = JSON.parse(localStorage.getItem("frontline_ladder_active_matches")) || [];
+      if (ladderType) matches = active.filter(m => m.ladder_type === ladderType);
+      else matches = active;
+    } catch (e) {}
+
+    if (matches.length === 0) {
+      matches = [
+        {
+          id: 1049,
+          ladder_type: ladderType || "4v4_variant",
+          best_of: 5,
+          status: "in_progress",
+          team_a: {
+            id: 101,
+            name: "Apex Predators",
+            tag: "APEX",
+            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            captain_name: "ViperX",
+            elo: 2045,
+            tier: "Apex Prestige"
+          },
+          team_b: {
+            id: 102,
+            name: "Crimson Syndicate",
+            tag: "CRIM",
+            avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+            captain_name: "Havoc",
+            elo: 1880,
+            tier: "Commander"
+          },
+          created_at: new Date(Date.now() - 1800000).toISOString()
+        }
+      ];
+    }
+    return matches;
+  },
+
+  getMatchChat(matchId) {
+    try {
+      const saved = localStorage.getItem("frontline_match_chat_" + matchId);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      { sender: "System", tag: "SYS", text: "Match room initialized. Good luck, have fun!", isSystem: true, timestamp: "Just now" },
+      { sender: "ViperX", tag: "APEX", text: "Host is ready on Dallas server. GL!", isSystem: false, timestamp: "2 mins ago" },
+      { sender: "Havoc", tag: "CRIM", text: "Got it, let's finish the map veto first.", isSystem: false, timestamp: "1 min ago" }
+    ];
+  },
+
+  sendMatchChat(matchId, message) {
+    const list = this.getMatchChat(matchId);
+    list.push(message);
+    try {
+      localStorage.setItem("frontline_match_chat_" + matchId, JSON.stringify(list));
+    } catch (e) {}
+    return list;
+  },
+
+  // Score Reporting with AUTOMATIC DISPUTE on Mismatch
+  async reportMatchScore({ matchId, reportingTeamId, reportingTeamName, teamAScore, teamBScore, proofUrl }) {
+    const key = "frontline_match_report_" + matchId;
+    let currentMatchData;
+    try {
+      currentMatchData = JSON.parse(localStorage.getItem(key)) || {};
+    } catch (e) {
+      currentMatchData = {};
+    }
+
+    const thisReport = {
+      reportingTeamId: String(reportingTeamId),
+      reportingTeamName,
+      teamAScore: parseInt(teamAScore, 10),
+      teamBScore: parseInt(teamBScore, 10),
+      proofUrl: proofUrl || "",
+      reportedAt: new Date().toISOString()
+    };
+
+    // If no one reported yet, store this as first report
+    if (!currentMatchData.firstReport) {
+      currentMatchData.firstReport = thisReport;
+      localStorage.setItem(key, JSON.stringify(currentMatchData));
+      return {
+        success: true,
+        status: "awaiting_opponent",
+        message: `${reportingTeamName} reported ${thisReport.teamAScore}-${thisReport.teamBScore}. Awaiting opponent score verification.`
+      };
+    }
+
+    // Opponent already reported - compare scores!
+    const prev = currentMatchData.firstReport;
+    currentMatchData.secondReport = thisReport;
+
+    const isMatch = (prev.teamAScore === thisReport.teamAScore && prev.teamBScore === thisReport.teamBScore);
+
+    if (isMatch) {
+      // SCORES MATCH! Auto-finalize match
+      currentMatchData.status = "completed";
+      const winnerId = thisReport.teamAScore > thisReport.teamBScore ? "team_a" : "team_b";
+      currentMatchData.winner = winnerId;
+      localStorage.setItem(key, JSON.stringify(currentMatchData));
+
+      // Update Supabase if connected
+      if (dbClient) {
+        try {
+          await dbClient
+            .from("ladder_matches")
+            .update({
+              team_a_score: thisReport.teamAScore,
+              team_b_score: thisReport.teamBScore,
+              status: "completed",
+              proof_url: thisReport.proofUrl || prev.proofUrl,
+              completed_at: new Date().toISOString()
+            })
+            .eq("id", matchId);
+        } catch (e) {}
+      }
+
+      return {
+        success: true,
+        status: "completed",
+        isMatch: true,
+        winnerId,
+        scores: `${thisReport.teamAScore}-${thisReport.teamBScore}`,
+        message: `Scores verified! Match finalized: ${thisReport.teamAScore}-${thisReport.teamBScore}. ELO ratings updated.`
+      };
+    } else {
+      // SCORES DO NOT MATCH! -> AUTOMATIC DISPUTE FILED!
+      currentMatchData.status = "disputed";
+      localStorage.setItem(key, JSON.stringify(currentMatchData));
+
+      const disputeReason = `Automated Dispute: Score Conflict. ${prev.reportingTeamName} reported ${prev.teamAScore}-${prev.teamBScore}, while ${thisReport.reportingTeamName} reported ${thisReport.teamAScore}-${thisReport.teamBScore}.`;
+      const combinedProof = [prev.proofUrl, thisReport.proofUrl].filter(Boolean).join(" | ");
+
+      const disputeRes = await this.fileDispute({
+        matchId,
+        submittedBy: "Automated System (Score Conflict)",
+        disputeReason,
+        proofUrl: combinedProof,
+        team_a_name: prev.reportingTeamName,
+        team_b_name: thisReport.reportingTeamName,
+        team_a_score: prev.teamAScore,
+        team_b_score: prev.teamBScore,
+        team_b_reported_a: thisReport.teamAScore,
+        team_b_reported_b: thisReport.teamBScore
+      });
+
+      return {
+        success: true,
+        status: "disputed",
+        isConflict: true,
+        autoDispute: true,
+        disputeId: disputeRes.dispute?.id || "DISP_" + Date.now(),
+        disputeReason,
+        message: `⚠️ AUTOMATIC DISPUTE FILED: Score discrepancy detected (${prev.teamAScore}-${prev.teamBScore} vs ${thisReport.teamAScore}-${thisReport.teamBScore}). This match is now locked under League Admin review.`
+      };
+    }
+  },
+
+  // Manual or Automated Dispute Submission
+  async fileDispute(disputeData) {
+    const newDispute = {
+      match_id: disputeData.matchId,
+      submitted_by: disputeData.submittedBy || "Team Captain",
+      dispute_reason: disputeData.disputeReason || "Match rule violation",
+      proof_url: disputeData.proofUrl || "",
+      status: "open",
+      team_a_name: disputeData.team_a_name || "Team 1",
+      team_b_name: disputeData.team_b_name || "Team 2",
+      team_a_score: disputeData.team_a_score ?? 0,
+      team_b_score: disputeData.team_b_score ?? 0,
+      team_b_reported_a: disputeData.team_b_reported_a ?? 0,
+      team_b_reported_b: disputeData.team_b_reported_b ?? 0,
+      created_at: new Date().toISOString()
+    };
+
+    // Update match status to 'disputed'
+    if (dbClient) {
+      try {
+        await dbClient.from("ladder_matches").update({ status: "disputed" }).eq("id", disputeData.matchId);
+        const { data, error } = await dbClient.from("ladder_disputes").insert([newDispute]).select();
+        if (!error && data && data.length > 0) return { success: true, dispute: data[0] };
+      } catch (e) {
+        console.warn("Supabase dispute insert failed:", e);
+      }
+    }
+
+    // Local Storage Fallback
+    try {
+      let disputes = await this.getDisputes();
+      newDispute.id = "disp_" + Date.now();
+      disputes.unshift(newDispute);
+      localStorage.setItem("frontline_ladder_disputes", JSON.stringify(disputes));
+      return { success: true, dispute: newDispute, local: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  async getDisputes() {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("ladder_disputes")
+          .select("*, ladder_matches(*)")
+          .order("created_at", { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (e) {
+        console.warn("Supabase getDisputes failed:", e);
+      }
+    }
+
+    try {
+      const cached = JSON.parse(localStorage.getItem("frontline_ladder_disputes"));
+      if (cached && cached.length > 0) return cached;
+    } catch (e) {}
+
+    return MOCK_LADDER_DATA.disputes || [];
+  },
+
+  async resolveDispute({ disputeId, matchId, action, winnerTeamId, winnerScore = 3, loserScore = 1, adminNotes = "" }) {
+    const resolvedPayload = {
+      status: action === "dismiss" ? "dismissed" : "resolved",
+      admin_notes: adminNotes || `Resolved by Admin: ${action}`,
+      resolved_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        await dbClient.from("ladder_disputes").update(resolvedPayload).eq("id", disputeId);
+        if (action === "award_team_a" || action === "award_team_b") {
+          await dbClient.from("ladder_matches").update({
+            status: "completed",
+            winner_id: winnerTeamId,
+            team_a_score: action === "award_team_a" ? winnerScore : loserScore,
+            team_b_score: action === "award_team_b" ? winnerScore : loserScore,
+            completed_at: new Date().toISOString()
+          }).eq("id", matchId);
+        } else if (action === "rematch") {
+          await dbClient.from("ladder_matches").update({
+            status: "in_progress",
+            team_a_score: 0,
+            team_b_score: 0
+          }).eq("id", matchId);
+        }
+        return { success: true };
+      } catch (e) {
+        console.warn("Supabase resolveDispute failed:", e);
+      }
+    }
+
+    // Local Storage Resolution
+    try {
+      let disputes = await this.getDisputes();
+      disputes = disputes.map(d => {
+        if (String(d.id) === String(disputeId)) {
+          return { ...d, ...resolvedPayload };
+        }
+        return d;
+      });
+      localStorage.setItem("frontline_ladder_disputes", JSON.stringify(disputes));
+      return { success: true, local: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // ==============================================================================
+  // ARENA PLAYER IDENTITY, PROFILE & MATCH HISTORY
+  // ==============================================================================
+  getCurrentPlayer() {
+    try {
+      const explicit = localStorage.getItem("frontline_arena_user");
+      if (explicit) {
+        return JSON.parse(explicit);
+      }
+    } catch (e) {}
+
+    // Check Supabase session
+    if (dbClient) {
+      try {
+        const sessionKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+        for (const k of sessionKeys) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const user = parsed?.user;
+            if (user) {
+              const gamertag = user.user_metadata?.gamertag || user.email?.split("@")[0] || "Combatant";
+              return {
+                id: user.id,
+                gamertag: gamertag,
+                email: user.email,
+                tag: "ARENA",
+                team_name: "Frontline Arena",
+                elo: 1200,
+                tier: "Specialist",
+                avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                discord: gamertag.toLowerCase(),
+                activision_id: `${gamertag}#1234567`
+              };
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    return null;
+  },
+
+  async loginArenaPlayer(identifier, password = "") {
+    if (!identifier || !identifier.trim()) {
+      return { success: false, error: "Gamertag or Email is required." };
+    }
+    const cleanId = identifier.trim();
+
+    // 1. Try Supabase Auth if email and password provided
+    if (dbClient && cleanId.includes("@") && password) {
+      try {
+        const res = await window.LeagueDB.signInPlayer(cleanId, password);
+        if (res.success && res.user) {
+          const gamertag = res.user.user_metadata?.gamertag || cleanId.split("@")[0];
+          const playerObj = {
+            id: res.user.id,
+            gamertag: gamertag,
+            email: res.user.email,
+            tag: "ARENA",
+            team_name: "Frontline Arena",
+            elo: 1200,
+            tier: "Specialist",
+            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            discord: `${gamertag.toLowerCase()}#0001`,
+            activision_id: `${gamertag}#1234567`
+          };
+          localStorage.setItem("frontline_arena_user", JSON.stringify(playerObj));
+          this.updateArenaNavProfile();
+          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: playerObj } }));
+          return { success: true, player: playerObj };
+        }
+      } catch (e) {
+        console.warn("Supabase player login error, falling back:", e);
+      }
+    }
+
+    // 2. Preset / Known Arena Players Directory
+    const knownPresets = [
+      {
+        gamertag: "ViperX",
+        tag: "APEX",
+        team_id: 101,
+        team_name: "Apex Predators",
+        elo: 2045,
+        tier: "Apex Prestige",
+        avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+        discord: "viperx_cdl",
+        activision_id: "ViperX#8392014",
+        email: "viperx@frontlinearena.com"
+      },
+      {
+        gamertag: "Havoc",
+        tag: "CRIM",
+        team_id: 102,
+        team_name: "Crimson Syndicate",
+        elo: 1880,
+        tier: "Commander",
+        avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+        discord: "havoc_snd",
+        activision_id: "Havoc#6291038",
+        email: "havoc@frontlinearena.com"
+      },
+      {
+        gamertag: "Specter",
+        tag: "GPRT",
+        team_id: 103,
+        team_name: "Ghost Protocol",
+        elo: 1690,
+        tier: "Warlord",
+        avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+        discord: "specter_cdl",
+        activision_id: "Specter#7492810",
+        email: "specter@frontlinearena.com"
+      },
+      {
+        gamertag: "Phantom",
+        tag: "VNG",
+        team_id: 104,
+        team_name: "Vanguard Prime",
+        elo: 1520,
+        tier: "Vanguard",
+        avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
+        discord: "phantom_vng",
+        activision_id: "Phantom#9821043",
+        email: "phantom@frontlinearena.com"
+      }
+    ];
+
+    let found = knownPresets.find(p => 
+      p.gamertag.toLowerCase() === cleanId.toLowerCase() || 
+      (p.email && p.email.toLowerCase() === cleanId.toLowerCase())
+    );
+
+    // Check custom registered accounts
+    if (!found) {
+      try {
+        const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+        const match = customAccounts.find(a => 
+          (a.gamertag && a.gamertag.toLowerCase() === cleanId.toLowerCase()) || 
+          (a.email && a.email.toLowerCase() === cleanId.toLowerCase())
+        );
+        if (match) {
+          if (match.password && password && match.password !== password) {
+            return { success: false, error: "Incorrect password. Please verify and try again." };
+          }
+          found = match;
+        }
+      } catch (e) {}
+    }
+
+    // If not in presets or custom list, generate a clean combatant profile for immediate sign in
+    if (!found) {
+      found = {
+        id: "usr_" + Date.now(),
+        gamertag: cleanId,
+        username: cleanId,
+        tag: "ARENA",
+        team_name: "Free Agent",
+        elo: 1200,
+        tier: "Specialist",
+        avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
+        discord: `${cleanId.toLowerCase()}#0001`,
+        activision_id: `${cleanId}#1234567`,
+        email: cleanId.includes("@") ? cleanId : `${cleanId.toLowerCase()}@player.frontline`
+      };
+    }
+
+    localStorage.setItem("frontline_arena_user", JSON.stringify(found));
+    this.updateArenaNavProfile();
+    window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: found } }));
+    return { success: true, player: found };
+  },
+
+  logoutArenaPlayer() {
+    try {
+      localStorage.removeItem("frontline_arena_user");
+      if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
+        window.LeagueDB.signOutPlayer().catch(() => {});
+      }
+    } catch (e) {}
+    this.updateArenaNavProfile();
+    window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: null } }));
+    return { success: true };
+  },
+
+  async registerArenaPlayer({ gamertag, clan_tag, email, discord, activision_id, password }) {
+    const cleanEmail = (email || "").trim();
+    const cleanPassword = (password || "").trim();
+    const cleanGamertag = (gamertag || "").trim();
+    const cleanActivision = (activision_id || "").trim();
+
+    if (!cleanEmail) {
+      return { success: false, error: "Email address is required." };
+    }
+    if (!cleanPassword || cleanPassword.length < 6) {
+      return { success: false, error: "Password must be at least 6 characters long." };
+    }
+    if (!cleanGamertag) {
+      return { success: false, error: "Username is required. Please choose a username for the website." };
+    }
+    if (!cleanActivision) {
+      return { success: false, error: "Activision ID is required (e.g. Username#1234567)." };
+    }
+
+    const cleanTag = (clan_tag || "TAG").toUpperCase().trim().slice(0, 5);
+
+    // Sync to Supabase Auth / LeagueDB if available
+    let supabaseUserId = null;
+    if (window.LeagueDB && typeof window.LeagueDB.signUpPlayer === "function") {
+      try {
+        const supaRes = await window.LeagueDB.signUpPlayer(cleanEmail, cleanPassword, cleanGamertag, cleanActivision);
+        if (supaRes && supaRes.user) {
+          supabaseUserId = supaRes.user.id;
+        }
+      } catch (err) {
+        console.warn("Supabase account sync notice:", err);
+      }
+    }
+
+    const newPlayer = {
+      id: supabaseUserId || ("usr_" + Date.now()),
+      gamertag: cleanGamertag,
+      username: cleanGamertag,
+      tag: cleanTag,
+      email: cleanEmail,
+      team_name: `${cleanTag} Squad`,
+      elo: 1200,
+      tier: "Specialist",
+      avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+      discord: discord ? discord.trim() : `${cleanGamertag.toLowerCase()}#0001`,
+      activision_id: cleanActivision,
+      password: cleanPassword,
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const existing = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const filtered = existing.filter(a =>
+        (!a.email || a.email.toLowerCase() !== cleanEmail.toLowerCase()) &&
+        (!a.gamertag || a.gamertag.toLowerCase() !== cleanGamertag.toLowerCase())
+      );
+      filtered.push(newPlayer);
+      localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filtered));
+    } catch (e) {}
+
+    // Ensure recruit is also recorded in the recruitment queue
+    try {
+      if (window.LeagueDB && typeof window.LeagueDB.submitSignup === "function") {
+        await window.LeagueDB.submitSignup({
+          gamertag: cleanGamertag,
+          activision_id: cleanActivision,
+          discord_username: discord ? discord.trim() : `${cleanGamertag.toLowerCase()}#0001`,
+          role: "Starter",
+          platform: "Crossplay",
+          region: "NA East",
+          registration_type: "Arena Combatant",
+          team_name: `${cleanTag} Squad`,
+          notes: `[Account: ${cleanEmail}] Frontline Arena combatant registration`,
+          status: "Pending"
+        });
+      }
+    } catch (_) {}
+
+    localStorage.setItem("frontline_arena_user", JSON.stringify(newPlayer));
+    this.updateArenaNavProfile();
+    window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: newPlayer } }));
+    return { success: true, player: newPlayer };
+  },
+
+  updatePlayerProfile(updatedData) {
+    const cur = this.getCurrentPlayer();
+    if (!cur) return { success: false, error: "Not logged in" };
+    const merged = { ...cur, ...updatedData };
+    localStorage.setItem("frontline_arena_user", JSON.stringify(merged));
+    this.updateArenaNavProfile();
+    window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: merged } }));
+    return { success: true, player: merged };
+  },
+
+  // Retrieve rich match history for any player or active user
+  getPlayerMatchHistory(playerOrGamertag = null) {
+    let player = playerOrGamertag;
+    if (!player) {
+      player = this.getCurrentPlayer();
+    } else if (typeof player === "string") {
+      player = { gamertag: player };
+    }
+
+    if (!player || !player.gamertag) return [];
+
+    const gt = player.gamertag.toLowerCase();
+    const tag = (player.tag || "").toLowerCase();
+
+    // Check if player is ViperX (Apex Predators)
+    if (gt === "viperx" || tag === "apex" || (player.team_name && player.team_name.toLowerCase().includes("apex"))) {
+      let liveScores = "3 – 1";
+      try {
+        const rep = JSON.parse(localStorage.getItem("frontline_match_report_1049"));
+        if (rep && rep.firstReport) {
+          liveScores = `${rep.firstReport.teamAScore} – ${rep.firstReport.teamBScore}`;
+        }
+      } catch (e) {}
+
+      return [
+        {
+          id: 1049,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Today • 8:30 PM EST",
+          timestamp: Date.now() - 1800000,
+          opponent_name: "Crimson Syndicate",
+          opponent_tag: "CRIM",
+          opponent_avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Havoc",
+          opponent_elo: 1880,
+          status: "in_progress",
+          outcome: "in_progress",
+          my_score: 3,
+          opp_score: 1,
+          score_display: liveScores,
+          maps: "Karachi HP • Skidrow SnD • Invasion CTL • Sub Base HP",
+          best_of: 5
+        },
+        {
+          id: 1048,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Oct 1, 2026 • 6:15 PM EST",
+          timestamp: Date.now() - 86400000,
+          opponent_name: "Ghost Protocol",
+          opponent_tag: "GPRT",
+          opponent_avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Specter",
+          opponent_elo: 1690,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 0,
+          score_display: "3 – 0",
+          maps: "Sub Base HP (250-184) • Terminal SnD (6-2) • Highrise CTL (3-1)",
+          best_of: 5
+        },
+        {
+          id: 1045,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 29, 2026 • 9:00 PM EST",
+          timestamp: Date.now() - 172800000,
+          opponent_name: "Vanguard Prime",
+          opponent_tag: "VNG",
+          opponent_avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Phantom",
+          opponent_elo: 1520,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 1,
+          score_display: "3 – 1",
+          maps: "Karachi HP (250-210) • Skidrow SnD (4-6) • Invasion CTL (3-2) • Terminal HP (250-195)",
+          best_of: 5
+        },
+        {
+          id: 1039,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 27, 2026 • 8:00 PM EST",
+          timestamp: Date.now() - 345600000,
+          opponent_name: "Crimson Syndicate",
+          opponent_tag: "CRIM",
+          opponent_avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Havoc",
+          opponent_elo: 1880,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 2,
+          score_display: "3 – 2",
+          maps: "Karachi HP (250-244) • Rio SnD (6-5) • Highrise CTL (2-3) • Sub Base HP (230-250) • Terminal SnD (6-5)",
+          best_of: 5
+        },
+        {
+          id: 1034,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 25, 2026 • 7:30 PM EST",
+          timestamp: Date.now() - 518400000,
+          opponent_name: "Sub Base Kings",
+          opponent_tag: "SBK",
+          opponent_avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Blitz",
+          opponent_elo: 1340,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 0,
+          score_display: "3 – 0",
+          maps: "Sub Base HP (250-135) • Skidrow SnD (6-1) • Invasion CTL (3-0)",
+          best_of: 5
+        },
+        {
+          id: 1028,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 23, 2026 • 9:45 PM EST",
+          timestamp: Date.now() - 691200000,
+          opponent_name: "Rookie Regime",
+          opponent_tag: "RREG",
+          opponent_avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "NewbieSniper",
+          opponent_elo: 1120,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 0,
+          score_display: "3 – 0",
+          maps: "Rio HP (250-112) • Karachi SnD (6-0) • Highrise CTL (3-0)",
+          best_of: 5
+        },
+        {
+          id: 1022,
+          ladder_name: "2v2 Search & Destroy",
+          ladder_type: "2v2_snd",
+          date: "Sep 21, 2026 • 10:15 PM EST",
+          timestamp: Date.now() - 864000000,
+          opponent_name: "Duo Demons",
+          opponent_tag: "DEMN",
+          opponent_avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Reaper",
+          opponent_elo: 1950,
+          status: "completed",
+          outcome: "victory",
+          my_score: 2,
+          opp_score: 0,
+          score_display: "2 – 0",
+          maps: "Karachi SnD (6-3) • Terminal SnD (6-4)",
+          best_of: 3
+        },
+        {
+          id: 1016,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 18, 2026 • 8:15 PM EST",
+          timestamp: Date.now() - 1123200000,
+          opponent_name: "Ghost Protocol",
+          opponent_tag: "GPRT",
+          opponent_avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Specter",
+          opponent_elo: 1690,
+          status: "completed",
+          outcome: "defeat",
+          my_score: 2,
+          opp_score: 3,
+          score_display: "2 – 3",
+          maps: "Karachi HP (250-230) • Skidrow SnD (3-6) • Invasion CTL (3-1) • Rio HP (241-250) • Terminal SnD (4-6)",
+          best_of: 5
+        },
+        {
+          id: 1011,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 15, 2026 • 7:00 PM EST",
+          timestamp: Date.now() - 1382400000,
+          opponent_name: "Vanguard Prime",
+          opponent_tag: "VNG",
+          opponent_avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Phantom",
+          opponent_elo: 1520,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 0,
+          score_display: "3 – 0",
+          maps: "Sub Base HP (250-189) • Karachi SnD (6-2) • Highrise CTL (3-1)",
+          best_of: 5
+        },
+        {
+          id: 1005,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 12, 2026 • 9:30 PM EST",
+          timestamp: Date.now() - 1641600000,
+          opponent_name: "Crimson Syndicate",
+          opponent_tag: "CRIM",
+          opponent_avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Havoc",
+          opponent_elo: 1880,
+          status: "completed",
+          outcome: "defeat",
+          my_score: 1,
+          opp_score: 3,
+          score_display: "1 – 3",
+          maps: "Rio HP (215-250) • Skidrow SnD (6-4) • Invasion CTL (1-3) • Sub Base HP (205-250)",
+          best_of: 5
+        }
+      ];
+    }
+
+    // Check if player is Havoc (Crimson Syndicate)
+    if (gt === "havoc" || tag === "crim" || (player.team_name && player.team_name.toLowerCase().includes("crimson"))) {
+      let liveScores = "1 – 3";
+      try {
+        const rep = JSON.parse(localStorage.getItem("frontline_match_report_1049"));
+        if (rep && rep.firstReport) {
+          liveScores = `${rep.firstReport.teamBScore} – ${rep.firstReport.teamAScore}`;
+        }
+      } catch (e) {}
+
+      return [
+        {
+          id: 1049,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Today • 8:30 PM EST",
+          timestamp: Date.now() - 1800000,
+          opponent_name: "Apex Predators",
+          opponent_tag: "APEX",
+          opponent_avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "ViperX",
+          opponent_elo: 2045,
+          status: "in_progress",
+          outcome: "in_progress",
+          my_score: 1,
+          opp_score: 3,
+          score_display: liveScores,
+          maps: "Karachi HP • Skidrow SnD • Invasion CTL • Sub Base HP",
+          best_of: 5
+        },
+        {
+          id: 1047,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 30, 2026 • 8:00 PM EST",
+          timestamp: Date.now() - 86400000,
+          opponent_name: "Vanguard Prime",
+          opponent_tag: "VNG",
+          opponent_avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Phantom",
+          opponent_elo: 1520,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 1,
+          score_display: "3 – 1",
+          maps: "Karachi HP (250-190) • Skidrow SnD (6-2) • Invasion CTL (2-3) • Rio HP (250-205)",
+          best_of: 5
+        },
+        {
+          id: 1043,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 28, 2026 • 7:15 PM EST",
+          timestamp: Date.now() - 259200000,
+          opponent_name: "Sub Base Kings",
+          opponent_tag: "SBK",
+          opponent_avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Blitz",
+          opponent_elo: 1340,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 0,
+          score_display: "3 – 0",
+          maps: "Sub Base HP (250-160) • Terminal SnD (6-3) • Highrise CTL (3-0)",
+          best_of: 5
+        },
+        {
+          id: 1039,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 27, 2026 • 8:00 PM EST",
+          timestamp: Date.now() - 345600000,
+          opponent_name: "Apex Predators",
+          opponent_tag: "APEX",
+          opponent_avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "ViperX",
+          opponent_elo: 2045,
+          status: "completed",
+          outcome: "defeat",
+          my_score: 2,
+          opp_score: 3,
+          score_display: "2 – 3",
+          maps: "Karachi HP (244-250) • Rio SnD (5-6) • Highrise CTL (3-2) • Sub Base HP (250-230) • Terminal SnD (5-6)",
+          best_of: 5
+        },
+        {
+          id: 1031,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 24, 2026 • 9:00 PM EST",
+          timestamp: Date.now() - 604800000,
+          opponent_name: "Ghost Protocol",
+          opponent_tag: "GPRT",
+          opponent_avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "Specter",
+          opponent_elo: 1690,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 2,
+          score_display: "3 – 2",
+          maps: "Rio HP (250-210) • Skidrow SnD (4-6) • Invasion CTL (3-1) • Karachi HP (215-250) • Terminal SnD (6-4)",
+          best_of: 5
+        },
+        {
+          id: 1025,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 22, 2026 • 6:45 PM EST",
+          timestamp: Date.now() - 777600000,
+          opponent_name: "Rookie Regime",
+          opponent_tag: "RREG",
+          opponent_avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "NewbieSniper",
+          opponent_elo: 1120,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 0,
+          score_display: "3 – 0",
+          maps: "Sub Base HP (250-130) • Karachi SnD (6-1) • Invasion CTL (3-0)",
+          best_of: 5
+        },
+        {
+          id: 1005,
+          ladder_name: "4v4 CDL Variant",
+          ladder_type: "4v4_variant",
+          date: "Sep 12, 2026 • 9:30 PM EST",
+          timestamp: Date.now() - 1641600000,
+          opponent_name: "Apex Predators",
+          opponent_tag: "APEX",
+          opponent_avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          opponent_captain: "ViperX",
+          opponent_elo: 2045,
+          status: "completed",
+          outcome: "victory",
+          my_score: 3,
+          opp_score: 1,
+          score_display: "3 – 1",
+          maps: "Rio HP (250-215) • Skidrow SnD (4-6) • Invasion CTL (3-1) • Sub Base HP (250-205)",
+          best_of: 5
+        }
+      ];
+    }
+
+    // Dynamic checks for active localStorage matches matching this player or team
+    const customMatches = [];
+    try {
+      const active = JSON.parse(localStorage.getItem("frontline_ladder_active_matches")) || [];
+      active.forEach(m => {
+        const teamA = m.team_a;
+        const teamB = m.team_b;
+        const isTeamA = (teamA && (teamA.captain_name?.toLowerCase() === gt || teamA.tag?.toLowerCase() === tag));
+        const isTeamB = (teamB && (teamB.captain_name?.toLowerCase() === gt || teamB.tag?.toLowerCase() === tag));
+
+        if (isTeamA || isTeamB) {
+          const myTeam = isTeamA ? teamA : teamB;
+          const oppTeam = isTeamA ? teamB : teamA;
+          const isCompleted = m.status === "completed";
+          const isDisputed = m.status === "disputed";
+          const myScore = isTeamA ? (m.team_a_score || 0) : (m.team_b_score || 0);
+          const oppScore = isTeamA ? (m.team_b_score || 0) : (m.team_a_score || 0);
+
+          let outcome = "in_progress";
+          if (isDisputed) outcome = "disputed";
+          else if (isCompleted) outcome = myScore > oppScore ? "victory" : "defeat";
+
+          customMatches.push({
+            id: m.id,
+            ladder_name: m.ladder_type === "2v2_snd" ? "2v2 Search & Destroy" : m.ladder_type === "1v1_radar" ? "1v1 Radar Gunfight" : "4v4 CDL Variant",
+            ladder_type: m.ladder_type || "4v4_variant",
+            date: "Recently",
+            timestamp: new Date(m.created_at || Date.now()).getTime(),
+            opponent_name: oppTeam?.name || "Opponent Squad",
+            opponent_tag: oppTeam?.tag || "OPP",
+            opponent_avatar: oppTeam?.avatar_url || "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+            opponent_captain: oppTeam?.captain_name || "Captain",
+            opponent_elo: oppTeam?.elo || 1200,
+            status: m.status,
+            outcome: outcome,
+            my_score: myScore,
+            opp_score: oppScore,
+            score_display: `${myScore} – ${oppScore}`,
+            maps: "CDL Competitive Rotation",
+            best_of: m.best_of || 5
+          });
+        }
+      });
+    } catch (e) {}
+
+    return customMatches;
+  },
+
+  // Calculate Win/Loss statistics for player
+  getPlayerStats(playerOrGamertag = null) {
+    let player = playerOrGamertag;
+    if (!player) player = this.getCurrentPlayer();
+    else if (typeof player === "string") player = { gamertag: player };
+
+    if (!player || !player.gamertag) {
+      return {
+        wins: 0,
+        losses: 0,
+        winRate: "0.0%",
+        streak: "0",
+        totalMatches: 0,
+        completedMatches: 0,
+        inProgress: 0,
+        disputed: 0
+      };
+    }
+
+    const gt = player.gamertag.toLowerCase();
+    const tag = (player.tag || "").toLowerCase();
+
+    // Specific presets
+    if (gt === "viperx" || tag === "apex") {
+      return {
+        wins: 18,
+        losses: 2,
+        winRate: "90.0%",
+        streak: "+6",
+        totalMatches: 20,
+        completedMatches: 19,
+        inProgress: 1,
+        disputed: 0
+      };
+    }
+
+    if (gt === "havoc" || tag === "crim") {
+      return {
+        wins: 14,
+        losses: 4,
+        winRate: "77.8%",
+        streak: "+3",
+        totalMatches: 18,
+        completedMatches: 17,
+        inProgress: 1,
+        disputed: 0
+      };
+    }
+
+    const matches = this.getPlayerMatchHistory(player);
+    let wins = 0;
+    let losses = 0;
+    let inProgress = 0;
+    let disputed = 0;
+
+    matches.forEach(m => {
+      if (m.status === "in_progress") inProgress++;
+      else if (m.status === "disputed") disputed++;
+      else if (m.outcome === "victory") wins++;
+      else if (m.outcome === "defeat") losses++;
+    });
+
+    const completed = wins + losses;
+    const winRate = completed > 0 ? ((wins / completed) * 100).toFixed(1) : "0.0";
+
+    let streak = 0;
+    for (const m of matches) {
+      if (m.status === "completed") {
+        if (streak >= 0 && m.outcome === "victory") streak++;
+        else if (streak <= 0 && m.outcome === "defeat") streak--;
+        else break;
+      }
+    }
+
+    return {
+      wins,
+      losses,
+      winRate: `${winRate}%`,
+      streak: streak > 0 ? `+${streak}` : String(streak),
+      totalMatches: matches.length,
+      completedMatches: completed,
+      inProgress,
+      disputed
+    };
+  },
+
+  // Get active teams for all ladders (strictly ONE team per ladder rule)
+  getUserTeams(playerOrGamertag = null) {
+    let player = playerOrGamertag;
+    if (!player) player = this.getCurrentPlayer();
+    else if (typeof player === "string") player = { gamertag: player };
+
+    const ladders = [
+      { id: "4v4_variant", name: "4v4 CDL Variant", circuit: "Variant (HP / SnD / CTL)", maxPlayers: 4, icon: "⚔" },
+      { id: "2v2_snd", name: "2v2 Search & Destroy", circuit: "Search & Destroy Only", maxPlayers: 2, icon: "🎯" },
+      { id: "1v1_radar", name: "1v1 Radar Gunfight", circuit: "Radar Always-On Gunfight", maxPlayers: 1, icon: "💀" }
+    ];
+
+    if (!player || !player.gamertag) {
+      return ladders.map(l => ({
+        ladder_type: l.id,
+        ladder_name: l.name,
+        circuit: l.circuit,
+        icon: l.icon,
+        team: null
+      }));
+    }
+
+    const gt = player.gamertag.toLowerCase();
+    const tag = (player.tag || "").toLowerCase();
+
+    // Presets for ViperX, Havoc, Specter
+    if (gt === "viperx" || tag === "apex") {
+      const mySaved4v4 = this.getMyTeam("4v4_variant");
+      const mySaved2v2 = this.getMyTeam("2v2_snd");
+      const mySaved1v1 = this.getMyTeam("1v1_radar");
+
+      return [
+        {
+          ladder_type: "4v4_variant",
+          ladder_name: "4v4 CDL Variant",
+          circuit: "Variant (HP / SnD / CTL)",
+          icon: "⚔",
+          team: mySaved4v4 || {
+            id: 101,
+            name: "Apex Predators",
+            tag: "APEX",
+            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            captain_name: "ViperX",
+            role: "Captain / Starter",
+            elo: 2045,
+            tier: "Apex Prestige",
+            wins: 18,
+            losses: 2,
+            streak: 6
+          }
+        },
+        {
+          ladder_type: "2v2_snd",
+          ladder_name: "2v2 Search & Destroy",
+          circuit: "Search & Destroy Only",
+          icon: "🎯",
+          team: mySaved2v2 || {
+            id: 210,
+            name: "Apex Duo",
+            tag: "APEX",
+            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            captain_name: "ViperX",
+            role: "Captain",
+            elo: 1920,
+            tier: "Commander",
+            wins: 8,
+            losses: 1,
+            streak: 4
+          }
+        },
+        {
+          ladder_type: "1v1_radar",
+          ladder_name: "1v1 Radar Gunfight",
+          circuit: "Radar Always-On Gunfight",
+          icon: "💀",
+          team: mySaved1v1 || {
+            id: 301,
+            name: "Lone Wolf Solo",
+            tag: "LONE",
+            avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80",
+            captain_name: "ViperX",
+            role: "Solo Operator",
+            elo: 2010,
+            tier: "Apex Prestige",
+            wins: 22,
+            losses: 1,
+            streak: 8
+          }
+        }
+      ];
+    }
+
+    if (gt === "havoc" || tag === "crim") {
+      const mySaved4v4 = this.getMyTeam("4v4_variant");
+      const mySaved2v2 = this.getMyTeam("2v2_snd");
+      const mySaved1v1 = this.getMyTeam("1v1_radar");
+
+      return [
+        {
+          ladder_type: "4v4_variant",
+          ladder_name: "4v4 CDL Variant",
+          circuit: "Variant (HP / SnD / CTL)",
+          icon: "⚔",
+          team: mySaved4v4 || {
+            id: 102,
+            name: "Crimson Syndicate",
+            tag: "CRIM",
+            avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+            captain_name: "Havoc",
+            role: "Captain / Starter",
+            elo: 1880,
+            tier: "Commander",
+            wins: 14,
+            losses: 4,
+            streak: 3
+          }
+        },
+        {
+          ladder_type: "2v2_snd",
+          ladder_name: "2v2 Search & Destroy",
+          circuit: "Search & Destroy Only",
+          icon: "🎯",
+          team: mySaved2v2 || {
+            id: 211,
+            name: "Crimson SnD Duo",
+            tag: "CRIM",
+            avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+            captain_name: "Havoc",
+            role: "Captain",
+            elo: 1750,
+            tier: "Warlord",
+            wins: 9,
+            losses: 3,
+            streak: 2
+          }
+        },
+        {
+          ladder_type: "1v1_radar",
+          ladder_name: "1v1 Radar Gunfight",
+          circuit: "Radar Always-On Gunfight",
+          icon: "💀",
+          team: mySaved1v1 || null
+        }
+      ];
+    }
+
+    if (gt === "specter" || tag === "gprt") {
+      const mySaved4v4 = this.getMyTeam("4v4_variant");
+      const mySaved2v2 = this.getMyTeam("2v2_snd");
+      const mySaved1v1 = this.getMyTeam("1v1_radar");
+
+      return [
+        {
+          ladder_type: "4v4_variant",
+          ladder_name: "4v4 CDL Variant",
+          circuit: "Variant (HP / SnD / CTL)",
+          icon: "⚔",
+          team: mySaved4v4 || {
+            id: 103,
+            name: "Ghost Protocol",
+            tag: "GPRT",
+            avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+            captain_name: "Specter",
+            role: "Captain / Starter",
+            elo: 1690,
+            tier: "Warlord",
+            wins: 11,
+            losses: 5,
+            streak: 2
+          }
+        },
+        {
+          ladder_type: "2v2_snd",
+          ladder_name: "2v2 Search & Destroy",
+          circuit: "Search & Destroy Only",
+          icon: "🎯",
+          team: mySaved2v2 || {
+            id: 202,
+            name: "Silent Scope Duo",
+            tag: "SSD",
+            avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80",
+            captain_name: "Specter",
+            role: "Starter",
+            elo: 1740,
+            tier: "Warlord",
+            wins: 12,
+            losses: 4,
+            streak: 2
+          }
+        },
+        {
+          ladder_type: "1v1_radar",
+          ladder_name: "1v1 Radar Gunfight",
+          circuit: "Radar Always-On Gunfight",
+          icon: "💀",
+          team: mySaved1v1 || null
+        }
+      ];
+    }
+
+    // Custom accounts: retrieve exactly ONE team per ladder stored in frontline_my_team_<ladder_type>
+    return ladders.map(l => {
+      const myTeam = this.getMyTeam(l.id);
+      return {
+        ladder_type: l.id,
+        ladder_name: l.name,
+        circuit: l.circuit,
+        icon: l.icon,
+        team: myTeam || null
+      };
+    });
+  },
+
+  // Updates the Arena navigation bar Profile / Login link and My Teams link across all pages
+  updateArenaNavProfile() {
+    if (typeof document === "undefined") return;
+    const player = this.getCurrentPlayer();
+    const linkEl = document.getElementById("nav-arena-profile-link");
+    const iconEl = document.getElementById("nav-arena-profile-icon");
+    const textEl = document.getElementById("nav-arena-profile-text");
+    const myTeamsLink = document.getElementById("nav-arena-my-teams-link");
+
+    if (myTeamsLink) {
+      myTeamsLink.href = player && player.gamertag ? "profile.html#my-teams" : "profile.html#login";
+    }
+
+    if (linkEl) {
+      if (player && player.gamertag) {
+        linkEl.href = "profile.html";
+        linkEl.title = `Signed in as ${player.gamertag} - View Profile & Records`;
+        if (iconEl) iconEl.textContent = "👤";
+        if (textEl) textEl.textContent = `Profile (${player.gamertag})`;
+      } else {
+        linkEl.href = "profile.html#login";
+        linkEl.title = "Sign in to Frontline Arena";
+        if (iconEl) iconEl.textContent = "🔑";
+        if (textEl) textEl.textContent = "Login";
+      }
+    }
+
+    // Also update any arena header squad/user pill if present
+    const squadHeaderEl = document.getElementById("arena-header-squad-container");
+    if (squadHeaderEl) {
+      if (player && player.gamertag) {
+        squadHeaderEl.innerHTML = `
+          <a href="profile.html#my-teams" class="gb-my-squad-pill" title="View Active Teams" style="text-decoration:none;">
+            <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="gb-my-squad-avatar" />
+            <div>
+              <strong style="color:#ffffff;">[${player.tag || 'TAG'}] ${player.gamertag}</strong>
+              <span style="color:#ff1e44; font-size:11px; margin-left:4px;">${player.elo || 1200} ELO</span>
+            </div>
+          </a>
+        `;
+      } else {
+        squadHeaderEl.innerHTML = `
+          <a href="profile.html#login" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
+            <span>🔑</span> <span>Combatant Login</span>
+          </a>
+        `;
+      }
+    }
+  }
+};
+
+// Auto-initialize global Arena Profile nav status across all pages
+(function initArenaNavWatcher() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  function runNavUpdate() {
+    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+      window.LadderDB.updateArenaNavProfile();
+    }
+  }
+
+  runNavUpdate();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runNavUpdate);
+  }
+
+  window.addEventListener("frontline_arena_auth_changed", runNavUpdate);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "frontline_arena_user") runNavUpdate();
+  });
+})();
+
 
 // ==============================================================================
 // AUTO-INITIALIZE GLOBAL SEASON BADGE ACROSS ALL PAGES

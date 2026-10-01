@@ -762,8 +762,8 @@
           </div>
 
           <div style="display:flex; align-items:center; gap:12px;">
-            <a href="index.html#standings" target="_blank" class="btn-action-sm">View Standings ↗</a>
-            <a href="brackets.html" target="_blank" class="btn-action-sm">View Brackets ↗</a>
+            <a href="index.html#standings" target="_blank" class="btn-action-sm">League ↗</a>
+            <a href="arena.html" target="_blank" class="btn-action-sm" style="border-color:#ff1e44; color:#ff1e44;">Arena GameBattles ↗</a>
             <button type="button" id="btn-logout" class="btn-action-sm btn-action-danger">Sign Out</button>
           </div>
         </div>
@@ -813,6 +813,9 @@
           </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-staff" id="nav-btn-staff" style="display:none;">
             👥 Staff &amp; Roles
+          </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-ladder-disputes" id="nav-btn-ladder-disputes" style="border-color:#ff1e44; color:#ff1e44;">
+            ⚠️ Ladder Disputes (<span id="disputes-badge-count">0</span>)
           </button>
         </nav>
 
@@ -2002,6 +2005,47 @@
                 <li>When that staff member logs in on <code>admin.html</code>, the system recognizes their role and automatically restricts the console to only their assigned modules!</li>
               </ol>
             </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 12: LADDER MATCH DISPUTES (ARENA)        -->
+        <!-- ========================================== -->
+        <div id="tab-ladder-disputes" class="admin-tab-content" style="display:none;">
+          <div class="admin-panel-card" style="border-left: 4px solid #ff1e44;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+              <div>
+                <h3 class="admin-card-title" style="color:#ff1e44; margin:0 0 6px;">⚔ Competitive Ladder Disputes &amp; Conflict Queue</h3>
+                <p style="color:#b5b8a8; font-size:13px; margin:0; line-height:1.5;">
+                  Real-time referee queue for escalated ladder matches. Automatic disputes are triggered whenever captains report conflicting match scores (e.g. 3–1 vs 1–3). Inspect evidence links, resolve disputes, and apply official ELO ratings.
+                </p>
+              </div>
+              <button type="button" class="btn-action-sm" onclick="loadLadderDisputes()" style="color:#ff1e44; border-color:#ff1e44;">
+                ↻ Refresh Queue
+              </button>
+            </div>
+
+            <!-- Stats Bar -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:20px;">
+              <div style="background:#130b0e; border:1px solid #3d141d; padding:12px 16px; border-radius:2px;">
+                <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase;">Active Disputes</span>
+                <div style="font:900 24px var(--body); color:#fff; margin-top:4px;" id="stat-active-disputes">0</div>
+              </div>
+              <div style="background:#130b0e; border:1px solid #3d141d; padding:12px 16px; border-radius:2px;">
+                <span style="font-size:11px; color:#f59e0b; font-weight:800; text-transform:uppercase;">Score Mismatches</span>
+                <div style="font:900 24px var(--body); color:#f59e0b; margin-top:4px;" id="stat-score-mismatches">0</div>
+              </div>
+              <div style="background:#130b0e; border:1px solid #3d141d; padding:12px 16px; border-radius:2px;">
+                <span style="font-size:11px; color:#22c55e; font-weight:800; text-transform:uppercase;">Resolved Tickets</span>
+                <div style="font:900 24px var(--body); color:#22c55e; margin-top:4px;" id="stat-resolved-disputes">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Disputes List Container -->
+          <div id="ladder-disputes-list-container">
+            <div style="text-align:center; padding:40px; color:var(--muted); background:#151012; border:1px dashed #331219;">
+              Loading ladder disputes...
+            </div>
           </div>
         </div>
       </section>
@@ -2279,7 +2323,7 @@
 
           activeAllowedTabs = (window.LeagueDB && typeof window.LeagueDB.getRoleTabs === "function")
             ? window.LeagueDB.getRoleTabs(roleKey, activeStaffProfile.custom_permissions)
-            : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff"];
+            : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes"];
 
           // 2. Update Top Status Bar
           const staffRoleBadge = document.getElementById("staff-role-badge");
@@ -2466,6 +2510,12 @@
           if (targetId === "tab-staff") {
             loadStaffDirectory();
           }
+          if (targetId === "tab-ladder-disputes") {
+            loadLadderDisputes();
+          }
+          if (targetId === "tab-signups") {
+            loadSignups();
+          }
         }
 
         navBtns.forEach(btn => {
@@ -2604,9 +2654,192 @@
         // 3. LOAD DATA & POPULATE UI
         // ==========================================
         async function loadAllData() {
-          await Promise.all([loadTeams(), loadPlayers(), loadSignups(), loadAnnouncements(), loadSeasonSettings(), loadAdminSchedule(), loadAdminRulebook()]);
+          await Promise.all([
+            loadTeams(),
+            loadPlayers(),
+            loadSignups(),
+            loadAnnouncements(),
+            loadSeasonSettings(),
+            loadAdminSchedule(),
+            loadAdminRulebook(),
+            loadLadderDisputes()
+          ]);
           updateAnnouncementPreview();
         }
+
+        // ==========================================
+        // LADDER DISPUTES & CONFLICT RESOLUTION
+        // ==========================================
+        let cachedDisputes = [];
+
+        async function loadLadderDisputes() {
+          const container = document.getElementById("ladder-disputes-list-container");
+          const badgeCount = document.getElementById("disputes-badge-count");
+          const activeStat = document.getElementById("stat-active-disputes");
+          const mismatchesStat = document.getElementById("stat-score-mismatches");
+          const resolvedStat = document.getElementById("stat-resolved-disputes");
+
+          if (!container) return;
+
+          try {
+            const disputes = await window.LadderDB.getDisputes();
+            cachedDisputes = disputes || [];
+
+            const openList = cachedDisputes.filter(d => d.status === "open" || d.status === "under_review");
+            const resolvedList = cachedDisputes.filter(d => d.status === "resolved" || d.status === "dismissed");
+            const conflictList = openList.filter(d => (d.dispute_reason || "").toLowerCase().includes("conflict") || (d.dispute_reason || "").toLowerCase().includes("score") || (d.dispute_reason || "").toLowerCase().includes("mismatch"));
+
+            if (badgeCount) badgeCount.textContent = openList.length;
+            if (activeStat) activeStat.textContent = openList.length;
+            if (mismatchesStat) mismatchesStat.textContent = conflictList.length;
+            if (resolvedStat) resolvedStat.textContent = resolvedList.length;
+
+            if (cachedDisputes.length === 0) {
+              container.innerHTML = `
+                <div style="background:#151012; border:1px dashed #331219; padding:40px; text-align:center;">
+                  <span style="font-size:32px;">🛡</span>
+                  <h4 style="color:#22c55e; margin:10px 0 6px;">Queue Clear</h4>
+                  <p style="color:var(--muted); font-size:13px; margin:0;">No active ladder disputes filed. Automatic score disputes will populate here when detected.</p>
+                </div>
+              `;
+              return;
+            }
+
+            container.innerHTML = cachedDisputes.map(d => {
+              const isOpen = d.status === "open" || d.status === "under_review";
+              const isScoreConflict = (d.dispute_reason || "").toLowerCase().includes("conflict") || (d.dispute_reason || "").toLowerCase().includes("score") || (d.dispute_reason || "").toLowerCase().includes("mismatch");
+              const teamAName = d.team_a_name || "Team 1";
+              const teamBName = d.team_b_name || "Team 2";
+
+              let dateStr = "Recently";
+              if (d.created_at) {
+                try {
+                  dateStr = new Date(d.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                } catch(e) {}
+              }
+
+              return `
+                <div class="admin-dispute-card" style="border-left-color: ${isOpen ? '#ff1e44' : '#22c55e'}; opacity: ${isOpen ? '1' : '0.75'};">
+                  <div class="admin-dispute-header">
+                    <div>
+                      <span class="val-badge" style="background:#2b0c12; color:#ff1e44; border:1px solid #ff1e44; margin-right:8px;">
+                        TICKET #${d.id}
+                      </span>
+                      <strong style="color:#ffffff; font-size:15px;">MATCH #${d.match_id || '---'}</strong>
+                      <span style="color:var(--muted); font-size:12px; margin-left:8px;">(${escapeHtml(d.ladder_type || '4v4_variant')})</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span class="match-status-badge ${isOpen ? 'status-disputed' : 'status-completed'}">
+                        ${d.status.toUpperCase()}
+                      </span>
+                      <span style="font-size:11px; color:var(--muted);">${dateStr}</span>
+                    </div>
+                  </div>
+
+                  <!-- Conflict Score Callout -->
+                  ${isScoreConflict ? `
+                    <div class="admin-conflict-box">
+                      <div style="border-right:1px solid #2b1118; padding-right:12px;">
+                        <span style="font-size:10px; color:#ff1e44; font-weight:800; text-transform:uppercase;">${escapeHtml(teamAName)} Claim:</span>
+                        <div style="font:900 18px var(--body); color:#ffffff; margin-top:2px;">
+                          ${d.team_a_score ?? 3} – ${d.team_b_score ?? 1}
+                        </div>
+                      </div>
+                      <div style="padding-left:12px;">
+                        <span style="font-size:10px; color:#3b82f6; font-weight:800; text-transform:uppercase;">${escapeHtml(teamBName)} Claim:</span>
+                        <div style="font:900 18px var(--body); color:#ffffff; margin-top:2px;">
+                          ${d.team_b_reported_a ?? 1} – ${d.team_b_reported_b ?? 3}
+                        </div>
+                      </div>
+                    </div>
+                  ` : ''}
+
+                  <div style="margin: 10px 0;">
+                    <div style="font-size:12px; color:#ff8899; font-weight:700;">Dispute Reason / Claim:</div>
+                    <p style="color:#f1f0e9; font-size:13.5px; margin:4px 0 8px; line-height:1.5;">${escapeHtml(d.dispute_reason)}</p>
+                    <div style="font-size:11px; color:var(--muted);">Submitted By: <strong style="color:#fff;">${escapeHtml(d.submitted_by || 'Captain')}</strong></div>
+                  </div>
+
+                  ${d.proof_url ? `
+                    <div style="background:#0a0709; border:1px solid #2b1118; padding:8px 12px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                      <span style="font-size:11.5px; color:var(--muted);">Attached Evidence / VOD Proof:</span>
+                      <a href="${escapeHtml(d.proof_url)}" target="_blank" rel="noopener" class="btn-action-sm" style="color:#ff1e44; border-color:#ff1e44;">
+                        Inspect Evidence Link ↗
+                      </a>
+                    </div>
+                  ` : ''}
+
+                  ${d.admin_notes ? `
+                    <div style="background:#111612; border:1px solid #1f3b25; padding:8px 12px; margin-bottom:12px; font-size:12px; color:#86efac;">
+                      <strong>Admin Ruling Note:</strong> ${escapeHtml(d.admin_notes)}
+                    </div>
+                  ` : ''}
+
+                  <!-- Actions for Open Disputes -->
+                  ${isOpen ? `
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1px solid #2b1118; padding-top:14px; margin-top:10px;">
+                      <span style="font-size:11px; color:var(--muted); text-transform:uppercase; font-weight:700;">Referee Ruling Actions:</span>
+                      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="color:#22c55e; border-color:#22c55e;" onclick="executeDisputeRuling('${d.id}', '${d.match_id}', 'award_team_a', '${escapeHtml(teamAName)}')">
+                          🏆 Award Win to ${escapeHtml(teamAName)}
+                        </button>
+                        <button type="button" class="btn-action-sm" style="color:#60a5fa; border-color:#3b82f6;" onclick="executeDisputeRuling('${d.id}', '${d.match_id}', 'award_team_b', '${escapeHtml(teamBName)}')">
+                          🏆 Award Win to ${escapeHtml(teamBName)}
+                        </button>
+                        <button type="button" class="btn-action-sm" style="color:#f59e0b; border-color:#f59e0b;" onclick="executeDisputeRuling('${d.id}', '${d.match_id}', 'rematch', '')">
+                          🔄 Order Remake / Replay
+                        </button>
+                        <button type="button" class="btn-action-sm btn-action-danger" onclick="executeDisputeRuling('${d.id}', '${d.match_id}', 'dismiss', '')">
+                          ✕ Dismiss Dispute
+                        </button>
+                      </div>
+                    </div>
+                  ` : `
+                    <div style="font-size:11px; color:#22c55e; font-weight:700; margin-top:8px;">
+                      ✓ TICKET ADJUDICATED &amp; CLOSED
+                    </div>
+                  `}
+                </div>
+              `;
+            }).join("");
+          } catch (err) {
+            console.error("Failed to load ladder disputes:", err);
+            container.innerHTML = `<div style="color:#ff4444; padding:20px;">Failed to load ladder disputes. Check console.</div>`;
+          }
+        }
+
+        window.executeDisputeRuling = async function(disputeId, matchId, action, teamName) {
+          let notes = "";
+          if (action === "award_team_a" || action === "award_team_b") {
+            notes = prompt(`Confirm ruling: Award official win to ${teamName}?\n\nEnter referee ruling rationale:`, `Referee inspected evidence and awarded win to ${teamName}.`);
+            if (notes === null) return;
+          } else if (action === "rematch") {
+            notes = prompt("Confirm order for rematch / replay.\nEnter referee instructions for captains:", "Lobby host disparity verified. Remake on Dallas central server ordered.");
+            if (notes === null) return;
+          } else {
+            notes = prompt("Reason for dismissing dispute:", "Lack of substantiating video proof within regulation window.");
+            if (notes === null) return;
+          }
+
+          try {
+            const res = await window.LadderDB.resolveDispute({
+              disputeId,
+              matchId,
+              action,
+              winnerTeamId: action === "award_team_a" ? "team_a" : "team_b",
+              adminNotes: notes
+            });
+
+            if (res.success) {
+              showToast(`✓ Dispute #${disputeId} adjudicated! Ruling recorded.`);
+              loadLadderDisputes();
+            } else {
+              alert("Failed to resolve dispute: " + (res.error || "Unknown error"));
+            }
+          } catch (err) {
+            alert("Error resolving dispute: " + err.message);
+          }
+        };
 
         // A. Load Teams
         async function loadTeams() {
@@ -3464,7 +3697,7 @@
                   const gamer = btn.getAttribute("data-gamer");
                   if (confirm(`Remove registration for "${gamer}" from the recruitment queue?`)) {
                     btn.disabled = true;
-                    const res = await window.LeagueDB.deleteSignup(id);
+                    const res = await window.LeagueDB.deleteSignup(id, gamer);
                     if (res.success) {
                       showToast(`✓ Registration for ${gamer} removed from queue.`);
                       await loadSignups();
@@ -3486,6 +3719,25 @@
         // Refresh buttons
         document.getElementById("btn-refresh-teams")?.addEventListener("click", loadTeams);
         document.getElementById("btn-refresh-signups")?.addEventListener("click", loadSignups);
+
+        // Real-time synchronization across browser tabs and window focus
+        window.addEventListener("storage", (e) => {
+          if (e.key === "frontline_league_signups" || e.key === "frontline_arena_registered_accounts" || e.key === "frontline_league_auth_user") {
+            loadSignups();
+          }
+        });
+        window.addEventListener("frontline_signups_updated", () => {
+          loadSignups();
+        });
+        window.addEventListener("focus", () => {
+          loadSignups();
+        });
+        setInterval(() => {
+          const tabSignups = document.getElementById("tab-signups");
+          if (tabSignups && tabSignups.style.display !== "none") {
+            loadSignups();
+          }
+        }, 10000);
 
         // ==========================================
         // 4. FORM SUBMISSIONS
