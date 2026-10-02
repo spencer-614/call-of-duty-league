@@ -118,6 +118,9 @@
               <span style="color:var(--lime);">TBD (SPIN WHEEL)</span>
             </div>
           </div>
+
+          <!-- Staff Authorization Pill / Login Trigger -->
+          <div id="draft-admin-auth-pill" style="display:inline-flex; align-items:center;"></div>
         </div>
 
         <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
@@ -536,6 +539,48 @@
       </div>
     </dialog>
 
+    <!-- Modal 3: Staff / Commissioner Instant Login Modal -->
+    <dialog id="modal-draft-staff-login" class="draft-modal" style="max-width:440px; background:#12140e; border:1px solid #383f27; color:#fff; padding:0;">
+      <div class="modal-head" style="background:#171a12; border-bottom:1px solid #282d1c; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span class="pill" style="margin-bottom:4px; font-size:10px;">STAFF AUTHORIZATION</span>
+          <h3 style="font:800 18px var(--display); letter-spacing:0.8px; margin:0; text-transform:uppercase; color:#fff;">
+            Commissioner &amp; Staff Login
+          </h3>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modal-draft-staff-login').close();">✕</button>
+      </div>
+
+      <form id="form-draft-staff-login" style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+        <p style="font-size:12.5px; color:#cbd5e1; margin:0; line-height:1.5;">
+          Authenticate with your league staff account to unlock the draft wheel spin, master clock, and manual draft picks.
+        </p>
+
+        <div id="draft-staff-login-error" style="display:none; background:#2a1114; border:1px solid #ef4444; color:#fca5a5; padding:10px 12px; font-size:12px; border-radius:4px;"></div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; display:block; margin-bottom:4px;">Staff Email</label>
+          <input type="email" id="draft-staff-email" class="search-box" style="width:100%; box-sizing:border-box; background:#080a0f;" placeholder="admin@frontlineleague.com" required />
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; display:block; margin-bottom:4px;">Password</label>
+          <input type="password" id="draft-staff-password" class="search-box" style="width:100%; box-sizing:border-box; background:#080a0f;" placeholder="••••••••" required />
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:6px;">
+          <button type="button" class="btn-wheel-sub" onclick="document.getElementById('modal-draft-staff-login').close();">Cancel</button>
+          <button type="submit" id="btn-submit-draft-staff-login" class="btn-spin-wheel" style="flex:1; padding:10px 16px; font-size:12.5px; font-weight:800;">
+            Authenticate Staff ➔
+          </button>
+        </div>
+
+        <div style="text-align:center; font-size:11px; color:#64748b; margin-top:4px;">
+          Full league console available at <a href="admin.html" style="color:var(--lime); text-decoration:underline;">admin.html</a>
+        </div>
+      </form>
+    </dialog>
+
     <!-- Toast Notification for Auto-Draft and Important Draft Events -->
     <div id="draft-autodraft-toast" class="autodraft-toast" style="display:none;" role="alert">
       <div class="autodraft-toast-icon">⏰</div>
@@ -794,8 +839,9 @@
               updateLiveSyncBadge(false);
             }
           } else {
-            console.warn("Supabase client not yet available for realtime draft sync.");
+            console.warn("Supabase client not yet available for realtime draft sync. Retrying in 1s...");
             updateLiveSyncBadge(false);
+            setTimeout(setupDraftRealtimeSync, 1000);
           }
 
           // 2. Storage event listener for multi-tab synchronization on same device
@@ -826,6 +872,10 @@
         async function broadcastDraftEvent(eventName, payloadData) {
           console.log(`🚀 [BROADCASTING] ${eventName}:`, payloadData);
 
+          if (!draftRealtimeChannel) {
+            setupDraftRealtimeSync();
+          }
+
           // 1. Send via Supabase WebSocket Broadcast
           if (draftRealtimeChannel) {
             try {
@@ -842,7 +892,7 @@
 
           // 2. Store in LocalStorage for instant cross-tab sync
           try {
-            localStorage.setItem(`frontline_draft_${eventName}_${currentDivision}`, JSON.stringify(payloadData));
+            localStorage.setItem(`frontline_draft_${eventName}_${currentDivision}`, JSON.stringify({ ...payloadData, _t: Date.now() }));
           } catch (e) {}
 
           // 3. Persist Draft state in cloud DB
@@ -938,6 +988,217 @@
           updateStartDraftButton();
         }
 
+        // --- Commissioner / Admin Authorization State & Handlers ---
+        let isDraftAdminAuthorized = false;
+        let currentDraftStaffProfile = null;
+
+        async function checkDraftAdminAuthorization() {
+          // 1. Check Supabase Auth session
+          if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
+            try {
+              const session = await window.LeagueDB.getAuthSession();
+              if (session?.user) {
+                const role = session.user.app_metadata?.role || session.user.user_metadata?.role;
+                if (role !== "player") {
+                  const email = session.user.email;
+                  isDraftAdminAuthorized = true;
+                  if (window.LeagueDB.getStaffProfile) {
+                    currentDraftStaffProfile = await window.LeagueDB.getStaffProfile(email);
+                  }
+                  if (!currentDraftStaffProfile) {
+                    currentDraftStaffProfile = { email, display_name: email.split("@")[0], role: "commissioner" };
+                  }
+                  applyDraftAdminPermissions();
+                  return true;
+                }
+              }
+            } catch(e) {
+              console.warn("Draft admin auth check error:", e);
+            }
+          }
+
+          // 2. Check sessionStorage fallback
+          const savedEmail = sessionStorage.getItem("frontline_admin_email");
+          const savedSession = sessionStorage.getItem("frontline_admin_session");
+          if (savedSession === "authorized" && savedEmail) {
+            isDraftAdminAuthorized = true;
+            try {
+              if (window.LeagueDB && typeof window.LeagueDB.getStaffProfile === "function") {
+                currentDraftStaffProfile = await window.LeagueDB.getStaffProfile(savedEmail);
+              }
+            } catch(e) {}
+            if (!currentDraftStaffProfile) {
+              currentDraftStaffProfile = { email: savedEmail, display_name: savedEmail.split("@")[0], role: "commissioner" };
+            }
+            applyDraftAdminPermissions();
+            return true;
+          }
+
+          // Unauthorized (Spectator / View-Only)
+          isDraftAdminAuthorized = false;
+          currentDraftStaffProfile = null;
+          applyDraftAdminPermissions();
+          return false;
+        }
+
+        function applyDraftAdminPermissions() {
+          const authPill = document.getElementById("draft-admin-auth-pill");
+          const spinBtn = document.getElementById("btn-spin-wheel");
+          const spinBtnLabel = document.getElementById("spin-btn-label");
+          const secondaryActions = document.querySelector(".wheel-secondary-actions");
+          const draftOptionsRow = document.querySelector(".draft-options-row");
+          const teamPoolEditor = document.getElementById("team-pool-editor")?.closest("details");
+          const btnStartDraft = document.getElementById("btn-start-draft");
+          const btnSidebarStartDraft = document.getElementById("btn-sidebar-start-draft");
+          const btnForceAutopick = document.getElementById("btn-force-autopick");
+          const timerControls = document.querySelector(".draft-clock-controls");
+          const timerSelect = document.getElementById("select-timer-limit");
+          const btnOpenDraftModal = document.getElementById("btn-open-draft-modal");
+          const btnBroadcastOrder = document.getElementById("btn-broadcast-order");
+
+          if (isDraftAdminAuthorized) {
+            // Authorized Staff / Commissioner State
+            if (authPill) {
+              const name = currentDraftStaffProfile?.display_name || currentDraftStaffProfile?.email?.split('@')[0] || "Commissioner";
+              authPill.innerHTML = `
+                <div style="display:inline-flex; align-items:center; gap:8px; background:#1b2413; border:1px solid var(--lime); padding:5px 12px; border-radius:3px; box-shadow:0 0 12px rgba(213,244,91,0.15);">
+                  <span style="font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; letter-spacing:0.5px;">🛡️ COMMISH: ${escapeHtml(name)}</span>
+                  <button type="button" id="btn-draft-staff-logout" style="background:none; border:none; color:#f87171; font-size:11px; font-weight:bold; cursor:pointer; padding:0 2px; text-decoration:underline;">Logout</button>
+                </div>
+              `;
+              document.getElementById("btn-draft-staff-logout")?.addEventListener("click", handleDraftStaffLogout);
+            }
+
+            if (spinBtn) {
+              spinBtn.style.opacity = "1";
+              spinBtn.style.cursor = "pointer";
+              spinBtn.title = "Commissioner: Spin Draft Lottery Wheel";
+            }
+            if (secondaryActions) secondaryActions.style.display = "flex";
+            if (draftOptionsRow) draftOptionsRow.style.display = "flex";
+            if (teamPoolEditor) teamPoolEditor.style.display = "block";
+            if (btnStartDraft) {
+              btnStartDraft.style.display = "inline-flex";
+              btnStartDraft.disabled = false;
+            }
+            if (btnSidebarStartDraft) {
+              btnSidebarStartDraft.style.display = "inline-flex";
+              btnSidebarStartDraft.disabled = false;
+            }
+            if (timerControls) timerControls.style.display = "flex";
+            if (timerSelect) timerSelect.disabled = false;
+            if (btnOpenDraftModal) btnOpenDraftModal.style.display = "inline-flex";
+            if (btnBroadcastOrder) btnBroadcastOrder.style.display = "inline-flex";
+
+            updateHudBanner();
+            updateStartDraftButton();
+            renderFreeAgents();
+          } else {
+            // Unauthorized / Spectator View-Only State
+            if (authPill) {
+              authPill.innerHTML = `
+                <button type="button" id="btn-draft-staff-login-trigger" class="btn-wheel-sub" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#161912; border-color:#3e472d; color:#cdd1be;" title="Sign in with Commissioner or Staff credentials to control draft">
+                  🔑 Staff / Admin Login
+                </button>
+              `;
+              document.getElementById("btn-draft-staff-login-trigger")?.addEventListener("click", () => {
+                document.getElementById("modal-draft-staff-login")?.showModal();
+              });
+            }
+
+            if (spinBtn) {
+              if (!isSpinning) {
+                if (spinBtnLabel) spinBtnLabel.textContent = "🔒 COMMISSIONER LOCKED";
+                spinBtn.style.opacity = "0.7";
+                spinBtn.title = "Only league commissioners can spin the draft lottery wheel. Click Staff / Admin Login above to authenticate.";
+              }
+            }
+            if (secondaryActions) secondaryActions.style.display = "none";
+            if (draftOptionsRow) draftOptionsRow.style.display = "none";
+            if (teamPoolEditor) teamPoolEditor.style.display = "none";
+            if (btnStartDraft) {
+              btnStartDraft.style.display = "none";
+            }
+            if (btnSidebarStartDraft) {
+              btnSidebarStartDraft.style.display = "none";
+            }
+            if (btnForceAutopick) {
+              btnForceAutopick.style.display = "none";
+            }
+            if (timerControls) timerControls.style.display = "none";
+            if (timerSelect) timerSelect.disabled = true;
+            if (btnOpenDraftModal) btnOpenDraftModal.style.display = "none";
+            if (btnBroadcastOrder) btnBroadcastOrder.style.display = "none";
+
+            updateHudBanner();
+            renderFreeAgents();
+          }
+        }
+
+        async function handleDraftStaffLogin(e) {
+          e.preventDefault();
+          const email = document.getElementById("draft-staff-email")?.value.trim();
+          const password = document.getElementById("draft-staff-password")?.value;
+          const errorEl = document.getElementById("draft-staff-login-error");
+          const submitBtn = document.getElementById("btn-submit-draft-staff-login");
+
+          if (!email || !password) return;
+
+          if (errorEl) errorEl.style.display = "none";
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Authenticating...";
+          }
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.signInAdmin === "function") {
+              const res = await window.LeagueDB.signInAdmin(email, password);
+              if (res.success && res.user) {
+                const userEmail = res.user.email || email;
+                sessionStorage.setItem("frontline_admin_session", "authorized");
+                sessionStorage.setItem("frontline_admin_email", userEmail);
+                document.getElementById("modal-draft-staff-login")?.close();
+                document.getElementById("form-draft-staff-login")?.reset();
+                await checkDraftAdminAuthorization();
+                showAutoDraftToast("STAFF AUTHENTICATED", `Welcome, commissioner. Full draft controls unlocked!`, "🛡️");
+                return;
+              } else {
+                if (errorEl) {
+                  errorEl.textContent = res.error || "Invalid staff credentials.";
+                  errorEl.style.display = "block";
+                }
+              }
+            } else {
+              if (errorEl) {
+                errorEl.textContent = "Supabase client not connected.";
+                errorEl.style.display = "block";
+              }
+            }
+          } catch (err) {
+            if (errorEl) {
+              errorEl.textContent = err.message || "An unexpected error occurred.";
+              errorEl.style.display = "block";
+            }
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Authenticate Staff ➔";
+            }
+          }
+        }
+
+        async function handleDraftStaffLogout() {
+          if (window.LeagueDB && typeof window.LeagueDB.signOutAdmin === "function") {
+            await window.LeagueDB.signOutAdmin();
+          }
+          sessionStorage.removeItem("frontline_admin_session");
+          sessionStorage.removeItem("frontline_admin_email");
+          isDraftAdminAuthorized = false;
+          currentDraftStaffProfile = null;
+          applyDraftAdminPermissions();
+          showAutoDraftToast("LOGGED OUT", "Draft controls set to Spectator view-only mode.", "🔒");
+        }
+
         // --- Init ---
         async function init() {
           setupTabs();
@@ -952,6 +1213,7 @@
           setupEventHandlers();
           updateStartDraftButton();
           setupDraftRealtimeSync();
+          await checkDraftAdminAuthorization();
         }
 
         // --- 1. Division UI & Loading ---
@@ -1136,6 +1398,10 @@
         }
 
         function handleStartDraftClick() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           if (isDraftLive) {
             pauseDraft();
           } else {
@@ -1148,6 +1414,10 @@
         }
 
         async function startDraft() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           isDraftLive = true;
           draftState.status = "Live";
           if (!draftState.onTheClock) {
@@ -1167,6 +1437,13 @@
             await window.LeagueDB.saveDraftState(draftState, currentDivision);
           }
 
+          // Broadcast state sync so all connected draft rooms start live clock in real-time!
+          broadcastDraftEvent('draft_state_sync', {
+            division: currentDivision,
+            state: draftState,
+            timestamp: Date.now()
+          });
+
           const divInfo = DIVISIONS[currentDivision];
           window.LeagueDB?.addAnnouncement?.({
             title: `🚨 ${divInfo.name.toUpperCase()} DRAFT HAS BEGUN`,
@@ -1183,6 +1460,10 @@
         }
 
         async function pauseDraft() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           isDraftLive = false;
           draftState.status = "Paused";
           clearInterval(timerInterval);
@@ -1198,6 +1479,13 @@
             await window.LeagueDB.saveDraftState(draftState, currentDivision);
           }
 
+          // Broadcast state sync so all connected draft rooms pause clock in real-time!
+          broadcastDraftEvent('draft_state_sync', {
+            division: currentDivision,
+            state: draftState,
+            timestamp: Date.now()
+          });
+
           showAutoDraftToast("DRAFT PAUSED", "Draft clock paused by commissioner.", "⏸");
         }
 
@@ -1210,7 +1498,11 @@
 
           const nextPickNum = draftOrder.length + 1;
           if (spinLabel) {
-            spinLabel.textContent = `SPIN FOR PICK #${nextPickNum}`;
+            if (isDraftAdminAuthorized) {
+              spinLabel.textContent = `SPIN FOR PICK #${nextPickNum}`;
+            } else {
+              spinLabel.textContent = "🔒 COMMISSIONER LOCKED";
+            }
           }
 
           if (draftOrder.length === 0) {
@@ -1550,6 +1842,10 @@
         }
 
         function spinWheel() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           if (isSpinning || activeWheelTeams.length === 0) return;
 
           const numSlices = activeWheelTeams.length;
@@ -1701,6 +1997,10 @@
         }
 
         function quickAutoLottery() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           if (confirm("Run Instant Auto-Lottery to randomize all remaining draft picks?")) {
             // Shuffle remaining teams
             const shuffled = [...activeWheelTeams].sort(() => Math.random() - 0.5);
@@ -1731,6 +2031,10 @@
         }
 
         function resetLottery() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           if (confirm("Reset the entire draft order and refill the wheel?")) {
             draftOrder = [];
             recomputeActiveWheelTeams();
@@ -1930,15 +2234,17 @@
 
                 <!-- GM Actions -->
                 <div class="fa-actions-row">
-                  <button 
-                    type="button"
-                    class="btn-draft-player" 
-                    data-draft-id="${escapeHtml(fa.id)}" 
-                    data-draft-tag="${escapeHtml(fa.gamertag)}"
-                    ${isDrafted ? 'disabled' : ''}
-                  >
-                    <span>${isDrafted ? 'Already Drafted' : '🎯 Draft Player'}</span>
-                  </button>
+                  ${isDraftAdminAuthorized ? `
+                    <button 
+                      type="button"
+                      class="btn-draft-player" 
+                      data-draft-id="${escapeHtml(fa.id)}" 
+                      data-draft-tag="${escapeHtml(fa.gamertag)}"
+                      ${isDrafted ? 'disabled' : ''}
+                    >
+                      <span>${isDrafted ? 'Already Drafted' : '🎯 Draft Player'}</span>
+                    </button>
+                  ` : ''}
 
                   <button 
                     type="button"
@@ -2106,6 +2412,10 @@
         }
 
         function openDraftPickModal(preselectedTag = null) {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
           populateDraftModalTeamsSelect();
           populateDraftModalPlayerSelect();
 
@@ -2203,6 +2513,11 @@
         }
 
         async function submitDraftPick() {
+          if (!isDraftAdminAuthorized) {
+            document.getElementById("modal-draft-staff-login")?.showModal();
+            return;
+          }
+
           const round = parseInt(document.getElementById("pick-input-round").value, 10) || 1;
           const pick = parseInt(document.getElementById("pick-input-number").value, 10) || 1;
           const teamName = document.getElementById("pick-input-team").value;
@@ -2242,6 +2557,9 @@
 
         // --- 10. Event Handlers Setup ---
         function setupEventHandlers() {
+          // Staff / Commissioner Login Form Listener
+          document.getElementById("form-draft-staff-login")?.addEventListener("submit", handleDraftStaffLogin);
+
           // Master Draft Control Buttons
           document.getElementById("btn-start-draft")?.addEventListener("click", handleStartDraftClick);
           document.getElementById("btn-sidebar-start-draft")?.addEventListener("click", handleStartDraftClick);
