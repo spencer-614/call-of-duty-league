@@ -42,31 +42,32 @@ window.SUPABASE_CONFIG = { url: SUPABASE_URL, key: SUPABASE_ANON_KEY };
 // Fallback Mock Data (displayed if Supabase credentials have not been configured yet)
 const MOCK_DATA = {
   teams: [
-    { id: 1, name: "Night Shift", tag: "NSH", wins: 5, losses: 1, points: 50 },
-    { id: 2, name: "Vantage", tag: "VTG", wins: 4, losses: 2, points: 40 },
-    { id: 3, name: "Redline", tag: "RED", wins: 3, losses: 3, points: 30 },
-    { id: 4, name: "Static", tag: "STC", wins: 1, losses: 5, points: 10 }
+    { id: 1, name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)", wins: 5, losses: 1, points: 50 },
+    { id: 2, name: "Vantage", tag: "VTG", division: "Division 1 (Pro)", wins: 4, losses: 2, points: 40 },
+    { id: 3, name: "Redline", tag: "RED", division: "Division 2 (Challengers)", wins: 3, losses: 3, points: 30 },
+    { id: 4, name: "Static", tag: "STC", division: "Division 2 (Challengers)", wins: 1, losses: 5, points: 10 },
+    { id: 5, name: "Underdogs", tag: "UND", division: "Open Division", wins: 2, losses: 4, points: 20 }
   ],
   players: [
-    { id: 1, gamertag: "Apex", discord_name: "Apex", activision_id: "Apex#8392014", role: "SMG", rank: "1.5", status: "Active", kdr: 1.28, total_kills: 342, total_deaths: 267, teams: { name: "Night Shift", tag: "NSH" } },
-    { id: 2, gamertag: "Ghost", discord_name: "Ghost", activision_id: "Ghost#4920111", role: "Main AR", rank: "1.0", status: "Active", kdr: 1.15, total_kills: 298, total_deaths: 259, teams: { name: "Night Shift", tag: "NSH" } },
-    { id: 3, gamertag: "Viper", discord_name: "Viper", activision_id: "Viper#9382012", role: "Flex", rank: "1.0", status: "Active", kdr: 1.05, total_kills: 275, total_deaths: 262, teams: { name: "Night Shift", tag: "NSH" } },
-    { id: 4, gamertag: "Blitz", discord_name: "Blitz", activision_id: "Blitz#1928374", role: "SMG", rank: "0.5", status: "Active", kdr: 0.98, total_kills: 250, total_deaths: 255, teams: { name: "Night Shift", tag: "NSH" } },
-    { id: 5, gamertag: "Specter", discord_name: "Specter", activision_id: "Specter#7492810", role: "Main AR", rank: "1.5", status: "Active", kdr: 1.22, total_kills: 310, total_deaths: 254, teams: { name: "Vantage", tag: "VTG" } },
-    { id: 6, gamertag: "Havoc", discord_name: "Havoc", activision_id: "Havoc#6291038", role: "SMG", rank: "1.0", status: "Active", kdr: 1.10, total_kills: 290, total_deaths: 263, teams: { name: "Vantage", tag: "VTG" } },
-    { id: 7, gamertag: "Zero", discord_name: "Zero", activision_id: "Zero#8192039", role: "Flex", rank: "0.5", status: "Active", kdr: 1.02, total_kills: 260, total_deaths: 255, teams: { name: "Vantage", tag: "VTG" } },
-    { id: 8, gamertag: "Ranger", discord_name: "Ranger", activision_id: "Ranger#3918274", role: "SMG", rank: "0.5", status: "Active", kdr: 0.95, total_kills: 230, total_deaths: 242, teams: { name: "Vantage", tag: "VTG" } },
-    { id: 9, gamertag: "Reaper", discord_name: "Reaper", activision_id: "Reaper#2918374", role: "Main AR", rank: "1.5", status: "Active", kdr: 1.18, total_kills: 305, total_deaths: 258, teams: { name: "Redline", tag: "RED" } },
-    { id: 10, gamertag: "Pulse", discord_name: "Pulse", activision_id: "Pulse#8472910", role: "SMG", rank: "1.0", status: "Active", kdr: 1.04, total_kills: 280, total_deaths: 270, teams: { name: "Redline", tag: "RED" } },
-    { id: 11, gamertag: "Titan", discord_name: "Titan", activision_id: "Titan#3829104", role: "Main AR", rank: "1.0", status: "Active", kdr: 1.06, total_kills: 265, total_deaths: 250, teams: { name: "Static", tag: "STC" } },
-    { id: 12, gamertag: "Flash", discord_name: "Flash", activision_id: "Flash#1948201", role: "SMG", rank: "0.5", status: "Active", kdr: 0.94, total_kills: 235, total_deaths: 250, teams: { name: "Static", tag: "STC" } },
+    { id: 1, gamertag: "Apex", discord_name: "Apex", activision_id: "Apex#8392014", role: "SMG", rank: "1.5", skill_rank: "1.5", division: "Division 1 (Pro)", status: "Active", kdr: 1.28, total_kills: 342, total_deaths: 267, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
+    { id: 2, gamertag: "Ghost", discord_name: "Ghost", activision_id: "Ghost#4920111", role: "Main AR", rank: "1.0", skill_rank: "1.0", division: "Division 1 (Pro)", status: "Active", kdr: 1.15, total_kills: 298, total_deaths: 259, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
+    { id: 3, gamertag: "Viper", discord_name: "Viper", activision_id: "Viper#9382012", role: "Flex", rank: "1.0", skill_rank: "1.0", division: "Division 1 (Pro)", status: "Active", kdr: 1.05, total_kills: 275, total_deaths: 262, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
+    { id: 4, gamertag: "Blitz", discord_name: "Blitz", activision_id: "Blitz#1928374", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Division 1 (Pro)", status: "Active", kdr: 0.98, total_kills: 250, total_deaths: 255, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
+    { id: 5, gamertag: "Specter", discord_name: "Specter", activision_id: "Specter#7492810", role: "Main AR", rank: "1.5", skill_rank: "1.5", division: "Division 1 (Pro)", status: "Active", kdr: 1.22, total_kills: 310, total_deaths: 254, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
+    { id: 6, gamertag: "Havoc", discord_name: "Havoc", activision_id: "Havoc#6291038", role: "SMG", rank: "1.0", skill_rank: "1.0", division: "Division 1 (Pro)", status: "Active", kdr: 1.10, total_kills: 290, total_deaths: 263, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
+    { id: 7, gamertag: "Zero", discord_name: "Zero", activision_id: "Zero#8192039", role: "Flex", rank: "0.5", skill_rank: "0.5", division: "Division 1 (Pro)", status: "Active", kdr: 1.02, total_kills: 260, total_deaths: 255, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
+    { id: 8, gamertag: "Ranger", discord_name: "Ranger", activision_id: "Ranger#3918274", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Division 1 (Pro)", status: "Active", kdr: 0.95, total_kills: 230, total_deaths: 242, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
+    { id: 9, gamertag: "Reaper", discord_name: "Reaper", activision_id: "Reaper#2918374", role: "Main AR", rank: "1.5", skill_rank: "1.5", division: "Division 2 (Challengers)", status: "Active", kdr: 1.18, total_kills: 305, total_deaths: 258, teams: { name: "Redline", tag: "RED", division: "Division 2 (Challengers)" } },
+    { id: 10, gamertag: "Pulse", discord_name: "Pulse", activision_id: "Pulse#8472910", role: "SMG", rank: "1.0", skill_rank: "1.0", division: "Division 2 (Challengers)", status: "Active", kdr: 1.04, total_kills: 280, total_deaths: 270, teams: { name: "Redline", tag: "RED", division: "Division 2 (Challengers)" } },
+    { id: 11, gamertag: "Titan", discord_name: "Titan", activision_id: "Titan#3829104", role: "Main AR", rank: "1.0", skill_rank: "1.0", division: "Division 2 (Challengers)", status: "Active", kdr: 1.06, total_kills: 265, total_deaths: 250, teams: { name: "Static", tag: "STC", division: "Division 2 (Challengers)" } },
+    { id: 12, gamertag: "Flash", discord_name: "Flash", activision_id: "Flash#1948201", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Division 2 (Challengers)", status: "Active", kdr: 0.94, total_kills: 235, total_deaths: 250, teams: { name: "Static", tag: "STC", division: "Division 2 (Challengers)" } },
     // Free Agents & Community entries from Directory
-    { id: 13, gamertag: "btc", discord_name: "btc", activision_id: "btc#4380973", role: "Flex", rank: "0.5", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 14, gamertag: "c0m-_-", discord_name: "c0m-_-", activision_id: "c0m#1095449", role: "SMG", rank: "0.5", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 15, gamertag: "Clix04", discord_name: "Clix04", activision_id: "[LFT]Maddengamer04#2877956", role: "Main AR", rank: "0.5", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 16, gamertag: "CoolRanchhh", discord_name: "CoolRanchhh", activision_id: "CoolRanch#7450412", role: "SMG", rank: "0.5", status: "Active", kdr: 0.54, total_kills: 142, total_deaths: 263, teams: { name: "Underdogs", tag: "UND" }, team_name: "Underdogs" },
-    { id: 17, gamertag: "Vortex", discord_name: "Vortex", activision_id: "Vortex#8291034", role: "Flex", rank: "1.0", status: "Pending", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Unassigned" },
-    { id: 18, gamertag: "Shadow", discord_name: "Shadow", activision_id: "Shadow#9102938", role: "Sniper", rank: "0.5", status: "Former", kdr: 1.12, total_kills: 410, total_deaths: 366, teams: null, team_name: "Retired" }
+    { id: 13, gamertag: "btc", discord_name: "btc", activision_id: "btc#4380973", role: "Flex", rank: "0.5", skill_rank: "0.5", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
+    { id: 14, gamertag: "c0m-_-", discord_name: "c0m-_-", activision_id: "c0m#1095449", role: "SMG", rank: "1.0", skill_rank: "1.0", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
+    { id: 15, gamertag: "Clix04", discord_name: "Clix04", activision_id: "[LFT]Maddengamer04#2877956", role: "Main AR", rank: "1.5", skill_rank: "1.5", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
+    { id: 16, gamertag: "CoolRanchhh", discord_name: "CoolRanchhh", activision_id: "CoolRanch#7450412", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Open Division", status: "Active", kdr: 0.54, total_kills: 142, total_deaths: 263, teams: { name: "Underdogs", tag: "UND", division: "Open Division" }, team_name: "Underdogs" },
+    { id: 17, gamertag: "Vortex", discord_name: "Vortex", activision_id: "Vortex#8291034", role: "Flex", rank: "1.0", skill_rank: "1.0", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
+    { id: 18, gamertag: "Shadow", discord_name: "Shadow", activision_id: "Shadow#9102938", role: "Sniper", rank: "0.5", skill_rank: "0.5", division: "Free Agent", status: "Free Agent", kdr: 1.12, total_kills: 410, total_deaths: 366, teams: null, team_name: "Free Agent" }
   ],
   signups: [
     {
@@ -845,19 +846,27 @@ window.LeagueDB = {
       try {
         const { data, error } = await dbClient
           .from("players")
-          .select("*, teams(name, tag)")
+          .select("*, teams(name, tag, division)")
           .order("kdr", { ascending: false });
 
         if (!error && data) {
           if (data.length === 0) return [];
-          return data.map(p => ({
-            ...p,
-            discord_name: p.discord_name || p.gamertag,
-            activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
-            rank: p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5")),
-            status: p.status || (p.teams ? "Active" : "Free Agent"),
-            team_name: p.teams?.name || p.team_name || "Free Agent"
-          }));
+          return data.map(p => {
+            const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned')) || p.status === 'Free Agent';
+            const division = p.division || p.teams?.division || (isFreeAgent ? 'Free Agent' : (p.kdr >= 1.15 ? 'Division 1 (Pro)' : (p.kdr >= 1.0 ? 'Division 2 (Challengers)' : 'Open Division')));
+            const calculatedRank = p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5"));
+            return {
+              ...p,
+              discord_name: p.discord_name || p.gamertag,
+              activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
+              rank: calculatedRank,
+              skill_rank: p.skill_rank || calculatedRank,
+              status: p.status || (isFreeAgent ? "Free Agent" : "Active"),
+              team_name: p.teams?.name || p.team_name || (isFreeAgent ? "Free Agent" : "Squad"),
+              division: division,
+              is_free_agent: isFreeAgent
+            };
+          });
         }
         console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
@@ -3043,9 +3052,15 @@ window.LeagueDB = {
 
     state.picks.push(newPick);
 
+    // Maintain Live status if draft is active
+    if (state.status === "Live" || pickData.isLive) {
+      state.status = "Live";
+    }
+
     // Calculate next onTheClock team if draftOrder exists
-    const order = state.draftOrder || [];
+    const order = (state.draftOrder && state.draftOrder.length > 0) ? state.draftOrder : (pickData.draftOrder || []);
     if (order.length > 0) {
+      state.draftOrder = order;
       const nextOverallPick = state.picks.length + 1;
       const numTeams = order.length;
       const roundIndex = Math.floor((nextOverallPick - 1) / numTeams);
@@ -3057,7 +3072,7 @@ window.LeagueDB = {
 
       state.currentRound = roundIndex + 1;
       state.currentPick = nextOverallPick;
-      state.onTheClock = nextTeam ? nextTeam.name : null;
+      state.onTheClock = nextTeam ? nextTeam.name : (order[0]?.name || null);
     } else {
       state.currentPick = (state.currentPick || 1) + 1;
     }
@@ -4933,6 +4948,7 @@ window.LadderDB = {
   },
 
   async getOpenChallenges(ladderType = "4v4_variant") {
+    let challenges = [];
     if (dbClient) {
       try {
         const { data, error } = await dbClient
@@ -4941,7 +4957,15 @@ window.LadderDB = {
           .eq("status", "open")
           .eq("ladder_type", ladderType)
           .order("created_at", { ascending: false });
-        if (!error && data && data.length > 0) return data;
+        if (!error && data && data.length > 0) {
+          challenges = data.map(c => {
+            if (!c.team_a && c.team_a_id) {
+              c.team_a = this.getTeamById(c.team_a_id);
+            }
+            return c;
+          });
+          return challenges;
+        }
       } catch (err) {
         console.warn("Supabase open challenges failed:", err);
       }
@@ -4949,10 +4973,21 @@ window.LadderDB = {
 
     try {
       const cached = JSON.parse(localStorage.getItem("frontline_ladder_challenges_" + ladderType));
-      if (cached && cached.length > 0) return cached;
+      if (cached && cached.length > 0) {
+        return cached.map(c => {
+          if (!c.team_a && c.team_a_id) {
+            c.team_a = this.getTeamById(c.team_a_id);
+          }
+          return c;
+        });
+      }
     } catch (e) {}
 
-    return MOCK_LADDER_DATA.challenges.filter(c => c.ladder_type === ladderType);
+    return (MOCK_LADDER_DATA.challenges || []).filter(c => c.ladder_type === ladderType);
+  },
+
+  async getChallenges(ladderType = "4v4_variant") {
+    return this.getOpenChallenges(ladderType);
   },
 
   async postChallenge(challengeData) {
@@ -5501,6 +5536,146 @@ window.LadderDB = {
     return null;
   },
 
+  getPlayerByGamertag(gamertag) {
+    if (!gamertag) return null;
+    const clean = String(gamertag).trim().toLowerCase();
+
+    // 1. Current logged in player
+    const cur = this.getCurrentPlayer();
+    if (cur && ((cur.gamertag && cur.gamertag.toLowerCase() === clean) || (cur.username && cur.username.toLowerCase() === clean))) {
+      return cur;
+    }
+
+    // 2. Presets
+    const knownPresets = [
+      {
+        id: "viperx",
+        gamertag: "ViperX",
+        username: "ViperX",
+        tag: "APEX",
+        team_id: 101,
+        team_name: "Apex Predators",
+        elo: 2045,
+        tier: "Apex Prestige",
+        avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+        discord: "viperx_cdl",
+        activision_id: "ViperX#8392014",
+        email: "viperx@frontlinearena.com"
+      },
+      {
+        id: "havoc",
+        gamertag: "Havoc",
+        username: "Havoc",
+        tag: "CRIM",
+        team_id: 102,
+        team_name: "Crimson Syndicate",
+        elo: 1880,
+        tier: "Commander",
+        avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+        discord: "havoc_snd",
+        activision_id: "Havoc#6291038",
+        email: "havoc@frontlinearena.com"
+      },
+      {
+        id: "specter",
+        gamertag: "Specter",
+        username: "Specter",
+        tag: "GPRT",
+        team_id: 103,
+        team_name: "Ghost Protocol",
+        elo: 1690,
+        tier: "Warlord",
+        avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
+        discord: "specter_cdl",
+        activision_id: "Specter#7492810",
+        email: "specter@frontlinearena.com"
+      },
+      {
+        id: "phantom",
+        gamertag: "Phantom",
+        username: "Phantom",
+        tag: "VNG",
+        team_id: 104,
+        team_name: "Vanguard Prime",
+        elo: 1520,
+        tier: "Vanguard",
+        avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
+        discord: "phantom_vng",
+        activision_id: "Phantom#9821043",
+        email: "phantom@frontlinearena.com"
+      }
+    ];
+
+    let found = knownPresets.find(p => p.gamertag.toLowerCase() === clean || (p.username && p.username.toLowerCase() === clean));
+    if (found) return found;
+
+    // 3. Custom registered accounts
+    try {
+      const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      found = customAccounts.find(a => (a.gamertag && a.gamertag.toLowerCase() === clean) || (a.username && a.username.toLowerCase() === clean));
+      if (found) return found;
+    } catch (e) {}
+
+    // 4. Search in team rosters
+    for (const lt of ["4v4_variant", "2v2_snd", "1v1_radar"]) {
+      let teams = [];
+      try {
+        const cached = JSON.parse(localStorage.getItem("frontline_ladder_teams_" + lt)) || [];
+        teams = (MOCK_LADDER_DATA.teams || []).concat(cached);
+      } catch (e) {
+        teams = MOCK_LADDER_DATA.teams || [];
+      }
+      for (const t of teams) {
+        if (t.captain_name && t.captain_name.toLowerCase() === clean) {
+          return {
+            id: "cap_" + clean,
+            gamertag: t.captain_name,
+            username: t.captain_name,
+            tag: t.tag || "ARENA",
+            team_name: t.name,
+            elo: t.elo || 1200,
+            tier: this.getTier(t.elo || 1200).name,
+            avatar_url: t.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            discord: t.captain_discord || `${t.captain_name.toLowerCase()}#0001`,
+            activision_id: t.captain_activision || `${t.captain_name}#1234567`
+          };
+        }
+        const roster = this.getTeamRoster(t);
+        if (roster && Array.isArray(roster)) {
+          const p = roster.find(pl => pl.gamertag && pl.gamertag.toLowerCase() === clean);
+          if (p) {
+            return {
+              id: "usr_" + clean,
+              gamertag: p.gamertag,
+              username: p.gamertag,
+              tag: t.tag || "ARENA",
+              team_name: t.name,
+              elo: p.elo || t.elo || 1200,
+              tier: this.getTier(p.elo || t.elo || 1200).name,
+              avatar_url: p.avatar_url || t.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+              discord: p.discord || `${p.gamertag.toLowerCase()}#0001`,
+              activision_id: p.activision_id || `${p.gamertag}#1234567`
+            };
+          }
+        }
+      }
+    }
+
+    // 5. Fallback generic combatant profile
+    return {
+      id: "usr_" + clean,
+      gamertag: gamertag,
+      username: gamertag,
+      tag: "ARENA",
+      team_name: "Free Agent",
+      elo: 1200,
+      tier: "Specialist",
+      avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+      discord: `${clean}#0001`,
+      activision_id: `${gamertag}#1234567`
+    };
+  },
+
   async loginArenaPlayer(identifier, password = "") {
     if (!identifier || !identifier.trim()) {
       return { success: false, error: "Gamertag or Email is required." };
@@ -5728,11 +5903,126 @@ window.LadderDB = {
     return { success: true, player: newPlayer };
   },
 
-  updatePlayerProfile(updatedData) {
+  async updatePlayerProfile(updatedData) {
     const cur = this.getCurrentPlayer();
     if (!cur) return { success: false, error: "Not logged in" };
-    const merged = { ...cur, ...updatedData };
-    localStorage.setItem("frontline_arena_user", JSON.stringify(merged));
+
+    const oldGamertag = cur.gamertag || cur.username || "";
+    let targetGamertag = updatedData.gamertag !== undefined ? updatedData.gamertag.trim() : (updatedData.username !== undefined ? updatedData.username.trim() : oldGamertag);
+
+    if (!targetGamertag) {
+      return { success: false, error: "Username / Gamertag cannot be empty." };
+    }
+
+    // Collision check if gamertag is changing (case-insensitive)
+    if (targetGamertag.toLowerCase() !== oldGamertag.toLowerCase()) {
+      try {
+        const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+        const isTaken = customAccounts.some(a => 
+          a.gamertag && 
+          a.gamertag.toLowerCase() === targetGamertag.toLowerCase() && 
+          (a.id !== cur.id && (!cur.email || !a.email || a.email.toLowerCase() !== cur.email.toLowerCase()))
+        );
+        if (isTaken) {
+          return { success: false, error: `Username "${targetGamertag}" is already taken by another operative. Please choose a different handle.` };
+        }
+
+        const knownPresetNames = ["viperx", "havoc", "specter", "phantom"];
+        if (knownPresetNames.includes(targetGamertag.toLowerCase()) && !knownPresetNames.includes(oldGamertag.toLowerCase())) {
+          return { success: false, error: `Username "${targetGamertag}" is reserved. Please select another gamertag.` };
+        }
+      } catch (e) {}
+    }
+
+    const merged = {
+      ...cur,
+      ...updatedData,
+      gamertag: targetGamertag,
+      username: targetGamertag
+    };
+
+    // 1. Update primary local session
+    try {
+      localStorage.setItem("frontline_arena_user", JSON.stringify(merged));
+    } catch (e) {}
+
+    // 2. Update auth user session in localStorage if present
+    try {
+      const authUserStr = localStorage.getItem("frontline_arena_auth_user");
+      if (authUserStr) {
+        const authUser = JSON.parse(authUserStr);
+        const updatedAuthUser = { ...authUser, ...updatedData, gamertag: targetGamertag, username: targetGamertag };
+        localStorage.setItem("frontline_arena_auth_user", JSON.stringify(updatedAuthUser));
+      }
+    } catch (e) {}
+
+    // 3. Update registered accounts directory in localStorage
+    try {
+      let accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      let foundIndex = accounts.findIndex(a => 
+        (cur.id && a.id === cur.id) || 
+        (cur.email && a.email && a.email.toLowerCase() === cur.email.toLowerCase()) || 
+        (a.gamertag && a.gamertag.toLowerCase() === oldGamertag.toLowerCase())
+      );
+      if (foundIndex >= 0) {
+        accounts[foundIndex] = { ...accounts[foundIndex], ...merged };
+      } else {
+        accounts.push(merged);
+      }
+      localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(accounts));
+    } catch (e) {}
+
+    // 4. Update team rosters and captain name in my active squads
+    try {
+      const ladders = ["4v4_variant", "2v2_snd", "1v1_radar"];
+      for (const lt of ladders) {
+        const myTeam = this.getMyTeam(lt);
+        if (myTeam) {
+          let modified = false;
+          if (myTeam.captain_name && (myTeam.captain_name.toLowerCase() === oldGamertag.toLowerCase() || myTeam.captain_name === cur.gamertag)) {
+            myTeam.captain_name = targetGamertag;
+            if (merged.tag) myTeam.tag = merged.tag;
+            if (merged.avatar_url) myTeam.avatar_url = merged.avatar_url;
+            modified = true;
+          }
+          if (myTeam.players && Array.isArray(myTeam.players)) {
+            myTeam.players = myTeam.players.map(p => {
+              if (p.gamertag && p.gamertag.toLowerCase() === oldGamertag.toLowerCase()) {
+                modified = true;
+                return {
+                  ...p,
+                  gamertag: targetGamertag,
+                  activision_id: merged.activision_id || p.activision_id,
+                  discord: merged.discord || p.discord,
+                  avatar_url: merged.avatar_url || p.avatar_url
+                };
+              }
+              return p;
+            });
+          }
+          if (modified) {
+            this.setMyTeam(lt, myTeam);
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 5. Cloud Supabase Auth Sync if user is authenticated
+    if (dbClient && typeof dbClient.auth?.updateUser === "function") {
+      try {
+        const metaUpdate = {
+          gamertag: targetGamertag,
+          username: targetGamertag,
+          name: targetGamertag
+        };
+        if (merged.activision_id) metaUpdate.activision_id = merged.activision_id;
+        if (merged.avatar_url) metaUpdate.avatar_url = merged.avatar_url;
+        await dbClient.auth.updateUser({ data: metaUpdate });
+      } catch (err) {
+        console.warn("Supabase user metadata update notice:", err);
+      }
+    }
+
     this.updateArenaNavProfile();
     window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: merged } }));
     return { success: true, player: merged };

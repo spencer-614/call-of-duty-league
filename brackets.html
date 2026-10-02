@@ -50,20 +50,25 @@
             <nav class="links" aria-label="Main navigation">
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Competition</div>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
                   <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html" style="color:var(--lime);"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="profile.html"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
                   <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
                   <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
@@ -149,7 +154,7 @@
 
       <!-- Bracket Controls & View Modes Toolbar -->
       <div class="bracket-toolbar">
-        <div class="stage-filter-group" aria-label="Stage Filter">
+        <div class="stage-filter-group" id="stage-filter-container" aria-label="Stage Filter">
           <button type="button" class="stage-filter-btn active" data-stage="all">All Stages</button>
           <button type="button" class="stage-filter-btn" data-stage="winners">Winners Bracket</button>
           <button type="button" class="stage-filter-btn" data-stage="elimination">Elimination Bracket</button>
@@ -173,13 +178,13 @@
         </div>
       </section>
 
-      <!-- Tournament Rules & Format Explainer -->
-      <section style="margin: 40px 0 60px; background:var(--panel); border:1px solid var(--line); padding: 32px;">
-        <div class="kicker">COMPETITIVE FRAMEWORK // CDL RULES</div>
-        <h3 style="font: 800 24px var(--display); text-transform: uppercase; margin: 8px 0 16px; color:var(--text);">
+      <!-- Tournament Rules & Format Explainer (Dynamically Synced to Active Division Format) -->
+      <section id="tournament-explainer-section" style="margin: 40px 0 60px; background:var(--panel); border:1px solid var(--line); padding: 32px;">
+        <div class="kicker" id="explainer-kicker">COMPETITIVE FRAMEWORK // CDL RULES</div>
+        <h3 id="explainer-title" style="font: 800 24px var(--display); text-transform: uppercase; margin: 8px 0 16px; color:var(--text);">
           How Frontline <span style="color:var(--lime);">Tournament Brackets Work</span>
         </h3>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
+        <div id="explainer-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
           <div>
             <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">1. Double Elimination Format</strong>
             Divisions 1 and 2 operate on double elimination. A team that loses in the Winners Bracket drops into the Elimination Bracket. A second loss results in complete tournament elimination.
@@ -213,7 +218,7 @@
           <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
-          <a href="brackets.html">Brackets</a>
+          <a href="brackets.html" style="color:var(--lime);" class="active">Brackets</a>
           <a href="draft.html">Draft HQ</a>
           <a href="rules.html">Rulebook</a>
           <a href="livestreams.html">Livestreams</a>

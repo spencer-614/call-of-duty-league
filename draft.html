@@ -50,20 +50,25 @@
             <nav class="links" aria-label="Main navigation">
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Competition</div>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
                   <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="draft.html" style="color:var(--lime);"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="draft.html" style="color:var(--lime);"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="profile.html"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
                   <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
                   <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
@@ -504,7 +509,7 @@
     </dialog>
 
     <!-- Modal 2: Post Trade / Custom Intel -->
-    <dialog id="modal-post-intel" class="player-modal" style="max-width:500px;">
+    <dialog id="modal-post-intel" class="player-modal" style="max-width:540px;">
       <div class="modal-header">
         <div>
           <span class="pill" style="background:#ffb300; color:#11120f;">WAR ROOM WIRE</span>
@@ -516,6 +521,38 @@
       </div>
 
       <div class="modal-body" style="display:flex; flex-direction:column; gap:14px; padding:20px;">
+        <!-- Automated Trade Builder Assistant -->
+        <div style="background:#181b13; border:1px solid #333d22; padding:12px 14px; border-radius:4px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; letter-spacing:0.8px;">⚡ Auto-Trade Generator</span>
+            <button type="button" id="btn-quick-random-trade" class="btn-wheel-sub" style="padding:2px 8px; font-size:10.5px; border-color:#55662f;">🎲 Random Trade Wire</button>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div>
+              <label style="display:block; font-size:10.5px; color:#b8baa9; text-transform:uppercase; margin-bottom:2px;">Sending Team</label>
+              <select id="trade-team-a" class="form-control" style="width:100%; font-size:12px; background:#12140e; padding:6px; color:#fff; border:1px solid var(--line);"></select>
+            </div>
+            <div>
+              <label style="display:block; font-size:10.5px; color:#b8baa9; text-transform:uppercase; margin-bottom:2px;">Receiving Team</label>
+              <select id="trade-team-b" class="form-control" style="width:100%; font-size:12px; background:#12140e; padding:6px; color:#fff; border:1px solid var(--line);"></select>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div>
+              <label style="display:block; font-size:10.5px; color:#b8baa9; text-transform:uppercase; margin-bottom:2px;">Trade Package / Type</label>
+              <select id="trade-type-preset" class="form-control" style="width:100%; font-size:12px; background:#12140e; padding:6px; color:#fff; border:1px solid var(--line);">
+                <option value="pick_swap">Pick Swap (Current Round)</option>
+                <option value="future_rights">Future Pick Rights + Considerations</option>
+                <option value="blockbuster_swap">Blockbuster Multi-Pick Trade</option>
+                <option value="player_rights">Player Rights Transfer</option>
+              </select>
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+              <button type="button" id="btn-autofill-trade" class="button" style="width:100%; padding:6px; font-size:11.5px; justify-content:center; background:#ffb300; color:#11120f; border:none; font-weight:800;">⚡ Auto-Fill Headline</button>
+            </div>
+          </div>
+        </div>
+
         <div>
           <label style="display:block; font-size:11.5px; font-weight:800; letter-spacing:0.8px; color:#cbd5e1; text-transform:uppercase; margin-bottom:4px;">HEADLINE</label>
           <input type="text" id="intel-input-title" class="search-box" style="width:100%;" placeholder="e.g. TRADE ALERT: Boston Breach acquires Pick #2" />
@@ -604,7 +641,7 @@
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
           <a href="brackets.html">Brackets</a>
-          <a href="draft.html" style="color:var(--lime);">Draft HQ</a>
+          <a href="draft.html" style="color:var(--lime);" class="active">Draft HQ</a>
           <a href="rules.html">Rulebook</a>
           <a href="livestreams.html">Livestreams</a>
           <a href="vods.html">VODs</a>
@@ -806,6 +843,11 @@
                   const data = payload.payload || payload;
                   handleRemoteWheelSpin(data);
                 })
+                .on('broadcast', { event: 'wheel_final_auto_pick' }, (payload) => {
+                  console.log("⚡ [REALTIME] Received wheel_final_auto_pick broadcast:", payload);
+                  const data = payload.payload || payload;
+                  handleRemoteFinalAutoPick(data);
+                })
                 .on('broadcast', { event: 'wheel_reset' }, (payload) => {
                   console.log("🔄 [REALTIME] Received wheel_reset broadcast:", payload);
                   const data = payload.payload || payload;
@@ -855,6 +897,9 @@
                   if (Date.now() - (data.timestamp || 0) < 10000) {
                     handleRemoteWheelSpin(data);
                   }
+                } else if (e.key === `frontline_draft_wheel_final_auto_pick_${currentDivision}`) {
+                  const data = JSON.parse(e.newValue);
+                  handleRemoteFinalAutoPick(data);
                 } else if (e.key === `frontline_draft_wheel_reset_${currentDivision}`) {
                   handleRemoteWheelReset();
                 } else if (e.key === `frontline_draft_wheel_quick_${currentDivision}`) {
@@ -921,6 +966,39 @@
             removeLanded: data.removeLanded !== undefined ? data.removeLanded : true,
             isBroadcaster: false
           });
+        }
+
+        function handleRemoteFinalAutoPick(data) {
+          if (!data) return;
+          if (Array.isArray(data.draftOrder)) {
+            draftOrder = [...data.draftOrder];
+          } else if (data.winningTeam) {
+            draftOrder.push({
+              pick: data.pickNumber || (draftOrder.length + 1),
+              name: data.winningTeam.name,
+              tag: data.winningTeam.tag || "",
+              color: data.winningTeam.color || "#d5f45b",
+              lockedAt: new Date().toLocaleTimeString()
+            });
+          }
+          activeWheelTeams = [];
+          renderWheel();
+          renderOrderBoard();
+          updateHudBanner();
+          populateDraftModalTeamsSelect();
+
+          const banner = document.getElementById("wheel-result-banner");
+          const bannerText = document.getElementById("wheel-result-text");
+          if (banner && bannerText && data.winningTeam) {
+            bannerText.innerHTML = `FINAL PICK #${data.pickNumber || draftOrder.length} AUTO-ASSIGNED TO <span style="color:var(--lime);">${escapeHtml(data.winningTeam.name.toUpperCase())}</span>!`;
+            banner.style.display = "block";
+          }
+
+          showAutoDraftToast(
+            "DRAFT ORDER FINALIZED",
+            `Final Pick #${data.pickNumber || draftOrder.length} auto-assigned to <strong>${escapeHtml(data.winningTeam?.name || "Last Team")}</strong> (Final remaining team).`,
+            "🎯"
+          );
         }
 
         function handleRemoteWheelReset() {
@@ -1294,9 +1372,6 @@
         function recomputeActiveWheelTeams() {
           const lockedNames = new Set(draftOrder.map(o => o.name.toLowerCase()));
           activeWheelTeams = teamsPool.filter(t => !lockedNames.has(t.name.toLowerCase()));
-          if (activeWheelTeams.length === 0) {
-            activeWheelTeams = [...teamsPool];
-          }
         }
 
         // --- 2. Load Draft State ---
@@ -1495,13 +1570,35 @@
           const roundEl = document.getElementById("stat-round-display");
           const picksEl = document.getElementById("stat-picks-made");
           const spinLabel = document.getElementById("spin-btn-label");
+          const spinBtn = document.getElementById("btn-spin-wheel");
 
           const nextPickNum = draftOrder.length + 1;
+          const isComplete = draftOrder.length >= teamsPool.length && teamsPool.length > 0;
+          const isFinalSingleTeam = activeWheelTeams.length === 1 && draftOrder.length === teamsPool.length - 1;
+
           if (spinLabel) {
             if (isDraftAdminAuthorized) {
-              spinLabel.textContent = `SPIN FOR PICK #${nextPickNum}`;
+              if (isComplete) {
+                spinLabel.textContent = "ALL PICKS ASSIGNED";
+              } else if (isFinalSingleTeam) {
+                spinLabel.textContent = `AUTO-ASSIGN FINAL PICK #${nextPickNum}`;
+              } else {
+                spinLabel.textContent = `SPIN FOR PICK #${nextPickNum}`;
+              }
             } else {
               spinLabel.textContent = "🔒 COMMISSIONER LOCKED";
+            }
+          }
+
+          if (spinBtn && isDraftAdminAuthorized) {
+            if (isComplete) {
+              spinBtn.disabled = true;
+              spinBtn.style.opacity = "0.6";
+              spinBtn.style.cursor = "not-allowed";
+            } else {
+              spinBtn.disabled = isSpinning;
+              spinBtn.style.opacity = "1";
+              spinBtn.style.cursor = "pointer";
             }
           }
 
@@ -1517,7 +1614,7 @@
             roundEl.textContent = `RD ${currentRound} · PK ${currentPick}`;
             onClockEl.innerHTML = `<span style="color:var(--lime);">${escapeHtml(onClockName)}</span>`;
           } else {
-            statusText.textContent = draftPicks.length > 0 ? "DRAFT PAUSED" : "ORDER SEEDED · READY TO START";
+            statusText.textContent = draftPicks.length > 0 ? "DRAFT PAUSED" : (isComplete ? "ORDER FINALIZED · READY TO START" : "ORDER SEEDED · IN PROGRESS");
             const onClockName = draftState.onTheClock || draftOrder[0]?.name || "TBD";
             const currentRound = draftState.currentRound || 1;
             const currentPick = draftState.currentPick || (draftPicks.length + 1);
@@ -1733,14 +1830,20 @@
           ctx.clearRect(0, 0, size, size);
 
           if (numSlices === 0) {
-            ctx.fillStyle = "#1e2119";
+            ctx.fillStyle = "#161912";
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
+            ctx.strokeStyle = "#d5f45b60";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = "#d5f45b";
+            ctx.font = "900 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("ALL TEAMS DRAFTED", centerX, centerY);
+            ctx.fillText("DRAFT ORDER FINALIZED", centerX, centerY - 8);
+            ctx.fillStyle = "#b8baa9";
+            ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
+            ctx.fillText("All draft picks locked & seeded", centerX, centerY + 12);
             return;
           }
 
@@ -1841,12 +1944,77 @@
           ctx.restore();
         }
 
+        function autoAssignFinalTeam(lastTeam, isBroadcaster) {
+          if (!lastTeam || isSpinning) return;
+
+          const pickNumber = draftOrder.length + 1;
+
+          // Add to official draft order
+          draftOrder.push({
+            pick: pickNumber,
+            name: lastTeam.name,
+            tag: lastTeam.tag || "",
+            color: lastTeam.color || "#d5f45b",
+            lockedAt: new Date().toLocaleTimeString()
+          });
+
+          activeWheelTeams = [];
+
+          // Show winning callout banner
+          const banner = document.getElementById("wheel-result-banner");
+          const bannerText = document.getElementById("wheel-result-text");
+          if (banner && bannerText) {
+            bannerText.innerHTML = `FINAL PICK #${pickNumber} AUTO-ASSIGNED TO <span style="color:var(--lime);">${escapeHtml(lastTeam.name.toUpperCase())}</span>!`;
+            banner.style.display = "block";
+          }
+
+          // Trigger kinetic sparks at wheel center
+          const canvas = document.getElementById("draft-wheel-canvas");
+          if (canvas && window.triggerBulletImpact) {
+            const rect = canvas.getBoundingClientRect();
+            window.triggerBulletImpact(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            setTimeout(() => {
+              window.triggerBulletImpact(rect.left + rect.width / 2 - 40, rect.top + rect.height / 2 - 20);
+              window.triggerBulletImpact(rect.left + rect.width / 2 + 40, rect.top + rect.height / 2 + 20);
+            }, 120);
+          }
+
+          showAutoDraftToast(
+            "DRAFT ORDER FINALIZED",
+            `Final Pick #${pickNumber} auto-assigned to <strong>${escapeHtml(lastTeam.name)}</strong> (Final remaining team).`,
+            "🎯"
+          );
+
+          // Save and render
+          renderWheel();
+          renderOrderBoard();
+          updateHudBanner();
+          populateDraftModalTeamsSelect();
+
+          if (isBroadcaster) {
+            saveDraftOrder();
+            broadcastDraftEvent('wheel_final_auto_pick', {
+              division: currentDivision,
+              winningTeam: lastTeam,
+              pickNumber,
+              draftOrder: [...draftOrder],
+              timestamp: Date.now()
+            });
+          }
+        }
+
         function spinWheel() {
           if (!isDraftAdminAuthorized) {
             document.getElementById("modal-draft-staff-login")?.showModal();
             return;
           }
           if (isSpinning || activeWheelTeams.length === 0) return;
+
+          // If only 1 team remains, auto-assign directly without spinning
+          if (activeWheelTeams.length === 1 && draftOrder.length < teamsPool.length) {
+            autoAssignFinalTeam(activeWheelTeams[0], true);
+            return;
+          }
 
           const numSlices = activeWheelTeams.length;
           const sliceAngle = (Math.PI * 2) / numSlices;
@@ -1963,7 +2131,7 @@
           const banner = document.getElementById("wheel-result-banner");
           const bannerText = document.getElementById("wheel-result-text");
           if (banner && bannerText) {
-            bannerText.textContent = `PICK #${pickNumber} AWARDED TO ${winningTeam.name.toUpperCase()}!`;
+            bannerText.innerHTML = `PICK #${pickNumber} AWARDED TO <span style="color:var(--lime);">${escapeHtml(winningTeam.name.toUpperCase())}</span>!`;
             banner.style.display = "block";
           }
 
@@ -1993,6 +2161,19 @@
 
           if (isBroadcaster) {
             saveDraftOrder();
+          }
+
+          // For final pick: auto select last remaining team for the final spot
+          if (removeLanded && activeWheelTeams.length === 1 && draftOrder.length < teamsPool.length) {
+            const finalTeam = activeWheelTeams[0];
+            showAutoDraftToast(
+              "FINAL PICK AUTO-SELECTION",
+              `Only <strong>${escapeHtml(finalTeam.name)}</strong> remains. Auto-assigning final Pick #${draftOrder.length + 1}...`,
+              "⚡"
+            );
+            setTimeout(() => {
+              autoAssignFinalTeam(finalTeam, isBroadcaster);
+            }, 1200);
           }
         }
 
@@ -2302,60 +2483,106 @@
           const activeRoundBtn = document.querySelector("#draft-round-pills .active");
           const selectedRound = activeRoundBtn ? activeRoundBtn.getAttribute("data-round") : "all";
 
-          let picksToRender = [...draftPicks];
+          let picksToRender = [...draftPicks].map(p => ({
+            type: 'pick',
+            timestamp: p.timestamp || new Date().toISOString(),
+            ...p
+          }));
           if (selectedRound !== 'all') {
             picksToRender = picksToRender.filter(p => String(p.round) === String(selectedRound));
           }
 
-          // Sort newest first for feed view
-          picksToRender.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+          // Fetch Trade & War Room announcements
+          let wireAnnouncements = [];
+          if (selectedRound === 'all' && window.LeagueDB && typeof window.LeagueDB.getAnnouncements === 'function') {
+            try {
+              const allAnn = await window.LeagueDB.getAnnouncements(false);
+              wireAnnouncements = (allAnn || [])
+                .filter(a => a.tag === "Trade Alert" || a.tag === "Breaking Intel" || a.tag === "Draft Notice")
+                .map(a => ({
+                  type: 'intel',
+                  timestamp: a.created_at || a.timestamp || new Date().toISOString(),
+                  id: a.id,
+                  title: a.title,
+                  message: a.message,
+                  tag: a.tag || "Trade Alert",
+                  tag_color: a.tag_color || "amber"
+                }));
+            } catch(e) {}
+          }
 
-          if (picksToRender.length === 0) {
+          // Blend picks and intel announcements sorted newest first
+          const feedItems = [...picksToRender, ...wireAnnouncements].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+          if (feedItems.length === 0) {
             feedContainer.innerHTML = `
               <div class="empty-state">
-                No selections recorded yet for ${selectedRound === 'all' ? 'the draft' : 'Round ' + selectedRound}.
-                <br/><small style="color:var(--muted); margin-top:6px; display:inline-block;">Click "+ Make / Announce Pick" to broadcast the first selection!</small>
+                No selections or trade intel recorded yet for ${selectedRound === 'all' ? 'the draft' : 'Round ' + selectedRound}.
+                <br/><small style="color:var(--muted); margin-top:6px; display:inline-block;">Click "+ Make / Announce Pick" or "Post Trade Intel" to broadcast live updates!</small>
               </div>`;
           } else {
-            feedContainer.innerHTML = picksToRender.map(p => `
-              <article class="draft-pick-card">
-                <div class="draft-pick-header">
-                  <div class="draft-pick-title">
-                    <span class="draft-pick-badge">ROUND ${p.round} · PICK #${p.pick}</span>
-                    <span class="draft-pick-team">${escapeHtml(p.team_name)}</span>
-                    ${p.team_tag ? `<small style="color:var(--muted);">[${escapeHtml(p.team_tag)}]</small>` : ''}
-                    ${p.is_autodraft ? '<span class="autodraft-tag">AUTO-DRAFT</span>' : ''}
-                  </div>
-                  <span style="font-size:11px; color:var(--muted);">
-                    🕒 ${p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : 'Official Pick'}
-                  </span>
-                </div>
-
-                <div class="draft-pick-body">
-                  <div class="draft-player-info">
-                    <span class="pill">${escapeHtml(p.player_role || 'Flex')}</span>
-                    <div>
-                      <span class="draft-player-gt clickable-player" data-player-id="${escapeHtml(p.player_gamertag)}" title="Click to view player match stats">
-                        ${escapeHtml(p.player_gamertag)} ↗
+            feedContainer.innerHTML = feedItems.map(item => {
+              if (item.type === 'intel') {
+                const isBreaking = item.tag === 'Breaking Intel';
+                return `
+                  <article class="draft-intel-card ${isBreaking ? 'breaking' : ''}">
+                    <div class="draft-pick-header">
+                      <div class="draft-pick-title">
+                        <span class="${isBreaking ? 'intel-badge-cyan' : 'intel-badge-amber'}">${escapeHtml(item.tag.toUpperCase())}</span>
+                        <strong style="font:800 14px var(--body); color:#ffffff; text-transform:uppercase;">${escapeHtml(item.title)}</strong>
+                      </div>
+                      <span style="font-size:11px; color:var(--muted);">
+                        🕒 ${item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : 'Wire Update'}
                       </span>
                     </div>
+                    <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">
+                      ${escapeHtml(item.message || '')}
+                    </div>
+                  </article>
+                `;
+              }
+
+              const p = item;
+              return `
+                <article class="draft-pick-card">
+                  <div class="draft-pick-header">
+                    <div class="draft-pick-title">
+                      <span class="draft-pick-badge">ROUND ${p.round} · PICK #${p.pick}</span>
+                      <span class="draft-pick-team">${escapeHtml(p.team_name)}</span>
+                      ${p.team_tag ? `<small style="color:var(--muted);">[${escapeHtml(p.team_tag)}]</small>` : ''}
+                      ${p.is_autodraft ? '<span class="autodraft-tag">AUTO-DRAFT</span>' : ''}
+                    </div>
+                    <span style="font-size:11px; color:var(--muted);">
+                      🕒 ${p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : 'Official Pick'}
+                    </span>
                   </div>
 
-                  ${p.player_kdr ? `
-                    <div style="text-align:right;">
-                      <strong style="font:800 15px var(--body); color:var(--lime);">${Number(p.player_kdr).toFixed(2)}</strong>
-                      <small style="display:block; font-size:10.5px; font-weight:700; color:#b8baa9;">COMBAT K/D</small>
+                  <div class="draft-pick-body">
+                    <div class="draft-player-info">
+                      <span class="pill">${escapeHtml(p.player_role || 'Flex')}</span>
+                      <div>
+                        <span class="draft-player-gt clickable-player" data-player-id="${escapeHtml(p.player_gamertag)}" title="Click to view player match stats">
+                          ${escapeHtml(p.player_gamertag)} ↗
+                        </span>
+                      </div>
+                    </div>
+
+                    ${p.player_kdr ? `
+                      <div style="text-align:right;">
+                        <strong style="font:800 15px var(--body); color:var(--lime);">${Number(p.player_kdr).toFixed(2)}</strong>
+                        <small style="display:block; font-size:10.5px; font-weight:700; color:#b8baa9;">COMBAT K/D</small>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  ${p.notes ? `
+                    <div style="font-size:12px; color:var(--muted); font-style:italic; padding:4px 2px;">
+                      "${escapeHtml(p.notes)}"
                     </div>
                   ` : ''}
-                </div>
-
-                ${p.notes ? `
-                  <div style="font-size:12px; color:var(--muted); font-style:italic; padding:4px 2px;">
-                    "${escapeHtml(p.notes)}"
-                  </div>
-                ` : ''}
-              </article>
-            `).join("");
+                </article>
+              `;
+            }).join("");
           }
 
           // Matrix View Render
@@ -2491,7 +2718,9 @@
             });
 
             // Auto-start or reset timer for the next GM!
-            if (isDraftLive) {
+            if (isDraftLive || draftState.status === "Live") {
+              isDraftLive = true;
+              draftState.status = "Live";
               resetAndStartTimerForNextGm();
               showAutoDraftToast(
                 isAutoDraft ? "AUTO-DRAFT LOGGED" : "PICK BROADCASTED",
@@ -2505,6 +2734,36 @@
                 display.textContent = formatTime(timerSeconds);
                 display.style.color = "var(--lime)";
               }
+            }
+
+            // Automatically post Trade Intel if trade notes or high-impact selection occur
+            try {
+              const notesLower = (notes || "").toLowerCase();
+              const isTradeNote = notesLower.includes("trade") || notesLower.includes("swap") || notesLower.includes("deal") || notesLower.includes("acquire") || notesLower.includes("rights") || notesLower.includes("from ");
+              
+              if (isTradeNote && window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+                await window.LeagueDB.addAnnouncement({
+                  title: `⚡ TRADE WIRE: ${teamName} executes Pick #${pick} deal`,
+                  message: `${teamName} drafted ${playerGamertag} (${playerRole}). Transaction details: "${notes}".`,
+                  tag: "Trade Alert",
+                  tag_color: "amber",
+                  link_url: "draft.html",
+                  link_text: "View Live Draft HQ ↗",
+                  is_active: true
+                });
+              } else if (round === 1 && !isAutoDraft && window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+                await window.LeagueDB.addAnnouncement({
+                  title: `🔥 WAR ROOM WIRE: ${teamName} selects ${playerGamertag} (Round 1)`,
+                  message: `${teamName} locks in ${playerGamertag} (${playerRole}${playerKd ? `, ${Number(playerKd).toFixed(2)} K/D` : ''}) with Pick #${pick} to anchor their Season 1 starting lineup.`,
+                  tag: "Breaking Intel",
+                  tag_color: "cyan",
+                  link_url: "draft.html",
+                  link_text: "View Live Draft HQ ↗",
+                  is_active: true
+                });
+              }
+            } catch(intelErr) {
+              console.warn("Auto trade intel broadcast error:", intelErr);
             }
           } catch (e) {
             console.error("Draft pick submit error:", e);
@@ -2669,8 +2928,100 @@
           document.getElementById("btn-open-draft-modal").addEventListener("click", () => openDraftPickModal());
           document.getElementById("btn-confirm-draft-pick").addEventListener("click", submitDraftPick);
 
+          // Trade Intel Modal & Automated Trade Generator
+          function populateTradeModalTeamSelects() {
+            const selectA = document.getElementById("trade-team-a");
+            const selectB = document.getElementById("trade-team-b");
+            if (!selectA || !selectB) return;
+
+            const teams = draftOrder.length > 0 ? draftOrder : teamsPool;
+            const optionsA = teams.map((t, idx) => `<option value="${escapeHtml(t.name)}" ${idx === 0 ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join("");
+            const optionsB = teams.map((t, idx) => `<option value="${escapeHtml(t.name)}" ${idx === 1 ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join("");
+
+            selectA.innerHTML = optionsA;
+            selectB.innerHTML = optionsB;
+          }
+
+          function autoGenerateTradeIntel(random = false) {
+            const selectA = document.getElementById("trade-team-a");
+            const selectB = document.getElementById("trade-team-b");
+            const presetSelect = document.getElementById("trade-type-preset");
+            const titleInput = document.getElementById("intel-input-title");
+            const bodyInput = document.getElementById("intel-input-body");
+            const tagSelect = document.getElementById("intel-input-tag");
+
+            const teams = (draftOrder.length > 0 ? draftOrder : teamsPool).map(t => t.name);
+            if (teams.length < 2) return;
+
+            let teamA = selectA?.value || teams[0];
+            let teamB = selectB?.value || teams[1];
+
+            if (random) {
+              const shuffled = [...teams].sort(() => Math.random() - 0.5);
+              teamA = shuffled[0];
+              teamB = shuffled[1];
+              if (selectA) selectA.value = teamA;
+              if (selectB) selectB.value = teamB;
+            }
+
+            if (teamA === teamB) {
+              teamB = teams.find(t => t !== teamA) || teamB;
+              if (selectB) selectB.value = teamB;
+            }
+
+            const currentPick = draftState.currentPick || (draftPicks.length + 1);
+            const currentRound = draftState.currentRound || 1;
+            const preset = random ? ['pick_swap', 'future_rights', 'blockbuster_swap', 'player_rights'][Math.floor(Math.random() * 4)] : (presetSelect?.value || 'pick_swap');
+
+            let title = "";
+            let body = "";
+            let tag = "Trade Alert";
+
+            if (preset === 'pick_swap') {
+              title = `TRADE ALERT: ${teamA} trades Pick #${currentPick} to ${teamB}`;
+              body = `BREAKING: ${teamA} has agreed to send their Round ${currentRound} Pick #${currentPick} to ${teamB} in exchange for draft position adjustments and future roster rights.`;
+              tag = "Trade Alert";
+            } else if (preset === 'future_rights') {
+              title = `OFFICIAL TRANSACTION: ${teamB} acquires Round ${currentRound} priority from ${teamA}`;
+              body = `War room wire confirms ${teamB} acquires draft leverage and priority rights from ${teamA} for upcoming season fixtures.`;
+              tag = "Breaking Intel";
+            } else if (preset === 'blockbuster_swap') {
+              title = `BLOCKBUSTER DEAL: Multi-asset draft agreement finalized between ${teamA} & ${teamB}`;
+              body = `In an active draft room move, ${teamA} and ${teamB} have completed an official package agreement involving multiple round positions and reserve considerations.`;
+              tag = "Trade Alert";
+            } else {
+              title = `ROSTER WIRE: ${teamA} agrees to player rights transfer with ${teamB}`;
+              body = `${teamA} transfers exclusive CDL reserve rights to ${teamB} as both franchises adjust their combat depth for Season 1.`;
+              tag = "Breaking Intel";
+            }
+
+            if (titleInput) titleInput.value = title;
+            if (bodyInput) bodyInput.value = body;
+            if (tagSelect) tagSelect.value = tag;
+          }
+
           document.getElementById("btn-open-trade-modal").addEventListener("click", () => {
+            populateTradeModalTeamSelects();
+            autoGenerateTradeIntel(false);
             document.getElementById("modal-post-intel").showModal();
+          });
+
+          document.getElementById("btn-autofill-trade")?.addEventListener("click", () => {
+            autoGenerateTradeIntel(false);
+          });
+
+          document.getElementById("btn-quick-random-trade")?.addEventListener("click", () => {
+            autoGenerateTradeIntel(true);
+          });
+
+          document.getElementById("trade-type-preset")?.addEventListener("change", () => {
+            autoGenerateTradeIntel(false);
+          });
+          document.getElementById("trade-team-a")?.addEventListener("change", () => {
+            autoGenerateTradeIntel(false);
+          });
+          document.getElementById("trade-team-b")?.addEventListener("change", () => {
+            autoGenerateTradeIntel(false);
           });
 
           document.getElementById("btn-confirm-post-intel").addEventListener("click", async () => {
@@ -2689,7 +3040,7 @@
                   title,
                   message: body,
                   tag,
-                  tag_color: "amber",
+                  tag_color: tag === "Breaking Intel" ? "cyan" : "amber",
                   link_url: "draft.html",
                   link_text: "View Live Draft HQ ↗",
                   is_active: true
@@ -2698,6 +3049,7 @@
               document.getElementById("modal-post-intel").close();
               document.getElementById("intel-input-title").value = "";
               document.getElementById("intel-input-body").value = "";
+              renderDraftAnnouncements();
               alert("Trade Intel broadcasted successfully!");
             } catch(e) {
               alert("Posted intel locally.");

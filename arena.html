@@ -107,9 +107,9 @@
             <a href="ladders.html?tab=match-finder" class="btn-crimson-outline" style="padding:14px 26px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
               <span>🎯</span> <span>Open Match Finder</span>
             </a>
-            <a href="ladders.html#register" class="btn-crimson-outline" style="padding:14px 22px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <button type="button" class="btn-crimson-outline" onclick="openCreateTeamModal()" style="padding:14px 22px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
               <span>🛡</span> <span>Register Team</span>
-            </a>
+            </button>
           </div>
 
           <!-- Key Metrics Row -->
@@ -333,9 +333,9 @@
             <a href="ladders.html" class="btn-crimson" style="padding:12px 24px; font-size:13px; text-decoration:none;">
               <span>⚔</span> <span>Go to Ladders ↗</span>
             </a>
-            <a href="ladders.html#register" class="btn-crimson-outline" style="padding:12px 20px; font-size:13px; text-decoration:none;">
+            <button type="button" class="btn-crimson-outline" onclick="openCreateTeamModal()" style="padding:12px 20px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
               <span>🛡</span> <span>Register Team</span>
-            </a>
+            </button>
           </div>
         </div>
       </section>
@@ -358,6 +358,71 @@
       </div>
     </footer>
 
+    <!-- CREATE TEAM MODAL -->
+    <div class="modal-overlay" id="modal-create-squad" role="dialog" aria-modal="true" aria-labelledby="modal-squad-title">
+      <div class="ladder-modal-box">
+        <button type="button" class="modal-close-btn" onclick="closeCreateTeamModal()" aria-label="Close Modal">✕</button>
+        <div style="margin-bottom: 20px;">
+          <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44;">ARENA TEAM REGISTRATION</span>
+          <h2 id="modal-squad-title" style="font-family:var(--display); font-size:26px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">Register Arena Team</h2>
+          <p style="font-size:13px; color:var(--muted); margin:0;">Create your team on this ladder and start climbing the leaderboard.</p>
+        </div>
+
+        <form id="form-create-squad" onsubmit="handleCreateTeam(event)">
+          <div class="ladder-form-group">
+            <label for="squad-name">Team Name *</label>
+            <input type="text" id="squad-name" class="ladder-input" placeholder="e.g. Apex Predators" required maxlength="30" />
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="ladder-form-group">
+              <label for="squad-tag">Clan Tag (2-5 Chars) *</label>
+              <input type="text" id="squad-tag" class="ladder-input" placeholder="APEX" required maxlength="5" style="text-transform:uppercase;" />
+            </div>
+            <div class="ladder-form-group">
+              <label for="squad-ladder-type">Target Ladder *</label>
+              <select id="squad-ladder-type" class="ladder-input" required>
+                <option value="4v4_variant">4v4 CDL Variant</option>
+                <option value="2v2_snd">2v2 Search &amp; Destroy</option>
+                <option value="1v1_radar">1v1 Radar Gunfight</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Avatar / Emblem Selector with Live Preview -->
+          <div class="ladder-form-group">
+            <label>Team Emblem / Avatar</label>
+            <div class="avatar-preview-box">
+              <img id="squad-avatar-preview" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Emblem Preview" class="avatar-preview-img" />
+              <div style="flex:1;">
+                <input type="url" id="squad-avatar-url" class="ladder-input" placeholder="Paste image URL (Discord, Imgur, etc.)" oninput="updateAvatarPreview(this.value)" style="margin-bottom:6px; font-size:12px;" />
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:11px; color:var(--muted);">OR upload image:</span>
+                  <input type="file" id="squad-avatar-file" accept="image/*" onchange="handleAvatarFileUpload(event)" style="font-size:11px; color:var(--muted);" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="ladder-form-group">
+              <label for="squad-captain-name">Captain Gamertag *</label>
+              <input type="text" id="squad-captain-name" class="ladder-input" placeholder="e.g. Scump" required />
+            </div>
+            <div class="ladder-form-group">
+              <label for="squad-captain-discord">Discord Username *</label>
+              <input type="text" id="squad-captain-discord" class="ladder-input" placeholder="e.g. scump#0001" required />
+            </div>
+          </div>
+
+          <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn-crimson-outline" onclick="closeCreateTeamModal()">Cancel</button>
+            <button type="submit" class="btn-crimson" id="btn-submit-squad"><span>⚔</span> <span>Create Team &amp; Join Ladder</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
       // Load squad count for hero
       async function updateArenaHeroStats() {
@@ -373,6 +438,82 @@
         } catch (e) {}
       }
       updateArenaHeroStats();
+
+      // Modal Handlers
+      function openCreateTeamModal() {
+        const modal = document.getElementById("modal-create-squad");
+        if (modal) modal.classList.add("active");
+      }
+
+      function closeCreateTeamModal() {
+        const modal = document.getElementById("modal-create-squad");
+        if (modal) modal.classList.remove("active");
+      }
+
+      // Close modal on background click or ESC key
+      document.addEventListener("click", function(e) {
+        const modal = document.getElementById("modal-create-squad");
+        if (modal && e.target === modal) {
+          closeCreateTeamModal();
+        }
+      });
+
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+          closeCreateTeamModal();
+        }
+      });
+
+      function updateAvatarPreview(url) {
+        if (!url) return;
+        document.getElementById("squad-avatar-preview").src = url;
+      }
+
+      function handleAvatarFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            document.getElementById("squad-avatar-preview").src = e.target.result;
+            document.getElementById("squad-avatar-url").value = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      async function handleCreateTeam(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btn-submit-squad");
+        if (btn) btn.disabled = true;
+
+        const name = document.getElementById("squad-name").value.trim();
+        const tag = document.getElementById("squad-tag").value.trim().toUpperCase();
+        const ladderType = document.getElementById("squad-ladder-type").value;
+        const avatarUrl = document.getElementById("squad-avatar-url").value.trim() || document.getElementById("squad-avatar-preview").src;
+        const captainName = document.getElementById("squad-captain-name").value.trim();
+        const captainDiscord = document.getElementById("squad-captain-discord").value.trim();
+
+        try {
+          const newTeam = await window.LadderDB.createLadderTeam({
+            name,
+            tag,
+            ladder_type: ladderType,
+            avatar_url: avatarUrl,
+            captain_name: captainName,
+            captain_discord: captainDiscord,
+            elo: 1200
+          });
+
+          window.LadderDB.setMyTeam(ladderType, newTeam);
+          closeCreateTeamModal();
+          alert(`✓ Team [${newTeam.tag}] ${newTeam.name} successfully registered on the ${ladderType === '4v4_variant' ? '4v4 CDL Variant' : ladderType === '2v2_snd' ? '2v2 Search & Destroy' : '1v1 Radar Gunfight'} ladder!`);
+          updateArenaHeroStats();
+        } catch (err) {
+          alert("Error creating team: " + err.message);
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
     </script>
   </body>
 </html>

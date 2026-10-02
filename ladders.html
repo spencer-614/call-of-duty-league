@@ -142,19 +142,6 @@
             <span class="gb-meta-tag">OFFICIAL CDL RULES</span>
             <span class="gb-meta-tag" id="gb-team-count-badge">TEAMS: 6</span>
           </div>
-
-          <!-- Quick Ladder Switcher -->
-          <div class="gb-ladder-switcher">
-            <button type="button" class="gb-ladder-btn active" id="btn-ladder-4v4" onclick="selectLadder('4v4_variant')">
-              <span>⚔</span> <span>4v4 CDL Variant</span>
-            </button>
-            <button type="button" class="gb-ladder-btn" id="btn-ladder-2v2" onclick="selectLadder('2v2_snd')">
-              <span>💣</span> <span>2v2 Search &amp; Destroy</span>
-            </button>
-            <button type="button" class="gb-ladder-btn" id="btn-ladder-1v1" onclick="selectLadder('1v1_radar')">
-              <span>🎯</span> <span>1v1 Radar / Gunfight</span>
-            </button>
-          </div>
         </div>
 
         <!-- Right Side Hero Action: Active Squad Status or Create Team CTA -->
@@ -178,8 +165,8 @@
             </p>
           </div>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button type="button" class="btn-crimson" onclick="switchGbTab('match-finder');" style="padding:10px 20px; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="btn-crimson" onclick="handleFindOrPostMatch()" style="padding:10px 20px; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
             <span>🎯</span> <span>Find or Post Match ↗</span>
           </button>
         </div>
@@ -212,13 +199,29 @@
       <div class="gb-content-wrap">
         <!-- TAB 1: STANDINGS -->
         <section id="gb-view-standings" class="gb-card-box">
-          <div class="gb-card-header-bar">
-            <div style="font:900 13px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:8px;">
-              <span id="standings-table-title">4v4 CDL Variant Standings</span>
-              <small style="color:#64748b; font-weight:normal;">(Ranked by ELO &amp; Wins)</small>
+          <div class="gb-card-header-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+              <div style="font:900 13px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:8px;">
+                <span id="standings-table-title">4v4 CDL Variant Standings</span>
+                <small style="color:#64748b; font-weight:normal;">(Ranked by ELO &amp; Wins)</small>
+              </div>
+
+              <!-- 4v4, 2v2, 1v1 Ladder Filter Options -->
+              <div class="gb-ladder-switcher" role="group" aria-label="Ladder Filters">
+                <button type="button" class="gb-ladder-btn active" id="btn-ladder-4v4" onclick="selectLadder('4v4_variant')">
+                  <span>⚔</span> <span>4v4 CDL Variant</span>
+                </button>
+                <button type="button" class="gb-ladder-btn" id="btn-ladder-2v2" onclick="selectLadder('2v2_snd')">
+                  <span>💣</span> <span>2v2 Search &amp; Destroy</span>
+                </button>
+                <button type="button" class="gb-ladder-btn" id="btn-ladder-1v1" onclick="selectLadder('1v1_radar')">
+                  <span>🎯</span> <span>1v1 Radar / Gunfight</span>
+                </button>
+              </div>
             </div>
+
             <div>
-              <input type="text" id="standings-search-input" placeholder="Search team or tag..." class="ladder-input" style="padding:6px 12px; width:240px; font-size:12px; background:#080a0f;" oninput="filterStandingsTable()" />
+              <input type="text" id="standings-search-input" placeholder="Search team or tag..." class="ladder-input" style="padding:6px 12px; width:220px; font-size:12px; background:#080a0f;" oninput="filterStandingsTable()" />
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -591,7 +594,7 @@
         renderMyTeamTab();
       }
 
-      function switchGbTab(tabName, event) {
+      function switchGbTab(tabName, event, shouldScroll = false) {
         if (event) event.preventDefault();
         currentTab = tabName;
 
@@ -610,6 +613,21 @@
         if (tabName === "match-finder") loadMatchFinder();
         if (tabName === "matches") loadRecentMatches();
         if (tabName === "my-team") renderMyTeamTab();
+
+        if (shouldScroll) {
+          const targetEl = document.getElementById("gb-view-" + tabName) || document.querySelector(".gb-tabs-nav");
+          if (targetEl) targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      function handleFindOrPostMatch() {
+        switchGbTab("match-finder", null, true);
+        const myTeam = window.LadderDB ? window.LadderDB.getMyTeam(currentLadder) : null;
+        if (myTeam) {
+          openPostChallengeModal();
+        } else {
+          openCreateTeamModal();
+        }
       }
 
       function renderHeaderSquad() {
@@ -747,13 +765,13 @@
                       ${isMyTeam ? '<span class="pill-my-team">YOUR TEAM</span>' : ''}
                     </div>
                     <div style="font-size:11px; color:#64748b;">
-                      Capt: <span style="color:#cbd5e1;">${team.captain_name}</span> • <span style="color:#ff1e44; text-decoration:underline;">View Roster &raquo;</span>
+                      Capt: <span style="color:#cbd5e1;">${team.captain_name}</span>
                     </div>
                   </div>
                 </div>
               </td>
               <td>
-                <span class="val-badge ${tier.badgeClass}">
+                <span class="tier-badge ${tier.badgeClass}">
                   ${tier.icon} ${tier.name}
                 </span>
               </td>
@@ -793,10 +811,15 @@
         if (!container) return;
 
         try {
-          const challenges = await window.LadderDB.getChallenges(currentLadder);
-          document.getElementById("count-match-finder").textContent = challenges.length;
+          const challenges = (window.LadderDB && typeof window.LadderDB.getOpenChallenges === "function")
+            ? await window.LadderDB.getOpenChallenges(currentLadder)
+            : (window.LadderDB && typeof window.LadderDB.getChallenges === "function")
+            ? await window.LadderDB.getChallenges(currentLadder)
+            : [];
 
-          if (challenges.length === 0) {
+          document.getElementById("count-match-finder").textContent = (challenges || []).length;
+
+          if (!challenges || challenges.length === 0) {
             container.innerHTML = `
               <div style="text-align:center; padding:50px 20px; color:#64748b; background:#080a0f;">
                 <div style="font-size:36px; margin-bottom:12px;">🎯</div>
@@ -829,8 +852,8 @@
                       [${team.tag}] ${team.name}
                       ${isMyChal ? '<span class="pill-my-team" style="margin-left:6px;">YOUR POST</span>' : ''}
                     </div>
-                    <div style="font-size:12px; color:#94a3b8;">
-                      Rating: <strong style="color:#ff1e44;">${team.elo || 1200} ELO</strong> · Captain: ${team.captain_name || 'N/A'} • <span style="color:#ff1e44; text-decoration:underline; font-size:11px;">Roster &raquo;</span>
+                    <div style="font-size:12px; color:#64748b;">
+                      Rating: <strong style="color:#ff1e44;">${team.elo || 1200} ELO</strong> · Capt: <span style="color:#cbd5e1;">${team.captain_name || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -873,9 +896,10 @@
         }
 
         try {
-          const match = await window.LadderDB.acceptChallenge(challengeId, myTeam);
+          const res = await window.LadderDB.acceptChallenge(challengeId, myTeam);
+          const matchId = res.match?.id || res.id || challengeId;
           alert("✓ Match Accepted! Entering the private match room for map vetos...");
-          window.location.href = `match.html?id=${match.id}`;
+          window.location.href = `match.html?id=${matchId}`;
         } catch (err) {
           alert("Error accepting match: " + err.message);
         }
@@ -978,7 +1002,7 @@
                 [${myTeam.tag}] ${myTeam.name}
               </h2>
               <div style="margin-bottom:12px;">
-                <span class="val-badge ${tier.badgeClass}">${tier.icon} ${tier.name}</span>
+                <span class="tier-badge ${tier.badgeClass}">${tier.icon} ${tier.name}</span>
               </div>
               <div style="font-size:12px; color:#94a3b8; margin-bottom:16px;">
                 Captain: <strong style="color:#fff;">${myTeam.captain_name || 'N/A'}</strong><br/>
@@ -1135,6 +1159,7 @@
           await window.LadderDB.postChallenge({
             ladder_type: currentLadder,
             team_a_id: myTeam.id,
+            team_a: myTeam,
             best_of: bestOf,
             notes: `Time: ${time} | ${notes}`
           });
@@ -1244,7 +1269,7 @@
                 ${isMyTeam ? '<span class="pill-my-team">YOUR SQUAD</span>' : ''}
               </div>
               <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px;">
-                <span class="val-badge ${teamTier.badgeClass}" style="padding:2px 8px; font-size:10px;">
+                <span class="tier-badge ${teamTier.badgeClass}" style="padding:2px 8px; font-size:10px;">
                   ${teamTier.icon} ${teamTier.name}
                 </span>
                 <span style="color:#ff1e44; font-weight:900;">${team.elo} ELO</span>
@@ -1274,13 +1299,16 @@
               <div class="roster-player-card">
                 <!-- Left: Avatar & Identity -->
                 <div style="display:flex; align-items:center; gap:14px; min-width:200px;">
-                  <div style="position:relative;">
-                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'};" alt="${player.gamertag}" />
+                  <a href="profile.html?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
+                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'}; transition:border-color 0.2s;" alt="${player.gamertag}" class="team-avatar-sm" />
                     <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#22c55e; border:2px solid #090d14; border-radius:50%;" title="Verified Combatant"></span>
-                  </div>
+                  </a>
                   <div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                      <strong style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px;">${player.gamertag}</strong>
+                      <a href="profile.html?player=${encodeURIComponent(player.gamertag)}" class="team-link-hover" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
+                        <strong style="color:#ffffff;">${player.gamertag}</strong>
+                        <span style="font-size:10px; color:#ff1e44; opacity:0.85;">↗</span>
+                      </a>
                       <span style="font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:3px; background:${isCaptain ? '#3b0d16' : '#141d2e'}; color:${isCaptain ? '#ff4d6d' : '#7dd3fc'}; border:1px solid ${isCaptain ? '#ff1e44' : '#223654'};">
                         ${player.role || (isCaptain ? 'Captain' : 'Starter')}
                       </span>
@@ -1297,7 +1325,7 @@
                   <!-- Rank / Tier -->
                   <div style="text-align:right;">
                     <div style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; margin-bottom:3px;">RANK &amp; TIER</div>
-                    <span class="val-badge ${pTier.badgeClass}" style="font-size:10px; padding:3px 8px;">
+                    <span class="tier-badge ${pTier.badgeClass}" style="font-size:10px; padding:3px 8px;">
                       ${pTier.icon} ${pTier.name}
                     </span>
                   </div>

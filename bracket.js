@@ -33,6 +33,28 @@
       status: "CHAMPIONSHIP STAGE",
       description: "The top 8 franchise squads battling in the definitive Frontline double-elimination tournament.",
       ruleset: "CDL V4 Competitive Settings · 4v4 HP / S&D / CTL",
+      explainer: {
+        kicker: "COMPETITIVE FRAMEWORK // PRO DIVISION 1",
+        title: 'How Premier <span style="color:var(--lime);">Double Elimination Works</span>',
+        items: [
+          {
+            title: "1. Double Elimination Format",
+            text: "Division 1 operates on a full double-elimination structure. A team that loses in the Winners (Upper) Bracket drops to the Elimination (Lower) Bracket for a second opportunity. A second loss results in complete tournament elimination."
+          },
+          {
+            title: "2. Best of 5 Series Rotation",
+            text: "Standard CDL match rotation: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Control (First to 3), Map 4 Hardpoint, and Map 5 Search & Destroy. All series are played to first to 3 map wins."
+          },
+          {
+            title: "3. Grand Finals & Bracket Reset",
+            text: "The squad advancing undefeated from the Winners Bracket enters Grand Finals with 1-series advantage. The team emerging from the Elimination Bracket must win two consecutive Best of 5 series (Bracket Reset) to claim the championship title."
+          },
+          {
+            title: "4. Live Telemetry & VODs",
+            text: "Click on any match card in the bracket to review individual map telemetry, series scoreboard breakdowns, slayer MVPs, and link directly to full stream broadcasts."
+          }
+        ]
+      },
       stages: [
         {
           id: "winners",
@@ -359,6 +381,28 @@
       status: "WEEK 4 · ELIMINATION STAGE",
       description: "Amateur & franchise development teams fighting for league glory, prize cash, and Premier Division promotion.",
       ruleset: "CDL Competitive Standard · 4v4 Roster Lock",
+      explainer: {
+        kicker: "CONTENDERS FRAMEWORK // DIVISION 2",
+        title: 'How Challengers <span style="color:var(--lime);">Double Elimination Works</span>',
+        items: [
+          {
+            title: "1. Double Elimination Format",
+            text: "Division 2 operates on a competitive double-elimination structure. Squads defeated in the Winners Bracket drop into the Elimination Bracket for a redemption run. A second defeat results in tournament elimination."
+          },
+          {
+            title: "2. Best of 5 Series Rotation",
+            text: "Official CDL competitive rule set: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Control (First to 3), Map 4 Hardpoint, and Map 5 Search & Destroy decider. All series are played first to 3 map wins."
+          },
+          {
+            title: "3. Grand Finals & Premier Promotion",
+            text: "The Challengers tournament champion claims the $500 prize pool and an automatic promotional berth into Division 1 Premier. The Elimination Bracket finalist must win two consecutive series to achieve a bracket reset."
+          },
+          {
+            title: "4. Live Telemetry & Scout Reports",
+            text: "Click any match in the bracket to inspect map telemetry, player performance metrics, match MVPs, and link to broadcast VODs."
+          }
+        ]
+      },
       stages: [
         {
           id: "winners",
@@ -568,6 +612,28 @@
       status: "ROUND 2 · SEMIFINALS",
       description: "Open community tournament for free agents, newly drafted squads, and grassroots combatants.",
       ruleset: "CDL 4v4 Ruleset · Best of 3 (HP / S&D / CTL)",
+      explainer: {
+        kicker: "GRASSROOTS FRAMEWORK // DIVISION 3",
+        title: 'How Open Recruit <span style="color:var(--lime);">Single Elimination Works</span>',
+        items: [
+          {
+            title: "1. Single Elimination Knockout",
+            text: "Division 3 operates on a pure single-elimination knockout format. There is no lower bracket—one series defeat results in immediate tournament elimination. Every round is sudden death."
+          },
+          {
+            title: "2. Best of 3 Series (Finals BO5)",
+            text: "Quarterfinals and Semifinals are played as Best of 3 (Map 1 Hardpoint, Map 2 Search & Destroy, Map 3 Control). The Grand Finals title match elevates to a Best of 5 championship showdown."
+          },
+          {
+            title: "3. Bronze Final (3rd Place Playoff)",
+            text: "Losing semifinalists battle in a dedicated 3rd Place match to determine final tournament podium standing and earn priority qualification points."
+          },
+          {
+            title: "4. Talent Scouting & Promotion",
+            text: "The Open Recruit Cup champion earns direct promotion into the Challengers Division. Outstanding performers are highlighted on the Free Agent board for franchise scouts."
+          }
+        ]
+      },
       stages: [
         {
           id: "main",
@@ -670,20 +736,33 @@
             },
             {
               roundId: "op-gf",
-              name: "Grand Finals",
-              badge: "CHAMPIONSHIP",
-              bestOf: "BO5",
+              name: "Finals & 3rd Place",
+              badge: "TITLE & PODIUM",
+              bestOf: "BO5 / BO3",
               matches: [
                 {
                   id: "O7",
                   code: "OP-GF",
                   status: "Scheduled",
                   time: "Sun · 5:30 PM EST",
+                  bestOf: "BO5",
                   team1: { seed: null, name: "Winner of O5", tag: "TBD", score: 0, winner: null },
                   team2: { seed: null, name: "Winner of O6", tag: "TBD", score: 0, winner: null },
                   maps: [],
                   mvp: "Scheduled",
                   note: "Recruit Division Champions + Automatic promotion seed into Challengers."
+                },
+                {
+                  id: "O8",
+                  code: "OP-3RD",
+                  status: "Scheduled",
+                  time: "Sun · 4:15 PM EST",
+                  bestOf: "BO3",
+                  team1: { seed: null, name: "Loser of O5", tag: "TBD", score: 0, winner: null },
+                  team2: { seed: null, name: "Loser of O6", tag: "TBD", score: 0, winner: null },
+                  maps: [],
+                  mvp: "Scheduled",
+                  note: "Bronze Final (3rd Place Playoff) · Best of 3."
                 }
               ]
             }
@@ -730,6 +809,20 @@
       document.body.appendChild(dialog);
 
       dialog.querySelector("#bracket-modal-close-btn")?.addEventListener("click", () => dialog.close());
+
+      // Unlock scrolling when dialog closes or cancels
+      dialog.addEventListener("close", () => {
+        if (!document.querySelector("dialog[open]")) {
+          document.documentElement.classList.remove("modal-open");
+          document.body.classList.remove("modal-open");
+        }
+      });
+      dialog.addEventListener("cancel", () => {
+        if (!document.querySelector("dialog[open]")) {
+          document.documentElement.classList.remove("modal-open");
+          document.body.classList.remove("modal-open");
+        }
+      });
 
       // Modern light-dismiss fallback
       if (!("closedBy" in HTMLDialogElement.prototype)) {
@@ -836,7 +929,7 @@
       </div>
     `;
 
-    // MVP & VOD Actions
+    // MVP & Actions
     const mvpHtml = match.mvp ? `
       <div class="modal-mvp-box">
         <span class="mvp-label">★ MATCH MVP:</span>
@@ -844,22 +937,59 @@
       </div>
     ` : "";
 
-    const vodBtnHtml = match.vodUrl ? `
-      <div style="margin-top: 20px; text-align: right;">
-        <a href="${escapeHtml(match.vodUrl)}" class="btn-paypal-submit" style="display:inline-flex; width:auto; padding: 10px 20px; font-size:13px; text-decoration:none;">
-          <span>Watch Match Broadcast / VOD</span>
-          <span style="font-size:16px;">↗</span>
+    // Live Alert Banner & Watch Live / VOD Action Buttons
+    const isLiveMatch = match.status === "Live";
+    const liveStreamUrl = match.liveUrl || match.vodUrl || "livestreams.html";
+
+    const liveAlertBannerHtml = isLiveMatch ? `
+      <div class="modal-live-banner">
+        <div class="modal-live-banner-left">
+          <span class="live-pulse-dot" style="width:10px; height:10px;"></span>
+          <div>
+            <div class="modal-live-banner-title">MATCH IS CURRENTLY LIVE ON AIR</div>
+            <div class="modal-live-banner-sub">Frontline official CDL stream broadcast & live match telemetry in progress.</div>
+          </div>
+        </div>
+        <a href="${escapeHtml(liveStreamUrl)}" class="btn-watch-live-action" style="padding: 10px 18px; font-size:12px;">
+          <span class="live-pulse-dot" style="width:7px; height:7px;"></span>
+          <span>Watch Live Stream</span>
+          <span>▶</span>
         </a>
       </div>
     ` : "";
 
+    let actionBtnHtml = "";
+    if (isLiveMatch) {
+      actionBtnHtml = `
+        <div style="margin-top: 24px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <a href="${escapeHtml(liveStreamUrl)}" class="btn-watch-live-action">
+            <span class="live-pulse-dot" style="width:8px; height:8px;"></span>
+            <span>Watch Match Live</span>
+            <span style="font-size:15px;">▶</span>
+          </a>
+        </div>
+      `;
+    } else if (match.vodUrl) {
+      actionBtnHtml = `
+        <div style="margin-top: 20px; text-align: right;">
+          <a href="${escapeHtml(match.vodUrl)}" class="btn-paypal-submit" style="display:inline-flex; width:auto; padding: 10px 20px; font-size:13px; text-decoration:none;">
+            <span>Watch Match Broadcast / VOD</span>
+            <span style="font-size:16px;">↗</span>
+          </a>
+        </div>
+      `;
+    }
+
     bodyEl.innerHTML = `
+      ${liveAlertBannerHtml}
       ${teamsHtml}
       ${mvpHtml}
       ${mapsHtml}
-      ${vodBtnHtml}
+      ${actionBtnHtml}
     `;
 
+    document.documentElement.classList.add("modal-open");
+    document.body.classList.add("modal-open");
     dialog.showModal();
   }
 
@@ -878,6 +1008,10 @@
     } else {
       statusBadge = `<span class="badge-match-time">${escapeHtml(match.time || "TBD")}</span>`;
     }
+
+    const actionHintHtml = isLive
+      ? `<span class="bmc-action-hint bmc-live-hint"><span class="live-pulse-dot" style="width:6px; height:6px;"></span>Watch Live & Intel ↗</span>`
+      : `<span class="bmc-action-hint">View Maps & Intel ↗</span>`;
 
     return `
       <div class="bracket-match-card ${isLive ? 'is-live-match' : ''}" data-match-id="${escapeHtml(match.id)}" role="button" tabindex="0" aria-label="Match ${escapeHtml(match.code)}: ${escapeHtml(match.team1.name)} vs ${escapeHtml(match.team2.name)}">
@@ -907,7 +1041,7 @@
         </div>
         <div class="bmc-footer">
           <span class="bmc-bestof">${escapeHtml(match.bestOf || "BO5")}</span>
-          <span class="bmc-action-hint">View Maps & Intel ↗</span>
+          ${actionHintHtml}
         </div>
       </div>
     `;
@@ -1057,9 +1191,64 @@
     if (rulesEl) rulesEl.textContent = divData.ruleset;
   }
 
+  // Update Explainer Section Content
+  function updateExplainerSection(divData) {
+    const kickerEl = document.getElementById("explainer-kicker");
+    const titleEl = document.getElementById("explainer-title");
+    const gridEl = document.getElementById("explainer-grid");
+
+    if (!divData || !divData.explainer) return;
+
+    if (kickerEl) kickerEl.textContent = divData.explainer.kicker;
+    if (titleEl) titleEl.innerHTML = divData.explainer.title;
+    if (gridEl && Array.isArray(divData.explainer.items)) {
+      gridEl.innerHTML = divData.explainer.items.map(item => `
+        <div>
+          <strong style="color:var(--text); font-size:14px; display:block; margin-bottom:6px;">${escapeHtml(item.title)}</strong>
+          ${escapeHtml(item.text)}
+        </div>
+      `).join("");
+    }
+  }
+
+  // Update Dynamic Stage Filter Buttons
+  function updateStageFilterButtons(divData) {
+    const container = document.getElementById("stage-filter-container");
+    if (!container) return;
+
+    const validStageIds = ["all", ...divData.stages.map(s => s.id)];
+    if (!validStageIds.includes(currentStageFilter)) {
+      currentStageFilter = "all";
+    }
+
+    const stages = [
+      { id: "all", name: "All Stages" },
+      ...divData.stages.map(s => ({ id: s.id, name: s.name }))
+    ];
+
+    container.innerHTML = stages.map(s => `
+      <button type="button" class="stage-filter-btn ${s.id === currentStageFilter ? 'active' : ''}" data-stage="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>
+    `).join("");
+
+    container.querySelectorAll(".stage-filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const stageId = btn.getAttribute("data-stage");
+        if (stageId === currentStageFilter) return;
+
+        container.querySelectorAll(".stage-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        currentStageFilter = stageId;
+        refreshView();
+      });
+    });
+  }
+
   function refreshView() {
     const divData = BRACKET_DATA[currentDivision] || BRACKET_DATA.premier;
     updateDivisionHeader(divData);
+    updateStageFilterButtons(divData);
+    updateExplainerSection(divData);
 
     if (currentViewMode === "tree") {
       renderBracketTree(divData);
@@ -1087,22 +1276,8 @@
         tab.setAttribute("aria-selected", "true");
 
         currentDivision = divId;
+        currentStageFilter = "all";
         window.location.hash = divId;
-        refreshView();
-      });
-    });
-
-    // 2. Stage Filter Buttons
-    const stageBtns = document.querySelectorAll(".stage-filter-btn");
-    stageBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const stageId = btn.getAttribute("data-stage");
-        if (stageId === currentStageFilter) return;
-
-        stageBtns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        currentStageFilter = stageId;
         refreshView();
       });
     });

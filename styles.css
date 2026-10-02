@@ -238,8 +238,10 @@ a {
   right: 0;
   left: auto;
   z-index: 100;
-  width: 440px;
+  width: max-content;
   max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
   padding: 16px;
   background: #141510;
   border: 1px solid #3d422f;
@@ -256,7 +258,7 @@ a {
 }
 .nav-dropdown-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(180px, 210px));
   gap: 14px;
 }
 .nav-category-title {
@@ -584,21 +586,39 @@ a {
   text-transform: uppercase;
   overflow: hidden;
   white-space: nowrap;
+  position: relative;
+  width: 100%;
+  user-select: none;
+  contain: paint;
+  z-index: 10;
 }
 .ticker-track {
-  display: inline-flex;
+  display: flex;
+  width: max-content;
+  flex-shrink: 0;
   white-space: nowrap;
-  animation: ticker-slide 22s linear infinite;
+  animation: ticker-slide 28s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
-.ticker-track:hover {
-  animation-play-state: paused;
+@media (hover: hover) and (pointer: fine) {
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
 }
 .ticker-track span {
-  margin: 0 20px;
+  margin: 0 24px;
+  display: inline-block;
 }
 @keyframes ticker-slide {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 .section {
   padding: 72px 0;
@@ -778,21 +798,57 @@ a {
 .join-box {
   border: 1px solid #596138;
   background: linear-gradient(110deg, #25291b, #191a16 72%);
-  padding: 30px;
+  padding: 36px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  flex-direction: column;
+  gap: 24px;
 }
 .join-box h2 {
-  font: 800 34px var(--display);
+  font: 800 36px var(--display);
   text-transform: uppercase;
   margin: 8px 0;
 }
 .join-box p {
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 13.5px;
+  color: #c5c8ba;
   margin: 0;
+  line-height: 1.6;
+}
+
+.join-pathway-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.join-pathway-card {
+  text-decoration: none;
+  background: #141511;
+  border: 1px solid #3c4223;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.join-pathway-card:hover {
+  border-color: var(--lime);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 24px rgba(213, 244, 91, 0.15);
+}
+
+.join-pathway-card.card-team:hover {
+  border-color: #ffb300;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 179, 0, 0.2);
+}
+
+.join-pathway-card.card-org:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.2);
 }
 
 .signup-terminal {
@@ -1027,11 +1083,104 @@ textarea.form-control {
 }
 
 /* ==============================================================================
-   SIGNUP TAB TOGGLE & ORG / TEAM REGISTRATION
+   SIGNUP PATHWAY SELECTOR & SINGLE OPTION DISPLAY
    ============================================================================== */
+.signup-pathway-nav {
+  background: #141611;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pathway-nav-label {
+  font: 800 11px var(--admin-font, monospace);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.pathway-nav-buttons {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.pathway-btn {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #191b14;
+  border: 1px solid #2d3221;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  color: var(--muted);
+  outline: none;
+}
+.pathway-btn:hover {
+  background: #202418;
+  border-color: #4a542b;
+  color: var(--text);
+}
+.pathway-btn.active {
+  background: #222817;
+  border-color: var(--lime);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(213, 244, 91, 0.15), inset 0 0 0 1px var(--lime);
+}
+.pathway-btn.btn-team.active {
+  background: #262114;
+  border-color: #ffb300;
+  box-shadow: 0 0 16px rgba(255, 179, 0, 0.15), inset 0 0 0 1px #ffb300;
+}
+.pathway-btn.btn-org.active {
+  background: #11212c;
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.15), inset 0 0 0 1px #38bdf8;
+}
+.pathway-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.pathway-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pathway-text strong {
+  font: 800 13px var(--body);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.pathway-btn.active .pathway-text strong {
+  color: #fff;
+}
+.pathway-text small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.pathway-btn.active .pathway-text small {
+  color: var(--lime);
+  font-weight: 700;
+}
+.pathway-btn.btn-team.active .pathway-text small {
+  color: #ffb300;
+}
+.pathway-btn.btn-org.active .pathway-text small {
+  color: #38bdf8;
+}
+
 .signup-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
   margin-bottom: 30px;
 }
@@ -1056,6 +1205,10 @@ textarea.form-control {
   border-color: var(--lime);
   background: #191b14;
   box-shadow: 0 0 16px rgba(213, 244, 91, 0.12), inset 0 0 0 1px var(--lime);
+}
+.signup-tab-btn.tab-org.active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.15), inset 0 0 0 1px #38bdf8;
 }
 .signup-tab-btn .tab-badge-row {
   display: flex;
@@ -1085,6 +1238,16 @@ textarea.form-control {
   background: #ffb300;
   color: #11120f;
   border-color: #ffb300;
+}
+.signup-tab-btn .tab-badge.org-badge {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.signup-tab-btn.active .tab-badge.org-badge {
+  background: #38bdf8;
+  color: #0b1520;
+  border-color: #38bdf8;
 }
 .signup-tab-btn .tab-title {
   font: 800 16px var(--body);
@@ -1331,7 +1494,9 @@ textarea.form-control {
   padding: 4px 2px;
   transition: color 0.2s ease, text-shadow 0.2s ease;
 }
-.footer-links a:hover {
+.footer-links a:hover,
+.footer-links a.active,
+.footer-links a[aria-current="page"] {
   color: var(--lime);
   text-shadow: 0 0 10px rgba(213, 244, 91, 0.4);
 }
@@ -1340,7 +1505,7 @@ textarea.form-control {
     display: none;
   }
   .links {
-    width: 340px;
+    width: min(340px, calc(100vw - 24px));
     left: auto;
     right: 0;
   }
@@ -1349,6 +1514,7 @@ textarea.form-control {
   }
   .nav-dropdown-grid {
     grid-template-columns: 1fr;
+    width: 100%;
   }
 }
 @media (max-width: 700px) {
@@ -1502,8 +1668,18 @@ textarea.form-control {
 }
 
 /* ==============================================================================
-   PLAYER COMBAT DOSSIER MODAL (<dialog>) - MATCHING WEBSITE THEME
+   MODAL SCROLL LOCK & COMBAT DOSSIER MODAL (<dialog>)
    ============================================================================== */
+html:has(dialog[open]),
+body:has(dialog[open]),
+html:has(.modal-overlay.active),
+body:has(.modal-overlay.active),
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+}
+
 dialog.player-modal {
   border: 1px solid var(--line);
   background: var(--bg); /* Exactly matches website background #11120f */
@@ -3063,6 +3239,69 @@ tr.clickable-team {
   gap: 10px;
 }
 
+.modal-live-banner {
+  background: linear-gradient(135deg, rgba(255, 30, 68, 0.18) 0%, rgba(20, 8, 12, 0.95) 100%);
+  border: 1px solid rgba(255, 74, 74, 0.6);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 0 24px rgba(255, 74, 74, 0.2);
+}
+
+.modal-live-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-live-banner-title {
+  font: 800 13px var(--body);
+  color: #ffffff;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.modal-live-banner-sub {
+  font-size: 12px;
+  color: #ffb5c0;
+}
+
+.btn-watch-live-action {
+  background: linear-gradient(135deg, #ff1e44 0%, #b80d28 100%);
+  color: #ffffff !important;
+  font: 900 13px/1 var(--body);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 12px 22px;
+  border-radius: 4px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 20px rgba(255, 30, 68, 0.55);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-watch-live-action:hover {
+  background: #ff3355;
+  box-shadow: 0 0 30px rgba(255, 30, 68, 0.8);
+  transform: translateY(-2px);
+}
+
+.bmc-action-hint.bmc-live-hint {
+  color: #ff4a4a;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  opacity: 1;
+}
+
 .mvp-label {
   font: 800 11.5px var(--body);
   color: var(--lime);
@@ -3795,6 +4034,48 @@ tr.clickable-team {
   border-left-color: var(--lime);
 }
 
+.draft-intel-card {
+  background: linear-gradient(135deg, #18150f 0%, #13140e 100%);
+  border: 1px solid #4a3618;
+  border-left: 4px solid #ffb300;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease;
+}
+
+.draft-intel-card:hover {
+  transform: translateX(4px);
+  border-color: #ffb300;
+}
+
+.draft-intel-card.breaking {
+  border-left-color: #38bdf8;
+  border-color: #1e3a5f;
+  background: linear-gradient(135deg, #0f172a 0%, #11140e 100%);
+}
+
+.draft-intel-card.breaking:hover {
+  border-color: #38bdf8;
+}
+
+.intel-badge-amber {
+  background: #ffb300;
+  color: #11120f;
+  font: 900 11px monospace;
+  padding: 4px 8px;
+  letter-spacing: 0.5px;
+}
+
+.intel-badge-cyan {
+  background: #38bdf8;
+  color: #0f172a;
+  font: 900 11px monospace;
+  padding: 4px 8px;
+  letter-spacing: 0.5px;
+}
+
 .draft-pick-header {
   display: flex;
   justify-content: space-between;
@@ -4498,68 +4779,60 @@ body.mode-arena .league-only {
 /* ==============================================================================
    TACTICAL TIER BADGES (FRONTLINE CUSTOM TIERS)
    ============================================================================== */
-.tier-badge {
+.tier-badge, .val-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font: 900 11px/1 var(--body);
-  letter-spacing: 0.6px;
+  font: 800 11px/1.2 var(--body);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   padding: 4px 8px;
+  border-radius: 4px;
   border: 1px solid transparent;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .tier-recruit {
-  background: #1e2229;
-  border-color: #3b4252;
-  color: #d8dee9;
+  background: #141923;
+  border-color: #2b364a;
+  color: #94a3b8;
 }
 
 .tier-operator {
-  background: #2b2315;
-  border-color: #634d28;
-  color: #e5c07b;
+  background: #21190e;
+  border-color: #593f18;
+  color: #f59e0b;
 }
 
 .tier-specialist {
-  background: #0f2b30;
-  border-color: #176570;
-  color: #00f0ff;
-  box-shadow: 0 0 6px rgba(0, 240, 255, 0.2);
+  background: #0b1f24;
+  border-color: #175461;
+  color: #38bdf8;
 }
 
 .tier-vanguard {
-  background: #152038;
-  border-color: #27457d;
-  color: #5895f5;
+  background: #101c33;
+  border-color: #223f75;
+  color: #60a5fa;
 }
 
 .tier-warlord {
-  background: #330d14;
-  border-color: #7a1928;
-  color: #ff4766;
-  box-shadow: 0 0 8px rgba(255, 30, 68, 0.3);
+  background: #290d15;
+  border-color: #631928;
+  color: #fb7185;
 }
 
 .tier-commander {
-  background: #261138;
-  border-color: #602591;
+  background: #200f30;
+  border-color: #5c248c;
   color: #c084fc;
-  box-shadow: 0 0 8px rgba(192, 132, 252, 0.3);
 }
 
 .tier-apex {
-  background: linear-gradient(135deg, #400612, #6b0f22);
+  background: #330b14;
   border-color: #ff1e44;
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 30, 68, 0.6);
-  animation: apexPulse 2s infinite alternate;
-}
-
-@keyframes apexPulse {
-  0% { box-shadow: 0 0 10px rgba(255, 30, 68, 0.4); }
-  100% { box-shadow: 0 0 20px rgba(255, 30, 68, 0.8), 0 0 30px rgba(255, 180, 0, 0.3); }
 }
 
 .streak-pill {

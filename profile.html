@@ -123,10 +123,13 @@
               <a href="ladders.html?tab=match-finder" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none;">
                 <span>🎯</span> <span>Find Match</span>
               </a>
-              <button type="button" class="btn-crimson-outline" onclick="openEditProfileModal()" style="padding:10px 16px; font-size:12px;">
+              <a href="profile.html" id="btn-back-my-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none;">
+                <span>👤</span> <span>My Profile</span>
+              </a>
+              <button type="button" class="btn-crimson-outline" id="btn-edit-profile" onclick="openEditProfileModal()" style="padding:10px 16px; font-size:12px;">
                 <span>✏️</span> <span>Edit Profile</span>
               </button>
-              <button type="button" class="btn-crimson-outline" onclick="handleArenaSignOut()" style="padding:10px 16px; font-size:12px; border-color:#471922; color:#ef4444;">
+              <button type="button" class="btn-crimson-outline" id="btn-sign-out" onclick="handleArenaSignOut()" style="padding:10px 16px; font-size:12px; border-color:#471922; color:#ef4444;">
                 <span>🚪</span> <span>Sign Out</span>
               </button>
             </div>
@@ -419,6 +422,21 @@
 
         <form onsubmit="handleSaveProfileEdit(event)">
           <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+              Username / Gamertag <span style="color:#e11d48;">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-gamertag"
+              placeholder="e.g. Deadshot, Viper, Ghost"
+              required
+              autocomplete="nickname"
+              style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;"
+            />
+            <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Your primary combatant handle across Arena leaderboards and matches</span>
+          </div>
+
+          <div style="margin-bottom:14px;">
             <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Clan Tag (Max 5 chars)</label>
             <input type="text" id="edit-clan-tag" maxlength="5" style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;" />
           </div>
@@ -517,6 +535,20 @@
             document.getElementById("profile-logged-out-view").style.display = "block";
           }
         }
+
+        // Handle URL direct linking to Edit Profile modal (?edit=true or #edit)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (window.location.hash === "#edit" || urlParams.get("edit") === "true" || urlParams.get("action") === "edit") {
+          setTimeout(() => {
+            const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+            if (player && typeof openEditProfileModal === "function") {
+              openEditProfileModal();
+            } else if (!player) {
+              document.getElementById("profile-logged-in-view").style.display = "none";
+              document.getElementById("profile-logged-out-view").style.display = "block";
+            }
+          }, 150);
+        }
       });
 
       window.addEventListener("frontline_arena_auth_changed", () => {
@@ -556,16 +588,29 @@
       function renderProfilePage() {
         if (!window.LadderDB) return;
 
-        const player = window.LadderDB.getCurrentPlayer();
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetGamertag = urlParams.get("player") || urlParams.get("user") || urlParams.get("gamertag");
+
+        const cur = window.LadderDB.getCurrentPlayer();
+        let player = null;
+        let isOwner = false;
+
+        if (targetGamertag) {
+          player = window.LadderDB.getPlayerByGamertag ? window.LadderDB.getPlayerByGamertag(targetGamertag) : { gamertag: targetGamertag };
+          isOwner = cur && ((cur.gamertag && cur.gamertag.toLowerCase() === player.gamertag?.toLowerCase()) || (cur.id && cur.id === player.id));
+        } else {
+          player = cur;
+          isOwner = true;
+        }
+
         const loggedInView = document.getElementById("profile-logged-in-view");
         const loggedOutView = document.getElementById("profile-logged-out-view");
         const breadcrumbLabel = document.getElementById("gb-breadcrumb-profile-label");
 
         if (player && player.gamertag) {
-          // Player is Logged In
           loggedInView.style.display = "block";
           loggedOutView.style.display = "none";
-          if (breadcrumbLabel) breadcrumbLabel.textContent = `${player.gamertag}'s Profile`;
+          if (breadcrumbLabel) breadcrumbLabel.textContent = isOwner ? `${player.gamertag}'s Profile` : `Operative ${player.gamertag}`;
 
           // Populate User Info
           document.getElementById("user-gamertag-display").textContent = player.gamertag;
@@ -577,8 +622,26 @@
             document.getElementById("user-avatar-img").src = player.avatar_url;
           }
 
-          const tier = window.LadderDB.getTier ? window.LadderDB.getTier(player.elo || 1200) : { name: "Specialist", icon: "🎯" };
+          const tier = window.LadderDB.getTier ? window.LadderDB.getTier(player.elo || 1200) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
           document.getElementById("user-tier-name").textContent = tier.name;
+          const tierBadgeEl = document.getElementById("user-tier-badge");
+          if (tierBadgeEl) {
+            tierBadgeEl.className = `profile-tier-badge ${tier.badgeClass || 'tier-specialist'}`;
+          }
+
+          const statusPill = document.getElementById("user-status-pill");
+          if (statusPill) {
+            statusPill.textContent = isOwner ? "● ACTIVE COMBATANT" : "● VERIFIED OPERATIVE";
+          }
+
+          // Header action buttons visibility
+          const editBtn = document.getElementById("btn-edit-profile");
+          const signOutBtn = document.getElementById("btn-sign-out");
+          const backMyProfileBtn = document.getElementById("btn-back-my-profile");
+
+          if (editBtn) editBtn.style.display = isOwner ? "inline-flex" : "none";
+          if (signOutBtn) signOutBtn.style.display = isOwner ? "inline-flex" : "none";
+          if (backMyProfileBtn) backMyProfileBtn.style.display = (!isOwner && cur) ? "inline-flex" : "none";
 
           // Populate Stats
           const stats = window.LadderDB.getPlayerStats(player);
@@ -904,6 +967,9 @@
         const player = window.LadderDB.getCurrentPlayer();
         if (!player) return;
 
+        const gamertagInput = document.getElementById("edit-gamertag");
+        if (gamertagInput) gamertagInput.value = player.gamertag || player.username || "";
+
         document.getElementById("edit-clan-tag").value = player.tag || "";
         document.getElementById("edit-activision-id").value = player.activision_id || "";
         document.getElementById("edit-discord-tag").value = player.discord || "";
@@ -918,22 +984,50 @@
         if (modal) modal.classList.remove("active");
       }
 
-      function handleSaveProfileEdit(e) {
+      async function handleSaveProfileEdit(e) {
         e.preventDefault();
+        const gamertag = document.getElementById("edit-gamertag")?.value.trim();
         const tag = document.getElementById("edit-clan-tag").value.trim().toUpperCase().slice(0, 5);
         const activision_id = document.getElementById("edit-activision-id").value.trim();
         const discord = document.getElementById("edit-discord-tag").value.trim();
         const avatar_url = document.getElementById("edit-avatar-url").value.trim();
 
-        window.LadderDB.updatePlayerProfile({
-          tag: tag || "TAG",
-          activision_id,
-          discord,
-          avatar_url: avatar_url || undefined
-        });
+        if (!gamertag) {
+          alert("Username / Gamertag is required.");
+          return;
+        }
 
-        closeEditProfileModal();
-        renderProfilePage();
+        const submitBtn = e.target.querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Saving...";
+        }
+
+        try {
+          const res = await window.LadderDB.updatePlayerProfile({
+            gamertag,
+            username: gamertag,
+            tag: tag || "TAG",
+            activision_id,
+            discord,
+            avatar_url: avatar_url || undefined
+          });
+
+          if (res && !res.success) {
+            alert(res.error || "Failed to update profile.");
+            return;
+          }
+
+          closeEditProfileModal();
+          renderProfilePage();
+        } catch (err) {
+          alert("Error saving profile: " + (err.message || err));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Save Profile";
+          }
+        }
       }
 
       // Open Team Roster & Player Stats Modal
@@ -1009,13 +1103,16 @@
               <div class="roster-player-card">
                 <!-- Left: Avatar & Identity -->
                 <div style="display:flex; align-items:center; gap:14px; min-width:200px;">
-                  <div style="position:relative;">
-                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'};" alt="${player.gamertag}" />
+                  <a href="profile.html?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
+                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'}; transition:border-color 0.2s;" alt="${player.gamertag}" class="team-avatar-sm" />
                     <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#22c55e; border:2px solid #090d14; border-radius:50%;" title="Verified Combatant"></span>
-                  </div>
+                  </a>
                   <div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                      <strong style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px;">${player.gamertag}</strong>
+                      <a href="profile.html?player=${encodeURIComponent(player.gamertag)}" class="team-link-hover" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
+                        <strong style="color:#ffffff;">${player.gamertag}</strong>
+                        <span style="font-size:10px; color:#ff1e44; opacity:0.85;">↗</span>
+                      </a>
                       <span style="font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:3px; background:${isCaptain ? '#3b0d16' : '#141d2e'}; color:${isCaptain ? '#ff4d6d' : '#7dd3fc'}; border:1px solid ${isCaptain ? '#ff1e44' : '#223654'};">
                         ${player.role || (isCaptain ? 'Captain' : 'Starter')}
                       </span>
@@ -1032,7 +1129,7 @@
                   <!-- Rank / Tier -->
                   <div style="text-align:right;">
                     <div style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; margin-bottom:3px;">RANK &amp; TIER</div>
-                    <span class="val-badge ${pTier.badgeClass}" style="font-size:10px; padding:3px 8px;">
+                    <span class="tier-badge ${pTier.badgeClass}" style="font-size:10px; padding:3px 8px;">
                       ${pTier.icon} ${pTier.name}
                     </span>
                   </div>

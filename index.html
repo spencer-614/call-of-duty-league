@@ -61,20 +61,25 @@
             <nav class="links" aria-label="Main navigation">
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Competition</div>
-                  <a href="#league"><span class="nav-icon">⌖</span> The League</a>
-                  <a href="#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
                   <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="profile.html"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
                   <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
                   <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
@@ -153,16 +158,40 @@
       </section>
       <div class="ticker" aria-label="League highlights ticker">
         <div class="ticker-track">
+          <!-- First Half (0% to -50% translation) -->
           <span>COMPETE TOGETHER ✳</span>
           <span>RESPECT THE GAME ✳</span>
           <span>ALL SKILL LEVELS WELCOME ✳</span>
           <span>PRIZE POOL TOURNAMENTS ✳</span>
           <span>WEEKLY SCRIMS ✳</span>
+          <span>FREE &amp; PAID DIVISIONS ✳</span>
+          <span>CROSS-PLATFORM ACTION ✳</span>
+          <span>COMMUNITY FIRST ✳</span>
           <span>COMPETE TOGETHER ✳</span>
           <span>RESPECT THE GAME ✳</span>
           <span>ALL SKILL LEVELS WELCOME ✳</span>
           <span>PRIZE POOL TOURNAMENTS ✳</span>
           <span>WEEKLY SCRIMS ✳</span>
+          <span>FREE &amp; PAID DIVISIONS ✳</span>
+          <span>CROSS-PLATFORM ACTION ✳</span>
+          <span>COMMUNITY FIRST ✳</span>
+          <!-- Second Half (Identical duplicate for seamless wrap) -->
+          <span>COMPETE TOGETHER ✳</span>
+          <span>RESPECT THE GAME ✳</span>
+          <span>ALL SKILL LEVELS WELCOME ✳</span>
+          <span>PRIZE POOL TOURNAMENTS ✳</span>
+          <span>WEEKLY SCRIMS ✳</span>
+          <span>FREE &amp; PAID DIVISIONS ✳</span>
+          <span>CROSS-PLATFORM ACTION ✳</span>
+          <span>COMMUNITY FIRST ✳</span>
+          <span>COMPETE TOGETHER ✳</span>
+          <span>RESPECT THE GAME ✳</span>
+          <span>ALL SKILL LEVELS WELCOME ✳</span>
+          <span>PRIZE POOL TOURNAMENTS ✳</span>
+          <span>WEEKLY SCRIMS ✳</span>
+          <span>FREE &amp; PAID DIVISIONS ✳</span>
+          <span>CROSS-PLATFORM ACTION ✳</span>
+          <span>COMMUNITY FIRST ✳</span>
         </div>
       </div>
       <!-- League Announcements Dispatch Banner -->
@@ -255,24 +284,78 @@
       </section>
       <section class="join" id="join">
         <div class="wrap join-box">
-          <div>
-            <div class="kicker">Tactical Recruitment Terminal</div>
-            <h2>Ready to drop in?</h2>
-            <p>
-              Sign up as an unassigned Free Agent or register an official Team / Organization Franchise ($25 Buy-In) to compete in the Frontline League.
-            </p>
-          </div>
-          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-            <a class="button" href="signup.html">Solo Free Agent (Free) ↗</a>
-            <a class="button" style="background:#ffc439; color:#003087; font-weight:800; border:none;" href="signup.html#team">Register Franchise ($25) ↗</a>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div class="kicker">Tactical Recruitment Terminal</div>
+              <h2>Ready to drop in?</h2>
+              <p>
+                Enlist for the upcoming Frontline League season. Sign up as an individual Player, register a dedicated 4-man Team with Free and Paid options, or field an official Organization franchise across each league division.
+              </p>
+            </div>
             <a
               class="button"
-              style="background: transparent; border: 1px solid var(--line); color: var(--text);"
+              style="background: transparent; border: 1px solid var(--line); color: var(--text); padding:10px 18px; font-size:12px; display:inline-flex; align-items:center; gap:8px;"
               href="https://discord.com/"
               target="_blank"
               rel="noopener"
-              >Join Discord ↗</a
             >
+              <span>Join Official Discord</span>
+              <span>↗</span>
+            </a>
+          </div>
+
+          <!-- 3 Registration Pathways: Player, Team, Org -->
+          <div class="join-pathway-grid">
+            <!-- Option 1: Player -->
+            <a href="signup.html?type=player" class="join-pathway-card">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <span style="font:800 10.5px var(--body); letter-spacing:1px; text-transform:uppercase; color:var(--lime); background:#1e2215; border:1px solid #4a5420; padding:3px 8px;">SOLO COMBATANT</span>
+                  <span style="font-size:18px;">🎯</span>
+                </div>
+                <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:0 0 6px;">Player</h3>
+                <p style="font-size:12px; color:var(--muted); line-height:1.5; margin:0;">
+                  Sign up as an individual combatant or free agent looking for a squad or community draft placement.
+                </p>
+              </div>
+              <div class="button" style="width:100%; text-align:center; padding:10px 14px; font-size:12px; justify-content:center;">
+                <span>Register as Player</span> <span>↗</span>
+              </div>
+            </a>
+
+            <!-- Option 2: Team (Free and Paid Option) -->
+            <a href="signup.html?type=team" class="join-pathway-card card-team">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <span style="font:800 10.5px var(--body); letter-spacing:1px; text-transform:uppercase; color:#ffb300; background:#221e14; border:1px solid #5a4b20; padding:3px 8px;">FREE &amp; PAID OPTIONS</span>
+                  <span style="font-size:18px;">🛡</span>
+                </div>
+                <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:0 0 6px;">Team</h3>
+                <p style="font-size:12px; color:var(--muted); line-height:1.5; margin:0;">
+                  Register a 4-man roster with flexible entry options (Free Division or Paid Prize Pool Tier).
+                </p>
+              </div>
+              <div class="button" style="width:100%; text-align:center; padding:10px 14px; font-size:12px; justify-content:center; background:#ffb300; color:#11120f; border-color:#ffb300;">
+                <span>Register Team</span> <span>↗</span>
+              </div>
+            </a>
+
+            <!-- Option 3: Org (Gives team for each division including open) -->
+            <a href="signup.html?type=org" class="join-pathway-card card-org">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <span style="font:800 10.5px var(--body); letter-spacing:1px; text-transform:uppercase; color:#38bdf8; background:#11202b; border:1px solid #1e4a68; padding:3px 8px;">EACH DIVISION + OPEN</span>
+                  <span style="font-size:18px;">⚡</span>
+                </div>
+                <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:0 0 6px;">Org (Organization)</h3>
+                <p style="font-size:12px; color:var(--muted); line-height:1.5; margin:0;">
+                  Register an official organization franchise. Gives your organization an active team in each division, including Open.
+                </p>
+              </div>
+              <div class="button" style="width:100%; text-align:center; padding:10px 14px; font-size:12px; justify-content:center; background:#0284c7; color:#fff; border-color:#0284c7;">
+                <span>Register Organization</span> <span>↗</span>
+              </div>
+            </a>
           </div>
         </div>
       </section>
@@ -284,7 +367,7 @@
           <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
         </div>
         <div class="footer-links">
-          <a href="#league">League</a>
+          <a href="#league" style="color:var(--lime);" class="active">League</a>
           <a href="#standings">Standings</a>
           <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
@@ -407,6 +490,21 @@
           if (toggle) toggle.checked = false;
         }
       });
+
+      // Continuous Ticker Animation Lifecycle Guard (Refreshes, Redirects, Tab switches, bfcache)
+      (function initTickerGuard() {
+        function resumeTicker() {
+          const tracks = document.querySelectorAll(".ticker-track");
+          tracks.forEach((track) => {
+            track.style.animationPlayState = "running";
+          });
+        }
+        window.addEventListener("pageshow", resumeTicker);
+        window.addEventListener("focus", resumeTicker);
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) resumeTicker();
+        });
+      })();
     </script>
   </body>
 </html>

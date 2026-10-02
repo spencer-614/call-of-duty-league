@@ -5,64 +5,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#11120f" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>Frontline — League Players & Stats</title>
+    <title>Frontline — League Combatants & Skill Ranks</title>
     <style>
       .players-header {
         padding: 48px 0 24px;
         border-bottom: 1px solid #ffffff12;
       }
-      .filter-bar {
+
+      /* Multi-Category Tactical Filter Hub */
+      .filter-hub-container {
+        background: #141611;
+        border: 1px solid var(--line);
+        padding: 20px 24px;
+        margin: 28px 0 32px;
         display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        justify-content: space-between;
-        margin: 28px 0;
+        flex-direction: column;
+        gap: 18px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
       }
-      .filter-buttons {
+
+      .filter-hub-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid #ffffff0a;
+        padding-bottom: 16px;
+      }
+
+      .search-box-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 260px;
+      }
+
+      .search-box-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 14px;
+        pointer-events: none;
+      }
+
+      .search-box {
+        background: #191c13;
+        border: 1px solid #2e3422;
+        color: var(--text);
+        padding: 10px 14px 10px 38px;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+        transition: all 0.2s;
+      }
+      .search-box:focus {
+        border-color: var(--lime);
+        background: #1d2116;
+        box-shadow: 0 0 10px rgba(213, 244, 91, 0.15);
+      }
+
+      /* Status Quick-Toggles (All, Free Agents, Active Rosters) */
+      .status-toggle-group {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
       }
-      .filter-btn {
-        background: var(--panel);
-        border: 1px solid var(--line);
+      .status-btn {
+        background: #1b1e15;
+        border: 1px solid #333924;
         color: var(--muted);
-        padding: 8px 14px;
-        font: 700 12px var(--body);
-        letter-spacing: 0.5px;
+        padding: 9px 15px;
+        font: 800 11px var(--body);
+        letter-spacing: 0.6px;
+        cursor: pointer;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        outline: none;
+      }
+      .status-btn:hover {
+        border-color: #555e3c;
+        color: #fff;
+      }
+      .status-btn.active {
+        background: #252a1b;
+        color: var(--lime);
+        border-color: var(--lime);
+        box-shadow: 0 0 12px rgba(213, 244, 91, 0.15);
+      }
+      .status-btn.btn-fa.active {
+        background: #102330;
+        color: #38bdf8;
+        border-color: #38bdf8;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+      }
+
+      /* Filter Grid Rows */
+      .filter-groups-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px 24px;
+      }
+      .filter-group-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .filter-group-title {
+        font: 800 10.5px var(--admin-font, monospace);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .filter-buttons {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .filter-btn {
+        background: #191c13;
+        border: 1px solid #282e1c;
+        color: #9da090;
+        padding: 7px 12px;
+        font: 700 11px var(--body);
+        letter-spacing: 0.4px;
         cursor: pointer;
         text-transform: uppercase;
         transition: all 0.2s;
+        outline: none;
       }
-      .filter-btn:hover,
+      .filter-btn:hover {
+        background: #212519;
+        border-color: #4a542b;
+        color: var(--text);
+      }
       .filter-btn.active {
         background: var(--lime);
-        color: #171811;
+        color: #11120f;
         border-color: var(--lime);
+        font-weight: 800;
       }
-      .search-box {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        color: var(--text);
-        padding: 8px 14px;
+
+      /* Special Badges for Filter Buttons */
+      .filter-btn.rank-btn-15.active {
+        background: #ffb300;
+        border-color: #ffb300;
+        color: #11120f;
+      }
+      .filter-btn.rank-btn-10.active {
+        background: #38bdf8;
+        border-color: #38bdf8;
+        color: #0b1520;
+      }
+      .filter-btn.rank-btn-05.active {
+        background: var(--lime);
+        border-color: var(--lime);
+        color: #11120f;
+      }
+
+      /* Results Status & Summary Footer */
+      .filter-hub-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 14px;
+        border-top: 1px solid #ffffff0a;
         font-size: 12px;
-        outline: none;
-        width: min(260px, 100%);
+        color: var(--muted);
+        flex-wrap: wrap;
+        gap: 10px;
       }
-      .search-box:focus {
-        border-color: var(--lime);
+      .btn-reset-filters {
+        background: transparent;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+        padding: 5px 12px;
+        font: 700 11px var(--body);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: none;
       }
+      .btn-reset-filters:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #ef4444;
+      }
+
+      /* Player Card Enhancements */
       .player-card {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      }
+      .player-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--lime);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(213, 244, 91, 0.12);
       }
       .player-top {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         margin-bottom: 14px;
+        gap: 8px;
       }
       .team-badge {
         font: 800 11.5px var(--body);
@@ -96,6 +250,73 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
+
+      /* Card Badges for Ranks & Divisions */
+      .skill-rank-badge {
+        font: 800 10px var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .skill-rank-badge.rank-15 {
+        background: rgba(255, 179, 0, 0.15);
+        color: #ffb300;
+        border: 1px solid rgba(255, 179, 0, 0.45);
+        box-shadow: 0 0 8px rgba(255, 179, 0, 0.12);
+      }
+      .skill-rank-badge.rank-10 {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.12);
+      }
+      .skill-rank-badge.rank-05 {
+        background: rgba(213, 244, 91, 0.12);
+        color: var(--lime);
+        border: 1px solid rgba(213, 244, 91, 0.35);
+      }
+
+      .player-division-tag {
+        font: 800 10px var(--admin-font, monospace);
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        padding: 3px 7px;
+        background: #191c14;
+        border: 1px solid #363d25;
+        color: #c5ccb4;
+        white-space: nowrap;
+      }
+      .player-division-tag.div-pro {
+        color: #ffb300;
+        border-color: #55441b;
+        background: #201a11;
+      }
+      .player-division-tag.div-challenger {
+        color: #38bdf8;
+        border-color: #1b3d55;
+        background: #111d24;
+      }
+      .player-division-tag.div-open {
+        color: var(--lime);
+        border-color: #3e4d1f;
+        background: #182012;
+      }
+
+      .player-fa-tag {
+        font: 800 10px var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        background: #0f1d28;
+        border: 1px solid #1f435c;
+        color: #38bdf8;
+        white-space: nowrap;
+      }
+
       .empty-state {
         grid-column: 1 / -1;
         text-align: center;
@@ -146,20 +367,25 @@
             <nav class="links" aria-label="Main navigation">
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Competition</div>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
                   <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html" style="color:var(--lime);"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html" style="color:var(--lime);"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="profile.html"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
                   <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
                   <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
@@ -182,30 +408,97 @@
 
     <main class="wrap">
       <section class="players-header">
-        <div class="kicker">Roster & Combat Records</div>
+        <div class="kicker">Roster &amp; Combat Records</div>
         <h2 style="font: 800 48px/0.9 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
           League <span style="color:var(--lime);">Combatants</span>
         </h2>
         <p class="intro">
-          Verified player stats from active season matches, KD ratios, and team rosters. <em>Click any player to inspect their overall record & map-by-map statistics.</em>
+          Verified player dossiers from active season matches, CDL skill ratings, divisions, and free agent availability. <em>Click any player card to inspect full combat records and map-by-map telemetry.</em>
         </p>
       </section>
 
-      <!-- Filter and Search Controls -->
-      <div class="filter-bar">
-        <div class="filter-buttons">
-          <button class="filter-btn active" data-filter="all">All Roles</button>
-          <button class="filter-btn" data-filter="SMG">SMG</button>
-          <button class="filter-btn" data-filter="Main AR">Main AR</button>
-          <button class="filter-btn" data-filter="Flex">Flex</button>
+      <!-- Multi-Category Filter & Search Hub -->
+      <section class="filter-hub-container" aria-label="Combatant Filters">
+        <!-- Top Bar: Search + Status Toggle -->
+        <div class="filter-hub-top">
+          <div class="search-box-wrap">
+            <span class="search-box-icon">🔍</span>
+            <input
+              type="text"
+              id="player-search"
+              class="search-box"
+              placeholder="Search gamertag, team, or Activision ID..."
+              aria-label="Search players"
+            />
+          </div>
+
+          <!-- Quick Status Filter (Free Agents vs Active Roster) -->
+          <div class="status-toggle-group">
+            <button type="button" class="status-btn active" data-status-filter="all">
+              <span>All Statuses</span>
+            </button>
+            <button type="button" class="status-btn btn-fa" data-status-filter="free_agent" title="View available free agents seeking a squad">
+              <span>🎯 Free Agents (LFT)</span>
+            </button>
+            <button type="button" class="status-btn" data-status-filter="active_roster" title="View players signed to an active squad roster">
+              <span>🛡 Active Roster</span>
+            </button>
+          </div>
         </div>
-        <input
-          type="text"
-          id="player-search"
-          class="search-box"
-          placeholder="Search gamertag or team..."
-        />
-      </div>
+
+        <!-- Filter Groups: Roles, Skill Ranks, Divisions -->
+        <div class="filter-groups-grid">
+          <!-- 1. Filter by Tactical Role -->
+          <div class="filter-group-col">
+            <div class="filter-group-title">
+              <span>🎯 Tactical Role</span>
+            </div>
+            <div class="filter-buttons" id="role-filters">
+              <button type="button" class="filter-btn active" data-role-filter="all">All Roles</button>
+              <button type="button" class="filter-btn" data-role-filter="SMG">SMG</button>
+              <button type="button" class="filter-btn" data-role-filter="Main AR">Main AR</button>
+              <button type="button" class="filter-btn" data-role-filter="Flex">Flex</button>
+              <button type="button" class="filter-btn" data-role-filter="Sniper">Sniper</button>
+            </div>
+          </div>
+
+          <!-- 2. Filter by Skill Rank -->
+          <div class="filter-group-col">
+            <div class="filter-group-title">
+              <span>★ Skill Rank</span>
+            </div>
+            <div class="filter-buttons" id="rank-filters">
+              <button type="button" class="filter-btn active" data-rank-filter="all">All Ranks</button>
+              <button type="button" class="filter-btn rank-btn-15" data-rank-filter="1.5" title="Rank 1.5 - Pro Tier Combatants">1.5 Pro ★</button>
+              <button type="button" class="filter-btn rank-btn-10" data-rank-filter="1.0" title="Rank 1.0 - Elite Tier Combatants">1.0 Elite ◈</button>
+              <button type="button" class="filter-btn rank-btn-05" data-rank-filter="0.5" title="Rank 0.5 - Challenger Tier Combatants">0.5 Contender ▲</button>
+            </div>
+          </div>
+
+          <!-- 3. Filter by Division -->
+          <div class="filter-group-col">
+            <div class="filter-group-title">
+              <span>⚡ Division</span>
+            </div>
+            <div class="filter-buttons" id="division-filters">
+              <button type="button" class="filter-btn active" data-division-filter="all">All Divisions</button>
+              <button type="button" class="filter-btn" data-division-filter="div1" title="Division 1 - Pro Tier">Div 1 (Pro)</button>
+              <button type="button" class="filter-btn" data-division-filter="div2" title="Division 2 - Challengers Tier">Div 2 (Challengers)</button>
+              <button type="button" class="filter-btn" data-division-filter="open" title="Open Division - Grassroots Community">Open Division</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Hub Summary Footer -->
+        <div class="filter-hub-footer">
+          <div id="filter-results-counter">
+            Showing <strong id="visible-player-count" style="color:var(--lime);">0</strong> combatants
+          </div>
+          <button type="button" id="btn-reset-filters" class="btn-reset-filters" onclick="resetAllFilters()">
+            <span>⟲ Reset All Filters</span>
+          </button>
+        </div>
+      </section>
 
       <!-- Player Cards Container (populated from Supabase) -->
       <section class="cards" id="players-container">
@@ -224,7 +517,7 @@
           <a href="index.html#standings">Standings</a>
           <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
-          <a href="players.html">Players</a>
+          <a href="players.html" style="color:var(--lime);" class="active">Players</a>
           <a href="brackets.html">Brackets</a>
           <a href="draft.html">Draft HQ</a>
           <a href="rules.html">Rulebook</a>
@@ -255,11 +548,45 @@
 
       let allPlayers = [];
       let activeRole = 'all';
+      let activeRank = 'all';
+      let activeDivision = 'all';
+      let activeStatus = 'all';
 
       async function initPlayers() {
         const container = document.getElementById("players-container");
         try {
           allPlayers = await window.LeagueDB.getPlayers();
+
+          // Check URL query parameters for pre-selected filters
+          const urlParams = new URLSearchParams(window.location.search);
+          const filterParam = urlParams.get("filter") || urlParams.get("status");
+          const roleParam = urlParams.get("role");
+          const rankParam = urlParams.get("rank");
+          const divParam = urlParams.get("division") || urlParams.get("div");
+
+          if (filterParam && ["free_agent", "free_agents", "fa"].includes(filterParam.toLowerCase())) {
+            activeStatus = "free_agent";
+            updateButtonState('[data-status-filter="free_agent"]', '[data-status-filter]');
+          } else if (filterParam && ["active", "roster"].includes(filterParam.toLowerCase())) {
+            activeStatus = "active_roster";
+            updateButtonState('[data-status-filter="active_roster"]', '[data-status-filter]');
+          }
+
+          if (roleParam) {
+            activeRole = roleParam;
+            updateButtonState(`[data-role-filter="${roleParam}"]`, '[data-role-filter]');
+          }
+
+          if (rankParam) {
+            activeRank = rankParam;
+            updateButtonState(`[data-rank-filter="${rankParam}"]`, '[data-rank-filter]');
+          }
+
+          if (divParam) {
+            activeDivision = divParam.toLowerCase();
+            updateButtonState(`[data-division-filter="${divParam.toLowerCase()}"]`, '[data-division-filter]');
+          }
+
           renderPlayers();
         } catch (e) {
           console.error("Error loading players:", e);
@@ -267,41 +594,161 @@
         }
       }
 
+      function updateButtonState(targetSelector, groupSelector) {
+        document.querySelectorAll(groupSelector).forEach(b => b.classList.remove("active"));
+        const target = document.querySelector(targetSelector);
+        if (target) target.classList.add("active");
+      }
+
+      function resetAllFilters() {
+        activeRole = 'all';
+        activeRank = 'all';
+        activeDivision = 'all';
+        activeStatus = 'all';
+        document.getElementById("player-search").value = "";
+
+        updateButtonState('[data-status-filter="all"]', '[data-status-filter]');
+        updateButtonState('[data-role-filter="all"]', '[data-role-filter]');
+        updateButtonState('[data-rank-filter="all"]', '[data-rank-filter]');
+        updateButtonState('[data-division-filter="all"]', '[data-division-filter]');
+
+        renderPlayers();
+      }
+
       function renderPlayers() {
         const container = document.getElementById("players-container");
-        const query = document.getElementById("player-search").value.toLowerCase().trim();
+        const query = (document.getElementById("player-search").value || "").toLowerCase().trim();
+        const resetBtn = document.getElementById("btn-reset-filters");
+        const counterEl = document.getElementById("visible-player-count");
+
+        // Toggle reset button visibility if any filter is active
+        const hasActiveFilter = activeRole !== 'all' || activeRank !== 'all' || activeDivision !== 'all' || activeStatus !== 'all' || query !== '';
+        if (resetBtn) resetBtn.style.display = hasActiveFilter ? 'inline-block' : 'none';
 
         const filtered = allPlayers.filter(player => {
-          const roleMatch = activeRole === 'all' || player.role === activeRole;
-          const tag = (player.gamertag || '').toLowerCase();
-          const teamName = (player.teams?.name || player.team_name || '').toLowerCase();
-          const searchMatch = !query || tag.includes(query) || teamName.includes(query);
-          return roleMatch && searchMatch;
+          // 1. Role match
+          const roleMatch = activeRole === 'all' || (player.role && player.role.toLowerCase() === activeRole.toLowerCase());
+
+          // 2. Rank match
+          const playerRank = String(player.skill_rank || player.rank || '0.5');
+          const rankMatch = activeRank === 'all' || playerRank === activeRank || playerRank.startsWith(activeRank);
+
+          // 3. Free Agent / Status match
+          const isFA = !player.teams || 
+                       player.status?.toLowerCase() === 'free agent' || 
+                       player.team_name?.toLowerCase() === 'free agent' || 
+                       player.team_name?.toLowerCase() === 'unassigned' ||
+                       player.division?.toLowerCase() === 'free agent' ||
+                       player.is_free_agent === true;
+
+          let statusMatch = true;
+          if (activeStatus === 'free_agent') {
+            statusMatch = isFA;
+          } else if (activeStatus === 'active_roster') {
+            statusMatch = !isFA;
+          }
+
+          // 4. Division match
+          let divMatch = true;
+          if (activeDivision !== 'all') {
+            const pDiv = (player.division || player.teams?.division || '').toLowerCase();
+            const targetDiv = activeDivision.toLowerCase();
+            if (targetDiv === 'div1') {
+              divMatch = pDiv.includes('div 1') || pDiv.includes('division 1') || pDiv.includes('pro');
+            } else if (targetDiv === 'div2') {
+              divMatch = pDiv.includes('div 2') || pDiv.includes('division 2') || pDiv.includes('challenger');
+            } else if (targetDiv === 'open') {
+              divMatch = pDiv.includes('open');
+            } else {
+              divMatch = pDiv.includes(targetDiv);
+            }
+          }
+
+          // 5. Search query match (gamertag, activision ID, team name, role)
+          const searchMatch = !query || 
+            (player.gamertag || '').toLowerCase().includes(query) || 
+            (player.activision_id || '').toLowerCase().includes(query) || 
+            (player.teams?.name || player.team_name || '').toLowerCase().includes(query) ||
+            (player.teams?.tag || '').toLowerCase().includes(query) ||
+            (player.role || '').toLowerCase().includes(query);
+
+          return roleMatch && rankMatch && statusMatch && divMatch && searchMatch;
         });
 
+        if (counterEl) counterEl.textContent = filtered.length;
+
         if (filtered.length === 0) {
-          container.innerHTML = '<div class="empty-state">No players found matching your criteria.</div>';
+          container.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size:36px; margin-bottom:12px;">🎯</div>
+              <h3 style="color:#fff; font-family:var(--display); font-size:20px; text-transform:uppercase; margin:0 0 8px;">No Combatants Found</h3>
+              <p style="color:var(--muted); font-size:13px; margin:0 0 16px;">No players match your active filter criteria.</p>
+              <button type="button" class="filter-btn" onclick="resetAllFilters()" style="padding:8px 18px; background:var(--lime); color:#11120f; font-weight:800;">
+                Clear Filters &amp; View All
+              </button>
+            </div>
+          `;
           return;
         }
 
         container.innerHTML = filtered.map(player => {
-          const teamName = player.teams?.name || player.team_name || 'Free Agent';
-          const teamTag = player.teams?.tag ? `[${player.teams.tag}]` : '';
-          const kd = Number(player.kdr || 1.0).toFixed(2);
+          const isFA = !player.teams || 
+                       player.status?.toLowerCase() === 'free agent' || 
+                       player.team_name?.toLowerCase() === 'free agent' || 
+                       player.team_name?.toLowerCase() === 'unassigned' ||
+                       player.division?.toLowerCase() === 'free agent' ||
+                       player.is_free_agent === true;
+
+          const teamName = isFA ? 'Free Agent' : (player.teams?.name || player.team_name || 'Active Squad');
+          const teamTag = (!isFA && player.teams?.tag) ? `[${player.teams.tag}]` : '';
+          const kd = player.kdr != null ? Number(player.kdr).toFixed(2) : '—';
           const kills = player.total_kills ?? 0;
           const deaths = player.total_deaths ?? 0;
+          const rankVal = String(player.skill_rank || player.rank || '0.5');
+
+          // Skill Rank Badge
+          let rankBadge = '';
+          if (rankVal === '1.5' || rankVal.startsWith('1.5')) {
+            rankBadge = `<span class="skill-rank-badge rank-15" title="Rank 1.5 - Pro CDL Tier">★ RANK 1.5 // PRO</span>`;
+          } else if (rankVal === '1.0' || rankVal.startsWith('1.0')) {
+            rankBadge = `<span class="skill-rank-badge rank-10" title="Rank 1.0 - Elite Tier">◈ RANK 1.0 // ELITE</span>`;
+          } else {
+            rankBadge = `<span class="skill-rank-badge rank-05" title="Rank 0.5 - Challenger Tier">▲ RANK 0.5 // CONTENDER</span>`;
+          }
+
+          // Division / Status Badge
+          let divBadge = '';
+          const divStr = (player.division || player.teams?.division || (isFA ? 'Free Agent' : 'Division 1 (Pro)'));
+          if (isFA) {
+            divBadge = `<span class="player-fa-tag">🎯 FREE AGENT // LFT</span>`;
+          } else if (divStr.toLowerCase().includes('pro') || divStr.toLowerCase().includes('division 1')) {
+            divBadge = `<span class="player-division-tag div-pro">DIV 1 PRO</span>`;
+          } else if (divStr.toLowerCase().includes('challenger') || divStr.toLowerCase().includes('division 2')) {
+            divBadge = `<span class="player-division-tag div-challenger">DIV 2 CHALLENGERS</span>`;
+          } else {
+            divBadge = `<span class="player-division-tag div-open">OPEN DIVISION</span>`;
+          }
 
           return `
-            <article class="card player-card clickable-player" data-player-id="${player.id}" title="Click to view full combat record & individual map stats">
+            <article class="card player-card clickable-player" data-player-id="${player.id}" title="Click to inspect ${escapeHtml(player.gamertag)}'s combat records & map telemetry">
               <div>
                 <div class="player-top">
-                  <span class="pill">${player.role || 'Flex'}</span>
-                  ${player.teams || (player.team_name && player.team_name !== 'Free Agent' && player.team_name !== 'Unassigned')
-                    ? `<span class="team-badge clickable-team" data-team-id="${escapeHtml(player.teams?.name || player.team_name)}" title="Click to view team map stats" style="cursor:pointer; text-decoration:underline; text-underline-offset:2px;">${teamTag} ${teamName} ↗</span>`
-                    : `<span class="team-badge">${teamTag} ${teamName}</span>`
-                  }
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span class="pill">${escapeHtml(player.role || 'Flex')}</span>
+                    ${rankBadge}
+                  </div>
+                  ${divBadge}
                 </div>
-                <h3 class="player-gamertag">${player.gamertag}</h3>
+                <div style="margin-bottom: 14px;">
+                  <h3 class="player-gamertag" style="margin-bottom: 4px;">${escapeHtml(player.gamertag)}</h3>
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    ${!isFA 
+                      ? `<span class="team-badge clickable-team" data-team-id="${escapeHtml(player.teams?.name || player.team_name)}" title="Click to view squad dossier" style="cursor:pointer; text-decoration:underline; text-underline-offset:2px;">${escapeHtml(teamTag)} ${escapeHtml(teamName)} ↗</span>`
+                      : `<span style="font-size:11px; color:#38bdf8; font-weight:700; letter-spacing:0.5px;">AVAILABLE FOR RECRUITMENT</span>`
+                    }
+                    ${player.activision_id ? `<span style="font-size:11px; color:var(--muted); font-family:var(--admin-font, monospace);">🆔 ${escapeHtml(player.activision_id)}</span>` : ''}
+                  </div>
+                </div>
               </div>
               <div class="stats-grid">
                 <div class="stat-item">
@@ -309,11 +756,11 @@
                   <small>K/D Ratio</small>
                 </div>
                 <div class="stat-item">
-                  <strong>${kills}</strong>
+                  <strong>${kills.toLocaleString()}</strong>
                   <small>Total Kills</small>
                 </div>
                 <div class="stat-item">
-                  <strong>${deaths}</strong>
+                  <strong>${deaths.toLocaleString()}</strong>
                   <small>Deaths</small>
                 </div>
               </div>
@@ -326,17 +773,48 @@
         }).join('');
       }
 
-      // Filter button event listeners
-      document.querySelectorAll('.filter-btn').forEach(btn => {
+      // Attach Filter Event Listeners
+      // 1. Status Buttons (All, Free Agents, Active Rosters)
+      document.querySelectorAll('[data-status-filter]').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('[data-status-filter]').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          activeRole = btn.getAttribute('data-filter');
+          activeStatus = btn.getAttribute('data-status-filter');
           renderPlayers();
         });
       });
 
-      // Search event listener
+      // 2. Role Filter Buttons
+      document.querySelectorAll('[data-role-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-role-filter]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeRole = btn.getAttribute('data-role-filter');
+          renderPlayers();
+        });
+      });
+
+      // 3. Rank Filter Buttons
+      document.querySelectorAll('[data-rank-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-rank-filter]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeRank = btn.getAttribute('data-rank-filter');
+          renderPlayers();
+        });
+      });
+
+      // 4. Division Filter Buttons
+      document.querySelectorAll('[data-division-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-division-filter]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeDivision = btn.getAttribute('data-division-filter');
+          renderPlayers();
+        });
+      });
+
+      // 5. Search Input Listener
       document.getElementById('player-search').addEventListener('input', renderPlayers);
 
       initPlayers();
@@ -358,4 +836,3 @@
     </script>
   </body>
 </html>
-

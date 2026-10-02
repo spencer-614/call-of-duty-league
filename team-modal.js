@@ -52,6 +52,20 @@
         closeBtn.addEventListener("click", () => dialog.close());
       }
 
+      // Unlock scrolling when dialog closes or is cancelled
+      dialog.addEventListener("close", () => {
+        if (!document.querySelector("dialog[open]")) {
+          document.documentElement.classList.remove("modal-open");
+          document.body.classList.remove("modal-open");
+        }
+      });
+      dialog.addEventListener("cancel", () => {
+        if (!document.querySelector("dialog[open]")) {
+          document.documentElement.classList.remove("modal-open");
+          document.body.classList.remove("modal-open");
+        }
+      });
+
       // Modern-web-guidance fallback for browsers lacking native <dialog closedby>
       if (!("closedBy" in HTMLDialogElement.prototype)) {
         dialog.addEventListener("click", (event) => {
@@ -80,7 +94,7 @@
     const metaEl = document.getElementById("modal-team-meta");
     const bodyEl = document.getElementById("modal-team-content-body");
 
-    // Open in loading state
+    // Open in loading state and lock background scrolling
     titleEl.textContent = "DECRYPTING SQUAD...";
     tagEl.textContent = "···";
     recordEl.textContent = "—";
@@ -89,6 +103,8 @@
     if (metaEl) metaEl.innerHTML = "";
     bodyEl.innerHTML = `<div style="text-align:center; padding:50px; color:var(--muted);">Retrieving team records and map telemetry...</div>`;
 
+    document.documentElement.classList.add("modal-open");
+    document.body.classList.add("modal-open");
     dialog.showModal();
 
     try {

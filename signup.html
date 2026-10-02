@@ -239,20 +239,25 @@
             <nav class="links" aria-label="Main navigation">
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Competition</div>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
                   <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
-                  <div class="nav-category-title">Media &amp; Squad Pass</div>
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="profile.html"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
                   <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
                   <a href="signup.html" class="nav-link-highlight" style="color:var(--lime);"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
@@ -468,33 +473,40 @@
               </button>
             </div>
 
-            <div class="signup-header">
-              <div class="kicker">Frontline Recruitment Division</div>
-              <h2>Enlist in the <em>League</em></h2>
-              <p>
-                Complete your registration dossier below. Whether entering as an unassigned Free Agent looking for a roster or registering an official team franchise with a 4-player competitive roster, all applicants are logged directly into the league database.
-              </p>
+            <!-- Pathway Selector Protocol Bar -->
+            <div class="signup-pathway-nav">
+              <span class="pathway-nav-label">Select Protocol:</span>
+              <div class="pathway-nav-buttons" role="tablist">
+                <button type="button" class="pathway-btn active" id="tab-btn-solo" role="tab" aria-selected="true" onclick="switchTab('solo')">
+                  <span class="pathway-icon">🎯</span>
+                  <span class="pathway-text">
+                    <strong>Player Registration</strong>
+                    <small>Solo / Free Agent</small>
+                  </span>
+                </button>
+                <button type="button" class="pathway-btn btn-team" id="tab-btn-team" role="tab" aria-selected="false" onclick="switchTab('team')">
+                  <span class="pathway-icon">🛡</span>
+                  <span class="pathway-text">
+                    <strong>Team Registration</strong>
+                    <small>Free &amp; Paid Options</small>
+                  </span>
+                </button>
+                <button type="button" class="pathway-btn btn-org" id="tab-btn-org" role="tab" aria-selected="false" onclick="switchTab('org')">
+                  <span class="pathway-icon">⚡</span>
+                  <span class="pathway-text">
+                    <strong>Org Registration</strong>
+                    <small>All Divisions + Open</small>
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <!-- Registration Type Tabs -->
-            <div class="signup-tabs" role="tablist">
-              <button type="button" class="signup-tab-btn active" id="tab-btn-solo" role="tab" aria-selected="true">
-                <div class="tab-badge-row">
-                  <span class="tab-badge">FREE ENTRY</span>
-                  <span style="font-size: 11px; color: var(--lime); font-weight: 700;">SOLO COMBATANT</span>
-                </div>
-                <span class="tab-title">Solo Free Agent</span>
-                <span class="tab-desc">Individual player looking for a squad or community draft</span>
-              </button>
-
-              <button type="button" class="signup-tab-btn" id="tab-btn-team" role="tab" aria-selected="false">
-                <div class="tab-badge-row">
-                  <span class="tab-badge buyin-badge">$25 BUY-IN</span>
-                  <span style="font-size: 11px; color: #ffb300; font-weight: 700;">PAYPAL VERIFIED</span>
-                </div>
-                <span class="tab-title">Team / Org Franchise</span>
-                <span class="tab-desc">Register 4-man squad, lock tournament seed & pay team entry fee</span>
-              </button>
+            <div class="signup-header">
+              <div class="kicker" id="signup-header-kicker">RECRUITMENT PROTOCOL // OPTION 1 OF 3</div>
+              <h2 id="signup-header-title">Player <span style="color:var(--lime);">Registration</span></h2>
+              <p id="signup-header-desc">
+                Register as an individual combatant or unassigned Free Agent looking for a squad or community draft placement.
+              </p>
             </div>
 
             <!-- Pane 1: Solo Free Agent Form -->
@@ -542,7 +554,7 @@
                 <!-- Activision ID -->
                 <div class="form-group">
                   <label class="form-label" for="activision_id">
-                    Activision ID
+                    Activision ID <span class="req">*</span>
                   </label>
                   <input
                     type="text"
@@ -550,37 +562,10 @@
                     name="activision_id"
                     class="form-control"
                     placeholder="e.g. Apex#1928374"
+                    required
                     autocomplete="off"
                   />
-                  <span class="form-hint">Include numbers (#1234567)</span>
-                </div>
-
-                <!-- Enlistment Type -->
-                <div class="form-group">
-                  <label class="form-label" for="registration_type">
-                    Enlistment Type <span class="req">*</span>
-                  </label>
-                  <select id="registration_type" name="registration_type" class="form-control" required>
-                    <option value="Free Agent">Free Agent (Solo Looking for Squad)</option>
-                    <option value="Team Captain">Team Captain (Registering a Squad)</option>
-                  </select>
-                  <span class="form-hint">Captains can register their entire squad tag</span>
-                </div>
-
-                <!-- Team Name -->
-                <div class="form-group" id="team-name-group">
-                  <label class="form-label" for="team_name">
-                    Squad / Team Name
-                  </label>
-                  <input
-                    type="text"
-                    id="team_name"
-                    name="team_name"
-                    class="form-control"
-                    placeholder="e.g. Night Shift, Vantage (or leave blank if solo)"
-                    autocomplete="off"
-                  />
-                  <span class="form-hint">Leave blank if searching for a team as a free agent</span>
+                  <span class="form-hint">Include numbers (#1234567) for matchmaking</span>
                 </div>
 
                 <!-- Tactical Role -->
@@ -653,49 +638,82 @@
             </form>
             </div> <!-- end #pane-solo -->
 
-            <!-- Pane 2: Team / Org Franchise Form -->
+            <!-- Pane 2: Team Registration (Free & Paid Options) -->
             <div id="pane-team" class="tab-pane" style="display: none;">
-              <!-- Org Notification Container (Success or Error Alerts) -->
-              <div id="org-alert-box" style="display: none;"></div>
+              <!-- Team Notification Container (Success or Error Alerts) -->
+              <div id="team-alert-box" style="display: none;"></div>
 
-              <form id="org-signup-form" class="signup-form">
+              <form id="team-signup-form" class="signup-form">
+                <!-- Section 0: Entry Tier Selector (Free vs Paid) -->
+                <div class="form-section-header">
+                  <h4>// 00. COMPETITIVE ENTRY TIER</h4>
+                  <span>Select Division Format</span>
+                </div>
+
+                <div style="grid-column: 1 / -1; display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-bottom:12px;">
+                  <label style="background:#151811; border:1px solid var(--lime); padding:16px; cursor:pointer; display:flex; gap:12px; align-items:flex-start; transition:all 0.2s ease;" id="label-tier-free">
+                    <input type="radio" name="team_entry_tier" id="tier-free" value="free" checked onchange="handleTeamTierChange()" style="margin-top:4px;" />
+                    <div>
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <strong style="color:#fff; font-size:14px; text-transform:uppercase;">Free Division Entry</strong>
+                        <span style="background:var(--lime); color:#11120f; font-size:10px; font-weight:800; padding:2px 6px;">$0.00 / FREE</span>
+                      </div>
+                      <p style="font-size:12px; color:var(--muted); margin:4px 0 0; line-height:1.4;">
+                        Standard season division play, match scheduling, official standings, and ladder ranking. No entry fee required.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label style="background:#181611; border:1px solid #5a4b20; padding:16px; cursor:pointer; display:flex; gap:12px; align-items:flex-start; transition:all 0.2s ease;" id="label-tier-paid">
+                    <input type="radio" name="team_entry_tier" id="tier-paid" value="paid" onchange="handleTeamTierChange()" style="margin-top:4px;" />
+                    <div>
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <strong style="color:#ffb300; font-size:14px; text-transform:uppercase;">Paid Pro / Championship Tier</strong>
+                        <span style="background:#ffb300; color:#11120f; font-size:10px; font-weight:800; padding:2px 6px;">$25.00 BUY-IN</span>
+                      </div>
+                      <p style="font-size:12px; color:var(--muted); margin:4px 0 0; line-height:1.4;">
+                        Qualifies your squad for the cash championship prize pool, priority broadcast coverage, and verified seed badge.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
                 <div class="form-grid">
-                  
-                  <!-- Section 1: Franchise Profile -->
+                  <!-- Section 1: Team Profile -->
                   <div class="form-section-header">
-                    <h4>// 01. FRANCHISE & ORGANIZATION PROFILE</h4>
+                    <h4>// 01. TEAM & SQUAD PROFILE</h4>
                     <span>Official Team Information</span>
                   </div>
 
-                  <!-- Org / Team Name -->
+                  <!-- Team Name -->
                   <div class="form-group">
-                    <label class="form-label" for="org_name">
-                      Organization / Team Name <span class="req">*</span>
+                    <label class="form-label" for="team_name_input">
+                      Team Name <span class="req">*</span>
                     </label>
                     <input
                       type="text"
-                      id="org_name"
-                      name="org_name"
+                      id="team_name_input"
+                      name="team_name_input"
                       class="form-control"
-                      placeholder="e.g. Night Shift, Vantage, Boston Breach"
+                      placeholder="e.g. Night Shift, Vantage, Apex Predators"
                       required
                       autocomplete="off"
                     />
-                    <span class="form-hint">Official competitive squad or organization name</span>
+                    <span class="form-hint">Official competitive team name</span>
                   </div>
 
-                  <!-- Team Tag (3-6 chars) -->
+                  <!-- Team Tag (2-5 chars) -->
                   <div class="form-group">
-                    <label class="form-label" for="team_tag">
-                      Team Tag (3–6 Letters) <span class="req">*</span>
+                    <label class="form-label" for="team_tag_input">
+                      Team Tag (2–5 Letters) <span class="req">*</span>
                     </label>
                     <input
                       type="text"
-                      id="team_tag"
-                      name="team_tag"
+                      id="team_tag_input"
+                      name="team_tag_input"
                       class="form-control"
-                      placeholder="e.g. NSH, VTG, RED, OPTC"
-                      maxlength="6"
+                      placeholder="e.g. NSH, VTG, APEX"
+                      maxlength="5"
                       required
                       style="text-transform: uppercase;"
                       autocomplete="off"
@@ -703,63 +721,63 @@
                     <span class="form-hint">In-game clan abbreviation for broadcast overlays</span>
                   </div>
 
-                  <!-- Owner / GM Gamertag -->
+                  <!-- Captain / GM Gamertag -->
                   <div class="form-group">
-                    <label class="form-label" for="owner_gamertag">
-                      Owner / GM Gamertag <span class="req">*</span>
+                    <label class="form-label" for="team_captain_gamertag">
+                      Team Captain Gamertag <span class="req">*</span>
                     </label>
                     <input
                       type="text"
-                      id="owner_gamertag"
-                      name="owner_gamertag"
+                      id="team_captain_gamertag"
+                      name="team_captain_gamertag"
                       class="form-control"
-                      placeholder="e.g. Apex, CaptainPrice"
+                      placeholder="e.g. Apex, Shotzzy"
                       required
                       autocomplete="off"
                     />
-                    <span class="form-hint">Primary team operator, owner, or general manager</span>
+                    <span class="form-hint">Primary team captain and match representative</span>
                   </div>
 
-                  <!-- Owner Discord -->
+                  <!-- Captain Discord -->
                   <div class="form-group">
-                    <label class="form-label" for="owner_discord">
-                      Owner Discord Username <span class="req">*</span>
+                    <label class="form-label" for="team_captain_discord">
+                      Captain Discord Username <span class="req">*</span>
                     </label>
                     <input
                       type="text"
-                      id="owner_discord"
-                      name="owner_discord"
+                      id="team_captain_discord"
+                      name="team_captain_discord"
                       class="form-control"
-                      placeholder="e.g. apex_gm or Owner#1234"
+                      placeholder="e.g. apex_cdl or Captain#1234"
                       required
                       autocomplete="off"
                     />
-                    <span class="form-hint">Required for scheduling matches & captains' channel</span>
+                    <span class="form-hint">Required for match scheduling & captains' channel</span>
                   </div>
 
                   <!-- Contact Email -->
                   <div class="form-group">
-                    <label class="form-label" for="contact_email">
+                    <label class="form-label" for="team_contact_email">
                       Contact Email <span class="req">*</span>
                     </label>
                     <input
                       type="email"
-                      id="contact_email"
-                      name="contact_email"
+                      id="team_contact_email"
+                      name="team_contact_email"
                       class="form-control"
-                      placeholder="e.g. manager@nightshift.gg"
+                      placeholder="e.g. captain@nightshift.gg"
                       required
                       autocomplete="off"
                     />
-                    <span class="form-hint">Used for official PayPal receipts & tournament notices</span>
+                    <span class="form-hint">Used for official tournament notices & confirmations</span>
                   </div>
 
                   <!-- Server Region -->
                   <div class="form-group">
-                    <label class="form-label" for="org_region">
+                    <label class="form-label" for="team_region">
                       Primary Server Region <span class="req">*</span>
                     </label>
-                    <select id="org_region" name="org_region" class="form-control" required>
+                    <select id="team_region" name="team_region" class="form-control" required>
                       <option value="NA East">North America — East</option>
                       <option value="NA Central">North America — Central</option>
                       <option value="NA West">North America — West</option>
@@ -771,29 +789,29 @@
 
                   <!-- Team Logo URL -->
                   <div class="form-group">
-                    <label class="form-label" for="logo_url">
-                      Team Logo URL (Optional)
+                    <label class="form-label" for="team_logo_url">
+                      Team Emblem / Logo URL (Optional)
                     </label>
                     <input
                       type="url"
-                      id="logo_url"
-                      name="logo_url"
+                      id="team_logo_url"
+                      name="team_logo_url"
                       class="form-control"
                       placeholder="e.g. https://i.imgur.com/your-team-logo.png"
                       autocomplete="off"
                     />
-                    <span class="form-hint">Direct link to PNG or SVG (transparent background preferred)</span>
+                    <span class="form-hint">Direct link to PNG or SVG image</span>
                   </div>
 
                   <!-- Twitter / Website -->
                   <div class="form-group">
-                    <label class="form-label" for="twitter_handle">
-                      Twitter / X or Website (Optional)
+                    <label class="form-label" for="team_twitter">
+                      Twitter / X or Socials (Optional)
                     </label>
                     <input
                       type="text"
-                      id="twitter_handle"
-                      name="twitter_handle"
+                      id="team_twitter"
+                      name="team_twitter"
                       class="form-control"
                       placeholder="e.g. @NightShiftGG"
                       autocomplete="off"
@@ -933,10 +951,10 @@
                     </div>
                   </div>
 
-                  <!-- Section 3: Buy-In Fee & PayPal Breakdown -->
-                  <div class="payment-buyin-card">
+                  <!-- Section 3: Buy-In Fee & PayPal Breakdown (Only shown for Paid Tier) -->
+                  <div class="payment-buyin-card" id="team-payment-card" style="display:none;">
                     <div class="buyin-info">
-                      <div class="buyin-label">// Season 1 Team Franchise Entry</div>
+                      <div class="buyin-label">// Season 1 Paid Pro / Championship Tier</div>
                       <div class="buyin-value">
                         $25.00 <span>USD</span>
                       </div>
@@ -952,37 +970,199 @@
                     </div>
                   </div>
 
+                  <!-- Free Tier Confirmation Banner (Shown when Free is selected) -->
+                  <div id="team-free-tier-banner" style="grid-column: 1 / -1; background:#141710; border:1px solid #3c421f; padding:16px 20px; display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:20px; color:var(--lime);">✓</span>
+                    <div style="font-size:12.5px; color:#c5c8ba; line-height:1.4;">
+                      <strong style="color:#fff; text-transform:uppercase;">Free Division Selected:</strong> No entry fee required. Your 4-man roster will be submitted directly for division review.
+                    </div>
+                  </div>
+
                   <!-- Additional Notes -->
                   <div class="form-group full-width">
-                    <label class="form-label" for="org_notes">
+                    <label class="form-label" for="team_notes">
                       Additional Notes / Prior Competitive Experience
                     </label>
                     <textarea
-                      id="org_notes"
-                      name="org_notes"
+                      id="team_notes"
+                      name="team_notes"
                       class="form-control"
                       rows="2"
                       placeholder="e.g. Challengers Cup Top 16, CDL LAN experience, scrimmage availability"
                     ></textarea>
                   </div>
-
                 </div>
 
-                <!-- Org Form Actions -->
+                <!-- Team Form Actions -->
                 <div class="form-actions">
-                  <div class="form-discord-note">
-                    🔒 Official PayPal Checkout · Roster record & Reference ID generated on submit
+                  <div class="form-discord-note" id="team-discord-note">
+                    🛡 Official Team Roster Record generated on submission
                   </div>
-                  <button type="submit" id="btn-submit-org" class="btn-paypal-submit">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.784.784 0 0 1 .773-.655h7.248c3.606 0 6.07 1.765 5.568 5.485-.43 3.18-2.618 4.964-5.69 4.964h-2.12l-1.09 6.823a.641.641 0 0 1-.633.542l-1.924-.042z"/>
-                    </svg>
-                    <span>Register Roster & Pay $25.00 Entry</span>
+                  <button type="submit" id="btn-submit-team" class="btn-submit-signup">
+                    <span>Register 4-Man Team (Free Entry)</span>
                     <span style="font-size:16px;">↗</span>
                   </button>
                 </div>
               </form>
             </div> <!-- end #pane-team -->
+
+            <!-- Pane 3: Organization Franchise Form (Each Division + Open) -->
+            <div id="pane-org" class="tab-pane" style="display: none;">
+              <!-- Org Notification Container -->
+              <div id="org-franchise-alert-box" style="display: none;"></div>
+
+              <form id="org-franchise-signup-form" class="signup-form">
+                <!-- Franchise Overview Protocol Card -->
+                <div style="background:linear-gradient(135deg, rgba(56, 189, 248, 0.12), #0e1722); border:1px solid rgba(56, 189, 248, 0.35); padding:20px 24px; display:flex; gap:16px; align-items:flex-start; margin-bottom:20px;">
+                  <div style="font-size:32px; line-height:1;">🛡</div>
+                  <div>
+                    <div style="font:800 11.5px var(--body); letter-spacing:1px; text-transform:uppercase; color:#38bdf8; margin-bottom:4px;">ORGANIZATION FRANCHISE PROTOCOL</div>
+                    <h3 style="font:800 18px var(--display); text-transform:uppercase; color:#fff; margin:0 0 4px;">Gives a Team for Each Division (Including Open Division)</h3>
+                    <p style="font-size:12.5px; color:#94a3b8; line-height:1.6; margin:0;">
+                      Registering an Organization Franchise enrolls your brand across the complete Frontline competitive pyramid. Your organization is guaranteed an active team slot in <strong>Division 1 (Pro)</strong>, <strong>Division 2 (Challengers)</strong>, and the <strong>Open Division</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <!-- Section 1: Org Info -->
+                  <div class="form-section-header">
+                    <h4 style="color:#38bdf8;">// 01. ORGANIZATION &amp; BRAND PROFILE</h4>
+                    <span>Master Franchise Record</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_franchise_name">Organization / Club Name <span class="req">*</span></label>
+                    <input type="text" id="org_franchise_name" class="form-control" placeholder="e.g. OpTic Gaming, FaZe Clan, Cloud9" required />
+                    <span class="form-hint">Official organization or esports brand name</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_franchise_tag">Master Tag (2-5 Letters) <span class="req">*</span></label>
+                    <input type="text" id="org_franchise_tag" class="form-control" placeholder="e.g. OPTC, FAZE, C9" maxlength="5" required style="text-transform:uppercase;" />
+                    <span class="form-hint">Clan prefix used for all division rosters</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_gm_gamertag">Owner / General Manager Gamertag <span class="req">*</span></label>
+                    <input type="text" id="org_gm_gamertag" class="form-control" placeholder="e.g. H3CZ, Apex" required />
+                    <span class="form-hint">Primary front-office director and executive contact</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_gm_discord">Owner Discord Username <span class="req">*</span></label>
+                    <input type="text" id="org_gm_discord" class="form-control" placeholder="e.g. gm_optic or Name#1234" required />
+                    <span class="form-hint">Required for organization owners' council & scheduling</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_contact_email">Contact Email <span class="req">*</span></label>
+                    <input type="email" id="org_contact_email" class="form-control" placeholder="e.g. contact@optic.gg" required />
+                    <span class="form-hint">Official communication & franchise confirmation</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_primary_region">Primary Server Region <span class="req">*</span></label>
+                    <select id="org_primary_region" class="form-control" required>
+                      <option value="NA East">North America — East</option>
+                      <option value="NA Central">North America — Central</option>
+                      <option value="NA West">North America — West</option>
+                      <option value="Europe">Europe / UK</option>
+                      <option value="Other">Other / International</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_logo_url">Organization Logo URL (Optional)</label>
+                    <input type="url" id="org_logo_url" class="form-control" placeholder="e.g. https://i.imgur.com/your-org-logo.png" />
+                    <span class="form-hint">Direct link to PNG or SVG for website & broadcast overlays</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="org_socials">Twitter / X / Website (Optional)</label>
+                    <input type="text" id="org_socials" class="form-control" placeholder="e.g. @OpTic / https://optic.gg" />
+                  </div>
+
+                  <!-- Section 2: Division Teams Allocation -->
+                  <div class="form-section-header">
+                    <h4 style="color:#38bdf8;">// 02. DIVISIONAL TEAM ALLOCATIONS (EACH DIVISION + OPEN)</h4>
+                    <span>3 Guaranteed Divisional Slots</span>
+                  </div>
+
+                  <!-- Div 1 (Pro) -->
+                  <div class="roster-slot-card" style="border-color:#38bdf8;">
+                    <div class="roster-slot-header">
+                      <strong style="color:#38bdf8;">Division 1 Team (Pro Division)</strong>
+                      <span class="slot-tag" style="background:#0284c7; color:#fff;">PRO TIER</span>
+                    </div>
+                    <div class="roster-slot-fields">
+                      <div class="form-group">
+                        <label class="form-label" for="org_div1_team_name">Team Name <span class="req">*</span></label>
+                        <input type="text" id="org_div1_team_name" class="form-control" placeholder="e.g. OpTic Texas" required />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="org_div1_captain">Captain / Roster Lead <span class="req">*</span></label>
+                        <input type="text" id="org_div1_captain" class="form-control" placeholder="e.g. Shotzzy" required />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Div 2 (Challengers) -->
+                  <div class="roster-slot-card" style="border-color:#38bdf8;">
+                    <div class="roster-slot-header">
+                      <strong style="color:#38bdf8;">Division 2 Team (Challengers Division)</strong>
+                      <span class="slot-tag" style="background:#0369a1; color:#fff;">CHALLENGERS</span>
+                    </div>
+                    <div class="roster-slot-fields">
+                      <div class="form-group">
+                        <label class="form-label" for="org_div2_team_name">Team Name <span class="req">*</span></label>
+                        <input type="text" id="org_div2_team_name" class="form-control" placeholder="e.g. OpTic Academy" required />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="org_div2_captain">Captain / Roster Lead <span class="req">*</span></label>
+                        <input type="text" id="org_div2_captain" class="form-control" placeholder="e.g. Scump" required />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Open Division -->
+                  <div class="roster-slot-card" style="grid-column: 1 / -1; border-color:#38bdf8;">
+                    <div class="roster-slot-header">
+                      <strong style="color:#38bdf8;">Open Division Team (Grassroots / Community Open)</strong>
+                      <span class="slot-tag" style="background:#0284c7; color:#fff;">OPEN DIVISION</span>
+                    </div>
+                    <div class="roster-slot-fields">
+                      <div class="form-group">
+                        <label class="form-label" for="org_open_team_name">Team Name <span class="req">*</span></label>
+                        <input type="text" id="org_open_team_name" class="form-control" placeholder="e.g. OpTic Open / Nation" required />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="org_open_captain">Captain / Roster Lead <span class="req">*</span></label>
+                        <input type="text" id="org_open_captain" class="form-control" placeholder="e.g. Karma" required />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Notes -->
+                  <div class="form-group full-width">
+                    <label class="form-label" for="org_franchise_notes">Organization Background &amp; Notes</label>
+                    <textarea id="org_franchise_notes" class="form-control" rows="2" placeholder="Tell us about your organization, prior tournament placements, content creator roster, or scrimmage schedule."></textarea>
+                  </div>
+                </div>
+
+                <!-- Org Actions -->
+                <div class="form-actions">
+                  <div class="form-discord-note">
+                    🛡 Organization franchises are reviewed by league directors within 24 hours
+                  </div>
+                  <button type="submit" id="btn-submit-org-franchise" class="btn-submit-signup" style="background:#0284c7; color:#fff; border-color:#0284c7;">
+                    <span>Register Organization Franchise (All Divisions)</span>
+                    <span style="font-size:16px;">↗</span>
+                  </button>
+                </div>
+              </form>
+            </div> <!-- end #pane-org -->
+          </div>
           </div>
         </div>
       </section>
@@ -1005,7 +1185,7 @@
           <a href="rules.html">Rulebook</a>
           <a href="livestreams.html">Livestreams</a>
           <a href="vods.html">VODs</a>
-          <a href="signup.html">Sign Up</a>
+          <a href="signup.html" style="color:var(--lime);" class="active">Sign Up</a>
         </div>
       </div>
     </footer>
@@ -1343,37 +1523,114 @@
       checkInitialCombatantAuth();
 
       // ==========================================
-      // TAB SWITCHING (SOLO VS TEAM/ORG FRANCHISE)
+      // TAB SWITCHING (PLAYER, TEAM, ORG)
       // ==========================================
       const tabSoloBtn = document.getElementById("tab-btn-solo");
       const tabTeamBtn = document.getElementById("tab-btn-team");
+      const tabOrgBtn = document.getElementById("tab-btn-org");
       const paneSolo = document.getElementById("pane-solo");
       const paneTeam = document.getElementById("pane-team");
+      const paneOrg = document.getElementById("pane-org");
 
       function switchTab(activeTab) {
-        if (activeTab === "solo") {
+        const normalized = activeTab === "player" ? "solo" : activeTab;
+
+        // Reset all tabs & panes
+        [tabSoloBtn, tabTeamBtn, tabOrgBtn].forEach((btn) => {
+          if (btn) {
+            btn.classList.remove("active");
+            btn.setAttribute("aria-selected", "false");
+          }
+        });
+        if (paneSolo) paneSolo.style.display = "none";
+        if (paneTeam) paneTeam.style.display = "none";
+        if (paneOrg) paneOrg.style.display = "none";
+
+        const kickerEl = document.getElementById("signup-header-kicker");
+        const titleEl = document.getElementById("signup-header-title");
+        const descEl = document.getElementById("signup-header-desc");
+
+        if (normalized === "solo") {
           tabSoloBtn?.classList.add("active");
           tabSoloBtn?.setAttribute("aria-selected", "true");
-          tabTeamBtn?.classList.remove("active");
-          tabTeamBtn?.setAttribute("aria-selected", "false");
           if (paneSolo) paneSolo.style.display = "block";
-          if (paneTeam) paneTeam.style.display = "none";
-        } else {
+          if (kickerEl) kickerEl.textContent = "RECRUITMENT PROTOCOL // OPTION 1 OF 3";
+          if (titleEl) titleEl.innerHTML = 'Player <span style="color:var(--lime);">Registration</span>';
+          if (descEl) descEl.textContent = "Register as an individual combatant or unassigned Free Agent looking for a squad or community draft placement.";
+          try { window.history.replaceState(null, "", "?type=player"); } catch (_) {}
+        } else if (normalized === "team") {
           tabTeamBtn?.classList.add("active");
           tabTeamBtn?.setAttribute("aria-selected", "true");
-          tabSoloBtn?.classList.remove("active");
-          tabSoloBtn?.setAttribute("aria-selected", "false");
           if (paneTeam) paneTeam.style.display = "block";
-          if (paneSolo) paneSolo.style.display = "none";
+          if (kickerEl) kickerEl.textContent = "RECRUITMENT PROTOCOL // OPTION 2 OF 3";
+          if (titleEl) titleEl.innerHTML = 'Team <span style="color:#ffb300;">Registration</span>';
+          if (descEl) descEl.textContent = "Register a 4-man competitive squad with flexible entry tier options (Free Division or Paid Championship Prize Pool).";
+          try { window.history.replaceState(null, "", "?type=team"); } catch (_) {}
+        } else if (normalized === "org") {
+          tabOrgBtn?.classList.add("active");
+          tabOrgBtn?.setAttribute("aria-selected", "true");
+          if (paneOrg) paneOrg.style.display = "block";
+          if (kickerEl) kickerEl.textContent = "RECRUITMENT PROTOCOL // OPTION 3 OF 3";
+          if (titleEl) titleEl.innerHTML = 'Organization <span style="color:#38bdf8;">Franchise Registration</span>';
+          if (descEl) descEl.textContent = "Register an official organization franchise. Gives your organization an active team in each division, including Open.";
+          try { window.history.replaceState(null, "", "?type=org"); } catch (_) {}
         }
       }
 
       tabSoloBtn?.addEventListener("click", () => switchTab("solo"));
       tabTeamBtn?.addEventListener("click", () => switchTab("team"));
+      tabOrgBtn?.addEventListener("click", () => switchTab("org"));
 
-      // Check URL hash on page load (e.g. signup.html#team)
-      if (window.location.hash === "#team" || window.location.hash === "#org") {
+      // Check URL query parameters and hashes on load
+      const urlParams = new URLSearchParams(window.location.search);
+      const typeParam = urlParams.get("type");
+      if (typeParam && ["player", "solo", "team", "org"].includes(typeParam)) {
+        switchTab(typeParam);
+      } else if (window.location.hash === "#team") {
         switchTab("team");
+      } else if (window.location.hash === "#org") {
+        switchTab("org");
+      } else if (window.location.hash === "#player" || window.location.hash === "#solo") {
+        switchTab("solo");
+      }
+
+      // ==========================================
+      // TEAM ENTRY TIER HANDLER (FREE VS PAID)
+      // ==========================================
+      function handleTeamTierChange() {
+        const isPaid = document.getElementById("tier-paid")?.checked;
+        const paymentCard = document.getElementById("team-payment-card");
+        const freeBanner = document.getElementById("team-free-tier-banner");
+        const submitBtn = document.getElementById("btn-submit-team");
+        const discordNote = document.getElementById("team-discord-note");
+        const labelFree = document.getElementById("label-tier-free");
+        const labelPaid = document.getElementById("label-tier-paid");
+
+        if (isPaid) {
+          if (paymentCard) paymentCard.style.display = "flex";
+          if (freeBanner) freeBanner.style.display = "none";
+          if (submitBtn) {
+            submitBtn.innerHTML = `<span>Register Team &amp; Proceed to $25.00 Payment</span><span style="font-size:16px;">↗</span>`;
+            submitBtn.style.background = "#ffb300";
+            submitBtn.style.color = "#11120f";
+            submitBtn.style.borderColor = "#ffb300";
+          }
+          if (discordNote) discordNote.textContent = "🔒 Official PayPal Checkout · Roster record & Reference ID generated on submit";
+          if (labelPaid) labelPaid.style.borderColor = "#ffb300";
+          if (labelFree) labelFree.style.borderColor = "#485223";
+        } else {
+          if (paymentCard) paymentCard.style.display = "none";
+          if (freeBanner) freeBanner.style.display = "flex";
+          if (submitBtn) {
+            submitBtn.innerHTML = `<span>Register 4-Man Team (Free Entry)</span><span style="font-size:16px;">↗</span>`;
+            submitBtn.style.background = "var(--lime)";
+            submitBtn.style.color = "#11120f";
+            submitBtn.style.borderColor = "var(--lime)";
+          }
+          if (discordNote) discordNote.textContent = "🛡 Official Team Roster Record generated on submission";
+          if (labelFree) labelFree.style.borderColor = "var(--lime)";
+          if (labelPaid) labelPaid.style.borderColor = "#5a4b20";
+        }
       }
 
       // ==========================================
@@ -1382,21 +1639,6 @@
       const signupForm = document.getElementById("league-signup-form");
       const alertBox = document.getElementById("signup-alert-box");
       const submitBtn = document.getElementById("btn-submit-signup");
-
-      const regTypeSelect = document.getElementById("registration_type");
-      const teamNameInput = document.getElementById("team_name");
-      const teamNameGroup = document.getElementById("team-name-group");
-      if (regTypeSelect && teamNameInput) {
-        regTypeSelect.addEventListener("change", () => {
-          if (regTypeSelect.value === "Team Captain") {
-            teamNameInput.placeholder = "e.g. Night Shift (Your Official Team Name)";
-            teamNameInput.required = true;
-          } else {
-            teamNameInput.placeholder = "e.g. Night Shift, Vantage (or leave blank if solo)";
-            teamNameInput.required = false;
-          }
-        });
-      }
 
       if (signupForm) {
         signupForm.addEventListener("submit", async (e) => {
@@ -1414,8 +1656,8 @@
             gamertag: document.getElementById("gamertag").value.trim(),
             discord_username: document.getElementById("discord_username").value.trim(),
             activision_id: document.getElementById("activision_id").value.trim() || null,
-            registration_type: document.getElementById("registration_type").value,
-            team_name: document.getElementById("team_name").value.trim() || null,
+            registration_type: "Free Agent",
+            team_name: null,
             role: document.getElementById("role").value,
             platform: document.getElementById("platform").value,
             region: document.getElementById("region").value,
@@ -1495,25 +1737,26 @@
       }
 
       // ==========================================
-      // 2. TEAM / ORG FRANCHISE SUBMISSION & PAYPAL
+      // 2. TEAM REGISTRATION (FREE & PAID OPTIONS)
       // ==========================================
-      const orgForm = document.getElementById("org-signup-form");
-      const orgAlertBox = document.getElementById("org-alert-box");
-      const orgSubmitBtn = document.getElementById("btn-submit-org");
+      const teamForm = document.getElementById("team-signup-form");
+      const teamAlertBox = document.getElementById("team-alert-box");
+      const teamSubmitBtn = document.getElementById("btn-submit-team");
 
-      if (orgForm) {
-        orgForm.addEventListener("submit", async (e) => {
+      if (teamForm) {
+        teamForm.addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          const orgData = {
-            org_name: document.getElementById("org_name").value.trim(),
-            team_tag: document.getElementById("team_tag").value.trim().toUpperCase(),
-            owner_gamertag: document.getElementById("owner_gamertag").value.trim(),
-            owner_discord: document.getElementById("owner_discord").value.trim(),
-            contact_email: document.getElementById("contact_email").value.trim(),
-            region: document.getElementById("org_region").value,
-            logo_url: document.getElementById("logo_url").value.trim() || null,
-            twitter_handle: document.getElementById("twitter_handle").value.trim() || null,
+          const isPaid = document.getElementById("tier-paid")?.checked;
+          const teamData = {
+            org_name: document.getElementById("team_name_input").value.trim(),
+            team_tag: document.getElementById("team_tag_input").value.trim().toUpperCase(),
+            owner_gamertag: document.getElementById("team_captain_gamertag").value.trim(),
+            owner_discord: document.getElementById("team_captain_discord").value.trim(),
+            contact_email: document.getElementById("team_contact_email").value.trim(),
+            region: document.getElementById("team_region").value,
+            logo_url: document.getElementById("team_logo_url")?.value.trim() || null,
+            twitter_handle: document.getElementById("team_twitter")?.value.trim() || null,
             
             player_1_gamertag: document.getElementById("p1_gamertag").value.trim(),
             player_1_activision: document.getElementById("p1_activision").value.trim() || null,
@@ -1534,137 +1777,271 @@
             substitute_gamertag: document.getElementById("sub_gamertag") ? document.getElementById("sub_gamertag").value.trim() || null : null,
             substitute_activision: document.getElementById("sub_activision") ? document.getElementById("sub_activision").value.trim() || null : null,
 
-            notes: document.getElementById("org_notes").value.trim() || null,
-            entry_fee_amount: 25.00,
-            payment_method: "PayPal",
-            payment_status: "Pending Payment",
+            notes: `[Entry Tier: ${isPaid ? "Paid Pro / Championship Tier ($25)" : "Free Division Entry ($0)"}] ` + (document.getElementById("team_notes")?.value.trim() || ""),
+            entry_tier: isPaid ? "paid" : "free",
+            entry_fee_amount: isPaid ? 25.00 : 0.00,
+            payment_method: isPaid ? "PayPal" : "Free Entry",
+            payment_status: isPaid ? "Pending Payment" : "Free Entry",
             approval_status: "Pending Review"
           };
 
-          orgSubmitBtn.disabled = true;
-          const origText = orgSubmitBtn.innerHTML;
-          orgSubmitBtn.innerHTML = `<span>RECORDING FRANCHISE APPLICATION...</span>`;
+          teamSubmitBtn.disabled = true;
+          const origText = teamSubmitBtn.innerHTML;
+          teamSubmitBtn.innerHTML = `<span>RECORDING TEAM ROSTER...</span>`;
+
+          try {
+            const res = await window.LeagueDB.submitOrgSignup(teamData);
+
+            if (res.success) {
+              const refCode = res.reference_code || "FRT-TM-" + Math.floor(1000 + Math.random() * 9000);
+              teamForm.style.display = "none";
+              teamAlertBox.style.display = "block";
+              teamAlertBox.className = "signup-alert alert-success";
+
+              if (isPaid) {
+                const paypalUsername = (window.LeagueDB.paypalConfig && window.LeagueDB.paypalConfig.paypalUsername) || "frontlinecdl";
+                const paypalUrl = `https://www.paypal.com/paypalme/${paypalUsername}/25`;
+
+                teamAlertBox.innerHTML = `
+                  <div class="alert-title">
+                    <span style="font-size: 20px;">✓</span>
+                    <span>PAID PRO TIER ROSTER SAVED — PAYMENT REQUIRED</span>
+                  </div>
+                  <div class="alert-msg">
+                    Application for <strong>${escapeHtml(teamData.org_name)} [${escapeHtml(teamData.team_tag)}]</strong> has been recorded!
+                    <br><br>
+                    Your unique Team Reference Code:
+                    <div style="margin: 10px 0;">
+                      <span class="payment-ref-badge">${escapeHtml(refCode)}</span>
+                    </div>
+                    To guarantee your tournament seed and unlock prize pool qualification, complete the <strong>$25.00 USD</strong> team entry fee via PayPal below.
+                  </div>
+
+                  <div class="payment-step-card">
+                    <strong style="color:#ffb300; font:800 13px var(--body); letter-spacing:0.8px; text-transform:uppercase;">
+                      STEP 2: Complete $25.00 Team Entry Fee via PayPal
+                    </strong>
+                    <p style="font-size:12.5px; color:var(--muted); margin:0;">
+                      Click below to open PayPal. <strong>Important: Include your Reference Code (${escapeHtml(refCode)}) and Team Name in the PayPal payment note.</strong>
+                    </p>
+                    <div class="alert-actions" style="margin-top: 4px;">
+                      <a href="${paypalUrl}" target="_blank" rel="noopener" class="btn-paypal-submit" style="padding: 10px 22px; font-size: 13px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.784.784 0 0 1 .773-.655h7.248c3.606 0 6.07 1.765 5.568 5.485-.43 3.18-2.618 4.964-5.69 4.964h-2.12l-1.09 6.823a.641.641 0 0 1-.633.542l-1.924-.042z"/>
+                        </svg>
+                        <span>Pay $25.00 on PayPal ↗</span>
+                      </a>
+                      <a href="https://discord.com/" target="_blank" rel="noopener" class="btn-alert-action btn-alert-secondary">
+                        Verify in Discord #team-payments ↗
+                      </a>
+                    </div>
+
+                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #ffffff12;">
+                      <div style="font: 800 12px var(--body); color: #fff; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">
+                        Already Sent Payment? Enter PayPal Transaction ID or Payer Email:
+                      </div>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" id="confirm-paypal-tx" class="form-control" placeholder="e.g. 9X18273645 or your PayPal email" style="max-width: 320px; font-size: 12px; padding: 8px 12px;" />
+                        <button type="button" id="btn-confirm-payment" class="btn-alert-action" style="padding: 8px 16px;">
+                          Confirm Payment
+                        </button>
+                      </div>
+                      <div id="payment-verify-status" style="font-size: 11px; margin-top: 6px; display: none;"></div>
+                    </div>
+                  </div>
+
+                  <div class="alert-actions" style="margin-top: 12px;">
+                    <button type="button" id="btn-register-another-team" class="btn-alert-action btn-alert-secondary">
+                      Register Another Team
+                    </button>
+                  </div>
+                `;
+
+                document.getElementById("btn-confirm-payment")?.addEventListener("click", async () => {
+                  const txInput = document.getElementById("confirm-paypal-tx").value.trim();
+                  const statusDiv = document.getElementById("payment-verify-status");
+                  if (!txInput) {
+                    statusDiv.style.display = "block";
+                    statusDiv.style.color = "#ff5b5b";
+                    statusDiv.innerText = "Please enter your PayPal Transaction ID or the email associated with the payment.";
+                    return;
+                  }
+                  statusDiv.style.display = "block";
+                  statusDiv.style.color = "var(--lime)";
+                  statusDiv.innerText = "Transmitting payment confirmation...";
+
+                  const updRes = await window.LeagueDB.updateOrgPaymentStatus(refCode, txInput);
+                  if (updRes.success) {
+                    statusDiv.style.color = "var(--lime)";
+                    statusDiv.innerHTML = `✓ Payment confirmation logged in database! Our staff will verify your receipt and approve <strong>${escapeHtml(teamData.org_name)}</strong> onto the active roster.`;
+                  } else {
+                    statusDiv.style.color = "#ff5b5b";
+                    statusDiv.innerText = "Failed to update record. Please verify in Discord #team-payments.";
+                  }
+                });
+              } else {
+                // Free Division Confirmation
+                teamAlertBox.innerHTML = `
+                  <div class="alert-title">
+                    <span style="font-size: 20px;">✓</span>
+                    <span>FREE DIVISION ROSTER SUBMITTED SUCCESSFULLY</span>
+                  </div>
+                  <div class="alert-msg">
+                    Team <strong>${escapeHtml(teamData.org_name)} [${escapeHtml(teamData.team_tag)}]</strong> has been logged in the official Free Division queue!
+                    <br><br>
+                    Your Team Reference Code:
+                    <div style="margin: 10px 0;">
+                      <span class="payment-ref-badge">${escapeHtml(refCode)}</span>
+                    </div>
+                    <strong>Next Step:</strong> Join the Frontline Discord so captains can access match fixtures and schedule division scrimmages.
+                  </div>
+                  <div class="alert-actions">
+                    <a href="https://discord.com/" target="_blank" rel="noopener" class="btn-alert-action">
+                      Join Official Discord ↗
+                    </a>
+                    <button type="button" id="btn-register-another-team" class="btn-alert-action btn-alert-secondary">
+                      Register Another Team
+                    </button>
+                  </div>
+                `;
+              }
+
+              document.getElementById("btn-register-another-team")?.addEventListener("click", () => {
+                teamForm.reset();
+                teamForm.style.display = "flex";
+                teamAlertBox.style.display = "none";
+              });
+
+              teamAlertBox.scrollIntoView({ behavior: "smooth", block: "center" });
+            } else {
+              throw new Error(res.error || "Failed to submit team registration");
+            }
+          } catch (err) {
+            console.error("Team submission failed:", err);
+            teamAlertBox.style.display = "block";
+            teamAlertBox.className = "signup-alert alert-error";
+            const errStr = String(err.message || err);
+            teamAlertBox.innerHTML = `
+              <div class="alert-title">
+                <span style="font-size: 20px;">⚠</span>
+                <span>TRANSMISSION FAILED</span>
+              </div>
+              <div class="alert-msg">
+                We encountered an issue submitting your team application: ${escapeHtml(errStr)}
+              </div>
+            `;
+            teamAlertBox.scrollIntoView({ behavior: "smooth", block: "center" });
+          } finally {
+            teamSubmitBtn.disabled = false;
+            teamSubmitBtn.innerHTML = origText;
+          }
+        });
+      }
+
+      // ==========================================
+      // 3. ORGANIZATION FRANCHISE SUBMISSION
+      // ==========================================
+      const orgFranchiseForm = document.getElementById("org-franchise-signup-form");
+      const orgFranchiseAlertBox = document.getElementById("org-franchise-alert-box");
+      const orgFranchiseSubmitBtn = document.getElementById("btn-submit-org-franchise");
+
+      if (orgFranchiseForm) {
+        orgFranchiseForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const orgData = {
+            org_name: document.getElementById("org_franchise_name").value.trim(),
+            team_tag: document.getElementById("org_franchise_tag").value.trim().toUpperCase(),
+            owner_gamertag: document.getElementById("org_gm_gamertag").value.trim(),
+            owner_discord: document.getElementById("org_gm_discord").value.trim(),
+            contact_email: document.getElementById("org_contact_email").value.trim(),
+            region: document.getElementById("org_primary_region").value,
+            logo_url: document.getElementById("org_logo_url")?.value.trim() || null,
+            twitter_handle: document.getElementById("org_socials")?.value.trim() || null,
+            is_org_franchise: true,
+            divisions_assigned: ["Division 1 (Pro)", "Division 2 (Challengers)", "Open Division"],
+            
+            div1_team: document.getElementById("org_div1_team_name")?.value.trim(),
+            div1_captain: document.getElementById("org_div1_captain")?.value.trim(),
+            div2_team: document.getElementById("org_div2_team_name")?.value.trim(),
+            div2_captain: document.getElementById("org_div2_captain")?.value.trim(),
+            open_team: document.getElementById("org_open_team_name")?.value.trim(),
+            open_captain: document.getElementById("org_open_captain")?.value.trim(),
+
+            player_1_gamertag: document.getElementById("org_div1_captain")?.value.trim(),
+            player_2_gamertag: document.getElementById("org_div2_captain")?.value.trim(),
+            player_3_gamertag: document.getElementById("org_open_captain")?.value.trim(),
+            player_4_gamertag: document.getElementById("org_gm_gamertag").value.trim(),
+
+            notes: `[Organization Franchise - All Divisions + Open] Div1: ${document.getElementById("org_div1_team_name")?.value.trim()}, Div2: ${document.getElementById("org_div2_team_name")?.value.trim()}, Open: ${document.getElementById("org_open_team_name")?.value.trim()}. Notes: ${document.getElementById("org_franchise_notes")?.value.trim() || "None"}`,
+            approval_status: "Pending Review",
+            payment_status: "Franchise Verified"
+          };
+
+          orgFranchiseSubmitBtn.disabled = true;
+          const origText = orgFranchiseSubmitBtn.innerHTML;
+          orgFranchiseSubmitBtn.innerHTML = `<span>REGISTERING ORGANIZATION FRANCHISE...</span>`;
 
           try {
             const res = await window.LeagueDB.submitOrgSignup(orgData);
 
             if (res.success) {
               const refCode = res.reference_code || "FRT-ORG-" + Math.floor(1000 + Math.random() * 9000);
-              const paypalUsername = (window.LeagueDB.paypalConfig && window.LeagueDB.paypalConfig.paypalUsername) || "frontlinecdl";
-              const paypalUrl = `https://www.paypal.com/paypalme/${paypalUsername}/25`;
-
-              orgForm.style.display = "none";
-              orgAlertBox.style.display = "block";
-              orgAlertBox.className = "signup-alert alert-success";
-              orgAlertBox.innerHTML = `
+              orgFranchiseForm.style.display = "none";
+              orgFranchiseAlertBox.style.display = "block";
+              orgFranchiseAlertBox.className = "signup-alert alert-success";
+              orgFranchiseAlertBox.innerHTML = `
                 <div class="alert-title">
                   <span style="font-size: 20px;">✓</span>
-                  <span>FRANCHISE APPLICATION SAVED — PAYMENT REQUIRED</span>
+                  <span>ORGANIZATION FRANCHISE APPLICATION RECORDED</span>
                 </div>
                 <div class="alert-msg">
-                  Application for <strong>${escapeHtml(orgData.org_name)} [${escapeHtml(orgData.team_tag)}]</strong> has been recorded in the league database!
+                  Master Franchise for <strong>${escapeHtml(orgData.org_name)} [${escapeHtml(orgData.team_tag)}]</strong> has been recorded with allocated slots for <strong>Division 1 (Pro)</strong>, <strong>Division 2 (Challengers)</strong>, and the <strong>Open Division</strong>!
                   <br><br>
-                  Your unique Franchise Reference Code:
+                  Organization Franchise Code:
                   <div style="margin: 10px 0;">
-                    <span class="payment-ref-badge">${escapeHtml(refCode)}</span>
+                    <span class="payment-ref-badge" style="background:#0369a1; border-color:#38bdf8; color:#fff;">${escapeHtml(refCode)}</span>
                   </div>
-                  To guarantee your tournament seed and unlock your team's roster on the official Standings, complete the <strong>$25.00 USD</strong> team entry fee via PayPal below.
+                  League directors will review and link your divisional roster entries in the database.
                 </div>
-
-                <div class="payment-step-card">
-                  <strong style="color:#ffb300; font:800 13px var(--body); letter-spacing:0.8px; text-transform:uppercase;">
-                    STEP 2: Complete $25.00 Team Entry Fee via PayPal
-                  </strong>
-                  <p style="font-size:12.5px; color:var(--muted); margin:0;">
-                    Click below to open PayPal. <strong>Important: Include your Reference Code (${escapeHtml(refCode)}) and Team Name in the PayPal payment note.</strong>
-                  </p>
-                  <div class="alert-actions" style="margin-top: 4px;">
-                    <a href="${paypalUrl}" target="_blank" rel="noopener" class="btn-paypal-submit" style="padding: 10px 22px; font-size: 13px;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.784.784 0 0 1 .773-.655h7.248c3.606 0 6.07 1.765 5.568 5.485-.43 3.18-2.618 4.964-5.69 4.964h-2.12l-1.09 6.823a.641.641 0 0 1-.633.542l-1.924-.042z"/>
-                      </svg>
-                      <span>Pay $25.00 on PayPal ↗</span>
-                    </a>
-                    <a href="https://discord.com/" target="_blank" rel="noopener" class="btn-alert-action btn-alert-secondary">
-                      Verify in Discord #team-payments ↗
-                    </a>
-                  </div>
-
-                  <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #ffffff12;">
-                    <div style="font: 800 12px var(--body); color: #fff; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">
-                      Already Sent Payment? Enter PayPal Transaction ID or Payer Email:
-                    </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                      <input type="text" id="confirm-paypal-tx" class="form-control" placeholder="e.g. 9X18273645 or your PayPal email" style="max-width: 320px; font-size: 12px; padding: 8px 12px;" />
-                      <button type="button" id="btn-confirm-payment" class="btn-alert-action" style="padding: 8px 16px;">
-                        Confirm Payment
-                      </button>
-                    </div>
-                    <div id="payment-verify-status" style="font-size: 11px; margin-top: 6px; display: none;"></div>
-                  </div>
-                </div>
-
-                <div class="alert-actions" style="margin-top: 12px;">
-                  <button type="button" id="btn-register-another-org" class="btn-alert-action btn-alert-secondary">
+                <div class="alert-actions">
+                  <a href="https://discord.com/" target="_blank" rel="noopener" class="btn-alert-action" style="background:#0284c7; border-color:#0284c7;">
+                    Confirm in Discord Org Channel ↗
+                  </a>
+                  <button type="button" id="btn-register-another-org-franchise" class="btn-alert-action btn-alert-secondary">
                     Register Another Organization
                   </button>
                 </div>
               `;
 
-              document.getElementById("btn-confirm-payment")?.addEventListener("click", async () => {
-                const txInput = document.getElementById("confirm-paypal-tx").value.trim();
-                const statusDiv = document.getElementById("payment-verify-status");
-                if (!txInput) {
-                  statusDiv.style.display = "block";
-                  statusDiv.style.color = "#ff5b5b";
-                  statusDiv.innerText = "Please enter your PayPal Transaction ID or the email associated with the payment.";
-                  return;
-                }
-                statusDiv.style.display = "block";
-                statusDiv.style.color = "var(--lime)";
-                statusDiv.innerText = "Transmitting payment confirmation...";
-
-                const updRes = await window.LeagueDB.updateOrgPaymentStatus(refCode, txInput);
-                if (updRes.success) {
-                  statusDiv.style.color = "var(--lime)";
-                  statusDiv.innerHTML = `✓ Payment confirmation logged in database! Our staff will verify your receipt and approve <strong>${escapeHtml(orgData.org_name)}</strong> onto the active roster.`;
-                } else {
-                  statusDiv.style.color = "#ff5b5b";
-                  statusDiv.innerText = "Failed to update record. Please verify in Discord #team-payments.";
-                }
+              document.getElementById("btn-register-another-org-franchise")?.addEventListener("click", () => {
+                orgFranchiseForm.reset();
+                orgFranchiseForm.style.display = "flex";
+                orgFranchiseAlertBox.style.display = "none";
               });
 
-              document.getElementById("btn-register-another-org")?.addEventListener("click", () => {
-                orgForm.reset();
-                orgForm.style.display = "flex";
-                orgAlertBox.style.display = "none";
-              });
-
-              orgAlertBox.scrollIntoView({ behavior: "smooth", block: "center" });
+              orgFranchiseAlertBox.scrollIntoView({ behavior: "smooth", block: "center" });
             } else {
               throw new Error(res.error || "Failed to submit organization registration");
             }
           } catch (err) {
-            console.error("Org submission failed:", err);
-            orgAlertBox.style.display = "block";
-            orgAlertBox.className = "signup-alert alert-error";
+            console.error("Org franchise submission failed:", err);
+            orgFranchiseAlertBox.style.display = "block";
+            orgFranchiseAlertBox.className = "signup-alert alert-error";
             const errStr = String(err.message || err);
-            const isTableMissing = errStr.includes("org_signups") || errStr.includes("PGRST205");
-            orgAlertBox.innerHTML = `
+            orgFranchiseAlertBox.innerHTML = `
               <div class="alert-title">
                 <span style="font-size: 20px;">⚠</span>
                 <span>TRANSMISSION FAILED</span>
               </div>
               <div class="alert-msg">
-                ${isTableMissing 
-                  ? "Database table <code>org_signups</code> was not detected in Supabase. Please execute the migration script <code>add_org_signups.sql</code> in your Supabase SQL Editor to activate team registrations."
-                  : "We encountered an issue submitting your organization application: " + escapeHtml(errStr)}
+                We encountered an issue submitting your organization application: ${escapeHtml(errStr)}
               </div>
             `;
-            orgAlertBox.scrollIntoView({ behavior: "smooth", block: "center" });
+            orgFranchiseAlertBox.scrollIntoView({ behavior: "smooth", block: "center" });
           } finally {
-            orgSubmitBtn.disabled = false;
-            orgSubmitBtn.innerHTML = origText;
+            orgFranchiseSubmitBtn.disabled = false;
+            orgFranchiseSubmitBtn.innerHTML = origText;
           }
         });
       }
