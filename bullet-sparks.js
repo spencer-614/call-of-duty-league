@@ -39,8 +39,17 @@
     ctx.scale(dpr, dpr);
   }
 
-  // Incandescent color palette: White-hot core, Electric Lime, and Molten Brass/Gold
-  const SPARK_COLORS = [
+  // Check if current page is Arena mode vs League mode
+  function isArenaMode() {
+    return (
+      (document.body && document.body.classList.contains("gb-body")) ||
+      !!document.querySelector(".status-arena, .active-arena, .btn-crimson") ||
+      /arena|ladders|match\.html/i.test(window.location.pathname)
+    );
+  }
+
+  // Incandescent color palettes
+  const LEAGUE_SPARK_COLORS = [
     "#ffffff",
     "#ffffff",
     "#d5f45b", // Frontline Electric Lime
@@ -51,8 +60,23 @@
     "#ff6622"  // Amber tail
   ];
 
+  const ARENA_SPARK_COLORS = [
+    "#ffffff",
+    "#ffffff",
+    "#ff1e44", // Frontline Arena Crimson
+    "#ff1e44",
+    "#ff4d6d", // Hot neon crimson
+    "#ffa033", // Fiery molten spark
+    "#ffe270", // Molten gold
+    "#ff6b81"  // Bright ricochet
+  ];
+
   function triggerBulletImpact(x, y) {
     if (!canvas) initCanvas();
+
+    const isArena = isArenaMode();
+    const sparkPalette = isArena ? ARENA_SPARK_COLORS : LEAGUE_SPARK_COLORS;
+    const primaryColor = isArena ? "#ff1e44" : "#d5f45b";
 
     // 1. Instant Impact Flash / Kinetic Shockwave Ring
     shockwaves.push({
@@ -62,7 +86,7 @@
       maxRadius: 20 + Math.random() * 8,
       alpha: 1.0,
       lineWidth: 2.2,
-      color: Math.random() > 0.35 ? "#d5f45b" : "#ffffff"
+      color: Math.random() > 0.35 ? primaryColor : "#ffffff"
     });
 
     // 2. High-Velocity Ricochet Tracers (1 to 2 sharp deflected bullet tracer streaks)
@@ -79,7 +103,7 @@
         alpha: 1.0,
         decay: 0.04 + Math.random() * 0.02,
         length: 22 + Math.random() * 16,
-        color: Math.random() > 0.4 ? "#d5f45b" : "#fff8c4",
+        color: Math.random() > 0.4 ? primaryColor : (isArena ? "#ffd070" : "#fff8c4"),
         width: 2.2
       });
     }
@@ -89,7 +113,7 @@
     for (let i = 0; i < sparkCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 3.5 + Math.random() * 9.5;
-      const color = SPARK_COLORS[Math.floor(Math.random() * SPARK_COLORS.length)];
+      const color = sparkPalette[Math.floor(Math.random() * sparkPalette.length)];
       particles.push({
         x,
         y,
