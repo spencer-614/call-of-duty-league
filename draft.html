@@ -724,44 +724,77 @@
           }
         }
 
+        function getSupaClient() {
+          if (window.dbClient) return window.dbClient;
+          if (window.supabaseClient) return window.supabaseClient;
+          if (window.LeagueDB && typeof window.LeagueDB.getClient === 'function') {
+            const c = window.LeagueDB.getClient();
+            if (c) return c;
+          }
+          if (window.supabase && window.SUPABASE_CONFIG) {
+            window.dbClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.key);
+            return window.dbClient;
+          }
+          return null;
+        }
+
         function setupDraftRealtimeSync() {
-          // 1. Supabase Realtime Broadcast Channel
-          if (window.supabase && dbClient) {
+          const client = getSupaClient();
+
+          // 1. Supabase Realtime Broadcast Channel (Cross-device WebSockets)
+          if (client) {
             try {
               if (draftRealtimeChannel) {
-                try { dbClient.removeChannel(draftRealtimeChannel); } catch(err) {}
+                try { client.removeChannel(draftRealtimeChannel); } catch(err) {}
               }
 
-              draftRealtimeChannel = dbClient.channel(`frontline_draft_live_${currentDivision}`, {
-                config: { broadcast: { self: false } }
+              const channelName = `frontline_draft_live_${currentDivision}`;
+              draftRealtimeChannel = client.channel(channelName, {
+                config: {
+                  broadcast: { self: false, ack: true }
+                }
               });
 
               draftRealtimeChannel
                 .on('broadcast', { event: 'wheel_spin' }, (payload) => {
-                  if (payload && payload.payload) {
-                    handleRemoteWheelSpin(payload.payload);
-                  }
+                  console.log("⚡ [REALTIME] Received wheel_spin broadcast:", payload);
+                  const data = payload.payload || payload;
+                  handleRemoteWheelSpin(data);
                 })
                 .on('broadcast', { event: 'wheel_reset' }, (payload) => {
-                  handleRemoteWheelReset(payload?.payload);
+                  console.log("🔄 [REALTIME] Received wheel_reset broadcast:", payload);
+                  const data = payload.payload || payload;
+                  handleRemoteWheelReset(data);
                 })
                 .on('broadcast', { event: 'wheel_quick_lottery' }, (payload) => {
-                  handleRemoteQuickLottery(payload?.payload);
+                  console.log("🎲 [REALTIME] Received wheel_quick_lottery broadcast:", payload);
+                  const data = payload.payload || payload;
+                  handleRemoteQuickLottery(data);
                 })
                 .on('broadcast', { event: 'draft_pick_made' }, (payload) => {
-                  handleRemoteDraftPick(payload?.payload);
+                  console.log("🎯 [REALTIME] Received draft_pick_made broadcast:", payload);
+                  const data = payload.payload || payload;
+                  handleRemoteDraftPick(data);
                 })
                 .on('broadcast', { event: 'draft_state_sync' }, (payload) => {
-                  handleRemoteDraftStateSync(payload?.payload);
+                  console.log("📋 [REALTIME] Received draft_state_sync broadcast:", payload);
+                  const data = payload.payload || payload;
+                  handleRemoteDraftStateSync(data);
                 })
-                .subscribe((status) => {
-                  updateLiveSyncBadge(status === 'SUBSCRIBED');
+                .subscribe((status, err) => {
+                  console.log(`📡 [REALTIME SYNC] Channel ${channelName} status:`, status, err || '');
+                  if (status === 'SUBSCRIBED') {
+                    updateLiveSyncBadge(true);
+                  } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                    updateLiveSyncBadge(false);
+                  }
                 });
             } catch (e) {
               console.warn("Realtime draft sync setup:", e);
               updateLiveSyncBadge(false);
             }
           } else {
+            console.warn("Supabase client not yet available for realtime draft sync.");
             updateLiveSyncBadge(false);
           }
 
@@ -790,28 +823,39 @@
           }
         }
 
-        function broadcastDraftEvent(eventName, payloadData) {
-          // Send via Supabase Broadcast
+        async function broadcastDraftEvent(eventName, payloadData) {
+          console.log(`🚀 [BROADCASTING] ${eventName}:`, payloadData);
+
+          // 1. Send via Supabase WebSocket Broadcast
           if (draftRealtimeChannel) {
             try {
-              draftRealtimeChannel.send({
+              const res = await draftRealtimeChannel.send({
                 type: 'broadcast',
                 event: eventName,
                 payload: payloadData
               });
+              console.log(`✓ [BROADCAST SENT] ${eventName} response:`, res);
             } catch (e) {
               console.warn("Realtime broadcast send error:", e);
             }
           }
 
-          // Store in LocalStorage for instant cross-tab sync
+          // 2. Store in LocalStorage for instant cross-tab sync
           try {
             localStorage.setItem(`frontline_draft_${eventName}_${currentDivision}`, JSON.stringify(payloadData));
+          } catch (e) {}
+
+          // 3. Persist Draft state in cloud DB
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.saveDraftState === 'function') {
+              window.LeagueDB.saveDraftState(draftState, currentDivision).catch(() => {});
+            }
           } catch (e) {}
         }
 
         function handleRemoteWheelSpin(data) {
           if (!data || isSpinning) return;
+          console.log("🎡 [REMOTE WHEEL SPIN EXECUTING]:", data);
 
           // If broadcaster included active team list and it differs, align activeWheelTeams
           if (Array.isArray(data.activeTeams) && data.activeTeams.length > 0) {

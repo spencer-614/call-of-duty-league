@@ -34,7 +34,10 @@ const PAYPAL_CONFIG = {
 let dbClient = null;
 if (window.supabase && isSupabaseConfigured()) {
   dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.dbClient = dbClient;
+  window.supabaseClient = dbClient;
 }
+window.SUPABASE_CONFIG = { url: SUPABASE_URL, key: SUPABASE_ANON_KEY };
 
 // Fallback Mock Data (displayed if Supabase credentials have not been configured yet)
 const MOCK_DATA = {
@@ -787,6 +790,17 @@ const MOCK_DATA = {
 
 // Unified Data Access API
 window.LeagueDB = {
+  client: dbClient,
+  getClient() {
+    if (window.dbClient) return window.dbClient;
+    if (window.supabaseClient) return window.supabaseClient;
+    if (window.supabase && window.SUPABASE_CONFIG) {
+      window.dbClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.key);
+      return window.dbClient;
+    }
+    return null;
+  },
+
   // 1. Fetch Teams Standings
   async getStandings() {
     if (dbClient) {
