@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline Arena — Competitive Tournaments &amp; Cash Cups</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="bullet-sparks.js" defer></script>
+  </head>
+  <body class="gb-body">
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER (WITH LARGE READABLE LOGO & PLATFORM SWITCH)
+         ========================================================================= -->
+    <header class="fl-topbar">
+      <div class="fl-topbar-left">
+        <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
+        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+          <div class="fl-brand-logo-wrapper">
+            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+          </div>
+          <div class="fl-brand-info">
+            <div class="fl-brand-text">
+              <span class="brand-frontline">FRONTLINE</span>
+              <span class="brand-arena">ARENA</span>
+            </div>
+            <div class="fl-circuit-tag-row">
+              <span class="fl-circuit-badge">COMPETITIVE ARENA</span>
+              <div class="fl-live-beacon">
+                <span class="fl-live-dot"></span>
+                <span>TOURNAMENTS LIVE</span>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Platform Mode Switcher -->
+        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
+          <a href="brackets.html" class="fl-mode-btn" title="Go to Frontline Franchised League Brackets">🛡 League</a>
+          <a href="arena-tournaments.html" class="fl-mode-btn active" title="Frontline Arena Tournaments">⚔ Arena</a>
+        </div>
+
+        <!-- Main Navigation Links (Top Nav Links Stay Here!) -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="ladders.html">Ladders</a>
+          <a href="arena-tournaments.html" class="active">Tournaments</a>
+          <a href="arena-profile.html#my-teams">My Teams</a>
+        </nav>
+      </div>
+
+      <div class="fl-topbar-right">
+        <div id="arena-header-squad-container">
+          <a href="arena-profile.html#my-teams" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <span>🛡</span> <span>Register Squad ↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Frontline Arena Breadcrumb Bar -->
+    <div class="gb-breadcrumb-bar">
+      <div class="gb-breadcrumb-inner">
+        <a href="arena.html">Arena Home</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <strong style="color:#ffffff;">Competitive Tournaments &amp; Cash Cups</strong>
+      </div>
+    </div>
+
+    <main class="gb-content-wrap" style="padding-top:24px; padding-bottom:70px;">
+      <!-- Hero Showcase Section -->
+      <section style="position:relative; padding:44px 32px 36px; background:radial-gradient(ellipse 80% 60% at 50% -20%, rgba(255, 30, 68, 0.25), transparent 70%), #0e131d; border:1px solid #1e283a; border-radius:6px; margin-bottom:32px;">
+        <div style="max-width:880px;">
+          <div class="gb-meta-tag accent" style="margin-bottom:12px; display:inline-flex;">
+            ⚡ SANCTIONED COMPETITIVE ARENA TOURNAMENTS
+          </div>
+          <h1 style="font-family:var(--display); font-size:clamp(32px, 4.5vw, 54px); line-height:1; text-transform:uppercase; color:#fff; margin:0 0 14px; letter-spacing:0.5px;">
+            ARENA TOURNAMENTS &amp; <span style="color:#ff1e44; text-shadow:0 0 24px rgba(255,30,68,0.5);">CASH CUPS</span>
+          </h1>
+          <p style="font-size:14px; color:#cbd5e1; line-height:1.6; margin:0 0 24px;">
+            Compete in sanctioned weekend brackets and single/double-elimination cash cups. Gather your Arena squad, veto official CDL maps in dedicated match rooms, and battle for weekly prize pools and custom Frontline Rings.
+          </p>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <a href="#active-tournaments" class="btn-crimson" style="padding:11px 22px; font-size:12px; text-decoration:none;">
+              <span>🏆</span> <span>Browse Active Tournaments</span>
+            </a>
+            <a href="arena-profile.html#my-teams" class="btn-crimson-outline" style="padding:11px 20px; font-size:12px; text-decoration:none;">
+              <span>🛡</span> <span>Manage Squad Roster</span>
+            </a>
+            <a href="rules.html" class="btn-crimson-outline" style="padding:11px 18px; font-size:12px; text-decoration:none;">
+              <span>📜</span> <span>CDL V4 Tournament Rules</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Telemetry Row -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:32px; padding-top:24px; border-top:1px solid #1d2738;">
+          <div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Weekly Cash Pool</div>
+            <div style="font:900 24px var(--body); color:#22c55e;">$1,750 USD</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Active Tournaments</div>
+            <div style="font:900 24px var(--body); color:#ffffff;">4 Circuits</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Match Format</div>
+            <div style="font:900 24px var(--body); color:#ff1e44;">CDL Variant &amp; SnD</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Host Standard</div>
+            <div style="font:900 24px var(--body); color:#38bdf8;">Dallas / Central 60Hz</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tournament Filter Tabs -->
+      <div id="active-tournaments" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:24px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn-crimson" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('all', this)">
+            All Tournaments (4)
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('4v4', this)">
+            4v4 CDL Variant
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('2v2', this)">
+            2v2 SnD Primes
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('1v1', this)">
+            1v1 Gunfight Showdowns
+          </button>
+        </div>
+
+        <div style="font-size:12px; color:#94a3b8;">
+          Strictly Non-Affiliated Community Circuit
+        </div>
+      </div>
+
+      <!-- Tournament Cards Grid -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:48px;" id="tourney-cards-container">
+        
+        <!-- Tournament 1: $1,000 Major Cup -->
+        <div class="gb-card-box tourney-card" data-category="4v4" style="display:flex; flex-direction:column; overflow:hidden;">
+          <div style="position:relative; height:160px; overflow:hidden;">
+            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="4v4 Opening Major" />
+            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
+              <span class="gb-meta-tag accent">FLAGSHIP MAJOR</span>
+              <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;">REGISTRATION OPEN</span>
+            </div>
+            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
+              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$1,000 Opening Major Cup</h3>
+              <span style="font-size:12px; color:#cbd5e1;">4v4 CDL Variant · Double Elimination</span>
+            </div>
+          </div>
+
+          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
+                  <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">$1,000 Cash</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
+                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">12 / 16 Squads</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Sat 18 Oct · 4:00 PM EST</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Best of 5 CDL</div>
+                </div>
+              </div>
+
+              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+                16-squad double elimination championship. Hardpoint, SnD, and Control played on 60Hz dedicated servers with automated CDL map veto.
+              </p>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('$1,000 Opening Major Cup')">
+                <span>⚔</span> <span>Register Squad</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('major')">
+                View Bracket
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament 2: $500 Saturday SnD Prime -->
+        <div class="gb-card-box tourney-card" data-category="2v2" style="display:flex; flex-direction:column; overflow:hidden;">
+          <div style="position:relative; height:160px; overflow:hidden;">
+            <img src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="2v2 SnD Prime" />
+            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
+              <span class="gb-meta-tag accent">WEEKEND PRIME</span>
+              <span class="val-badge" style="background:#26180a; color:#f59e0b; border-color:#4a2b10;">CHECK-IN OPEN</span>
+            </div>
+            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
+              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$500 Saturday SnD Prime</h3>
+              <span style="font-size:12px; color:#cbd5e1;">2v2 Search &amp; Destroy · Single Elimination</span>
+            </div>
+          </div>
+
+          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
+                  <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">$500 Cash</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
+                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">26 / 32 Duos</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Tonight · 8:00 PM EST</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">First to 6 Rounds</div>
+                </div>
+              </div>
+
+              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+                High-intensity tactical duos. Single elimination bracket with CDL SnD map veto and dedicated match rooms for quick reporting.
+              </p>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('$500 Saturday SnD Prime')">
+                <span>⚔</span> <span>Check In Duo</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('snd')">
+                View Bracket
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament 3: $250 Solo Radar Showdown -->
+        <div class="gb-card-box tourney-card" data-category="1v1" style="display:flex; flex-direction:column; overflow:hidden;">
+          <div style="position:relative; height:160px; overflow:hidden;">
+            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="1v1 Radar Showdown" />
+            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
+              <span class="gb-meta-tag">SOLO DUEL</span>
+              <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;">REGISTRATION OPEN</span>
+            </div>
+            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
+              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$250 Radar Gunfight Showdown</h3>
+              <span style="font-size:12px; color:#cbd5e1;">1v1 Radar Always On · Single Elimination</span>
+            </div>
+          </div>
+
+          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
+                  <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">$250 Cash</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
+                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">10 / 16 Players</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Sun 19 Oct · 6:00 PM EST</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">First to 7 Rounds</div>
+                </div>
+              </div>
+
+              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+                Radar sweep enabled constantly. Raw mechanical gunskill, centering, and strafe mastery. Zero hiding or timing luck.
+              </p>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('$250 Radar Gunfight Showdown')">
+                <span>⚔</span> <span>Register Solo</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('solo')">
+                View Bracket
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament 4: $2,500 Apex Prestige Invitational -->
+        <div class="gb-card-box tourney-card" data-category="4v4" style="display:flex; flex-direction:column; overflow:hidden;">
+          <div style="position:relative; height:160px; overflow:hidden;">
+            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="Apex Invitational" />
+            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
+              <span class="gb-meta-tag accent">SEASON FINALE</span>
+              <span class="val-badge" style="background:#1e1b4b; color:#a78bfa; border-color:#3730a3;">LADDER QUALIFIERS</span>
+            </div>
+            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
+              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$2,500 Apex Prestige Invitational</h3>
+              <span style="font-size:12px; color:#cbd5e1;">Top 8 Ladder Squads · Championship Double Elim</span>
+            </div>
+          </div>
+
+          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
+                  <div style="font:900 16px var(--body); color:#ffe270; margin-top:2px;">$2,500 + Rings</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Qualification</span>
+                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">Top 8 ELO</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Cutoff Date</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Sun 30 Nov · Midnight</div>
+                </div>
+                <div>
+                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
+                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">BO7 Grand Finals</div>
+                </div>
+              </div>
+
+              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+                Exclusive season-ending tournament. The top 8 squads from the Frontline Arena 4v4 ladder earn direct seeds to compete for the championship rings.
+              </p>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <a href="ladders.html" class="btn-crimson" style="flex:1; padding:10px; font-size:12px; text-decoration:none; text-align:center;">
+                <span>⚔</span> <span>Climb Ladder to Qualify</span>
+              </a>
+              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('invitational')">
+                Format
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Visual Interactive Bracket Section -->
+      <section style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:28px; margin-bottom:40px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; border-bottom:1px solid #1a2436; padding-bottom:14px;">
+          <div>
+            <div style="font-size:11px; color:#ff1e44; font-weight:800; letter-spacing:1px; text-transform:uppercase;">
+              // ACTIVE TOURNAMENT BRACKET TELEMETRY
+            </div>
+            <h2 style="font-family:var(--display); font-size:24px; color:#fff; text-transform:uppercase; margin:4px 0 0;">
+              $1,000 Opening Major — Visual Bracket
+            </h2>
+          </div>
+          <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;">
+            ● ROUND 2 IN PROGRESS
+          </span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px;">
+          <!-- Round 1 Match Sample -->
+          <div style="background:#090d14; border:1px solid #1c273a; border-radius:4px; padding:16px;">
+            <div style="font-size:11px; color:#64748b; font-weight:800; margin-bottom:10px; display:flex; justify-content:space-between;">
+              <span>MATCH M-01 (BO5)</span>
+              <span style="color:#22c55e;">FINAL: 3-1</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #151d2c;">
+              <span style="color:#ffffff; font-weight:800; font-size:13px;">[APEX] Apex Predators</span>
+              <strong style="color:#ff1e44; font-size:14px;">3</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0;">
+              <span style="color:#94a3b8; font-weight:600; font-size:13px;">[VAL] Valkyrie Unit</span>
+              <strong style="color:#64748b; font-size:14px;">1</strong>
+            </div>
+            <a href="match.html" class="btn-crimson-outline" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
+              View Veto Room ↗
+            </a>
+          </div>
+
+          <!-- Round 1 Match Sample 2 -->
+          <div style="background:#090d14; border:1px solid #1c273a; border-radius:4px; padding:16px;">
+            <div style="font-size:11px; color:#64748b; font-weight:800; margin-bottom:10px; display:flex; justify-content:space-between;">
+              <span>MATCH M-02 (BO5)</span>
+              <span style="color:#22c55e;">FINAL: 3-2</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #151d2c;">
+              <span style="color:#ffffff; font-weight:800; font-size:13px;">[CRIM] Crimson Syndicate</span>
+              <strong style="color:#ff1e44; font-size:14px;">3</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0;">
+              <span style="color:#94a3b8; font-weight:600; font-size:13px;">[GHO] Ghost Protocol</span>
+              <strong style="color:#64748b; font-size:14px;">2</strong>
+            </div>
+            <a href="match.html" class="btn-crimson-outline" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
+              View Veto Room ↗
+            </a>
+          </div>
+
+          <!-- Round 2 Match (Upcoming) -->
+          <div style="background:#090d14; border:1px solid #ff1e44; border-radius:4px; padding:16px; box-shadow:0 0 15px rgba(255,30,68,0.15);">
+            <div style="font-size:11px; color:#ff1e44; font-weight:800; margin-bottom:10px; display:flex; justify-content:space-between;">
+              <span>SEMIFINALS (BO5)</span>
+              <span style="color:#ff1e44;">UPCOMING</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #151d2c;">
+              <span style="color:#ffffff; font-weight:800; font-size:13px;">[APEX] Apex Predators</span>
+              <span style="color:#94a3b8; font-size:12px;">Seed #1</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0;">
+              <span style="color:#ffffff; font-weight:800; font-size:13px;">[CRIM] Crimson Syndicate</span>
+              <span style="color:#94a3b8; font-size:12px;">Seed #2</span>
+            </div>
+            <a href="match.html" class="btn-crimson" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
+              Enter Live Match Room ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Fast CTA -->
+      <div style="background:linear-gradient(90deg, #14080c, #0d121c); border:1px solid #2e151c; border-radius:6px; padding:24px 30px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+          <h3 style="font-family:var(--display); font-size:20px; text-transform:uppercase; color:#fff; margin:0 0 4px;">Looking for Instant Ladder Matches?</h3>
+          <p style="font-size:13px; color:#94a3b8; margin:0;">Post an open challenge on the Match Finder board or accept open matches right now.</p>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <a href="match-finder.html" class="btn-crimson" style="padding:10px 20px; font-size:12px; text-decoration:none;">
+            <span>🎯</span> <span>Open Match Finder ↗</span>
+          </a>
+          <a href="ladders.html" class="btn-crimson-outline" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+            <span>📊</span> <span>Ladder Standings</span>
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" style="background:#06080d; border-top:1px solid #161e2c; padding:32px 0;">
+      <div class="wrap" style="max-width:1240px; margin:0 auto; padding:0 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
+          <div style="font-size:12px; color:#94a3b8;">
+            <strong style="color:#ffffff;">FRONTLINE ARENA</strong> · Competitive Circuit &amp; Tournaments.<br />
+            Grassroots Call of Duty competitive platform following the official CDL ruleset.
+          </div>
+        </div>
+        <div style="font-size:12px; color:#64748b;">
+          &copy; 2026 Frontline Arena. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      function filterTourneys(cat, btn) {
+        document.querySelectorAll('#active-tournaments button').forEach(b => {
+          b.className = 'btn-crimson-outline';
+        });
+        btn.className = 'btn-crimson';
+
+        const cards = document.querySelectorAll('.tourney-card');
+        cards.forEach(c => {
+          if (cat === 'all' || c.getAttribute('data-category') === cat) {
+            c.style.display = 'flex';
+          } else {
+            c.style.display = 'none';
+          }
+        });
+      }
+
+      function registerForTourney(title) {
+        const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+        if (!player || !player.gamertag) {
+          alert('You must be signed in with an active Arena combatant profile to register a squad.\nRedirecting to Arena Profile...');
+          window.location.href = 'arena-profile.html#login';
+          return;
+        }
+        alert('Squad registration submitted for: ' + title + '\nCaptain: [' + (player.tag || 'TAG') + '] ' + player.gamertag + '\nCheck-in opens 1 hour before bracket start.');
+      }
+
+      function showBracketPreview(type) {
+        alert('Displaying live bracket telemetry for ' + type.toUpperCase() + '.\nMatches update automatically as scores are verified in the Arena Match Rooms.');
+      }
+    </script>
+  </body>
+</html>

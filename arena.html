@@ -12,70 +12,50 @@
   </head>
   <body class="gb-body">
     <!-- =========================================================================
-         ARENA TOP NAVIGATION HEADER (WITH RED LOGO & PLATFORM SWITCH)
+         ARENA TOP NAVIGATION HEADER (WITH LARGE RED LOGO & PLATFORM SWITCH)
          ========================================================================= -->
-    <header class="header" style="background:#0a0c10; border-bottom:1px solid #1e2430;">
-      <div class="wrap nav">
-        <!-- Brand with Crimson Red Logo -->
-        <a class="brand" href="arena.html">
-          <img src="images/arenalogo_1.png" alt="Frontline Arena Logo" class="brand-logo" />
-          <div class="brand-text">
-            <span class="brand-title" style="color:#ffffff; text-shadow:0 0 14px rgba(255,30,68,0.45);">FRONTLINE</span>
-            <small class="brand-sub" style="color:#ff1e44; font-weight:800; letter-spacing:1px;">ARENA</small>
-            <div class="brand-status status-arena">
-              <span class="nav-beacon"></span>
-              <span>CIRCUIT ACTIVE</span>
+    <header class="fl-topbar">
+      <div class="fl-topbar-left">
+        <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
+        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+          <div class="fl-brand-logo-wrapper">
+            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+          </div>
+          <div class="fl-brand-info">
+            <div class="fl-brand-text">
+              <span class="brand-frontline">FRONTLINE</span>
+              <span class="brand-arena">ARENA</span>
+            </div>
+            <div class="fl-circuit-tag-row">
+              <span class="fl-circuit-badge">COMPETITIVE ARENA</span>
+              <div class="fl-live-beacon">
+                <span class="fl-live-dot"></span>
+                <span>CIRCUIT LIVE</span>
+              </div>
             </div>
           </div>
         </a>
 
-        <!-- Header Center Hub with Welcome Above Mode Switcher -->
-        <div class="header-center-hub">
-          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
-          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-            <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
-              <span>🛡</span> <span>League</span>
-            </a>
-            <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
-              <span>⚔</span> <span>Arena</span>
-            </a>
-          </div>
+        <!-- Platform Mode Switcher -->
+        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
+          <a href="index.html" class="fl-mode-btn" title="Go to Frontline Franchised League">🛡 League</a>
+          <a href="arena.html" class="fl-mode-btn active" title="Frontline Arena Circuit">⚔ Arena</a>
         </div>
 
-        <!-- User-Centered Navigation Actions (Top Right) -->
-        <div class="nav-right-hub">
-          <!-- Explore Arena Dropdown Menu (Only ONE link taking you to Ladders!) -->
-          <div class="menu-toggle">
-            <input type="checkbox" id="menu-toggle" />
-            <label for="menu-toggle" class="menu-label-btn arena" aria-label="Toggle Arena navigation menu">
-              <span>☰</span>
-              <span>Explore Arena</span>
-              <span class="menu-arrow">▾</span>
-            </label>
-            <nav class="links" aria-label="Arena navigation">
-              <div class="nav-dropdown-grid" style="grid-template-columns: 1fr; min-width: 270px;">
-                <div class="nav-dropdown-col">
-                  <a href="ladders.html" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
-                    <span class="nav-icon">⚔</span> <span>Competitive Ladders &amp; Match Finder</span>
-                  </a>
-                  <a href="profile.html#my-teams" id="nav-arena-my-teams-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
-                    <span class="nav-icon">🛡</span> <span>My Teams</span>
-                  </a>
-                  <a href="profile.html" id="nav-arena-profile-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
-                    <span class="nav-icon" id="nav-arena-profile-icon">🔑</span>
-                    <span id="nav-arena-profile-text">Login</span>
-                  </a>
-                </div>
-              </div>
-            </nav>
-          </div>
+        <!-- Main Navigation Links (Top Nav Links Stay Here!) -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="ladders.html">Ladders</a>
+          <a href="arena-tournaments.html">Tournaments</a>
+          <a href="arena-profile.html#my-teams">My Teams</a>
+        </nav>
+      </div>
 
-          <!-- Active Squad Pill or Create Team CTA -->
-          <div id="arena-header-squad-container">
-            <a href="ladders.html" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
-              <span>⚔</span> <span>Enter Ladders ↗</span>
-            </a>
-          </div>
+      <div class="fl-topbar-right">
+        <!-- Active Squad Pill or Create Team CTA -->
+        <div id="arena-header-squad-container">
+          <a href="ladders.html" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <span>⚔</span> <span>Enter Ladders ↗</span>
+          </a>
         </div>
       </div>
     </header>
@@ -88,7 +68,7 @@
         <div class="wrap" style="max-width:1240px; margin:0 auto; text-align:center;">
           <div class="arena-hero-badge">
             <span>⚡</span>
-            <span>OFFICIAL COMPETITIVE CIRCUIT · ELO RATINGS &amp; LADDERS</span>
+            <span>COMPETITIVE ARENA · ELO RATINGS &amp; LADDERS</span>
           </div>
 
           <h1 style="font-family:var(--display); font-size:clamp(38px, 6vw, 76px); line-height:0.95; text-transform:uppercase; margin:16px 0 20px; color:#ffffff; letter-spacing:1px;">
@@ -104,7 +84,7 @@
             <a href="ladders.html" class="btn-crimson" style="padding:14px 28px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
               <span>⚔</span> <span>Go to Competitive Ladders ↗</span>
             </a>
-            <a href="ladders.html?tab=match-finder" class="btn-crimson-outline" style="padding:14px 26px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
+            <a href="match-finder.html" class="btn-crimson-outline" style="padding:14px 26px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:10px;">
               <span>🎯</span> <span>Open Match Finder</span>
             </a>
             <button type="button" class="btn-crimson-outline" onclick="openCreateTeamModal()" style="padding:14px 22px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
@@ -189,7 +169,7 @@
                 <a href="ladders.html?ladder=4v4_variant" class="btn-crimson" style="flex:1; text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
                   <span>⚔</span> <span>View Ladder</span>
                 </a>
-                <a href="ladders.html?ladder=4v4_variant&tab=match-finder" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                <a href="match-finder.html" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
                   Find Match
                 </a>
               </div>
@@ -224,7 +204,7 @@
                 <a href="ladders.html?ladder=2v2_snd" class="btn-crimson" style="flex:1; text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
                   <span>⚔</span> <span>View Ladder</span>
                 </a>
-                <a href="ladders.html?ladder=2v2_snd&tab=match-finder" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                <a href="match-finder.html" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
                   Find Match
                 </a>
               </div>
@@ -259,7 +239,7 @@
                 <a href="ladders.html?ladder=1v1_radar" class="btn-crimson" style="flex:1; text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
                   <span>⚔</span> <span>View Ladder</span>
                 </a>
-                <a href="ladders.html?ladder=1v1_radar&tab=match-finder" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
+                <a href="match-finder.html" class="btn-crimson-outline" style="text-align:center; padding:10px 14px; font-size:12px; text-decoration:none;">
                   Find Match
                 </a>
               </div>
@@ -348,10 +328,12 @@
           <img src="images/arenalogo_1.png" style="width:24px; height:24px; object-fit:contain;" alt="Arena Logo" />
           <strong style="color:#fff;">FRONTLINE ARENA</strong> · Competitive Ladder Circuit
         </div>
-        <div style="display:flex; gap:16px;">
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
           <a href="arena.html" style="color:#ff1e44; text-decoration:none;">Arena HQ</a>
           <a href="ladders.html" style="color:#94a3b8; text-decoration:none;">Ladders</a>
-          <a href="ladders.html?tab=match-finder" style="color:#94a3b8; text-decoration:none;">Match Finder</a>
+          <a href="arena-tournaments.html" style="color:#94a3b8; text-decoration:none;">Tournaments</a>
+          <a href="match-finder.html" style="color:#94a3b8; text-decoration:none;">Match Finder</a>
+          <a href="arena-profile.html#my-teams" style="color:#94a3b8; text-decoration:none;">My Teams</a>
           <a href="match.html" style="color:#94a3b8; text-decoration:none;">Match Room</a>
           <a href="index.html" style="color:#d5f45b; text-decoration:none;">Franchise League ↗</a>
         </div>

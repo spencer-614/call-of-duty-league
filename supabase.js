@@ -3707,6 +3707,25 @@ window.LeagueDB = {
         console.warn("Auto-queue on signup notice:", signupErr);
       }
 
+      // Auto-sync into Arena Free Agents directory
+      try {
+        if (window.LadderDB && typeof window.LadderDB.registerFreeAgentFromAccount === "function") {
+          window.LadderDB.registerFreeAgentFromAccount({
+            id: localUser.id,
+            gamertag: cleanGamertag,
+            email: cleanEmail,
+            activision_id: cleanActivision,
+            tag: "LFT",
+            elo: 1200,
+            role: "Flex",
+            ladder_pref: "4v4_variant",
+            created_at: new Date().toISOString()
+          });
+        }
+      } catch (faErr) {
+        console.warn("Free agent auto-sync notice:", faErr);
+      }
+
       return {
         success: true,
         user: localUser,
@@ -3770,6 +3789,25 @@ window.LeagueDB = {
           });
         } catch (signupErr) {
           console.warn("Auto-queue on signup notice:", signupErr);
+        }
+
+        // Auto-sync into Arena Free Agents directory
+        try {
+          if (window.LadderDB && typeof window.LadderDB.registerFreeAgentFromAccount === "function") {
+            window.LadderDB.registerFreeAgentFromAccount({
+              id: data.user.id,
+              gamertag: cleanGamertag,
+              email: cleanEmail,
+              activision_id: cleanActivision,
+              tag: "LFT",
+              elo: 1200,
+              role: "Flex",
+              ladder_pref: "4v4_variant",
+              created_at: new Date().toISOString()
+            });
+          }
+        } catch (faErr) {
+          console.warn("Free agent auto-sync notice:", faErr);
         }
       }
       return {
@@ -4683,6 +4721,160 @@ const MOCK_LADDER_DATA = {
       team_b_reported_a: 1,
       team_b_reported_b: 3,
       created_at: new Date(Date.now() - 4200000).toISOString()
+    }
+  ],
+  free_agents: [
+    {
+      id: "fa-1",
+      gamertag: "GhostRider",
+      clan_tag: "LFT",
+      elo: 1980,
+      kdr: 1.28,
+      ladder_pref: "4v4_variant",
+      primary_role: "Main AR",
+      secondary_role: "Flex",
+      platform: "PC",
+      region: "NA East",
+      mic: true,
+      availability: "Daily 6PM - 12AM EST",
+      discord: "ghostrider_cdl",
+      activision_id: "GhostRider#4928104",
+      bio: "Main AR anchor. Disciplined spawn holder, callouts on point, Karachi/Invasion specialist.",
+      avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 4).toISOString()
+    },
+    {
+      id: "fa-2",
+      gamertag: "Nyx",
+      clan_tag: "SOLO",
+      elo: 1895,
+      kdr: 1.34,
+      ladder_pref: "2v2_snd",
+      primary_role: "Sniper / Slayer",
+      secondary_role: "SMG",
+      platform: "PlayStation 5",
+      region: "NA Central",
+      mic: true,
+      availability: "Weekends & Tournaments",
+      discord: "nyx_snd",
+      activision_id: "Nyx#9182741",
+      bio: "High first-blood percentage search and destroy sniper. Looking for a duo for cash cups.",
+      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 8).toISOString()
+    },
+    {
+      id: "fa-3",
+      gamertag: "Kinetics",
+      clan_tag: "LFT",
+      elo: 2060,
+      kdr: 1.41,
+      ladder_pref: "4v4_variant",
+      primary_role: "Entry SMG",
+      secondary_role: "Main Slayer",
+      platform: "PC",
+      region: "NA Central",
+      mic: true,
+      availability: "Competitive Scrims & Ladder",
+      discord: "kinetics_fps",
+      activision_id: "Kinetics#3819204",
+      bio: "Former T32 challenger cup sub. Aggressive entry breaks, high engagement pace.",
+      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 12).toISOString()
+    },
+    {
+      id: "fa-4",
+      gamertag: "HavocShot",
+      clan_tag: "LFT",
+      elo: 1720,
+      kdr: 1.19,
+      ladder_pref: "1v1_radar",
+      primary_role: "Main Slayer",
+      secondary_role: "Flex",
+      platform: "Xbox Series X",
+      region: "NA West",
+      mic: true,
+      availability: "Evenings PST",
+      discord: "havocshot",
+      activision_id: "HavocShot#1829031",
+      bio: "1v1 radar specialist and reliable 2v2 gunner. Sharp centering and snap aim.",
+      avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 18).toISOString()
+    },
+    {
+      id: "fa-5",
+      gamertag: "Cipher",
+      clan_tag: "LFT",
+      elo: 1640,
+      kdr: 1.15,
+      ladder_pref: "4v4_variant",
+      primary_role: "Flex",
+      secondary_role: "Main AR",
+      platform: "PlayStation 5",
+      region: "NA East",
+      mic: true,
+      availability: "Flexible schedule",
+      discord: "cipher_cod",
+      activision_id: "Cipher#7718293",
+      bio: "True flex. Runs Rival-9 or MCW depending on veto. Constant callouts and rotation discipline.",
+      avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 24).toISOString()
+    },
+    {
+      id: "fa-6",
+      gamertag: "Valkyrie",
+      clan_tag: "LFT",
+      elo: 1850,
+      kdr: 1.25,
+      ladder_pref: "2v2_snd",
+      primary_role: "SMG Slayer",
+      secondary_role: "Objective",
+      platform: "PC",
+      region: "Europe",
+      mic: true,
+      availability: "EU evenings / Cash cups",
+      discord: "valk_eu",
+      activision_id: "Valkyrie#5501928",
+      bio: "EU sub looking for regular 2v2 partner. Fast bomb plants and post-plant defense.",
+      avatar_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 30).toISOString()
+    },
+    {
+      id: "fa-7",
+      gamertag: "Bulldozer",
+      clan_tag: "LFT",
+      elo: 1510,
+      kdr: 1.08,
+      ladder_pref: "4v4_variant",
+      primary_role: "Objective SMG",
+      secondary_role: "Flex",
+      platform: "Xbox Series X",
+      region: "NA East",
+      mic: true,
+      availability: "Nights & Weekends",
+      discord: "bulldozer_obj",
+      activision_id: "Bulldozer#6619284",
+      bio: "Hardpoint hill soaker and trophy system carrier. Early rotator who plays for the win.",
+      avatar_url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 36).toISOString()
+    },
+    {
+      id: "fa-8",
+      gamertag: "Phantom",
+      clan_tag: "LFT",
+      elo: 1780,
+      kdr: 1.22,
+      ladder_pref: "4v4_variant",
+      primary_role: "Main AR",
+      secondary_role: "Sniper",
+      platform: "PC",
+      region: "NA West",
+      mic: true,
+      availability: "Competitive weekend tournaments",
+      discord: "phantom_west",
+      activision_id: "Phantom#8812903",
+      bio: "Long range anchor, holds god-headglitches on Terminal & Invasion. Ice in Search round 11.",
+      avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date(Date.now() - 3600000 * 42).toISOString()
     }
   ]
 };
@@ -5819,11 +6011,12 @@ window.LadderDB = {
     return { success: true };
   },
 
-  async registerArenaPlayer({ gamertag, clan_tag, email, discord, activision_id, password }) {
+  async registerArenaPlayer(params = {}) {
+    const { gamertag, clan_tag, clanTag, email, discord, activision_id, activisionId, password, role, platform } = params;
     const cleanEmail = (email || "").trim();
     const cleanPassword = (password || "").trim();
     const cleanGamertag = (gamertag || "").trim();
-    const cleanActivision = (activision_id || "").trim();
+    const cleanActivision = (activision_id || activisionId || "").trim();
 
     if (!cleanEmail) {
       return { success: false, error: "Email address is required." };
@@ -5838,7 +6031,7 @@ window.LadderDB = {
       return { success: false, error: "Activision ID is required (e.g. Username#1234567)." };
     }
 
-    const cleanTag = (clan_tag || "TAG").toUpperCase().trim().slice(0, 5);
+    const cleanTag = (clan_tag || clanTag || "TAG").toUpperCase().trim().slice(0, 5);
 
     // Sync to Supabase Auth / LeagueDB if available
     let supabaseUserId = null;
@@ -5862,9 +6055,10 @@ window.LadderDB = {
       team_name: `${cleanTag} Squad`,
       elo: 1200,
       tier: "Specialist",
-      avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
       discord: discord ? discord.trim() : `${cleanGamertag.toLowerCase()}#0001`,
       activision_id: cleanActivision,
+      role: role ? role.trim() : "Flex",
+      platform: platform ? platform.trim() : "Crossplay",
       password: cleanPassword,
       created_at: new Date().toISOString()
     };
@@ -5898,6 +6092,14 @@ window.LadderDB = {
     } catch (_) {}
 
     localStorage.setItem("frontline_arena_user", JSON.stringify(newPlayer));
+
+    // Auto-sync into Arena Free Agents directory
+    try {
+      this.registerFreeAgentFromAccount(newPlayer);
+    } catch (faErr) {
+      console.warn("Free agent auto-sync notice:", faErr);
+    }
+
     this.updateArenaNavProfile();
     window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: newPlayer } }));
     return { success: true, player: newPlayer };
@@ -6750,17 +6952,17 @@ window.LadderDB = {
     const myTeamsLink = document.getElementById("nav-arena-my-teams-link");
 
     if (myTeamsLink) {
-      myTeamsLink.href = player && player.gamertag ? "profile.html#my-teams" : "profile.html#login";
+      myTeamsLink.href = player && player.gamertag ? "arena-profile.html#my-teams" : "arena-profile.html#login";
     }
 
     if (linkEl) {
       if (player && player.gamertag) {
-        linkEl.href = "profile.html";
+        linkEl.href = "arena-profile.html";
         linkEl.title = `Signed in as ${player.gamertag} - View Profile & Records`;
         if (iconEl) iconEl.textContent = "👤";
         if (textEl) textEl.textContent = `Profile (${player.gamertag})`;
       } else {
-        linkEl.href = "profile.html#login";
+        linkEl.href = "arena-profile.html#login";
         linkEl.title = "Sign in to Frontline Arena";
         if (iconEl) iconEl.textContent = "🔑";
         if (textEl) textEl.textContent = "Login";
@@ -6772,7 +6974,7 @@ window.LadderDB = {
     if (squadHeaderEl) {
       if (player && player.gamertag) {
         squadHeaderEl.innerHTML = `
-          <a href="profile.html#my-teams" class="gb-my-squad-pill" title="View Active Teams" style="text-decoration:none;">
+          <a href="arena-profile.html#my-teams" class="gb-my-squad-pill" title="View Active Teams" style="text-decoration:none;">
             <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="gb-my-squad-avatar" />
             <div>
               <strong style="color:#ffffff;">[${player.tag || 'TAG'}] ${player.gamertag}</strong>
@@ -6782,11 +6984,190 @@ window.LadderDB = {
         `;
       } else {
         squadHeaderEl.innerHTML = `
-          <a href="profile.html#login" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
+          <a href="arena-profile.html#login" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
             <span>🔑</span> <span>Combatant Login</span>
           </a>
         `;
       }
+    }
+  },
+
+  // Free Agents (LFT) directory for Frontline Arena
+  async getFreeAgents(filters = {}) {
+    let list = [];
+    try {
+      const stored = localStorage.getItem("frontline_arena_free_agents");
+      if (stored) {
+        list = JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    if (!list || list.length === 0) {
+      list = (MOCK_LADDER_DATA.free_agents || []).slice();
+    }
+
+    // Auto-discover and merge any registered website user accounts into Free Agents
+    try {
+      const registeredAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const arenaUser = JSON.parse(localStorage.getItem("frontline_arena_user"));
+      const leagueUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+
+      const candidateUsers = [...registeredAccounts];
+      if (arenaUser) candidateUsers.push(arenaUser);
+      if (leagueUser) {
+        const meta = leagueUser.user_metadata || {};
+        candidateUsers.push({
+          id: leagueUser.id,
+          gamertag: meta.gamertag || meta.username || (leagueUser.email ? leagueUser.email.split("@")[0] : "Recruit"),
+          activision_id: meta.activision_id,
+          email: leagueUser.email,
+          elo: 1200,
+          created_at: leagueUser.created_at
+        });
+      }
+
+      candidateUsers.forEach(u => {
+        if (!u || !u.gamertag) return;
+        const lowerGamer = u.gamertag.toLowerCase().trim();
+        const existingIdx = list.findIndex(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() === lowerGamer);
+        if (existingIdx === -1) {
+          list.unshift({
+            id: "fa-" + (u.id || Date.now()),
+            gamertag: u.gamertag,
+            clan_tag: (u.tag || "LFT").toUpperCase().slice(0, 5),
+            elo: Number(u.elo) || 1200,
+            kdr: Number(u.kdr) || 1.15,
+            ladder_pref: u.ladder_pref || "4v4_variant",
+            role: u.role || u.primary_role || "Flex",
+            primary_role: u.role || u.primary_role || "Flex",
+            secondary_role: u.secondary_role || "Main AR",
+            platform: u.platform || "Crossplay",
+            region: u.region || "NA East",
+            mic: true,
+            availability: "Active / LFT",
+            discord: u.discord || `${lowerGamer}#0001`,
+            activision_id: u.activision_id || `${u.gamertag}#1234567`,
+            bio: u.bio || `Newly enlisted operator (${u.gamertag}) registered on website. Looking for active CDL team.`,
+            avatar_url: u.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            created_at: u.created_at || new Date().toISOString(),
+            isNewUser: true
+          });
+        }
+      });
+    } catch (e) {
+      console.warn("Auto-merge registered accounts notice:", e);
+    }
+
+    if (filters.ladder && filters.ladder !== "all") {
+      list = list.filter(fa => fa.ladder_pref === filters.ladder);
+    }
+    if (filters.role && filters.role !== "all") {
+      const r = filters.role.toLowerCase();
+      list = list.filter(fa => (fa.primary_role && fa.primary_role.toLowerCase().includes(r)) || (fa.secondary_role && fa.secondary_role.toLowerCase().includes(r)));
+    }
+    if (filters.platform && filters.platform !== "all") {
+      list = list.filter(fa => fa.platform && fa.platform.toLowerCase().includes(filters.platform.toLowerCase()));
+    }
+    if (filters.region && filters.region !== "all") {
+      list = list.filter(fa => fa.region && fa.region.toLowerCase().includes(filters.region.toLowerCase()));
+    }
+    if (filters.search) {
+      const q = filters.search.toLowerCase().trim();
+      list = list.filter(fa => (fa.gamertag && fa.gamertag.toLowerCase().includes(q)) || (fa.activision_id && fa.activision_id.toLowerCase().includes(q)) || (fa.bio && fa.bio.toLowerCase().includes(q)));
+    }
+    return list;
+  },
+
+  registerFreeAgentFromAccount(userData) {
+    if (!userData || !userData.gamertag) return null;
+    const cleanGamertag = userData.gamertag.trim();
+    let list = [];
+    try {
+      const stored = localStorage.getItem("frontline_arena_free_agents");
+      list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
+    } catch (e) {
+      list = (MOCK_LADDER_DATA.free_agents || []).slice();
+    }
+
+    // Remove any existing entry for this gamertag
+    list = list.filter(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() !== cleanGamertag.toLowerCase());
+
+    const newAgent = {
+      id: "fa-" + (userData.id || Date.now()),
+      gamertag: cleanGamertag,
+      clan_tag: (userData.tag || "LFT").toUpperCase().slice(0, 5),
+      elo: Number(userData.elo) || 1200,
+      kdr: Number(userData.kdr) || 1.15,
+      ladder_pref: userData.ladder_pref || "4v4_variant",
+      role: userData.role || userData.primary_role || "Flex",
+      primary_role: userData.role || userData.primary_role || "Flex",
+      secondary_role: userData.secondary_role || "Main AR",
+      platform: userData.platform || "Crossplay",
+      region: userData.region || "NA East",
+      mic: true,
+      availability: "Active / Daily",
+      discord: userData.discord || `${cleanGamertag.toLowerCase()}#0001`,
+      activision_id: userData.activision_id || `${cleanGamertag}#1234567`,
+      bio: userData.bio || `Newly enlisted operator (${cleanGamertag}) registered on website. Looking for active CDL team.`,
+      avatar_url: userData.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+      created_at: userData.created_at || new Date().toISOString(),
+      isNewUser: true
+    };
+
+    list.unshift(newAgent);
+    try {
+      localStorage.setItem("frontline_arena_free_agents", JSON.stringify(list));
+    } catch (e) {}
+
+    window.dispatchEvent(new CustomEvent("frontline_free_agents_updated", { detail: { agent: newAgent } }));
+    return newAgent;
+  },
+
+  async postFreeAgent(agentData) {
+    let list = [];
+    try {
+      const stored = localStorage.getItem("frontline_arena_free_agents");
+      list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
+    } catch (e) {
+      list = (MOCK_LADDER_DATA.free_agents || []).slice();
+    }
+
+    const newAgent = {
+      id: "fa-" + Date.now(),
+      gamertag: agentData.gamertag || "Operator",
+      clan_tag: (agentData.clan_tag || "LFT").toUpperCase().slice(0, 5),
+      elo: Number(agentData.elo) || 1200,
+      kdr: Number(agentData.kdr) || 1.10,
+      ladder_pref: agentData.ladder_pref || "4v4_variant",
+      primary_role: agentData.primary_role || "Flex",
+      secondary_role: agentData.secondary_role || "Main AR",
+      platform: agentData.platform || "PC",
+      region: agentData.region || "NA East",
+      mic: agentData.mic !== false,
+      availability: agentData.availability || "Daily",
+      discord: agentData.discord || "",
+      activision_id: agentData.activision_id || "",
+      bio: agentData.bio || "Competitive operator looking for team.",
+      avatar_url: agentData.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+      created_at: new Date().toISOString()
+    };
+
+    list.unshift(newAgent);
+    try {
+      localStorage.setItem("frontline_arena_free_agents", JSON.stringify(list));
+    } catch (e) {}
+    return newAgent;
+  },
+
+  async deleteFreeAgent(agentId) {
+    try {
+      const stored = localStorage.getItem("frontline_arena_free_agents");
+      let list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
+      list = list.filter(fa => fa.id !== agentId);
+      localStorage.setItem("frontline_arena_free_agents", JSON.stringify(list));
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   }
 };

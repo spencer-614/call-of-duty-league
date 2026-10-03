@@ -2,16 +2,447 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=ladders.html?tab=match-finder" />
-    <title>Redirecting to Frontline Arena Match Finder...</title>
-    <script>
-      const q = new URLSearchParams(window.location.search);
-      q.set("tab", "match-finder");
-      window.location.replace("ladders.html?" + q.toString());
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Frontline Arena — Match Finder &amp; Live Challenge Board</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="bullet-sparks.js" defer></script>
   </head>
-  <body style="background:#080a0f; color:#fff; font-family:sans-serif; text-align:center; padding-top:100px;">
-    <p>Redirecting to Frontline Arena Match Finder...</p>
-    <a href="ladders.html?tab=match-finder" style="color:#ff1e44;">Click here if not redirected automatically.</a>
+  <body class="gb-body">
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER (WITH LARGE RED LOGO & PLATFORM SWITCH)
+         ========================================================================= -->
+    <header class="fl-topbar">
+      <div class="fl-topbar-left">
+        <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
+        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+          <div class="fl-brand-logo-wrapper">
+            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+          </div>
+          <div class="fl-brand-info">
+            <div class="fl-brand-text">
+              <span class="brand-frontline">FRONTLINE</span>
+              <span class="brand-arena">ARENA</span>
+            </div>
+            <div class="fl-circuit-tag-row">
+              <span class="fl-circuit-badge">COMPETITIVE ARENA</span>
+              <div class="fl-live-beacon">
+                <span class="fl-live-dot"></span>
+                <span>MATCH FINDER LIVE</span>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Platform Mode Switcher -->
+        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
+          <a href="schedule.html" class="fl-mode-btn" title="Go to Frontline Franchised League Schedule">🛡 League</a>
+          <a href="match-finder.html" class="fl-mode-btn active" title="Frontline Arena Match Finder">⚔ Arena</a>
+        </div>
+
+        <!-- Main Navigation Links (Top Nav Links Stay Here!) -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="ladders.html">Ladders</a>
+          <a href="arena-tournaments.html">Tournaments</a>
+          <a href="arena-profile.html#my-teams">My Teams</a>
+        </nav>
+      </div>
+
+      <div class="fl-topbar-right">
+        <div id="arena-header-squad-container">
+          <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="font-size:12px; padding:9px 18px; display:inline-flex; align-items:center; gap:8px;">
+            <span>🎯</span> <span>Post Match ↗</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Frontline Arena Breadcrumb Bar -->
+    <div class="gb-breadcrumb-bar">
+      <div class="gb-breadcrumb-inner">
+        <a href="arena.html">Arena Home</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <a href="ladders.html">Ladders</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <strong style="color:#ffffff;">Match Finder Challenge Board</strong>
+      </div>
+    </div>
+
+    <main class="gb-content-wrap" style="padding-top:24px; padding-bottom:70px;">
+      <!-- Hero Header Section -->
+      <section style="position:relative; padding:36px 32px 30px; background:radial-gradient(ellipse 80% 60% at 50% -20%, rgba(255, 30, 68, 0.22), transparent 70%), #0e131d; border:1px solid #1e283a; border-radius:6px; margin-bottom:28px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:20px;">
+          <div style="max-width:760px;">
+            <div class="gb-meta-tag accent" style="margin-bottom:10px; display:inline-flex;">
+              ⚡ LIVE CHALLENGE BOARD · INSTANT CDL VETO
+            </div>
+            <h1 style="font-family:var(--display); font-size:clamp(30px, 4vw, 48px); line-height:1; text-transform:uppercase; color:#fff; margin:0 0 10px; letter-spacing:0.5px;">
+              ARENA <span style="color:#ff1e44; text-shadow:0 0 24px rgba(255,30,68,0.5);">MATCH FINDER</span>
+            </h1>
+            <p style="font-size:13.5px; color:#cbd5e1; line-height:1.6; margin:0;">
+              Find instant competitive matches on the open circuit. Accept challenges posted by rival squads to immediately launch your private CDL veto room and battle for ladder ELO.
+            </p>
+          </div>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="padding:12px 24px; font-size:13px; display:inline-flex; align-items:center; gap:8px;">
+              <span>🎯</span> <span>Post Open Challenge</span>
+            </button>
+            <a href="arena-profile.html#my-teams" class="btn-crimson-outline" style="padding:12px 20px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+              <span>🛡</span> <span>Manage Squads</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Match Finder Filter Toolbar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px; background:#0c1017; border:1px solid #1c2638; padding:14px 18px; border-radius:4px;">
+        <!-- Circuit Switcher Pills -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="filter-ladder-group">
+          <button type="button" class="btn-crimson" style="padding:7px 14px; font-size:11.5px;" onclick="filterFinderLadder('all', this)">
+            All Ladders (<span id="count-all-challenges">3</span>)
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:7px 14px; font-size:11.5px;" onclick="filterFinderLadder('4v4_variant', this)">
+            ⚔ 4v4 CDL Variant
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:7px 14px; font-size:11.5px;" onclick="filterFinderLadder('2v2_snd', this)">
+            💣 2v2 SnD
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:7px 14px; font-size:11.5px;" onclick="filterFinderLadder('1v1_radar', this)">
+            🎯 1v1 Radar
+          </button>
+        </div>
+
+        <!-- Quick Search -->
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="text" id="finder-search-input" placeholder="Search team or gamertag..." class="ladder-input" style="padding:7px 14px; width:220px; font-size:12px; background:#07090e;" oninput="filterFinderCards()" />
+          <button type="button" class="btn-crimson-outline" onclick="loadMatchFinderCards()" style="padding:7px 12px; font-size:12px;" title="Refresh challenges">
+            ↻
+          </button>
+        </div>
+      </div>
+
+      <!-- Challenges List Container -->
+      <div id="match-finder-cards-root" style="display:flex; flex-direction:column; gap:12px; margin-bottom:40px;">
+        <!-- Loaded dynamically via JavaScript -->
+        <div style="text-align:center; padding:40px; color:#64748b;">Loading open challenges...</div>
+      </div>
+
+      <!-- Live Recent Matches Banner -->
+      <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:24px 28px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #1a2436; padding-bottom:12px;">
+          <div>
+            <span style="font-size:10.5px; color:#ff1e44; font-weight:800; letter-spacing:1px; text-transform:uppercase;">REAL-TIME TELEMETRY</span>
+            <h3 style="font:800 18px var(--display); text-transform:uppercase; color:#fff; margin:2px 0 0;">Recently Concluded Series</h3>
+          </div>
+          <a href="match.html" style="font-size:11px; color:#ff1e44; text-decoration:none; font-weight:800;">View Match Resolution ↗</a>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;" id="finder-recent-matches">
+          <div style="background:#090d14; border:1px solid #1c2738; padding:14px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:10px; color:#22c55e; font-weight:800;">FINAL: 3 - 1 (BO5)</div>
+              <strong style="font-size:13px; color:#fff;">[APEX] Apex vs [CRIM] Crimson</strong>
+              <div style="font-size:11px; color:#64748b;">4v4 CDL Variant · Hardpoint, SnD, Control</div>
+            </div>
+            <a href="match.html" class="btn-crimson-outline" style="font-size:10px; padding:6px 10px; text-decoration:none;">VOD / Veto</a>
+          </div>
+
+          <div style="background:#090d14; border:1px solid #1c2738; padding:14px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:10px; color:#22c55e; font-weight:800;">FINAL: 6 - 4 (SnD)</div>
+              <strong style="font-size:13px; color:#fff;">[VAL] Valkyrie vs [PHNTM] Phantom</strong>
+              <div style="font-size:11px; color:#64748b;">2v2 SnD · Highrise Decider</div>
+            </div>
+            <a href="match.html" class="btn-crimson-outline" style="font-size:10px; padding:6px 10px; text-decoration:none;">VOD / Veto</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- POST CHALLENGE MODAL -->
+    <div class="modal-overlay" id="modal-post-challenge" role="dialog" aria-modal="true" aria-labelledby="modal-post-title">
+      <div class="ladder-modal-box">
+        <button type="button" class="modal-close-btn" onclick="closePostChallengeModal()" aria-label="Close Modal">✕</button>
+        <div style="margin-bottom: 20px;">
+          <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44;">MATCH FINDER</span>
+          <h2 id="modal-post-title" style="font-family:var(--display); font-size:26px; text-transform:uppercase; margin:8px 0 4px; color:#fff;">Post Open Challenge</h2>
+          <p style="font-size:13px; color:var(--muted); margin:0;">Create a challenge on the live board for other teams to accept.</p>
+        </div>
+
+        <form id="form-post-challenge" onsubmit="handlePostChallenge(event)">
+          <div class="ladder-form-group">
+            <label for="post-ladder-select">Circuit Ladder *</label>
+            <select id="post-ladder-select" class="ladder-input" required>
+              <option value="4v4_variant">4v4 CDL Variant (Best of 5)</option>
+              <option value="2v2_snd">2v2 Search &amp; Destroy (First to 6)</option>
+              <option value="1v1_radar">1v1 Radar / Gunfight (First to 7)</option>
+            </select>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="ladder-form-group">
+              <label for="post-host-preference">Host / Server Preference *</label>
+              <select id="post-host-preference" class="ladder-input">
+                <option value="Dallas / Central 60Hz">Dallas / Central 60Hz</option>
+                <option value="Chicago Dedicated">Chicago Dedicated</option>
+                <option value="Atlanta Dedicated">Atlanta Dedicated</option>
+                <option value="Host Flip (Coin Flip)">Host Flip (Coin Flip)</option>
+              </select>
+            </div>
+            <div class="ladder-form-group">
+              <label for="post-start-time">Match Start Time *</label>
+              <select id="post-start-time" class="ladder-input">
+                <option value="Ready Now (Instant Veto)">Ready Now (Instant Veto)</option>
+                <option value="In 15 Minutes">In 15 Minutes</option>
+                <option value="In 30 Minutes">In 30 Minutes</option>
+                <option value="Tonight 8:00 PM EST">Tonight 8:00 PM EST</option>
+                <option value="Tonight 10:00 PM EST">Tonight 10:00 PM EST</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ladder-form-group">
+            <label for="post-challenge-notes">Challenge Directives / Notes</label>
+            <input type="text" id="post-challenge-notes" class="ladder-input" placeholder="e.g. CDL V4 equip bans only. Good ping required." maxlength="100" />
+          </div>
+
+          <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn-crimson-outline" onclick="closePostChallengeModal()">Cancel</button>
+            <button type="submit" class="btn-crimson"><span>🎯</span> <span>Post to Live Board</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" style="background:#06080d; border-top:1px solid #161e2c; padding:32px 0;">
+      <div class="wrap" style="max-width:1240px; margin:0 auto; padding:0 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
+          <div style="font-size:12px; color:#94a3b8;">
+            <strong style="color:#ffffff;">FRONTLINE ARENA</strong> · Match Finder &amp; Live Challenges.<br />
+            Grassroots Call of Duty competitive platform following the official CDL ruleset.
+          </div>
+        </div>
+        <div style="font-size:12px; color:#64748b;">
+          &copy; 2026 Frontline Arena. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      let currentFinderLadder = 'all';
+      let activeChallenges = [];
+
+      const fallbackChallenges = [
+        {
+          id: 'chal-101',
+          ladder_type: '4v4_variant',
+          team_name: 'Apex Predators',
+          team_tag: 'APEX',
+          captain_name: 'ViperX',
+          elo: 2045,
+          tier: 'Apex Prestige',
+          tier_class: 'tier-apex',
+          host: 'Dallas / Central 60Hz',
+          time: 'READY NOW',
+          format: 'Best of 5 CDL Variant',
+          avatar_url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80',
+          notes: 'Standard CDL V4 rules. Fast veto and play.'
+        },
+        {
+          id: 'chal-102',
+          ladder_type: '2v2_snd',
+          team_name: 'Valkyrie Unit',
+          team_tag: 'VAL',
+          captain_name: 'Kallisto',
+          elo: 1820,
+          tier: 'Diamond Tier',
+          tier_class: 'tier-diamond',
+          host: 'Dallas / Central 60Hz',
+          time: 'READY NOW',
+          format: '2v2 SnD (First to 6)',
+          avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80',
+          notes: 'Tactical duos. No snipers in round 1.'
+        },
+        {
+          id: 'chal-103',
+          ladder_type: '1v1_radar',
+          team_name: 'Subliners Academy',
+          team_tag: 'NYSL',
+          captain_name: 'Hydra_Jr',
+          elo: 1540,
+          tier: 'Platinum Tier',
+          tier_class: 'tier-plat',
+          host: 'Host Flip (Coin Flip)',
+          time: 'IN 10 MINUTES',
+          format: '1v1 Radar (First to 7)',
+          avatar_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80',
+          notes: 'Constant radar sweep. SMG only.'
+        }
+      ];
+
+      async function loadMatchFinderCards() {
+        const root = document.getElementById('match-finder-cards-root');
+        if (!root) return;
+
+        try {
+          if (window.LadderDB && typeof window.LadderDB.getMatchFinderChallenges === 'function') {
+            const dbChallenges = await window.LadderDB.getMatchFinderChallenges(currentFinderLadder);
+            if (dbChallenges && dbChallenges.length > 0) {
+              activeChallenges = dbChallenges;
+            } else {
+              activeChallenges = fallbackChallenges;
+            }
+          } else {
+            activeChallenges = fallbackChallenges;
+          }
+        } catch (e) {
+          activeChallenges = fallbackChallenges;
+        }
+
+        renderFilteredChallenges();
+      }
+
+      function filterFinderLadder(ladder, btn) {
+        currentFinderLadder = ladder;
+        document.querySelectorAll('#filter-ladder-group button').forEach(b => {
+          b.className = 'btn-crimson-outline';
+        });
+        btn.className = 'btn-crimson';
+        renderFilteredChallenges();
+      }
+
+      function filterFinderCards() {
+        renderFilteredChallenges();
+      }
+
+      function renderFilteredChallenges() {
+        const root = document.getElementById('match-finder-cards-root');
+        if (!root) return;
+
+        const query = (document.getElementById('finder-search-input')?.value || '').toLowerCase().trim();
+
+        const filtered = activeChallenges.filter(c => {
+          const matchLadder = currentFinderLadder === 'all' || c.ladder_type === currentFinderLadder;
+          const matchQuery = !query ||
+            (c.team_name && c.team_name.toLowerCase().includes(query)) ||
+            (c.team_tag && c.team_tag.toLowerCase().includes(query)) ||
+            (c.captain_name && c.captain_name.toLowerCase().includes(query));
+          return matchLadder && matchQuery;
+        });
+
+        document.getElementById('count-all-challenges').textContent = activeChallenges.length;
+
+        if (filtered.length === 0) {
+          root.innerHTML = `
+            <div style="background:#0d121c; border:1px solid #1e283a; padding:40px; border-radius:6px; text-align:center;">
+              <span style="font-size:32px;">🎯</span>
+              <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:12px 0 6px;">No Open Challenges Found</h3>
+              <p style="font-size:13px; color:#94a3b8; max-width:440px; margin:0 auto 20px;">
+                There are no open matches currently waiting on this filter. Be the first squad to post a match!
+              </p>
+              <button type="button" class="btn-crimson" onclick="openPostChallengeModal()">
+                <span>+</span> <span>Post Open Challenge</span>
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        root.innerHTML = filtered.map(c => `
+          <div class="gb-card-box" style="padding:18px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; border-left:4px solid #ff1e44;">
+            <!-- Left: Team Identity & Format -->
+            <div style="display:flex; align-items:center; gap:16px;">
+              <img src="${c.avatar_url || 'images/arenalogo_1.png'}" style="width:50px; height:50px; border-radius:4px; object-fit:cover; border:1px solid #ff1e44;" alt="${c.team_name}" />
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">
+                  <strong style="color:#ffffff; font-size:16px;">[${c.team_tag}] ${c.team_name}</strong>
+                  <span class="val-badge" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44; font-size:10px;">
+                    ${c.elo || 1200} ELO
+                  </span>
+                </div>
+                <div style="font-size:12px; color:#cbd5e1; display:flex; gap:12px; flex-wrap:wrap;">
+                  <span><strong>Format:</strong> ${c.format || 'Best of 5 Variant'}</span>
+                  <span><strong>Server:</strong> ${c.host || 'Dallas Central'}</span>
+                  <span><strong>Captain:</strong> ${c.captain_name || 'N/A'}</span>
+                </div>
+                ${c.notes ? `<div style="font-size:11px; color:#94a3b8; margin-top:4px;"><em>"${c.notes}"</em></div>` : ''}
+              </div>
+            </div>
+
+            <!-- Right: Action & Time -->
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="text-align:right;">
+                <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c; font-size:10px;">
+                  ● ${c.time || 'READY NOW'}
+                </span>
+                <div style="font-size:11px; color:#64748b; margin-top:3px;">CDL Dedicated Server</div>
+              </div>
+              <button type="button" class="btn-crimson" onclick="acceptMatchChallenge('${c.id}')" style="padding:10px 20px; font-size:12px;">
+                <span>⚔</span> <span>Accept Match ↗</span>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function acceptMatchChallenge(id) {
+        const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+        if (!player || !player.gamertag) {
+          alert('You must sign in with your Arena combatant profile to accept challenges.\nRedirecting to Arena Profile...');
+          window.location.href = 'arena-profile.html#login';
+          return;
+        }
+
+        // Navigate directly into active CDL Veto Room
+        window.location.href = 'match.html?id=' + encodeURIComponent(id);
+      }
+
+      function openPostChallengeModal() {
+        const modal = document.getElementById('modal-post-challenge');
+        if (modal) modal.classList.add('active');
+      }
+
+      function closePostChallengeModal() {
+        const modal = document.getElementById('modal-post-challenge');
+        if (modal) modal.classList.remove('active');
+      }
+
+      async function handlePostChallenge(e) {
+        e.preventDefault();
+        const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+        if (!player || !player.gamertag) {
+          alert('You must sign in with your Arena combatant profile to post challenges.\nRedirecting to Arena Profile...');
+          window.location.href = 'arena-profile.html#login';
+          return;
+        }
+
+        const newChallenge = {
+          id: 'chal-' + Date.now(),
+          ladder_type: document.getElementById('post-ladder-select').value,
+          team_name: player.team_name || (player.gamertag + "'s Squad"),
+          team_tag: player.tag || 'SQUAD',
+          captain_name: player.gamertag,
+          elo: player.elo || 1200,
+          tier: 'Combatant Tier',
+          host: document.getElementById('post-host-preference').value,
+          time: document.getElementById('post-start-time').value,
+          format: document.getElementById('post-ladder-select').options[document.getElementById('post-ladder-select').selectedIndex].text,
+          avatar_url: player.avatar_url,
+          notes: document.getElementById('post-challenge-notes').value.trim()
+        };
+
+        activeChallenges.unshift(newChallenge);
+        closePostChallengeModal();
+        renderFilteredChallenges();
+        alert('Challenge posted live to the Arena Match Finder board!');
+      }
+
+      document.addEventListener('DOMContentLoaded', loadMatchFinderCards);
+    </script>
   </body>
 </html>
