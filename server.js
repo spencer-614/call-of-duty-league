@@ -8,7 +8,7 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 
 // PostgreSQL Connection Pool using Railway's DATABASE_URL
 // Note: Railway's internal network (*.railway.internal) DOES NOT support SSL
@@ -388,13 +388,3 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Frontline CDL Node server running on 0.0.0.0:${PORT}`);
   console.log(`Database status: ${process.env.DATABASE_URL ? "DATABASE_URL detected" : "No DATABASE_URL found"}`);
 });
-
-// If Railway assigned a dynamic port other than 3000, also listen on 3000 to prevent port mismatch
-if (process.env.PORT && PORT !== 3000) {
-  try {
-    const http = require("http");
-    http.createServer(app).listen(3000, "0.0.0.0", () => {
-      console.log("Frontline CDL Node server ALSO listening on 0.0.0.0:3000");
-    });
-  } catch (err) {}
-}
