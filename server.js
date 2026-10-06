@@ -368,8 +368,8 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Frontline CDL Node server running on port ${PORT}`);
-  console.log(`Database connected via ${process.env.DATABASE_URL ? "DATABASE_URL" : "local fallback"}`);
+// Start server - Must bind to 0.0.0.0 for Railway container networking
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Frontline CDL Node server running on 0.0.0.0:${PORT}`);
+  console.log(`Database status: ${process.env.DATABASE_URL ? "DATABASE_URL detected" : "No DATABASE_URL found"}`);
 });
