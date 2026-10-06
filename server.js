@@ -44,13 +44,28 @@ app.use((req, res, next) => {
   next();
 });
 
-// Explicit root handler
-app.get(["/", "/index.html"], (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+// Explicit page route handlers (Supports /arena, /arena.html, /draft, etc.)
+const PAGES = [
+  "index", "arena", "draft", "schedule", "teams", "players", 
+  "ladders", "brackets", "admin", "signup", "profile", "vods", 
+  "livestreams", "rules", "match", "match-finder", 
+  "arena-free-agents", "arena-profile", "arena-tournaments"
+];
+
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+
+PAGES.forEach(page => {
+  app.get([`/${page}`, `/${page}.html`], (req, res) => {
+    res.sendFile(path.join(__dirname, `${page}.html`));
+  });
 });
 
-// Static files (serves all HTML, CSS, JS, assets)
-app.use(express.static(path.join(__dirname), { etag: false, maxAge: 0 }));
+// Static files (serves images, CSS, JS, assets)
+app.use(express.static(path.join(__dirname), { 
+  extensions: ["html"],
+  etag: false, 
+  maxAge: 0 
+}));
 
 // Health check endpoint
 app.get("/health", async (req, res) => {
@@ -369,7 +384,17 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // Start server - Must bind to 0.0.0.0 for Railway container networking
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Frontline CDL Node server running on 0.0.0.0:${PORT}`);
   console.log(`Database status: ${process.env.DATABASE_URL ? "DATABASE_URL detected" : "No DATABASE_URL found"}`);
 });
+
+// If Railway assigned a dynamic port other than 3000, also listen on 3000 to prevent port mismatch
+if (process.env.PORT && PORT !== 3000) {
+  try {
+    const http = require("http");
+    http.createServer(app).listen(3000, "0.0.0.0", () => {
+      console.log("Frontline CDL Node server ALSO listening on 0.0.0.0:3000");
+    });
+  } catch (err) {}
+}
