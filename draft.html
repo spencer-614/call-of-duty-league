@@ -268,6 +268,10 @@
                   <input type="checkbox" id="chk-autodraft-enabled" checked />
                   <span>Auto-Draft on clock expiry (picks top available slayer or shortlist)</span>
                 </label>
+                <label class="draft-option-toggle">
+                  <input type="checkbox" id="chk-auto-trade-intel" checked />
+                  <span>Auto-broadcast Trade Wire &amp; War Room Intel on pick swaps and deals</span>
+                </label>
               </div>
             </div>
 
@@ -485,6 +489,9 @@
           <select id="pick-input-team" class="form-control" style="width:100%; background:#141511; border:1px solid var(--line); color:var(--text); padding:10px; font-weight:bold;">
             <!-- Populated dynamically -->
           </select>
+          <div id="pick-swap-indicator" style="display:none; margin-top:6px; font-size:11px; color:#ffb300; background:#292211; border:1px solid #665022; padding:6px 10px; border-radius:3px;">
+            ⚡ <strong>PICK SWAP DETECTED:</strong> Selected team differs from scheduled on-the-clock GM. Trade Intel will automatically broadcast!
+          </div>
         </div>
 
         <div>
@@ -569,9 +576,14 @@
             <option value="Draft Notice">Draft Notice</option>
           </select>
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
-          <button class="btn-wheel-sub" onclick="document.getElementById('modal-post-intel').close();">Cancel</button>
-          <button class="button" id="btn-confirm-post-intel">Broadcast Wire ↗</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;">
+          <button type="button" class="btn-wheel-sub" onclick="document.getElementById('modal-post-intel').close();">Cancel</button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-wheel-sub" id="btn-quick-broadcast-trade" style="border-color:#ffb300; color:#ffb300; font-weight:800;">
+              ⚡ Quick Broadcast Deal ↗
+            </button>
+            <button class="button" id="btn-confirm-post-intel">Broadcast Wire ↗</button>
+          </div>
         </div>
       </div>
     </dialog>
@@ -685,32 +697,14 @@
             name: "Division 2 · Challengers Tier",
             shortName: "DIV 2 · CHALLENGERS",
             badge: "⚔",
-            teams: [
-              { name: "Night Shift", tag: "NSH", color: "#38bdf8" },
-              { name: "Vantage", tag: "VTG", color: "#a855f7" },
-              { name: "Redline", tag: "RED", color: "#ef4444" },
-              { name: "Static", tag: "STC", color: "#eab308" },
-              { name: "Sub-Zero", tag: "SBZ", color: "#06b6d4" },
-              { name: "Dark Matter", tag: "DKM", color: "#ec4899" },
-              { name: "Outlaws", tag: "OTL", color: "#f97316" },
-              { name: "Ironclad", tag: "IRN", color: "#10b981" }
-            ]
+            teams: []
           },
           "div-3": {
             id: "div-3",
             name: "Division 3 · Open Recruit Cup",
             shortName: "DIV 3 · OPEN RECRUIT",
             badge: "⊕",
-            teams: [
-              { name: "Apex Recruits", tag: "ARX", color: "#22c55e" },
-              { name: "Bravo Squad", tag: "BRV", color: "#3b82f6" },
-              { name: "Charlie 4", tag: "CH4", color: "#f59e0b" },
-              { name: "Delta Force", tag: "DLT", color: "#84cc16" },
-              { name: "Echo Recon", tag: "ECH", color: "#14b8a6" },
-              { name: "Foxtrot Fire", tag: "FXT", color: "#f43f5e" },
-              { name: "Ghost Protocol", tag: "GST", color: "#6366f1" },
-              { name: "Hazard Squad", tag: "HZD", color: "#d946ef" }
-            ]
+            teams: []
           }
         };
 
@@ -867,6 +861,12 @@
                   console.log("📋 [REALTIME] Received draft_state_sync broadcast:", payload);
                   const data = payload.payload || payload;
                   handleRemoteDraftStateSync(data);
+                })
+                .on('broadcast', { event: 'draft_trade_broadcast' }, (payload) => {
+                  console.log("⚡ [REALTIME] Received draft_trade_broadcast:", payload);
+                  const data = payload.payload || payload;
+                  renderDraftAnnouncements();
+                  showAutoDraftToast(data.tag || "TRADE ALERT", data.title || "New Trade Intel posted to War Room!", "⚡");
                 })
                 .subscribe((status, err) => {
                   console.log(`📡 [REALTIME SYNC] Channel ${channelName} status:`, status, err || '');
@@ -1058,6 +1058,25 @@
           draftPicks = data.state.picks || [];
           draftOrder = data.state.draftOrder || draftOrder;
           isDraftLive = draftState.status === "Live";
+
+          if (typeof data.remainingSeconds === 'number') {
+            timerSeconds = data.remainingSeconds;
+          } else if (typeof draftState.remainingSeconds === 'number') {
+            timerSeconds = draftState.remainingSeconds;
+          }
+
+          const display = document.getElementById("draft-timer-display");
+          if (display) {
+            display.textContent = formatTime(timerSeconds);
+            display.style.color = timerSeconds <= 15 ? "#ff4444" : "var(--lime)";
+          }
+
+          if (isDraftLive) {
+            startTimerCountdown();
+          } else {
+            pauseTimerCountdown();
+          }
+
           recomputeActiveWheelTeams();
           updateHudBanner();
           renderWheel();
@@ -1382,6 +1401,14 @@
               draftOrder = draftState.draftOrder || [];
               draftPicks = draftState.picks || [];
               isDraftLive = draftState.status === "Live";
+              if (draftState.status === "Paused" && typeof draftState.remainingSeconds === 'number') {
+                timerSeconds = draftState.remainingSeconds;
+                const display = document.getElementById("draft-timer-display");
+                if (display) {
+                  display.textContent = formatTime(timerSeconds);
+                  display.style.color = timerSeconds <= 15 ? "#ff4444" : "var(--lime)";
+                }
+              }
             } catch (e) {
               console.warn("Could not load draft state:", e);
               draftOrder = [];
@@ -1459,7 +1486,7 @@
           } else {
             btn.classList.remove("draft-live");
             if (icon) icon.textContent = "🟢";
-            const isPaused = draftPicks.length > 0 && draftState.status === "Paused";
+            const isPaused = draftState.status === "Paused";
             if (label) {
               label.textContent = isPaused ? "RESUME DRAFT" : "START OFFICIAL DRAFT";
             }
@@ -1493,6 +1520,7 @@
             document.getElementById("modal-draft-staff-login")?.showModal();
             return;
           }
+          const wasPaused = draftState.status === "Paused" && timerSeconds > 0 && timerSeconds <= timerLimitSeconds;
           isDraftLive = true;
           draftState.status = "Live";
           if (!draftState.onTheClock) {
@@ -1504,10 +1532,23 @@
           updateStartDraftButton();
           updateHudBanner();
 
-          // Reset and start pick countdown for first GM!
-          resetAndStartTimerForNextGm();
+          if (wasPaused) {
+            // Resume countdown from exactly where it was paused!
+            startTimerCountdown();
+            const display = document.getElementById("draft-timer-display");
+            if (display) {
+              display.textContent = formatTime(timerSeconds);
+              display.style.color = timerSeconds <= 15 ? "#ff4444" : "var(--lime)";
+            }
+            showAutoDraftToast("DRAFT RESUMED", `Clock resumed for ${draftState.onTheClock} (${formatTime(timerSeconds)} remaining).`, "▶");
+          } else {
+            // Reset and start pick countdown for first GM!
+            resetAndStartTimerForNextGm();
+            showAutoDraftToast("DRAFT COMMENCED", `${draftState.onTheClock} is ON THE CLOCK (${formatTime(timerLimitSeconds)})!`, "🎯");
+          }
 
-          // Save draft state
+          // Save draft state with remainingSeconds
+          draftState.remainingSeconds = timerSeconds;
           if (window.LeagueDB && typeof window.LeagueDB.saveDraftState === 'function') {
             await window.LeagueDB.saveDraftState(draftState, currentDivision);
           }
@@ -1516,22 +1557,24 @@
           broadcastDraftEvent('draft_state_sync', {
             division: currentDivision,
             state: draftState,
+            remainingSeconds: timerSeconds,
+            isResume: wasPaused,
             timestamp: Date.now()
           });
 
-          const divInfo = DIVISIONS[currentDivision];
-          window.LeagueDB?.addAnnouncement?.({
-            title: `🚨 ${divInfo.name.toUpperCase()} DRAFT HAS BEGUN`,
-            message: `The official draft is now live! ${draftState.onTheClock} is ON THE CLOCK (${formatTime(timerLimitSeconds)})!`,
-            tag: "Draft Live",
-            tag_color: "lime",
-            link_url: "draft.html",
-            link_text: "Join Live Draft HQ ↗",
-            pinned: true,
-            is_active: true
-          });
-
-          showAutoDraftToast("DRAFT COMMENCED", `${draftState.onTheClock} is ON THE CLOCK (${formatTime(timerLimitSeconds)})!`, "🎯");
+          if (!wasPaused) {
+            const divInfo = DIVISIONS[currentDivision];
+            window.LeagueDB?.addAnnouncement?.({
+              title: `🚨 ${divInfo.name.toUpperCase()} DRAFT HAS BEGUN`,
+              message: `The official draft is now live! ${draftState.onTheClock} is ON THE CLOCK (${formatTime(timerLimitSeconds)})!`,
+              tag: "Draft Live",
+              tag_color: "lime",
+              link_url: "draft.html",
+              link_text: "Join Live Draft HQ ↗",
+              pinned: true,
+              is_active: true
+            });
+          }
         }
 
         async function pauseDraft() {
@@ -1541,11 +1584,17 @@
           }
           isDraftLive = false;
           draftState.status = "Paused";
+          draftState.remainingSeconds = timerSeconds;
           clearInterval(timerInterval);
           isTimerRunning = false;
 
           const toggleBtn = document.getElementById("btn-timer-toggle");
           if (toggleBtn) toggleBtn.textContent = "▶";
+
+          const display = document.getElementById("draft-timer-display");
+          if (display) {
+            display.textContent = formatTime(timerSeconds);
+          }
 
           updateStartDraftButton();
           updateHudBanner();
@@ -1558,10 +1607,11 @@
           broadcastDraftEvent('draft_state_sync', {
             division: currentDivision,
             state: draftState,
+            remainingSeconds: timerSeconds,
             timestamp: Date.now()
           });
 
-          showAutoDraftToast("DRAFT PAUSED", "Draft clock paused by commissioner.", "⏸");
+          showAutoDraftToast("DRAFT PAUSED", `Draft clock paused at ${formatTime(timerSeconds)} by commissioner.`, "⏸");
         }
 
         function updateHudBanner() {
@@ -2638,6 +2688,19 @@
           `).join("");
         }
 
+        function updatePickSwapWarning() {
+          const teamSelect = document.getElementById("pick-input-team");
+          const swapIndicator = document.getElementById("pick-swap-indicator");
+          if (!teamSelect || !swapIndicator) return;
+          const scheduledTeam = draftState.onTheClock;
+          if (scheduledTeam && teamSelect.value && scheduledTeam.toLowerCase() !== teamSelect.value.toLowerCase()) {
+            swapIndicator.style.display = "block";
+            swapIndicator.innerHTML = `⚡ <strong>PICK SWAP DETECTED:</strong> ${escapeHtml(teamSelect.value)} is selecting instead of scheduled GM (${escapeHtml(scheduledTeam)}). Trade Intel will automatically broadcast!`;
+          } else {
+            swapIndicator.style.display = "none";
+          }
+        }
+
         function openDraftPickModal(preselectedTag = null) {
           if (!isDraftAdminAuthorized) {
             document.getElementById("modal-draft-staff-login")?.showModal();
@@ -2658,11 +2721,13 @@
             playerSelect.value = preselectedTag;
           }
 
+          updatePickSwapWarning();
           modal.showModal();
         }
 
         async function submitPickCore({ round, pick, teamName, playerGamertag, playerRole = "Flex", playerKd = null, notes = "", isAutoDraft = false }) {
           const teamObj = teamsPool.find(t => t.name.toLowerCase() === teamName.toLowerCase()) || {};
+          const scheduledTeam = draftState.onTheClock;
 
           try {
             if (window.LeagueDB && typeof window.LeagueDB.recordDraftPick === 'function') {
@@ -2736,21 +2801,41 @@
               }
             }
 
-            // Automatically post Trade Intel if trade notes or high-impact selection occur
+            // Automatically post Trade Intel if trade notes, pick swap, or high-impact selection occur
             try {
+              const autoTradeEnabled = document.getElementById("chk-auto-trade-intel")?.checked ?? true;
+              const isTradedPick = scheduledTeam && scheduledTeam.toLowerCase() !== teamName.toLowerCase();
               const notesLower = (notes || "").toLowerCase();
               const isTradeNote = notesLower.includes("trade") || notesLower.includes("swap") || notesLower.includes("deal") || notesLower.includes("acquire") || notesLower.includes("rights") || notesLower.includes("from ");
               
-              if (isTradeNote && window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+              if (autoTradeEnabled && (isTradeNote || isTradedPick) && window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+                const title = isTradedPick
+                  ? `⚡ TRADE ALERT: ${teamName} acquires Pick #${pick} from ${scheduledTeam}`
+                  : `⚡ TRADE WIRE: ${teamName} executes Pick #${pick} deal`;
+                
+                const message = isTradedPick
+                  ? `Live Trade Wire: ${teamName} has acquired the #${pick} overall pick from ${scheduledTeam} to select ${playerGamertag} (${playerRole}). ${notes ? `Transaction details: "${notes}"` : ''}`
+                  : `${teamName} drafted ${playerGamertag} (${playerRole}). Transaction details: "${notes}".`;
+
                 await window.LeagueDB.addAnnouncement({
-                  title: `⚡ TRADE WIRE: ${teamName} executes Pick #${pick} deal`,
-                  message: `${teamName} drafted ${playerGamertag} (${playerRole}). Transaction details: "${notes}".`,
+                  title,
+                  message,
                   tag: "Trade Alert",
                   tag_color: "amber",
                   link_url: "draft.html",
                   link_text: "View Live Draft HQ ↗",
                   is_active: true
                 });
+
+                broadcastDraftEvent('draft_trade_broadcast', {
+                  division: currentDivision,
+                  title,
+                  message,
+                  tag: "Trade Alert",
+                  timestamp: Date.now()
+                });
+
+                showAutoDraftToast("TRADE INTEL BROADCASTED", title, "⚡");
               } else if (round === 1 && !isAutoDraft && window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
                 await window.LeagueDB.addAnnouncement({
                   title: `🔥 WAR ROOM WIRE: ${teamName} selects ${playerGamertag} (Round 1)`,
@@ -3024,6 +3109,50 @@
             autoGenerateTradeIntel(false);
           });
 
+          document.getElementById("btn-quick-broadcast-trade")?.addEventListener("click", async () => {
+            const titleInput = document.getElementById("intel-input-title");
+            const bodyInput = document.getElementById("intel-input-body");
+            const tagSelect = document.getElementById("intel-input-tag");
+
+            if (!titleInput.value || !bodyInput.value) {
+              autoGenerateTradeIntel(false);
+            }
+
+            const title = titleInput.value.trim();
+            const body = bodyInput.value.trim();
+            const tag = tagSelect.value;
+
+            try {
+              if (window.LeagueDB && typeof window.LeagueDB.addAnnouncement === 'function') {
+                await window.LeagueDB.addAnnouncement({
+                  title,
+                  message: body,
+                  tag,
+                  tag_color: tag === "Breaking Intel" ? "cyan" : "amber",
+                  link_url: "draft.html",
+                  link_text: "View Live Draft HQ ↗",
+                  is_active: true
+                });
+              }
+
+              broadcastDraftEvent('draft_trade_broadcast', {
+                division: currentDivision,
+                title,
+                message: body,
+                tag,
+                timestamp: Date.now()
+              });
+
+              document.getElementById("modal-post-intel").close();
+              titleInput.value = "";
+              bodyInput.value = "";
+              renderDraftAnnouncements();
+              showAutoDraftToast("TRADE INTEL BROADCASTED", title, "⚡");
+            } catch (e) {
+              alert("Trade Intel broadcasted locally.");
+            }
+          });
+
           document.getElementById("btn-confirm-post-intel").addEventListener("click", async () => {
             const title = document.getElementById("intel-input-title").value.trim();
             const body = document.getElementById("intel-input-body").value.trim();
@@ -3046,15 +3175,27 @@
                   is_active: true
                 });
               }
+
+              broadcastDraftEvent('draft_trade_broadcast', {
+                division: currentDivision,
+                title,
+                message: body,
+                tag,
+                timestamp: Date.now()
+              });
+
               document.getElementById("modal-post-intel").close();
               document.getElementById("intel-input-title").value = "";
               document.getElementById("intel-input-body").value = "";
               renderDraftAnnouncements();
-              alert("Trade Intel broadcasted successfully!");
+              showAutoDraftToast("INTEL BROADCASTED", title, "⚡");
             } catch(e) {
               alert("Posted intel locally.");
             }
           });
+
+          // Pick swap detector listener on drafting team select
+          document.getElementById("pick-input-team")?.addEventListener("change", updatePickSwapWarning);
         }
 
         // Helper: HTML Escaping

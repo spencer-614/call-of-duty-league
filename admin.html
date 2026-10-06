@@ -628,6 +628,162 @@
         align-items: center;
         gap: 12px;
       }
+
+      /* ========================================== */
+      /* AI SCOREBOARD SCANNER STYLES               */
+      /* ========================================== */
+      .scanner-dropzone {
+        border: 2px dashed #485223;
+        background: #141510;
+        padding: 36px 20px;
+        text-align: center;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .scanner-dropzone:hover, .scanner-dropzone.dragover {
+        border-color: var(--lime);
+        background: #191c13;
+        box-shadow: 0 0 20px rgba(213, 244, 91, 0.15);
+      }
+      .scanner-laser-container {
+        position: relative;
+        background: #10120d;
+        border: 1px solid #3d4520;
+        height: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .scanner-laser-bar {
+        position: absolute;
+        top: 0;
+        left: -40%;
+        width: 40%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, var(--lime), #ffffff, var(--lime), transparent);
+        box-shadow: 0 0 15px var(--lime);
+        animation: scannerLaserSweep 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      @keyframes scannerLaserSweep {
+        0% { left: -40%; }
+        100% { left: 100%; }
+      }
+      .telemetry-diff-pos {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-weight: 700;
+        font-size: 12px;
+        display: inline-block;
+      }
+      .telemetry-diff-neg {
+        background: rgba(248, 113, 113, 0.15);
+        color: #f87171;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-weight: 700;
+        font-size: 12px;
+        display: inline-block;
+      }
+      .telemetry-diff-zero {
+        background: rgba(181, 184, 168, 0.12);
+        color: var(--muted);
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-weight: 700;
+        font-size: 12px;
+        display: inline-block;
+      }
+      .telemetry-kd-high {
+        color: #facc15;
+        font-weight: 800;
+      }
+      .telemetry-kd-pos {
+        color: var(--lime);
+        font-weight: 700;
+      }
+      .telemetry-kd-neg {
+        color: #f87171;
+        font-weight: 700;
+      }
+      .telemetry-input-num {
+        width: 58px;
+        text-align: center;
+        padding: 6px 4px !important;
+        font-weight: 700;
+      }
+      .telemetry-input-dmg {
+        width: 80px;
+        text-align: center;
+        padding: 6px 4px !important;
+        font-weight: 700;
+      }
+      .telemetry-input-obj {
+        width: 75px;
+        text-align: center;
+        padding: 6px 4px !important;
+      }
+      .engine-pill {
+        cursor: pointer;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid #3c3e32;
+        background: #141610;
+        color: var(--muted);
+        border-radius: 3px;
+        transition: all 0.15s ease;
+      }
+      .engine-pill.active {
+        border-color: #38bdf8;
+        background: rgba(56, 189, 248, 0.12);
+        color: #38bdf8;
+      }
+      .series-map-chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: #141710;
+        border: 1px solid #3c4228;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+      .series-map-chip:hover {
+        border-color: #6d783d;
+        background: #1a1e14;
+      }
+      .series-map-chip.active {
+        border-color: var(--lime);
+        background: #1e2415;
+        box-shadow: 0 0 14px rgba(213, 244, 91, 0.2);
+      }
+      .btn-delete-map-chip {
+        background: transparent;
+        border: none;
+        color: #888;
+        font-size: 14px;
+        line-height: 1;
+        padding: 3px 6px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .btn-delete-map-chip:hover {
+        color: #ff5555;
+        background: rgba(255, 85, 85, 0.15);
+      }
+      .series-score-tag {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 2px;
+        background: rgba(213, 244, 91, 0.12);
+        color: var(--lime);
+      }
     </style>
   </head>
   <body>
@@ -777,7 +933,7 @@
         <div style="background: rgba(213, 244, 91, 0.06); border: 1px solid rgba(213, 244, 91, 0.2); padding: 12px 18px; margin-bottom: 24px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
           <div>
             <strong style="color:var(--lime);">⚡ Database Write Access:</strong> 
-            <span style="color:var(--muted);">If you see a Row-Level Security (RLS) message when adding a team or score, execute the one-time script <code>enable_admin_access.sql</code> in your Supabase SQL Editor to grant write permissions.</span>
+            <span style="color:var(--muted);">If you see a Row-Level Security (RLS) message when committing telemetry or scores, execute the script <code>setup_scoreboard_scanner.sql</code> in your Supabase SQL Editor to grant write permissions.</span>
           </div>
           <a href="https://supabase.com/dashboard/project/sllilxkbmxheclhgstcq/sql" target="_blank" rel="noopener" class="btn-action-sm" style="color:var(--lime); border-color:var(--lime);">
             Open Supabase SQL Editor ↗
@@ -792,11 +948,8 @@
           <button type="button" class="admin-nav-btn" data-tab="tab-players">
             🎯 Players & Rosters
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-player-stats">
-            📊 Player Stats & Map Records
-          </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-matches">
-            ⚔ Record Match Score
+            ⚔️ Record Match Scores &amp; Player Stats
           </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-schedule">
             📅 8-Week Match Schedule
@@ -834,11 +987,11 @@
               <div class="admin-form-grid">
                 <div class="form-group">
                   <label class="form-label" for="team-name">Team Name *</label>
-                  <input type="text" id="team-name" class="form-control" placeholder="e.g. Apex Predators" required />
+                  <input type="text" id="team-name" class="form-control" placeholder="e.g. Dallas Empire" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="team-tag">Team Tag (3-4 Chars) *</label>
-                  <input type="text" id="team-tag" class="form-control" placeholder="e.g. APX" maxlength="5" required />
+                  <input type="text" id="team-tag" class="form-control" placeholder="e.g. DAL" maxlength="5" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="team-wins">Wins</label>
@@ -954,204 +1107,282 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- TAB: PLAYER STATS & MAP RECORDS            -->
+        <!-- TAB: MATCH SCORES & PLAYER STATS (COMBINED) -->
         <!-- ========================================== -->
-        <div id="tab-player-stats" class="admin-tab-content" style="display:none;">
-          <!-- 1. Combatant Selector & Quick Action Toolbar -->
-          <div class="admin-panel-card" style="margin-bottom: 24px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+        <div id="tab-matches" class="admin-tab-content" style="display:none;">
+          <!-- Primary Unified Reporting Panel -->
+          <div class="admin-panel-card" style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
               <div>
-                <h3 class="admin-card-title" style="margin:0;">📊 Combatant Telemetry & Map Records</h3>
-                <p style="color:var(--muted); font-size:12px; margin:4px 0 0;">
-                  Inspect overall W/L and K/D, view per-mode and per-map records, and log or modify individual map match performances.
+                <h3 class="admin-card-title" style="margin:0;">⚔ Match Score &amp; Player Telemetry Reporter</h3>
+                <p style="color:var(--muted); font-size:13px; margin:4px 0 0;">
+                  Unified official scorecard for referees and staff. Select any Live or Upcoming scheduled match (or run an exhibition), enter series scores and individual combatant stats, and commit in a single step to update Standings and recalculate player telemetry.
                 </p>
               </div>
               <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button type="button" id="btn-jump-record-map" class="btn-action-sm" style="color:var(--lime); border-color:var(--lime);">
-                  ＋ Record Map Match
+                <button type="button" id="btn-refresh-reporter-schedule" class="btn-action-sm" style="color:var(--lime); border-color:var(--lime);">
+                  ↻ Refresh Schedule Matches
                 </button>
-                <button type="button" id="btn-open-edit-profile" class="btn-action-sm">
-                  ✏ Edit Profile & Overrides
+                <button type="button" id="btn-fill-sample-stats" class="btn-action-sm" style="color:#38bdf8; border-color:#38bdf8;">
+                  ⚡ Fill Sample CDL Telemetry
                 </button>
-                <button type="button" id="btn-sync-player-totals" class="btn-action-sm">
-                  ↻ Sync & Recalculate
+                <button type="button" id="btn-clear-combined-form" class="btn-action-sm">
+                  ✕ Reset Form
                 </button>
               </div>
             </div>
 
-            <!-- Player Select Form Grid -->
-            <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; background:#141511; border:1px solid var(--line); padding:16px;">
-              <div style="flex:1; min-width:240px;">
-                <label class="form-label" for="stats-player-select">Active Combatant</label>
-                <select id="stats-player-select" class="form-control" style="font-weight:700; color:var(--text); font-size:14px;">
-                  <option value="">Loading players...</option>
-                </select>
+            <!-- Match Selector Card -->
+            <div style="background:#131510; border:1px solid #2e331c; padding:18px; border-radius:4px; margin-bottom:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+                <label class="form-label" for="reporter-match-select" style="font-size:13px; font-weight:800; color:var(--lime); margin:0;">
+                  📅 SELECT LIVE OR UPCOMING MATCH FROM SCHEDULE:
+                </label>
+                <span id="reporter-match-meta" style="font-size:12px; color:var(--muted); font-weight:600;"></span>
               </div>
-              <div style="width:240px;">
-                <label class="form-label" for="stats-player-search">Quick Filter</label>
-                <input type="text" id="stats-player-search" class="form-control" placeholder="Search gamertag or squad..." />
+              <select id="reporter-match-select" class="form-control" style="font-size:14px; font-weight:700; color:#ffffff; background:#0d0e0a; border:1px solid #3c4225; padding:10px 14px;">
+                <option value="__custom__">➕ Custom / Exhibition Matchup (Manual Team Selection)</option>
+                <optgroup id="reporter-optgroup-live" label="🔴 Live Matches Right Now">
+                  <option disabled>No live matches currently active</option>
+                </optgroup>
+                <optgroup id="reporter-optgroup-upcoming" label="⏳ Upcoming Scheduled Matches">
+                  <option disabled>Loading scheduled slate...</option>
+                </optgroup>
+                <optgroup id="reporter-optgroup-completed" label="✅ Completed / Recent Matches">
+                  <option disabled>None</option>
+                </optgroup>
+              </select>
+
+              <!-- Quick Match Selection Chips -->
+              <div style="margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span style="font-size:11px; font-weight:800; color:#8d927d; text-transform:uppercase; letter-spacing:0.5px;">Quick Match Select:</span>
+                <div id="reporter-quick-match-chips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                  <span style="font-size:11px; color:var(--muted);">Loading active matchups...</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- 2. Selected Player View (dynamically rendered) -->
-          <div id="player-stats-view-container">
-            <div style="text-align:center; padding:50px; color:var(--muted);">Select a player above to load combat telemetry.</div>
-          </div>
+            <!-- Unified Form -->
+            <form id="form-combined-match-reporter">
+              <input type="hidden" id="reporter-selected-match-id" value="" />
 
-          <!-- 3. Record Map Match Performance Form Card -->
-          <div class="admin-panel-card" id="card-record-map-performance" style="margin-top: 32px;">
-            <h3 class="admin-card-title" id="form-record-map-title">＋ Record Map Match Performance</h3>
-            <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
-              Log individual map performance data. Committing automatically calculates and saves overall W/L, overall K/D, per-mode W/L & K/D, and per-map W/L & K/D to the database!
-            </p>
-
-            <form id="form-add-map-stat">
-              <input type="hidden" id="add-map-player-id" />
-              
-              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="form-group">
-                  <label class="form-label" for="add-map-name">Map Name *</label>
-                  <select id="add-map-name" class="form-control" required>
-                    <option value="Karachi">Karachi</option>
-                    <option value="Rio">Rio</option>
-                    <option value="Sub Base">Sub Base</option>
-                    <option value="Highrise">Highrise</option>
-                    <option value="Invasion">Invasion</option>
-                    <option value="6 Star">6 Star</option>
-                    <option value="Vista">Vista</option>
-                    <option value="Terminal">Terminal</option>
-                    <option value="Skidrow">Skidrow</option>
-                    <option value="Departure">Departure</option>
-                    <option value="__custom__">-- Custom Map Name... --</option>
-                  </select>
-                </div>
-                
-                <div class="form-group" id="group-custom-map" style="display:none;">
-                  <label class="form-label" for="add-map-custom-name">Custom Map Name *</label>
-                  <input type="text" id="add-map-custom-name" class="form-control" placeholder="e.g. Scrapyard" />
+              <!-- Match & Series Scores Grid -->
+              <div style="display:grid; grid-template-columns: 1fr auto 1fr; gap:16px; align-items:stretch; background:#0e100c; padding:20px; border:1px solid var(--line); border-radius:4px; margin-bottom:24px;">
+                <!-- Team 1 Card -->
+                <div style="background:#131510; border:1px solid #232717; padding:16px; border-radius:4px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <label class="form-label" for="match-team-1" style="color:var(--lime); font-size:12px; font-weight:800;">TEAM 1 (HOME SQUAD) *</label>
+                    <select id="match-team-1" class="form-control" style="font-weight:700; font-size:14px; margin-bottom:12px;" required></select>
+                  </div>
+                  <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="flex:1;">
+                      <label class="form-label" for="match-score-1" style="font-size:11px;">Series Wins (Maps)</label>
+                      <input type="number" id="match-score-1" class="form-control" min="0" max="5" value="3" required style="font-size:18px; font-weight:800; text-align:center; padding:8px;" />
+                    </div>
+                    <div style="flex:1;">
+                      <label class="form-label" for="match-map-score-1" style="font-size:11px;">Map Score (e.g. 250)</label>
+                      <input type="text" id="match-map-score-1" class="form-control" placeholder="250" style="font-size:14px; text-align:center; padding:8px;" />
+                    </div>
+                  </div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label" for="add-map-mode">Game Mode *</label>
-                  <select id="add-map-mode" class="form-control" required>
-                    <option value="Hardpoint">Hardpoint</option>
-                    <option value="Search & Destroy">Search & Destroy</option>
-                    <option value="Control">Control</option>
-                  </select>
+                <!-- Center Outcome / Winner -->
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 16px; min-width:180px;">
+                  <div style="font-family:var(--admin-font); font-size:18px; font-weight:900; color:#888a7c; letter-spacing:2px; margin-bottom:10px;">
+                    VS
+                  </div>
+                  <div style="width:100%; margin-bottom:10px;">
+                    <label class="form-label" for="match-winner" style="font-size:11px; text-align:center; display:block;">Declared Winner *</label>
+                    <select id="match-winner" class="form-control" style="font-weight:700; font-size:12px;" required>
+                      <option value="1">Team 1 is Winner</option>
+                      <option value="2">Team 2 is Winner</option>
+                    </select>
+                  </div>
+                  <div style="width:100%; margin-bottom:10px;">
+                    <label class="form-label" for="match-status" style="font-size:11px; text-align:center; display:block;">Match Status</label>
+                    <select id="match-status" class="form-control" style="font-size:12px; font-weight:700;">
+                      <option value="Completed" selected>Completed ✓</option>
+                      <option value="Live">Live 🔴</option>
+                      <option value="Scheduled">Scheduled</option>
+                    </select>
+                  </div>
+                  <div style="width:100%; margin-bottom:8px;">
+                    <label class="form-label" for="match-points" style="font-size:11px; text-align:center; display:block;">Standings Points</label>
+                    <input type="number" id="match-points" class="form-control" value="10" style="text-align:center; font-size:12px; padding:4px;" />
+                  </div>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:#c7ccb8; cursor:pointer; text-align:left;">
+                    <input type="checkbox" id="match-update-standings-check" checked />
+                    <span>Apply Standings</span>
+                  </label>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label" for="add-map-result">Map Result *</label>
-                  <select id="add-map-result" class="form-control" required>
-                    <option value="W" style="color:#5bf488;">W — Victory</option>
-                    <option value="L" style="color:#ff5b5b;">L — Defeat</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="add-map-kills">Kills *</label>
-                  <input type="number" id="add-map-kills" class="form-control" min="0" value="25" required />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="add-map-deaths">Deaths *</label>
-                  <input type="number" id="add-map-deaths" class="form-control" min="0" value="20" required />
-                </div>
-
-                <div class="form-group" style="display:flex; flex-direction:column; justify-content:center;">
-                  <span class="form-label">Calculated K/D Ratio</span>
-                  <div class="kd-preview-badge" id="add-map-kd-preview">1.25 K/D</div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="add-map-damage">Total Damage</label>
-                  <input type="number" id="add-map-damage" class="form-control" min="0" placeholder="e.g. 4200" value="3800" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="add-map-opponent">Opponent Team</label>
-                  <input type="text" id="add-map-opponent" class="form-control" placeholder="e.g. Vantage or Redline" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="add-map-score">Final Map Score</label>
-                  <input type="text" id="add-map-score" class="form-control" placeholder="e.g. 250 - 212 or 6 - 4" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="add-map-date">Match Date</label>
-                  <input type="date" id="add-map-date" class="form-control" />
+                <!-- Team 2 Card -->
+                <div style="background:#131510; border:1px solid #232717; padding:16px; border-radius:4px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <label class="form-label" for="match-team-2" style="color:#38bdf8; font-size:12px; font-weight:800;">TEAM 2 (AWAY SQUAD) *</label>
+                    <select id="match-team-2" class="form-control" style="font-weight:700; font-size:14px; margin-bottom:12px;" required></select>
+                  </div>
+                  <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="flex:1;">
+                      <label class="form-label" for="match-score-2" style="font-size:11px;">Series Wins (Maps)</label>
+                      <input type="number" id="match-score-2" class="form-control" min="0" max="5" value="1" required style="font-size:18px; font-weight:800; text-align:center; padding:8px;" />
+                    </div>
+                    <div style="flex:1;">
+                      <label class="form-label" for="match-map-score-2" style="font-size:11px;">Map Score (e.g. 212)</label>
+                      <input type="text" id="match-map-score-2" class="form-control" placeholder="212" style="font-size:14px; text-align:center; padding:8px;" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div style="margin-top:20px;">
-                <button type="submit" class="btn-paypal-submit" style="width:auto; padding:12px 28px;">
-                  <span>Commit Map Stat & Recalculate Telemetry</span>
+              <!-- Map Details Row -->
+              <div style="background:#11120e; border:1px solid var(--line); padding:16px 20px; border-radius:4px; margin-bottom:24px;">
+                <h4 style="font-size:13px; font-weight:800; color:#d4d8c2; text-transform:uppercase; margin:0 0 12px; letter-spacing:0.5px;">
+                  🗺️ Map &amp; Game Mode Settings
+                </h4>
+                <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                  <div class="form-group">
+                    <label class="form-label" for="combined-map-name">Map Name *</label>
+                    <select id="combined-map-name" class="form-control" required>
+                      <option value="Karachi">Karachi</option>
+                      <option value="Rio">Rio</option>
+                      <option value="Sub Base">Sub Base</option>
+                      <option value="Highrise">Highrise</option>
+                      <option value="Invasion">Invasion</option>
+                      <option value="6 Star">6 Star</option>
+                      <option value="Vista">Vista</option>
+                      <option value="Terminal">Terminal</option>
+                      <option value="Skidrow">Skidrow</option>
+                      <option value="Departure">Departure</option>
+                      <option value="__custom__">-- Custom Map Name... --</option>
+                    </select>
+                  </div>
+                  <div class="form-group" id="combined-custom-map-group" style="display:none;">
+                    <label class="form-label" for="combined-custom-map-name">Custom Map Name *</label>
+                    <input type="text" id="combined-custom-map-name" class="form-control" placeholder="e.g. Scrapyard" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="combined-game-mode">Game Mode *</label>
+                    <select id="combined-game-mode" class="form-control" required>
+                      <option value="Hardpoint">Hardpoint</option>
+                      <option value="Search &amp; Destroy">Search &amp; Destroy</option>
+                      <option value="Control">Control</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="combined-map-score">Final Map Score</label>
+                    <input type="text" id="combined-map-score" class="form-control" placeholder="e.g. 250 - 212 or 6 - 4" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="combined-match-date">Match Date</label>
+                    <input type="date" id="combined-match-date" class="form-control" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Individual Combatant Telemetry Input: Team 1 vs Team 2 -->
+              <div style="margin-bottom:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                  <div>
+                    <h4 style="font-size:14px; font-weight:800; color:#ffffff; margin:0; text-transform:uppercase; letter-spacing:0.5px;">
+                      👥 Individual Combatant Stats (Team 1 vs Team 2)
+                    </h4>
+                    <p style="color:var(--muted); font-size:12px; margin:2px 0 0;">
+                      Referees can enter kills, deaths, damage, and objectives. Live K/D calculates immediately. Unselected player slots are ignored.
+                    </p>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button type="button" id="btn-add-team1-slot" class="btn-action-sm" style="font-size:11px; padding:4px 8px;">＋ Add Team 1 Slot</button>
+                    <button type="button" id="btn-add-team2-slot" class="btn-action-sm" style="font-size:11px; padding:4px 8px;">＋ Add Team 2 Slot</button>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap:20px;">
+                  <!-- Team 1 Roster Box -->
+                  <div style="background:#10110d; border:1px solid #282c1a; border-radius:4px; padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #202416;">
+                      <h5 id="reporter-team1-title" style="margin:0; font-size:13px; font-weight:800; color:var(--lime); text-transform:uppercase;">
+                        Team 1 Roster Slots
+                      </h5>
+                      <span style="font-size:11px; color:var(--muted);">4 Players (Standard CDL)</span>
+                    </div>
+                    <div id="reporter-team1-slots">
+                      <!-- Dynamically rendered slots -->
+                    </div>
+                  </div>
+
+                  <!-- Team 2 Roster Box -->
+                  <div style="background:#10110d; border:1px solid #1c272e; border-radius:4px; padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #1a2228;">
+                      <h5 id="reporter-team2-title" style="margin:0; font-size:13px; font-weight:800; color:#38bdf8; text-transform:uppercase;">
+                        Team 2 Roster Slots
+                      </h5>
+                      <span style="font-size:11px; color:var(--muted);">4 Players (Standard CDL)</span>
+                    </div>
+                    <div id="reporter-team2-slots">
+                      <!-- Dynamically rendered slots -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button & Feedback -->
+              <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:20px;">
+                <button type="submit" id="btn-submit-combined-match" class="btn-paypal-submit" style="width:auto; padding:14px 34px; font-size:15px; font-weight:800;">
+                  <span>⚔ Commit Match Scores &amp; Player Telemetry</span>
                   <span>✓</span>
                 </button>
               </div>
+              <div id="reporter-commit-result" style="display:none; margin-top:16px; padding:14px; background:#181c12; border:1px solid #3c4225; border-radius:4px; font-size:13px;">
+              </div>
             </form>
           </div>
-        </div>
 
-        <!-- ========================================== -->
-        <!-- TAB 3: RECORD MATCH SCORES                 -->
-        <!-- ========================================== -->
-        <div id="tab-matches" class="admin-tab-content" style="display:none;">
-          <div class="admin-panel-card">
-            <h3 class="admin-card-title">⚔ Fast Match Score Reporter</h3>
-            <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
-              Submit official match series scores. Submitting automatically calculates and updates Wins, Losses, and Standings Points on both teams simultaneously in the database!
-            </p>
+          <!-- Secondary Accordion: Combatant Telemetry & Historical Map Logs Browser -->
+          <details id="details-combatant-telemetry" style="background:#11120f; border:1px solid var(--line); border-radius:4px; padding:18px; margin-bottom:24px;">
+            <summary style="font-family:var(--admin-font); font-size:15px; font-weight:800; cursor:pointer; color:#ffffff; user-select:none; display:flex; justify-content:space-between; align-items:center;">
+              <span>📊 Combatant Historical Telemetry &amp; Profile Browser</span>
+              <span style="font-size:12px; color:var(--muted); font-weight:normal;">Click to inspect / manage individual player profiles ▾</span>
+            </summary>
 
-            <form id="form-record-match">
-              <div style="display:grid; grid-template-columns: 1fr auto 1fr; gap:20px; align-items:center; background:#12130f; padding:24px; border:1px solid var(--line); margin-bottom:24px;">
-                <!-- Team 1 -->
-                <div>
-                  <label class="form-label" for="match-team-1">Team 1 *</label>
-                  <select id="match-team-1" class="form-control" required></select>
-                  <div style="margin-top:10px;">
-                    <label class="form-label" for="match-score-1">Map Wins (e.g. 3)</label>
-                    <input type="number" id="match-score-1" class="form-control" min="0" max="5" value="3" required />
-                  </div>
-                </div>
-
-                <div style="font-family:var(--admin-font); font-size:18px; font-weight:800; color:#888a7c; text-align:center;">
-                  VS
-                </div>
-
-                <!-- Team 2 -->
-                <div>
-                  <label class="form-label" for="match-team-2">Team 2 *</label>
-                  <select id="match-team-2" class="form-control" required></select>
-                  <div style="margin-top:10px;">
-                    <label class="form-label" for="match-score-2">Map Wins (e.g. 1)</label>
-                    <input type="number" id="match-score-2" class="form-control" min="0" max="5" value="1" required />
-                  </div>
+            <div style="margin-top:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                <p style="color:var(--muted); font-size:12px; margin:0;">
+                  Inspect overall W/L and K/D, view per-mode and per-map records, edit profile overrides, or sync totals from database map records.
+                </p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <button type="button" id="btn-open-edit-profile" class="btn-action-sm">
+                    ✏ Edit Profile &amp; Overrides
+                  </button>
+                  <button type="button" id="btn-sync-player-totals" class="btn-action-sm">
+                    ↻ Sync &amp; Recalculate
+                  </button>
                 </div>
               </div>
 
-              <div class="admin-form-grid">
-                <div class="form-group">
-                  <label class="form-label" for="match-winner">Declared Winner *</label>
-                  <select id="match-winner" class="form-control" required>
-                    <option value="1">Team 1 is Winner</option>
-                    <option value="2">Team 2 is Winner</option>
+              <!-- Player Select Form Grid -->
+              <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; background:#141511; border:1px solid var(--line); padding:16px; margin-bottom:20px; border-radius:3px;">
+                <div style="flex:1; min-width:240px;">
+                  <label class="form-label" for="stats-player-select">Active Combatant</label>
+                  <select id="stats-player-select" class="form-control" style="font-weight:700; color:var(--text); font-size:14px;">
+                    <option value="">Loading players...</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label class="form-label" for="match-points">Points Awarded to Winner</label>
-                  <input type="number" id="match-points" class="form-control" value="10" />
+                <div style="width:240px;">
+                  <label class="form-label" for="stats-player-search">Quick Filter</label>
+                  <input type="text" id="stats-player-search" class="form-control" placeholder="Search gamertag or squad..." />
                 </div>
               </div>
 
-              <button type="submit" class="btn-paypal-submit" style="width:auto; padding:12px 30px;">
-                <span>Commit Score & Update Standings</span>
-                <span>✓</span>
-              </button>
-            </form>
-          </div>
+              <!-- Selected Player View (dynamically rendered) -->
+              <div id="player-stats-view-container">
+                <div style="text-align:center; padding:50px; color:var(--muted);">Select a player above to load combat telemetry.</div>
+              </div>
+            </div>
+          </details>
+
+          <!-- Legacy compatibility container for queries targeting #tab-player-stats -->
+          <div id="tab-player-stats" style="display:none;"></div>
         </div>
 
         <!-- ========================================== -->
@@ -1214,7 +1445,7 @@
                 </div>
                 <div class="form-group" style="grid-column: 1 / -1;">
                   <label class="form-label" for="broadcast-title">Match Headline / Title</label>
-                  <input type="text" id="broadcast-title" class="form-control" placeholder="e.g. Grand Finals — Night Shift vs Vantage" />
+                  <input type="text" id="broadcast-title" class="form-control" placeholder="e.g. Grand Finals — Championship Series" />
                 </div>
               </div>
               <button type="submit" class="btn-paypal-submit" style="width:auto; padding:10px 24px;">
@@ -1242,11 +1473,15 @@
                     <span id="preview-announcement-beacon" class="announcement-beacon"></span>
                     <span id="preview-announcement-tag" class="announcement-tag">Official Update</span>
                     <span id="preview-announcement-pinned" style="display:none; font-size:11px; font-weight:800; font-family:var(--admin-font); color:var(--lime); letter-spacing:1px; background:#1f2214; border:1px solid #4a5420; padding:2px 8px; text-transform:uppercase; border-radius:2px;">PINNED</span>
+                    <span id="preview-announcement-scheduled" style="display:none; font-size:11px; font-weight:800; font-family:var(--admin-font); color:#ffb300; letter-spacing:1px; background:#221d0f; border:1px solid #664d00; padding:2px 8px; text-transform:uppercase; border-radius:2px;">SCHEDULED</span>
                   </div>
                   <span id="preview-announcement-date" class="announcement-date">TRANSMITTED TODAY</span>
                 </div>
                 <h3 id="preview-announcement-title" class="announcement-title">Season 1 Official Bracket Seeding & Roster Lock</h3>
                 <p id="preview-announcement-body" class="announcement-body">Rosters for Season 1 lock this Friday at 11:59 PM EST. Team captains must ensure all player Activision IDs and roles are confirmed in the recruitment terminal before seedings are locked.</p>
+                <div id="preview-announcement-image-wrap" class="announcement-media" style="display:none;">
+                  <img id="preview-announcement-image" class="announcement-img" src="" alt="Announcement media preview" />
+                </div>
                 <a id="preview-announcement-cta" href="#" class="announcement-cta" style="display:inline-flex;">
                   <span id="preview-announcement-cta-text">View Tournament Brackets ↗</span>
                 </a>
@@ -1256,9 +1491,12 @@
 
           <!-- Announcement Composer -->
           <div class="admin-panel-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
               <h3 id="announcement-form-title" class="admin-card-title" style="margin:0;">📢 Compose League Announcement</h3>
-              <button type="button" id="btn-cancel-announcement-edit" class="btn-action-sm" style="display:none;">✕ Cancel Edit Mode</button>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <a href="index.html#league-announcements-aside" target="_blank" class="btn-action-sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:var(--lime); border-color:rgba(213,244,91,0.4); background:rgba(213,244,91,0.06);">🌐 View Live on Homepage ↗</a>
+                <button type="button" id="btn-cancel-announcement-edit" class="btn-action-sm" style="display:none;">✕ Cancel Edit Mode</button>
+              </div>
             </div>
             <form id="form-announcement">
               <input type="hidden" id="announcement-id" />
@@ -1292,6 +1530,88 @@
                   <label class="form-label" for="announcement-link-text-input">Action Link Label (Optional)</label>
                   <input type="text" id="announcement-link-text-input" class="form-control" placeholder="e.g. View Tournament Brackets ↗" />
                 </div>
+
+                <!-- Image Attachment / Upload Field -->
+                <div class="form-group" style="grid-column: 1 / -1; background:#141611; border:1px dashed #3a4022; padding:16px; border-radius:4px;">
+                  <label class="form-label" style="font-size:13px; font-weight:800; color:var(--lime); margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                    <span>📸 Embedded Graphic Banner / Image (Optional)</span>
+                    <span style="font-size:11px; font-weight:normal; color:var(--muted);">(Upload image file or paste direct image URL)</span>
+                  </label>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; align-items:flex-start;">
+                    <div>
+                      <label class="form-label" for="announcement-image-file" style="font-size:11.5px; margin-bottom:2px;">Upload Image File (PNG, JPG, WebP, GIF)</label>
+                      <input type="file" id="announcement-image-file" accept="image/*" class="form-control" style="padding:6px; font-size:12px;" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="announcement-image-url-input" style="font-size:11.5px; margin-bottom:2px;">Or Direct Image URL</label>
+                      <input type="text" id="announcement-image-url-input" class="form-control" placeholder="https://example.com/banner.png" style="font-size:12px;" />
+                    </div>
+                  </div>
+
+                  <!-- Auto-Display Scale Mode -->
+                  <div style="margin-top:12px; padding-top:10px; border-top:1px solid #232717;">
+                    <label class="form-label" for="announcement-image-fit-input" style="font-size:11.5px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                      <span style="font-weight:700; color:#d4d8c2;">Auto-Display Scale Mode</span>
+                      <span style="font-size:11px; color:var(--muted); font-weight:normal;">Auto-Fit prevents cropped flyers &amp; text</span>
+                    </label>
+                    <select id="announcement-image-fit-input" class="form-control" style="font-size:12px;">
+                      <option value="contain" selected>Auto Fit (Full Image Visible, No Cropping — Recommended)</option>
+                      <option value="cover">Fill Banner Width (16:9 Cinematic Crop)</option>
+                      <option value="banner">Wide Panoramic Header (21:9 Header)</option>
+                    </select>
+                  </div>
+
+                  <!-- Image Preview Box -->
+                  <div id="announcement-image-preview-container" style="display:none; align-items:center; gap:14px; margin-top:12px; padding:10px 14px; background:#0e100c; border:1px solid #282d18; border-radius:3px;">
+                    <img id="announcement-uploaded-thumb" src="" alt="Thumbnail" style="width:72px; height:48px; object-fit:contain; background:#050604; border-radius:3px; border:1px solid #3c4225;" />
+                    <div style="flex:1;">
+                      <span id="announcement-image-filename" style="font-size:12px; font-weight:700; color:#d4d8c2; display:block; margin-bottom:2px;">Image Attached</span>
+                      <div id="announcement-image-dimension-badge" style="display:inline-block; font-size:11px; color:var(--lime); background:rgba(213,244,91,0.1); border:1px solid rgba(213,244,91,0.25); padding:1px 6px; border-radius:2px; margin-top:2px;">✓ Graphic ready to embed with announcement</div>
+                    </div>
+                    <button type="button" id="btn-remove-announcement-image" class="btn-action-sm btn-action-danger" style="padding:4px 10px; font-size:11px;">✕ Remove Image</button>
+                  </div>
+                </div>
+
+                <!-- Broadcast Schedule & Timing -->
+                <div class="form-group" style="grid-column: 1 / -1; background:#11130d; border:1px solid #2f3420; padding:14px 16px; border-radius:4px;">
+                  <label class="form-label" style="font-size:13px; font-weight:800; color:#d4d8c2; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                    <span>⏱ Broadcast Schedule &amp; Release Timing</span>
+                    <span style="font-size:11px; font-weight:normal; color:var(--muted);">(Post immediately or schedule for automated future release)</span>
+                  </label>
+                  
+                  <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:bold; color:var(--text);">
+                      <input type="radio" name="announcement-schedule-mode" id="schedule-mode-now" value="now" checked style="accent-color:var(--lime); width:17px; height:17px;" />
+                      <span>⚡ Broadcast Immediately (Live Now)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:bold; color:var(--text);">
+                      <input type="radio" name="announcement-schedule-mode" id="schedule-mode-later" value="later" style="accent-color:var(--lime); width:17px; height:17px;" />
+                      <span>📅 Schedule for Later Date/Time</span>
+                    </label>
+                  </div>
+
+                  <div id="announcement-schedule-time-wrap" style="display:none; padding-top:12px; border-top:1px dashed #2f3420; margin-top:8px;">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; align-items:center;">
+                      <div>
+                        <label class="form-label" for="announcement-scheduled-for-input" style="font-size:11.5px; margin-bottom:4px; color:var(--lime); font-weight:700;">Set Future Release Date &amp; Time (Local)</label>
+                        <input type="datetime-local" id="announcement-scheduled-for-input" class="form-control" style="font-size:12.5px; padding:8px;" />
+                      </div>
+                      <div>
+                        <label class="form-label" style="font-size:11px; margin-bottom:4px; color:var(--muted); font-weight:600;">Quick Presets</label>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                          <button type="button" class="btn-action-sm btn-schedule-preset" data-preset="1h" style="font-size:11px; padding:3px 9px;">+1 Hour</button>
+                          <button type="button" class="btn-action-sm btn-schedule-preset" data-preset="tonight" style="font-size:11px; padding:3px 9px;">Tonight 8PM</button>
+                          <button type="button" class="btn-action-sm btn-schedule-preset" data-preset="tomorrow" style="font-size:11px; padding:3px 9px;">Tomorrow 12PM</button>
+                          <button type="button" class="btn-action-sm btn-schedule-preset" data-preset="friday" style="font-size:11px; padding:3px 9px;">This Fri 6PM</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="announcement-schedule-status-hint" style="margin-top:10px; font-size:11.5px; color:#ffb300; display:flex; align-items:center; gap:6px;">
+                      <span>⏳ Scheduled transmissions remain hidden on the homepage until the set timestamp unlocks them.</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="form-group" style="display:flex; align-items:center; gap:24px; padding-top:10px; grid-column: 1 / -1;">
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
                     <input type="checkbox" id="announcement-is-active-input" checked style="accent-color:var(--lime); width:18px; height:18px;" />
@@ -1304,10 +1624,13 @@
                 </div>
               </div>
 
-              <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
+              <div style="display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap;">
                 <button type="submit" id="btn-submit-announcement" class="btn-paypal-submit" style="width:auto; padding:12px 30px;">
                   <span id="btn-submit-announcement-text">Broadcast Announcement</span>
                   <span id="btn-submit-announcement-icon">📢</span>
+                </button>
+                <button type="button" id="btn-delete-current-announcement" class="btn-action-sm btn-action-danger" style="display:none; padding:10px 20px; font-size:13px; color:#ef4444; border-color:#ef4444;">
+                  🗑 Delete This Announcement
                 </button>
               </div>
             </form>
@@ -1316,7 +1639,7 @@
           <!-- Announcements History Table -->
           <div class="admin-panel-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
-              <h3 class="admin-card-title" style="margin:0;">Dispatched Bulletins & Archive</h3>
+              <h3 class="admin-card-title" style="margin:0;">Dispatched Bulletins &amp; Archive</h3>
               <button type="button" id="btn-refresh-announcements" class="btn-action-sm">↻ Refresh Bulletins</button>
             </div>
             <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
@@ -1329,14 +1652,15 @@
                     <th>Status</th>
                     <th>Theme</th>
                     <th>Tag</th>
-                    <th>Headline & Message</th>
+                    <th>Media</th>
+                    <th>Headline &amp; Message</th>
                     <th>Action Link</th>
                     <th>Transmitted</th>
                     <th>Quick Actions</th>
                   </tr>
                 </thead>
                 <tbody id="admin-announcements-tbody">
-                  <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:30px;">Loading announcements registry...</td></tr>
+                  <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:30px;">Loading announcements registry...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1949,6 +2273,7 @@
                   <label class="form-label" for="staff-input-role">Assigned Staff Role *</label>
                   <select id="staff-input-role" class="form-control" required>
                     <option value="referee">⚔ Match Referee (Scores, Stats, Schedule)</option>
+                    <option value="stats_official">📊 Stats &amp; Scoring Official (AI Scoreboard Scanner, Map Stats)</option>
                     <option value="roster_manager">🎯 Roster Admin (Teams, Rosters, Enlistment)</option>
                     <option value="recruiter">📋 Recruitment Officer (Review Signups, Free Agents)</option>
                     <option value="broadcaster">🔴 Broadcast Media Lead (Livestreams, VODs, Announcements)</option>
@@ -2496,8 +2821,20 @@
           const targetContent = document.getElementById(targetId);
           if (targetContent) targetContent.style.display = "block";
 
-          if (targetId === "tab-player-stats" && currentSelectedPlayerId) {
-            renderSelectedPlayerTelemetry(currentSelectedPlayerId);
+          if (targetId === "tab-player-stats" || targetId === "tab-scoreboard-scanner") {
+            targetId = "tab-matches";
+          }
+          if (targetId === "tab-matches") {
+            populateReporterTeamDropdowns();
+            loadLiveAndUpcomingMatchesForReporter();
+            updateTeamTitles();
+            if (document.querySelectorAll("#reporter-team1-slots .player-stat-slot").length === 0) {
+              renderTeamPlayerSlots(1);
+              renderTeamPlayerSlots(2);
+            }
+            if (currentSelectedPlayerId) {
+              renderSelectedPlayerTelemetry(currentSelectedPlayerId);
+            }
           }
           if (targetId === "tab-announcements") {
             loadAnnouncements();
@@ -2879,6 +3216,15 @@
               if (playerTeamSelect) {
                 playerTeamSelect.innerHTML = `<option value="">-- Free Agent (Unassigned) --</option>` + optionsHtml;
               }
+              const scanTeam1Select = document.getElementById("scan-team1-select");
+              const scanTeam2Select = document.getElementById("scan-team2-select");
+              if (scanTeam1Select && (!scanTeam1Select.value || scanTeam1Select.options.length === 0)) {
+                scanTeam1Select.innerHTML = optionsHtml;
+              }
+              if (scanTeam2Select && (!scanTeam2Select.value || scanTeam2Select.options.length === 0)) {
+                scanTeam2Select.innerHTML = optionsHtml;
+                if (cachedTeams.length > 1) scanTeam2Select.selectedIndex = 1;
+              }
 
               // Attach row listeners
               document.querySelectorAll(".btn-quick-win").forEach(btn => {
@@ -2932,7 +3278,7 @@
               if (select && (!select.value || select.value != currentSelectedPlayerId)) {
                 select.value = currentSelectedPlayerId;
               }
-              const statsContent = document.getElementById("tab-player-stats");
+              const statsContent = document.getElementById("tab-matches");
               if (statsContent && statsContent.style.display !== "none") {
                 renderSelectedPlayerTelemetry(currentSelectedPlayerId);
               }
@@ -3048,22 +3394,20 @@
         });
 
         function switchToPlayerStatsTab(playerId) {
-          navBtns.forEach(b => b.classList.remove("active"));
-          tabContents.forEach(c => c.style.display = "none");
+          switchActiveTab("tab-matches");
 
-          const statsTabBtn = document.querySelector('.admin-nav-btn[data-tab="tab-player-stats"]');
-          if (statsTabBtn) statsTabBtn.classList.add("active");
-
-          const statsContent = document.getElementById("tab-player-stats");
-          if (statsContent) statsContent.style.display = "block";
+          const details = document.getElementById("details-combatant-telemetry");
+          if (details) details.open = true;
 
           if (playerId) {
             currentSelectedPlayerId = playerId;
             const select = document.getElementById("stats-player-select");
             if (select) select.value = playerId;
             renderSelectedPlayerTelemetry(playerId);
+            setTimeout(() => {
+              details?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
           }
-          window.scrollTo({ top: 0, behavior: "smooth" });
         }
 
         async function renderSelectedPlayerTelemetry(playerId) {
@@ -3791,30 +4135,585 @@
           }
         });
 
-        // Record Match Score Submit
-        document.getElementById("form-record-match")?.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const team1Id = document.getElementById("match-team-1").value;
-          const team2Id = document.getElementById("match-team-2").value;
-          const score1 = parseInt(document.getElementById("match-score-1").value) || 0;
-          const score2 = parseInt(document.getElementById("match-score-2").value) || 0;
-          const winnerChoice = document.getElementById("match-winner").value;
-          const winnerId = winnerChoice === "1" ? team1Id : team2Id;
-          const points = parseInt(document.getElementById("match-points").value) || 10;
+        // ==========================================
+        // UNIFIED MATCH SCORES & PLAYER STATS CONTROLLER
+        // ==========================================
+        let reporterLiveAndUpcomingMatches = [];
 
-          if (team1Id === team2Id) {
-            alert("Team 1 and Team 2 cannot be the same squad.");
+        const REPORTER_SAMPLE_DATA = {
+          map_name: "Karachi",
+          game_mode: "Hardpoint",
+          map_score: "250 - 212",
+          score1: 3,
+          score2: 1,
+          winner: "1",
+          status: "Completed",
+          team1_players: [
+            { kills: 28, deaths: 22, damage: 4350, obj: "1:12" },
+            { kills: 26, deaths: 23, damage: 4100, obj: "0:54" },
+            { kills: 23, deaths: 24, damage: 3850, obj: "1:35" },
+            { kills: 21, deaths: 20, damage: 3950, obj: "1:48" }
+          ],
+          team2_players: [
+            { kills: 29, deaths: 23, damage: 4520, obj: "0:58" },
+            { kills: 25, deaths: 26, damage: 4010, obj: "0:45" },
+            { kills: 22, deaths: 25, damage: 3720, obj: "1:14" },
+            { kills: 23, deaths: 24, damage: 3900, obj: "1:28" }
+          ]
+        };
+
+        async function loadLiveAndUpcomingMatchesForReporter() {
+          try {
+            const matches = await window.LeagueDB.getScheduledMatches();
+            reporterLiveAndUpcomingMatches = matches || [];
+
+            const select = document.getElementById("reporter-match-select");
+            const optLive = document.getElementById("reporter-optgroup-live");
+            const optUpcoming = document.getElementById("reporter-optgroup-upcoming");
+            const optCompleted = document.getElementById("reporter-optgroup-completed");
+            const chipsContainer = document.getElementById("reporter-quick-match-chips");
+
+            if (!select || !optLive || !optUpcoming || !optCompleted) return;
+
+            const liveMatches = reporterLiveAndUpcomingMatches.filter(m => (m.status || "").toLowerCase() === "live");
+            const upcomingMatches = reporterLiveAndUpcomingMatches.filter(m => (m.status || "").toLowerCase() === "scheduled");
+            const completedMatches = reporterLiveAndUpcomingMatches.filter(m => (m.status || "").toLowerCase() === "completed");
+
+            // 1. Populate Live Optgroup
+            if (liveMatches.length > 0) {
+              optLive.innerHTML = liveMatches.map(m => {
+                return `<option value="${m.id}" style="color:#ef4444; font-weight:bold;">🔴 [LIVE NOW] ${escapeHtml(m.team1_name)} vs ${escapeHtml(m.team2_name)} (${m.team1_score ?? 0}-${m.team2_score ?? 0})</option>`;
+              }).join("");
+            } else {
+              optLive.innerHTML = `<option disabled>No matches currently live</option>`;
+            }
+
+            // 2. Populate Upcoming Optgroup
+            if (upcomingMatches.length > 0) {
+              optUpcoming.innerHTML = upcomingMatches.map(m => {
+                const isPreseason = Number(m.week_number) <= 2;
+                const weekStr = isPreseason ? `Preseason W${m.week_number}` : `W${Number(m.week_number) - 2}`;
+                const dateStr = m.scheduled_date ? ` · ${m.scheduled_date}` : "";
+                return `<option value="${m.id}">⏳ [${weekStr}${dateStr}] ${escapeHtml(m.team1_name)} vs ${escapeHtml(m.team2_name)}</option>`;
+              }).join("");
+            } else {
+              optUpcoming.innerHTML = `<option disabled>No scheduled upcoming matches</option>`;
+            }
+
+            // 3. Populate Completed Optgroup
+            if (completedMatches.length > 0) {
+              optCompleted.innerHTML = completedMatches.slice(0, 15).map(m => {
+                return `<option value="${m.id}">✓ ${escapeHtml(m.team1_name)} (${m.team1_score ?? 0}) vs ${escapeHtml(m.team2_name)} (${m.team2_score ?? 0})</option>`;
+              }).join("");
+            } else {
+              optCompleted.innerHTML = `<option disabled>No completed matches</option>`;
+            }
+
+            // 4. Quick Selection Chips
+            if (chipsContainer) {
+              const chips = [];
+              liveMatches.forEach(m => {
+                chips.push(`
+                  <button type="button" class="btn-action-sm btn-quick-select-match" data-match-id="${m.id}" style="background:rgba(239,68,68,0.15); border-color:#ef4444; color:#fca5a5; font-size:11px; padding:3px 8px; font-weight:700;">
+                    🔴 LIVE: ${escapeHtml(m.team1_tag || m.team1_name)} vs ${escapeHtml(m.team2_tag || m.team2_name)}
+                  </button>
+                `);
+              });
+
+              upcomingMatches.slice(0, 4).forEach(m => {
+                chips.push(`
+                  <button type="button" class="btn-action-sm btn-quick-select-match" data-match-id="${m.id}" style="border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:3px 8px;">
+                    ⏳ ${escapeHtml(m.team1_tag || m.team1_name)} vs ${escapeHtml(m.team2_tag || m.team2_name)}
+                  </button>
+                `);
+              });
+
+              chips.push(`
+                <button type="button" class="btn-action-sm btn-quick-select-match" data-match-id="__custom__" style="color:var(--muted); font-size:11px; padding:3px 8px;">
+                  ➕ Custom Matchup
+                </button>
+              `);
+
+              chipsContainer.innerHTML = chips.join("");
+
+              chipsContainer.querySelectorAll(".btn-quick-select-match").forEach(chip => {
+                chip.addEventListener("click", () => {
+                  const matchId = chip.getAttribute("data-match-id");
+                  selectReporterMatch(matchId);
+                });
+              });
+            }
+          } catch (e) {
+            console.warn("Error loading live & upcoming matches for reporter:", e);
+          }
+        }
+
+        function populateReporterTeamDropdowns() {
+          const t1Select = document.getElementById("match-team-1");
+          const t2Select = document.getElementById("match-team-2");
+          if (!t1Select || !t2Select) return;
+
+          const currentT1 = t1Select.value;
+          const currentT2 = t2Select.value;
+
+          const optionsHtml = cachedTeams.map(t => 
+            `<option value="${t.id}">${escapeHtml(t.name)} [${escapeHtml(t.tag || "CDL")}]</option>`
+          ).join("");
+
+          t1Select.innerHTML = `<option value="">-- Choose Team 1 --</option>` + optionsHtml;
+          t2Select.innerHTML = `<option value="">-- Choose Team 2 --</option>` + optionsHtml;
+
+          if (currentT1 && cachedTeams.some(t => String(t.id) === String(currentT1))) {
+            t1Select.value = currentT1;
+          } else if (cachedTeams.length > 0) {
+            t1Select.value = cachedTeams[0].id;
+          }
+
+          if (currentT2 && cachedTeams.some(t => String(t.id) === String(currentT2))) {
+            t2Select.value = currentT2;
+          } else if (cachedTeams.length > 1) {
+            t2Select.value = cachedTeams[1].id;
+          }
+        }
+
+        function selectReporterMatch(matchId) {
+          const select = document.getElementById("reporter-match-select");
+          const hiddenIdInput = document.getElementById("reporter-selected-match-id");
+          const metaEl = document.getElementById("reporter-match-meta");
+          if (select) select.value = matchId;
+          if (hiddenIdInput) hiddenIdInput.value = (matchId === "__custom__") ? "" : matchId;
+
+          if (matchId === "__custom__" || !matchId) {
+            if (metaEl) metaEl.textContent = "Custom Matchup · Standings points can be applied";
+            updateTeamTitles();
+            renderTeamPlayerSlots(1);
+            renderTeamPlayerSlots(2);
             return;
           }
 
-          const res = await window.LeagueDB.recordMatchResult(team1Id, team2Id, score1, score2, winnerId, points);
-          if (res.success) {
-            showToast(`✓ Match Result Committed! Standings points & records updated.`);
-            loadTeams();
-          } else {
-            alert("Failed to record match result: " + res.error);
+          const match = reporterLiveAndUpcomingMatches.find(m => String(m.id) === String(matchId));
+          if (!match) return;
+
+          const t1Select = document.getElementById("match-team-1");
+          const t2Select = document.getElementById("match-team-2");
+          const score1Input = document.getElementById("match-score-1");
+          const score2Input = document.getElementById("match-score-2");
+          const winnerSelect = document.getElementById("match-winner");
+          const statusSelect = document.getElementById("match-status");
+          const dateInput = document.getElementById("combined-match-date");
+          const standingsCheck = document.getElementById("match-update-standings-check");
+
+          if (t1Select && match.team1_id) t1Select.value = match.team1_id;
+          if (t2Select && match.team2_id) t2Select.value = match.team2_id;
+          if (score1Input) score1Input.value = match.team1_score ?? 3;
+          if (score2Input) score2Input.value = match.team2_score ?? 1;
+          if (statusSelect) statusSelect.value = match.status || "Completed";
+          if (dateInput && match.scheduled_date) dateInput.value = match.scheduled_date;
+
+          if (winnerSelect) {
+            if (Number(match.team1_score) > Number(match.team2_score)) {
+              winnerSelect.value = "1";
+            } else if (Number(match.team2_score) > Number(match.team1_score)) {
+              winnerSelect.value = "2";
+            } else {
+              winnerSelect.value = "1";
+            }
+          }
+
+          const isPreseason = Number(match.week_number) <= 2;
+          if (standingsCheck) {
+            if (isPreseason) {
+              standingsCheck.checked = false;
+            } else {
+              standingsCheck.checked = !match.standings_recorded;
+            }
+          }
+
+          if (metaEl) {
+            const weekLabel = isPreseason ? `Preseason Week ${match.week_number}` : `Regular Season Week ${Number(match.week_number) - 2}`;
+            metaEl.textContent = `${weekLabel} · Match #${match.match_number || match.id} · Best of ${match.best_of || 5} · Status: ${match.status || 'Scheduled'}`;
+          }
+
+          updateTeamTitles();
+          renderTeamPlayerSlots(1);
+          renderTeamPlayerSlots(2);
+        }
+
+        function updateTeamTitles() {
+          const t1Id = document.getElementById("match-team-1")?.value;
+          const t2Id = document.getElementById("match-team-2")?.value;
+          const t1 = cachedTeams.find(t => String(t.id) === String(t1Id));
+          const t2 = cachedTeams.find(t => String(t.id) === String(t2Id));
+
+          const t1Title = document.getElementById("reporter-team1-title");
+          const t2Title = document.getElementById("reporter-team2-title");
+
+          if (t1Title) t1Title.textContent = t1 ? `${t1.name} [${t1.tag || 'CDL'}] Roster` : "Team 1 Combatants";
+          if (t2Title) t2Title.textContent = t2 ? `${t2.name} [${t2.tag || 'CDL'}] Roster` : "Team 2 Combatants";
+        }
+
+        function createPlayerSlotHtml(teamNum, slotIndex, selectedPlayerId = null, initialStats = null) {
+          const teamId = document.getElementById(teamNum === 1 ? "match-team-1" : "match-team-2")?.value;
+          const teamPlayers = cachedPlayers.filter(p => (p.team_id && String(p.team_id) === String(teamId)) || (p.teams?.id && String(p.teams.id) === String(teamId)));
+          const otherPlayers = cachedPlayers.filter(p => !teamPlayers.includes(p));
+
+          const kills = initialStats?.kills ?? 0;
+          const deaths = initialStats?.deaths ?? 0;
+          const damage = initialStats?.damage ?? "";
+          const obj = initialStats?.obj ?? "";
+          const kd = (deaths > 0) ? (kills / deaths).toFixed(2) : (kills > 0 ? Number(kills).toFixed(2) : "0.00");
+          const kdColor = Number(kd) >= 1.0 ? "#5bf488" : (kills === 0 && deaths === 0 ? "#a3a793" : "#ff5b5b");
+
+          let playerOptions = `<option value="">-- Leave Slot Empty --</option>`;
+          if (teamPlayers.length > 0) {
+            playerOptions += `<optgroup label="Squad Roster">` +
+              teamPlayers.map(p => `<option value="${p.id}" ${String(p.id) === String(selectedPlayerId) ? 'selected' : ''}>${escapeHtml(p.gamertag)} (${p.role || 'Player'})</option>`).join("") +
+              `</optgroup>`;
+          }
+          if (otherPlayers.length > 0) {
+            playerOptions += `<optgroup label="Other Players & Free Agents">` +
+              otherPlayers.map(p => `<option value="${p.id}" ${String(p.id) === String(selectedPlayerId) ? 'selected' : ''}>${escapeHtml(p.gamertag)} [${p.teams?.tag || 'FA'}]</option>`).join("") +
+              `</optgroup>`;
+          }
+
+          return `
+            <div class="player-stat-slot" data-team="${teamNum}" data-slot="${slotIndex}" style="background:#151711; border:1px solid #282c1a; padding:12px; margin-bottom:10px; border-radius:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                <div style="flex:1;">
+                  <label class="form-label" style="font-size:11px; margin-bottom:2px; color:#d4d8c2;">Slot #${slotIndex + 1} Combatant</label>
+                  <select class="form-control slot-player-select" style="font-weight:700; font-size:13px; padding:6px 8px;">
+                    ${playerOptions}
+                  </select>
+                </div>
+                <div style="width:75px; text-align:center;">
+                  <label class="form-label" style="font-size:11px; margin-bottom:2px;">Live K/D</label>
+                  <span class="slot-kd-badge" style="display:inline-block; padding:4px 6px; font-size:12px; font-weight:800; border-radius:3px; background:#1e2115; color:${kdColor}; min-width:55px;">${kd} K/D</span>
+                </div>
+                <button type="button" class="btn-remove-slot" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:14px; padding:4px 6px;" title="Remove this combatant slot">✕</button>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr 1.2fr 1.2fr; gap:8px;">
+                <div>
+                  <label class="form-label" style="font-size:11px; margin-bottom:2px;">Kills</label>
+                  <input type="number" class="form-control slot-kills" min="0" value="${kills}" style="padding:6px; font-size:13px; text-align:center;" />
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px; margin-bottom:2px;">Deaths</label>
+                  <input type="number" class="form-control slot-deaths" min="0" value="${deaths}" style="padding:6px; font-size:13px; text-align:center;" />
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px; margin-bottom:2px;">Damage</label>
+                  <input type="number" class="form-control slot-damage" min="0" placeholder="e.g. 4200" value="${damage}" style="padding:6px; font-size:13px;" />
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px; margin-bottom:2px;">Objective</label>
+                  <input type="text" class="form-control slot-obj" placeholder="Hill / Caps" value="${escapeHtml(obj)}" style="padding:6px; font-size:13px;" />
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        function bindSlotEvents(slotEl) {
+          const killsInput = slotEl.querySelector(".slot-kills");
+          const deathsInput = slotEl.querySelector(".slot-deaths");
+          const kdBadge = slotEl.querySelector(".slot-kd-badge");
+
+          function updateKd() {
+            const k = parseInt(killsInput?.value || "0", 10) || 0;
+            const d = parseInt(deathsInput?.value || "0", 10) || 0;
+            const kd = d > 0 ? (k / d).toFixed(2) : (k > 0 ? k.toFixed(2) : "0.00");
+            if (kdBadge) {
+              kdBadge.textContent = kd + " K/D";
+              kdBadge.style.color = Number(kd) >= 1.0 ? "#5bf488" : (k === 0 && d === 0 ? "#a3a793" : "#ff5b5b");
+            }
+          }
+
+          killsInput?.addEventListener("input", updateKd);
+          deathsInput?.addEventListener("input", updateKd);
+
+          slotEl.querySelector(".btn-remove-slot")?.addEventListener("click", () => {
+            slotEl.remove();
+          });
+        }
+
+        function renderTeamPlayerSlots(teamNum, sampleStatsList = null) {
+          const container = document.getElementById(`reporter-team${teamNum}-slots`);
+          if (!container) return;
+
+          const teamId = document.getElementById(teamNum === 1 ? "match-team-1" : "match-team-2")?.value;
+          const teamPlayers = cachedPlayers.filter(p => (p.team_id && String(p.team_id) === String(teamId)) || (p.teams?.id && String(p.teams.id) === String(teamId)));
+
+          const slotCount = Math.max(4, teamPlayers.length);
+          let html = "";
+          for (let i = 0; i < slotCount; i++) {
+            const assignedPlayer = teamPlayers[i] ? teamPlayers[i].id : null;
+            const stats = sampleStatsList ? sampleStatsList[i] : null;
+            html += createPlayerSlotHtml(teamNum, i, assignedPlayer, stats);
+          }
+          container.innerHTML = html;
+
+          container.querySelectorAll(".player-stat-slot").forEach(slot => {
+            bindSlotEvents(slot);
+          });
+        }
+
+        // Add additional slot buttons
+        document.getElementById("btn-add-team1-slot")?.addEventListener("click", () => {
+          const container = document.getElementById("reporter-team1-slots");
+          if (!container) return;
+          const currentCount = container.querySelectorAll(".player-stat-slot").length;
+          const temp = document.createElement("div");
+          temp.innerHTML = createPlayerSlotHtml(1, currentCount, null, null);
+          const newSlot = temp.firstElementChild;
+          container.appendChild(newSlot);
+          bindSlotEvents(newSlot);
+        });
+
+        document.getElementById("btn-add-team2-slot")?.addEventListener("click", () => {
+          const container = document.getElementById("reporter-team2-slots");
+          if (!container) return;
+          const currentCount = container.querySelectorAll(".player-stat-slot").length;
+          const temp = document.createElement("div");
+          temp.innerHTML = createPlayerSlotHtml(2, currentCount, null, null);
+          const newSlot = temp.firstElementChild;
+          container.appendChild(newSlot);
+          bindSlotEvents(newSlot);
+        });
+
+        // Team Selector Changes
+        document.getElementById("match-team-1")?.addEventListener("change", () => {
+          updateTeamTitles();
+          renderTeamPlayerSlots(1);
+        });
+        document.getElementById("match-team-2")?.addEventListener("change", () => {
+          updateTeamTitles();
+          renderTeamPlayerSlots(2);
+        });
+
+        // Match Schedule Select Change
+        document.getElementById("reporter-match-select")?.addEventListener("change", (e) => {
+          selectReporterMatch(e.target.value);
+        });
+
+        // Custom Map Toggle
+        document.getElementById("combined-map-name")?.addEventListener("change", (e) => {
+          const isCustom = e.target.value === "__custom__";
+          const group = document.getElementById("combined-custom-map-group");
+          if (group) group.style.display = isCustom ? "block" : "none";
+        });
+
+        // Refresh Schedule Matches Button
+        document.getElementById("btn-refresh-reporter-schedule")?.addEventListener("click", async () => {
+          await loadLiveAndUpcomingMatchesForReporter();
+          showToast("✓ Schedule matches reloaded!");
+        });
+
+        // Fill Sample CDL Telemetry
+        document.getElementById("btn-fill-sample-stats")?.addEventListener("click", () => {
+          const mapSelect = document.getElementById("combined-map-name");
+          const modeSelect = document.getElementById("combined-game-mode");
+          const scoreInput = document.getElementById("combined-map-score");
+          const s1 = document.getElementById("match-score-1");
+          const s2 = document.getElementById("match-score-2");
+          const winner = document.getElementById("match-winner");
+
+          if (mapSelect) mapSelect.value = REPORTER_SAMPLE_DATA.map_name;
+          if (modeSelect) modeSelect.value = REPORTER_SAMPLE_DATA.game_mode;
+          if (scoreInput) scoreInput.value = REPORTER_SAMPLE_DATA.map_score;
+          if (s1) s1.value = REPORTER_SAMPLE_DATA.score1;
+          if (s2) s2.value = REPORTER_SAMPLE_DATA.score2;
+          if (winner) winner.value = REPORTER_SAMPLE_DATA.winner;
+
+          renderTeamPlayerSlots(1, REPORTER_SAMPLE_DATA.team1_players);
+          renderTeamPlayerSlots(2, REPORTER_SAMPLE_DATA.team2_players);
+
+          showToast("⚡ Sample CDL match & player telemetry filled!");
+        });
+
+        // Clear Form Button
+        document.getElementById("btn-clear-combined-form")?.addEventListener("click", () => {
+          if (confirm("Reset current scores and player telemetry slots?")) {
+            document.getElementById("match-score-1").value = 0;
+            document.getElementById("match-score-2").value = 0;
+            document.getElementById("match-map-score-1").value = "";
+            document.getElementById("match-map-score-2").value = "";
+            document.getElementById("combined-map-score").value = "";
+            renderTeamPlayerSlots(1);
+            renderTeamPlayerSlots(2);
+            const resBox = document.getElementById("reporter-commit-result");
+            if (resBox) resBox.style.display = "none";
+            showToast("✓ Form cleared.");
           }
         });
+
+        // Commit Form Submission
+        document.getElementById("form-combined-match-reporter")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const submitBtn = document.getElementById("btn-submit-combined-match");
+          const resultBox = document.getElementById("reporter-commit-result");
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>⏳ Committing Scores &amp; Telemetry...</span>`;
+          }
+
+          try {
+            const matchId = document.getElementById("reporter-selected-match-id")?.value;
+            const team1Id = document.getElementById("match-team-1")?.value;
+            const team2Id = document.getElementById("match-team-2")?.value;
+            const score1 = parseInt(document.getElementById("match-score-1")?.value || "0", 10);
+            const score2 = parseInt(document.getElementById("match-score-2")?.value || "0", 10);
+            const winnerChoice = document.getElementById("match-winner")?.value || "1";
+            const winnerId = winnerChoice === "1" ? team1Id : team2Id;
+            const status = document.getElementById("match-status")?.value || "Completed";
+            const points = parseInt(document.getElementById("match-points")?.value || "10", 10);
+            const updateStandings = document.getElementById("match-update-standings-check")?.checked || false;
+
+            let mapName = document.getElementById("combined-map-name")?.value || "Karachi";
+            if (mapName === "__custom__") {
+              mapName = document.getElementById("combined-custom-map-name")?.value.trim() || "Custom Map";
+            }
+            const gameMode = document.getElementById("combined-game-mode")?.value || "Hardpoint";
+            const mapScore = document.getElementById("combined-map-score")?.value.trim() || "";
+            const matchDate = document.getElementById("combined-match-date")?.value || new Date().toISOString().split("T")[0];
+
+            if (!team1Id || !team2Id) {
+              alert("Please select both Team 1 and Team 2.");
+              return;
+            }
+            if (team1Id === team2Id) {
+              alert("Team 1 and Team 2 cannot be the same squad.");
+              return;
+            }
+
+            const t1 = cachedTeams.find(t => String(t.id) === String(team1Id));
+            const t2 = cachedTeams.find(t => String(t.id) === String(team2Id));
+            const t1Name = t1 ? t1.name : "Team 1";
+            const t2Name = t2 ? t2.name : "Team 2";
+            const winnerName = winnerChoice === "1" ? t1Name : t2Name;
+
+            // 1. Commit Match Series Result
+            let matchRecorded = false;
+            if (matchId) {
+              const res = await window.LeagueDB.recordScheduledMatchResult(matchId, {
+                team1_score: score1,
+                team2_score: score2,
+                winner_id: winnerId,
+                winner_name: winnerName,
+                status: status,
+                scheduled_date: matchDate,
+                update_standings: updateStandings,
+                pointsDelta: points
+              });
+              if (res.success) matchRecorded = true;
+            } else {
+              // Custom / Exhibition Match
+              if (updateStandings) {
+                const res = await window.LeagueDB.recordMatchResult(team1Id, team2Id, score1, score2, winnerId, points);
+                if (res.success) matchRecorded = true;
+              } else {
+                matchRecorded = true;
+              }
+            }
+
+            // 2. Gather Player Stats from Both Teams
+            const playerStatsBatch = [];
+
+            // Team 1 Slots
+            document.querySelectorAll("#reporter-team1-slots .player-stat-slot").forEach(slot => {
+              const pid = slot.querySelector(".slot-player-select")?.value;
+              if (!pid) return;
+              const kills = parseInt(slot.querySelector(".slot-kills")?.value || "0", 10);
+              const deaths = parseInt(slot.querySelector(".slot-deaths")?.value || "0", 10);
+              const damage = parseInt(slot.querySelector(".slot-damage")?.value || "0", 10) || 0;
+              const result = winnerChoice === "1" ? "W" : "L";
+
+              playerStatsBatch.push({
+                player_id: pid,
+                map_name: mapName,
+                game_mode: gameMode,
+                result: result,
+                kills: kills,
+                deaths: deaths,
+                damage: damage,
+                opponent_team: t2Name,
+                score: mapScore || `${score1} - ${score2}`,
+                match_date: matchDate
+              });
+            });
+
+            // Team 2 Slots
+            document.querySelectorAll("#reporter-team2-slots .player-stat-slot").forEach(slot => {
+              const pid = slot.querySelector(".slot-player-select")?.value;
+              if (!pid) return;
+              const kills = parseInt(slot.querySelector(".slot-kills")?.value || "0", 10);
+              const deaths = parseInt(slot.querySelector(".slot-deaths")?.value || "0", 10);
+              const damage = parseInt(slot.querySelector(".slot-damage")?.value || "0", 10) || 0;
+              const result = winnerChoice === "2" ? "W" : "L";
+
+              playerStatsBatch.push({
+                player_id: pid,
+                map_name: mapName,
+                game_mode: gameMode,
+                result: result,
+                kills: kills,
+                deaths: deaths,
+                damage: damage,
+                opponent_team: t1Name,
+                score: mapScore || `${score1} - ${score2}`,
+                match_date: matchDate
+              });
+            });
+
+            // 3. Batch Commit Player Stats & Recalculate Telemetry
+            let statsCommittedCount = 0;
+            if (playerStatsBatch.length > 0) {
+              const batchRes = await window.LeagueDB.addPlayerMapStatsBatch(playerStatsBatch);
+              statsCommittedCount = batchRes.insertedCount || (batchRes.success ? playerStatsBatch.length : 0);
+            }
+
+            // 4. Refresh Standings, Rosters, and Schedule
+            await Promise.all([loadTeams(), loadPlayers(), loadAdminSchedule()]);
+            await loadLiveAndUpcomingMatchesForReporter();
+
+            if (resultBox) {
+              resultBox.style.display = "block";
+              resultBox.innerHTML = `
+                <div style="color:var(--lime); font-weight:800; font-size:14px; margin-bottom:6px;">
+                  ✓ Match Score &amp; Player Telemetry Successfully Committed!
+                </div>
+                <div style="color:#d4d8c2; line-height:1.6;">
+                  • <strong>Series Result:</strong> ${escapeHtml(t1Name)} (${score1}) vs ${escapeHtml(t2Name)} (${score2}) — Declared Winner: <strong>${escapeHtml(winnerName)}</strong><br>
+                  • <strong>Standings Impact:</strong> ${updateStandings ? `Updated (+1 Win &amp; ${points} pts to ${escapeHtml(winnerName)})` : 'Exhibition (Standings unchanged)'}<br>
+                  • <strong>Map Details:</strong> ${escapeHtml(mapName)} — ${escapeHtml(gameMode)}${mapScore ? ` (${escapeHtml(mapScore)})` : ''}<br>
+                  • <strong>Player Telemetry:</strong> Logged combat records for <strong>${statsCommittedCount}</strong> player(s) with overall season K/D and W/L recalculated.
+                </div>
+              `;
+            }
+
+            showToast(`✓ Official Match Results & ${statsCommittedCount} Player Stats Committed!`);
+
+          } catch (err) {
+            console.error("Error committing combined match report:", err);
+            alert("Error committing match report: " + (err.message || String(err)));
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>⚔ Commit Match Scores &amp; Player Telemetry</span> <span>✓</span>`;
+            }
+          }
+        });
+
+        // Initialize Reporter Date
+        const reporterDateEl = document.getElementById("combined-match-date");
+        if (reporterDateEl && !reporterDateEl.value) {
+          reporterDateEl.value = new Date().toISOString().split("T")[0];
+        }
+        populateReporterTeamDropdowns();
+        loadLiveAndUpcomingMatchesForReporter();
+        updateTeamTitles();
+        renderTeamPlayerSlots(1);
+        renderTeamPlayerSlots(2);
 
         // Update Live Broadcast
         document.getElementById("form-update-broadcast")?.addEventListener("submit", async (e) => {
@@ -3835,12 +4734,204 @@
         // 5. LEAGUE ANNOUNCEMENTS CONTROLLER
         // ==========================================
 
+        let currentAnnouncementImageUrl = "";
+
+        // Helper: Compress and resize uploaded image with aspect ratio preservation and transparency support
+        function compressAndResizeImage(file, maxWidth = 1440, maxHeight = 900, quality = 0.85) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = reject;
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onerror = () => reject(new Error("Failed to load image file"));
+              img.onload = () => {
+                const origWidth = img.naturalWidth || img.width;
+                const origHeight = img.naturalHeight || img.height;
+                let width = origWidth;
+                let height = origHeight;
+
+                // Proportionally auto-resize if either dimension exceeds bounds
+                if (width > maxWidth || height > maxHeight) {
+                  if (width / maxWidth > height / maxHeight) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                  } else {
+                    width = Math.round((width * maxHeight) / height);
+                    height = maxHeight;
+                  }
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+
+                const isPng = file.type === "image/png";
+                const isWebp = file.type === "image/webp";
+
+                // Non-transparent formats get deep background fill to avoid rendering bugs
+                if (!isPng && !isWebp) {
+                  ctx.fillStyle = "#090a07";
+                  ctx.fillRect(0, 0, width, height);
+                }
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = "high";
+                ctx.drawImage(img, 0, 0, width, height);
+
+                let mimeType = isPng ? "image/png" : (isWebp ? "image/webp" : "image/jpeg");
+                let dataUrl = canvas.toDataURL(mimeType, quality);
+
+                // If PNG dataURL is over 1.2MB, re-encode to JPEG 85% to preserve lightweight DB payload
+                if (isPng && dataUrl.length > 1.2 * 1024 * 1024) {
+                  const fallbackCanvas = document.createElement("canvas");
+                  fallbackCanvas.width = width;
+                  fallbackCanvas.height = height;
+                  const fbCtx = fallbackCanvas.getContext("2d");
+                  fbCtx.fillStyle = "#090a07";
+                  fbCtx.fillRect(0, 0, width, height);
+                  fbCtx.drawImage(canvas, 0, 0);
+                  dataUrl = fallbackCanvas.toDataURL("image/jpeg", quality);
+                }
+
+                const sizeKb = Math.round(dataUrl.length * 0.75 / 1024);
+                resolve({
+                  dataUrl,
+                  origWidth,
+                  origHeight,
+                  width,
+                  height,
+                  sizeKb,
+                  wasResized: (origWidth !== width || origHeight !== height)
+                });
+              };
+              img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        function showImageThumbPreview(label, meta) {
+          const container = document.getElementById("announcement-image-preview-container");
+          const thumb = document.getElementById("announcement-uploaded-thumb");
+          const filenameEl = document.getElementById("announcement-image-filename");
+          const badgeEl = document.getElementById("announcement-image-dimension-badge");
+          if (container && thumb) {
+            container.style.display = "flex";
+            thumb.src = currentAnnouncementImageUrl;
+            if (filenameEl) filenameEl.textContent = label || "Image Attached";
+            if (badgeEl) {
+              if (meta) {
+                if (meta.wasResized) {
+                  badgeEl.textContent = `✓ Auto-Resized: ${meta.origWidth}×${meta.origHeight} ➔ ${meta.width}×${meta.height} px (${meta.sizeKb} KB)`;
+                } else {
+                  badgeEl.textContent = `✓ Resolution: ${meta.width}×${meta.height} px (${meta.sizeKb} KB)`;
+                }
+              } else {
+                badgeEl.textContent = "✓ Graphic ready to embed with announcement";
+              }
+            }
+          }
+        }
+
+        function inspectUrlDimensions(url) {
+          if (!url) return;
+          const testImg = new Image();
+          testImg.onload = () => {
+            const badgeEl = document.getElementById("announcement-image-dimension-badge");
+            if (badgeEl && currentAnnouncementImageUrl === url) {
+              badgeEl.textContent = `✓ Direct Image: ${testImg.naturalWidth}×${testImg.naturalHeight} px (Auto-Scaled)`;
+            }
+          };
+          testImg.src = url;
+        }
+
+        function hideImageThumbPreview() {
+          const container = document.getElementById("announcement-image-preview-container");
+          const thumb = document.getElementById("announcement-uploaded-thumb");
+          const badgeEl = document.getElementById("announcement-image-dimension-badge");
+          if (container) container.style.display = "none";
+          if (thumb) thumb.src = "";
+          if (badgeEl) badgeEl.textContent = "✓ Graphic ready to embed with announcement";
+        }
+
+        // Schedule mode radio change handlers and quick presets
+        const radioNow = document.getElementById("schedule-mode-now");
+        const radioLater = document.getElementById("schedule-mode-later");
+        const scheduleTimeWrap = document.getElementById("announcement-schedule-time-wrap");
+        const scheduledForInput = document.getElementById("announcement-scheduled-for-input");
+        const submitBtnText = document.getElementById("btn-submit-announcement-text");
+        const submitBtnIcon = document.getElementById("btn-submit-announcement-icon");
+
+        function formatDateTimeLocal(d) {
+          const pad = (n) => String(n).padStart(2, "0");
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function updateScheduleModeUI() {
+          const isLater = radioLater && radioLater.checked;
+          if (scheduleTimeWrap) {
+            scheduleTimeWrap.style.display = isLater ? "block" : "none";
+          }
+          if (isLater && scheduledForInput && !scheduledForInput.value) {
+            const defaultDate = new Date(Date.now() + 3600 * 1000);
+            scheduledForInput.value = formatDateTimeLocal(defaultDate);
+          }
+          const isEditing = !!document.getElementById("announcement-id")?.value;
+          if (submitBtnText && submitBtnIcon) {
+            if (isEditing) {
+              submitBtnText.textContent = isLater ? "Save & Schedule Release" : "Save Changes";
+              submitBtnIcon.textContent = isLater ? "📅" : "✓";
+            } else {
+              submitBtnText.textContent = isLater ? "Schedule Announcement Release" : "Broadcast Announcement";
+              submitBtnIcon.textContent = isLater ? "📅" : "📢";
+            }
+          }
+          updateAnnouncementPreview();
+        }
+
+        radioNow?.addEventListener("change", updateScheduleModeUI);
+        radioLater?.addEventListener("change", updateScheduleModeUI);
+        scheduledForInput?.addEventListener("input", updateAnnouncementPreview);
+
+        document.querySelectorAll(".btn-schedule-preset").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const preset = btn.getAttribute("data-preset");
+            const now = new Date();
+            let target = new Date();
+
+            if (preset === "1h") {
+              target = new Date(now.getTime() + 60 * 60 * 1000);
+            } else if (preset === "tonight") {
+              target.setHours(20, 0, 0, 0);
+              if (target <= now) target.setDate(target.getDate() + 1);
+            } else if (preset === "tomorrow") {
+              target.setDate(target.getDate() + 1);
+              target.setHours(12, 0, 0, 0);
+            } else if (preset === "friday") {
+              const day = now.getDay();
+              const dist = (5 + 7 - day) % 7 || 7;
+              target.setDate(now.getDate() + dist);
+              target.setHours(18, 0, 0, 0);
+            }
+
+            if (scheduledForInput) {
+              scheduledForInput.value = formatDateTimeLocal(target);
+            }
+            if (radioLater) {
+              radioLater.checked = true;
+              updateScheduleModeUI();
+            }
+          });
+        });
+
         // Live Visual Preview HUD updater
         function updateAnnouncementPreview() {
           const title = document.getElementById("announcement-title-input")?.value.trim() || "Season 1 Official Bracket Seeding & Roster Lock";
           const message = document.getElementById("announcement-message-input")?.value.trim() || "Rosters for Season 1 lock this Friday at 11:59 PM EST. Team captains must ensure all player Activision IDs and roles are confirmed in the recruitment terminal before seedings are locked.";
           const tag = document.getElementById("announcement-tag-input")?.value.trim() || "Official Update";
           const color = document.getElementById("announcement-color-input")?.value || "lime";
+          const imageFit = document.getElementById("announcement-image-fit-input")?.value || "contain";
           const linkUrl = document.getElementById("announcement-link-url-input")?.value.trim();
           const linkText = document.getElementById("announcement-link-text-input")?.value.trim() || "View Tournament Brackets ↗";
           const isPinned = document.getElementById("announcement-pinned-input")?.checked;
@@ -3849,10 +4940,18 @@
           const beaconEl = document.getElementById("preview-announcement-beacon");
           const tagEl = document.getElementById("preview-announcement-tag");
           const pinnedEl = document.getElementById("preview-announcement-pinned");
+          const scheduledEl = document.getElementById("preview-announcement-scheduled");
+          const dateEl = document.getElementById("preview-announcement-date");
           const titleEl = document.getElementById("preview-announcement-title");
           const bodyEl = document.getElementById("preview-announcement-body");
+          const imageWrap = document.getElementById("preview-announcement-image-wrap");
+          const previewImg = document.getElementById("preview-announcement-image");
           const ctaEl = document.getElementById("preview-announcement-cta");
           const ctaTextEl = document.getElementById("preview-announcement-cta-text");
+
+          const isLaterMode = document.getElementById("schedule-mode-later")?.checked;
+          const scheduledVal = document.getElementById("announcement-scheduled-for-input")?.value;
+          const isScheduledFuture = isLaterMode && scheduledVal && new Date(scheduledVal) > new Date();
 
           const colorClass = ["amber", "red", "cyan"].includes(color) ? color : "";
           if (bannerEl) bannerEl.className = colorClass ? `announcement-banner ${colorClass}` : "announcement-banner";
@@ -3862,8 +4961,32 @@
             tagEl.textContent = tag.toUpperCase();
           }
           if (pinnedEl) pinnedEl.style.display = isPinned ? "inline-block" : "none";
+          if (scheduledEl) scheduledEl.style.display = isScheduledFuture ? "inline-block" : "none";
+
+          if (dateEl) {
+            if (isScheduledFuture) {
+              const d = new Date(scheduledVal);
+              dateEl.textContent = `DROPS ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} AT ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+            } else {
+              dateEl.textContent = "TRANSMITTED TODAY";
+            }
+          }
+
           if (titleEl) titleEl.textContent = title;
           if (bodyEl) bodyEl.textContent = message;
+
+          if (imageWrap && previewImg) {
+            if (currentAnnouncementImageUrl) {
+              imageWrap.style.display = "flex";
+              imageWrap.className = `announcement-media ${imageFit === 'cover' ? 'fit-cover' : (imageFit === 'banner' ? 'fit-banner' : '')}`;
+              previewImg.className = "announcement-img";
+              previewImg.src = currentAnnouncementImageUrl;
+            } else {
+              imageWrap.style.display = "none";
+              imageWrap.className = "announcement-media";
+              previewImg.src = "";
+            }
+          }
 
           if (ctaEl && ctaTextEl) {
             if (linkUrl) {
@@ -3880,8 +5003,56 @@
         ["announcement-title-input", "announcement-message-input", "announcement-tag-input", "announcement-link-url-input", "announcement-link-text-input"].forEach(id => {
           document.getElementById(id)?.addEventListener("input", updateAnnouncementPreview);
         });
-        ["announcement-color-input", "announcement-pinned-input", "announcement-is-active-input"].forEach(id => {
+        ["announcement-color-input", "announcement-image-fit-input", "announcement-pinned-input", "announcement-is-active-input"].forEach(id => {
           document.getElementById(id)?.addEventListener("change", updateAnnouncementPreview);
+        });
+
+        // Image file upload handler with auto-resizing
+        document.getElementById("announcement-image-file")?.addEventListener("change", async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          if (file.size > 12 * 1024 * 1024) {
+            alert("Image file exceeds 12MB limit. Please choose a smaller image.");
+            e.target.value = "";
+            return;
+          }
+          try {
+            const result = await compressAndResizeImage(file);
+            currentAnnouncementImageUrl = result.dataUrl;
+            const urlInput = document.getElementById("announcement-image-url-input");
+            if (urlInput) urlInput.value = "";
+            showImageThumbPreview(file.name, result);
+            updateAnnouncementPreview();
+          } catch (err) {
+            console.error("Error processing image file:", err);
+            alert("Could not process image file: " + (err.message || String(err)));
+          }
+        });
+
+        // Image URL input handler
+        document.getElementById("announcement-image-url-input")?.addEventListener("input", (e) => {
+          const url = e.target.value.trim();
+          currentAnnouncementImageUrl = url;
+          if (url) {
+            const fileInp = document.getElementById("announcement-image-file");
+            if (fileInp) fileInp.value = "";
+            showImageThumbPreview("Direct Image URL");
+            inspectUrlDimensions(url);
+          } else {
+            hideImageThumbPreview();
+          }
+          updateAnnouncementPreview();
+        });
+
+        // Remove image button handler
+        document.getElementById("btn-remove-announcement-image")?.addEventListener("click", () => {
+          currentAnnouncementImageUrl = "";
+          const fileInp = document.getElementById("announcement-image-file");
+          const urlInp = document.getElementById("announcement-image-url-input");
+          if (fileInp) fileInp.value = "";
+          if (urlInp) urlInp.value = "";
+          hideImageThumbPreview();
+          updateAnnouncementPreview();
         });
 
         // Load Announcements into Registry Table
@@ -3889,9 +5060,9 @@
           const tbody = document.getElementById("admin-announcements-tbody");
           if (!tbody) return;
           try {
-            cachedAnnouncements = await window.LeagueDB.getAnnouncements(true);
+            cachedAnnouncements = await window.LeagueDB.getAnnouncements(true, true);
             if (!cachedAnnouncements || cachedAnnouncements.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:30px;">No announcements currently registered. Compose your first bulletin above.</td></tr>`;
+              tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:30px;">No announcements currently registered. Compose your first bulletin above.</td></tr>`;
               return;
             }
 
@@ -3899,9 +5070,15 @@
               const color = a.tag_color || "lime";
               const colorDot = color === 'red' ? '#ff5b5b' : color === 'amber' ? '#ffb300' : color === 'cyan' ? '#5be9f4' : '#d5f45b';
               const dateStr = a.created_at ? new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : '---';
+              const fitLabel = (a.image_fit || 'contain').toUpperCase();
               
+              const isScheduled = a.scheduled_for && new Date(a.scheduled_for) > new Date();
+              const scheduledDateStr = isScheduled ? new Date(a.scheduled_for).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null;
+
               const statusPills = [];
-              if (a.is_active) {
+              if (isScheduled) {
+                statusPills.push('<span class="pill" style="color:#ffb300; background:rgba(255,179,0,0.12); border:1px solid rgba(255,179,0,0.35);" title="Scheduled for release">⏳ SCHEDULED</span>');
+              } else if (a.is_active) {
                 statusPills.push('<span class="pill" style="color:var(--lime); background:rgba(213,244,91,0.1); border:1px solid rgba(213,244,91,0.3);">ACTIVE</span>');
               } else {
                 statusPills.push('<span class="pill" style="color:var(--muted); background:#1e2017; border:1px solid #333;">INACTIVE</span>');
@@ -3910,11 +5087,29 @@
                 statusPills.push('<span class="pill" style="color:#5be9f4; border-color:#5be9f450; background:rgba(91,233,244,0.1);">PINNED</span>');
               }
 
+              const mediaHtml = a.image_url ? `
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <img src="${escapeHtml(a.image_url)}" alt="Graphic" style="width:48px; height:32px; object-fit:contain; background:#090a07; border-radius:3px; border:1px solid #3c4225; cursor:pointer;" onclick="window.open('${escapeHtml(a.image_url)}', '_blank')" title="Click to view full image in new tab" />
+                  <span class="pill" style="font-size:9.5px; font-weight:800; color:var(--lime); padding:1px 5px;">${fitLabel}</span>
+                </div>
+              ` : '<span style="color:#666; font-size:11px;">No Media</span>';
+
               const linkHtml = a.link_url ? `
                 <a href="${escapeHtml(a.link_url)}" target="_blank" style="color:var(--lime); font-size:12px; text-decoration:underline;">
                   ${escapeHtml(a.link_text || a.link_url)} ↗
                 </a>
               ` : '<span style="color:#b5b8a8; font-size:12px;">None</span>';
+
+              const dateDisplay = isScheduled ? `
+                <div>
+                  <span style="color:#ffb300; font-weight:bold; font-size:11.5px; display:block;">📅 ${scheduledDateStr}</span>
+                  <small style="color:var(--muted); font-size:10px;">Created ${dateStr}</small>
+                </div>
+              ` : `<span style="color:#b5b8a8; font-size:12px; white-space:nowrap;">${dateStr}</span>`;
+
+              const publishNowBtn = isScheduled ? `
+                <button type="button" class="btn-action-sm btn-publish-now-announcement" data-id="${a.id}" style="color:var(--lime); border-color:rgba(213,244,91,0.4);" title="Immediately release this announcement to the homepage">⚡ Publish Now</button>
+              ` : '';
 
               return `
                 <tr>
@@ -3926,26 +5121,45 @@
                     </span>
                   </td>
                   <td><span class="pill" style="font-size:11.5px;">${escapeHtml(a.tag || 'Official')}</span></td>
-                  <td style="max-width:320px;">
+                  <td>${mediaHtml}</td>
+                  <td style="max-width:300px;">
                     <strong style="color:#ffffff; font-size:13.5px; display:block; margin-bottom:2px;">${escapeHtml(a.title)}</strong>
                     <div style="color:#b5b8a8; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                       ${escapeHtml(a.message)}
                     </div>
                   </td>
                   <td>${linkHtml}</td>
-                  <td style="color:#b5b8a8; font-size:12px; white-space:nowrap;">${dateStr}</td>
+                  <td>${dateDisplay}</td>
                   <td style="white-space:nowrap;">
+                    ${publishNowBtn}
                     <button type="button" class="btn-action-sm btn-edit-announcement" data-id="${a.id}">Edit</button>
                     <button type="button" class="btn-action-sm btn-toggle-announcement" data-id="${a.id}" data-active="${a.is_active}">
                       ${a.is_active ? 'Deactivate' : 'Activate'}
                     </button>
-                    <button type="button" class="btn-action-sm btn-action-danger btn-delete-announcement" data-id="${a.id}">Delete</button>
+                    <button type="button" class="btn-action-sm btn-action-danger btn-delete-announcement" data-id="${a.id}" style="color:#ef4444; border-color:#ef4444;">🗑 Delete</button>
                   </td>
                 </tr>
               `;
             }).join("");
 
             // Row Action Event Listeners
+            tbody.querySelectorAll(".btn-publish-now-announcement").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const id = btn.getAttribute("data-id");
+                btn.disabled = true;
+                btn.textContent = "Publishing...";
+                const res = await window.LeagueDB.updateAnnouncement(id, { scheduled_for: null, is_active: true });
+                if (res.success) {
+                  showToast("✓ Scheduled announcement published live immediately!");
+                  loadAnnouncements();
+                } else {
+                  alert("Failed to publish: " + (res.error || 'Unknown error'));
+                  btn.disabled = false;
+                  btn.textContent = "⚡ Publish Now";
+                }
+              });
+            });
+
             tbody.querySelectorAll(".btn-edit-announcement").forEach(btn => {
               btn.addEventListener("click", () => {
                 const id = btn.getAttribute("data-id");
@@ -3971,6 +5185,8 @@
               btn.addEventListener("click", async () => {
                 const id = btn.getAttribute("data-id");
                 if (confirm("Are you sure you want to permanently delete this announcement?")) {
+                  btn.disabled = true;
+                  btn.textContent = "Deleting...";
                   const res = await window.LeagueDB.deleteAnnouncement(id);
                   if (res.success) {
                     showToast("✓ Announcement permanently deleted.");
@@ -3980,6 +5196,8 @@
                     loadAnnouncements();
                   } else {
                     alert("Failed to delete announcement: " + (res.error || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.textContent = "🗑 Delete";
                   }
                 }
               });
@@ -4005,10 +5223,46 @@
           document.getElementById("announcement-is-active-input").checked = ann.is_active !== false;
           document.getElementById("announcement-pinned-input").checked = !!ann.pinned;
 
+          // Scheduling populate
+          const isScheduled = ann.scheduled_for && new Date(ann.scheduled_for) > new Date();
+          if (isScheduled) {
+            if (radioLater) radioLater.checked = true;
+            if (scheduledForInput) {
+              scheduledForInput.value = formatDateTimeLocal(new Date(ann.scheduled_for));
+            }
+          } else {
+            if (radioNow) radioNow.checked = true;
+            if (scheduledForInput) scheduledForInput.value = "";
+          }
+          updateScheduleModeUI();
+
+          // Image fit mode populate
+          const fitSelect = document.getElementById("announcement-image-fit-input");
+          if (fitSelect) fitSelect.value = ann.image_fit || "contain";
+
+          // Image populate
+          currentAnnouncementImageUrl = ann.image_url || "";
+          const urlInput = document.getElementById("announcement-image-url-input");
+          const fileInput = document.getElementById("announcement-image-file");
+          if (fileInput) fileInput.value = "";
+          if (urlInput) urlInput.value = (ann.image_url && !ann.image_url.startsWith("data:")) ? ann.image_url : "";
+
+          if (currentAnnouncementImageUrl) {
+            showImageThumbPreview(currentAnnouncementImageUrl.startsWith("data:") ? "Embedded Image" : currentAnnouncementImageUrl);
+            if (!currentAnnouncementImageUrl.startsWith("data:")) {
+              inspectUrlDimensions(currentAnnouncementImageUrl);
+            }
+          } else {
+            hideImageThumbPreview();
+          }
+
           document.getElementById("announcement-form-title").textContent = "✏ Edit League Announcement #" + ann.id;
           document.getElementById("btn-submit-announcement-text").textContent = "Save Changes";
           document.getElementById("btn-submit-announcement-icon").textContent = "✓";
           document.getElementById("btn-cancel-announcement-edit").style.display = "inline-block";
+          
+          const deleteCurrentBtn = document.getElementById("btn-delete-current-announcement");
+          if (deleteCurrentBtn) deleteCurrentBtn.style.display = "inline-flex";
 
           updateAnnouncementPreview();
 
@@ -4023,49 +5277,115 @@
           document.getElementById("btn-submit-announcement-text").textContent = "Broadcast Announcement";
           document.getElementById("btn-submit-announcement-icon").textContent = "📢";
           document.getElementById("btn-cancel-announcement-edit").style.display = "none";
+          
+          const deleteCurrentBtn = document.getElementById("btn-delete-current-announcement");
+          if (deleteCurrentBtn) deleteCurrentBtn.style.display = "none";
+
           document.getElementById("announcement-is-active-input").checked = true;
           document.getElementById("announcement-pinned-input").checked = false;
           document.getElementById("announcement-tag-input").value = "Official Update";
           document.getElementById("announcement-color-input").value = "lime";
+          const fitSelect = document.getElementById("announcement-image-fit-input");
+          if (fitSelect) fitSelect.value = "contain";
+
+          if (radioNow) radioNow.checked = true;
+          if (scheduledForInput) scheduledForInput.value = "";
+          updateScheduleModeUI();
+
+          currentAnnouncementImageUrl = "";
+          const fileInp = document.getElementById("announcement-image-file");
+          const urlInp = document.getElementById("announcement-image-url-input");
+          if (fileInp) fileInp.value = "";
+          if (urlInp) urlInp.value = "";
+          hideImageThumbPreview();
+
           updateAnnouncementPreview();
         }
 
         document.getElementById("btn-cancel-announcement-edit")?.addEventListener("click", resetAnnouncementForm);
         document.getElementById("btn-refresh-announcements")?.addEventListener("click", loadAnnouncements);
 
+        // Delete Current Announcement Button in Composer
+        document.getElementById("btn-delete-current-announcement")?.addEventListener("click", async () => {
+          const id = document.getElementById("announcement-id").value;
+          if (!id) return;
+          if (confirm("Are you sure you want to permanently delete this announcement?")) {
+            const btn = document.getElementById("btn-delete-current-announcement");
+            if (btn) {
+              btn.disabled = true;
+              btn.textContent = "Deleting...";
+            }
+            const res = await window.LeagueDB.deleteAnnouncement(id);
+            if (res.success) {
+              showToast("✓ Announcement permanently deleted.");
+              resetAnnouncementForm();
+              loadAnnouncements();
+            } else {
+              alert("Failed to delete announcement: " + (res.error || 'Unknown error'));
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = "🗑 Delete This Announcement";
+              }
+            }
+          }
+        });
+
         // Announcement Form Submit Handler (Create or Update)
         document.getElementById("form-announcement")?.addEventListener("submit", async (e) => {
           e.preventDefault();
-          const id = document.getElementById("announcement-id").value;
-          const annData = {
-            title: document.getElementById("announcement-title-input").value.trim(),
-            message: document.getElementById("announcement-message-input").value.trim(),
-            tag: document.getElementById("announcement-tag-input").value.trim() || "Official Update",
-            tag_color: document.getElementById("announcement-color-input").value || "lime",
-            link_url: document.getElementById("announcement-link-url-input").value.trim() || null,
-            link_text: document.getElementById("announcement-link-text-input").value.trim() || null,
-            is_active: document.getElementById("announcement-is-active-input").checked,
-            pinned: document.getElementById("announcement-pinned-input").checked
-          };
+          const submitBtn = document.getElementById("btn-submit-announcement");
+          if (submitBtn) submitBtn.disabled = true;
 
-          if (id) {
-            const res = await window.LeagueDB.updateAnnouncement(id, annData);
-            if (res.success) {
-              showToast(`✓ Announcement Updated & Broadcasted: "${annData.title}"`);
-              resetAnnouncementForm();
-              loadAnnouncements();
-            } else {
-              alert("Failed to update announcement: " + (res.error || 'Unknown error'));
+          try {
+            const id = document.getElementById("announcement-id").value;
+            const isLaterSelected = document.getElementById("schedule-mode-later")?.checked;
+            const scheduledInputVal = document.getElementById("announcement-scheduled-for-input")?.value;
+            let scheduledFor = null;
+            if (isLaterSelected && scheduledInputVal) {
+              scheduledFor = new Date(scheduledInputVal).toISOString();
             }
-          } else {
-            const res = await window.LeagueDB.createAnnouncement(annData);
-            if (res.success) {
-              showToast(`✓ New Announcement Broadcasted: "${annData.title}"`);
-              resetAnnouncementForm();
-              loadAnnouncements();
+
+            const annData = {
+              title: document.getElementById("announcement-title-input").value.trim(),
+              message: document.getElementById("announcement-message-input").value.trim(),
+              tag: document.getElementById("announcement-tag-input").value.trim() || "Official Update",
+              tag_color: document.getElementById("announcement-color-input").value || "lime",
+              image_url: currentAnnouncementImageUrl || null,
+              image_fit: document.getElementById("announcement-image-fit-input")?.value || "contain",
+              link_url: document.getElementById("announcement-link-url-input").value.trim() || null,
+              link_text: document.getElementById("announcement-link-text-input").value.trim() || null,
+              scheduled_for: scheduledFor,
+              is_active: document.getElementById("announcement-is-active-input").checked,
+              pinned: document.getElementById("announcement-pinned-input").checked
+            };
+
+            const isFuture = scheduledFor && new Date(scheduledFor) > new Date();
+            const actionWord = isFuture ? "Scheduled for Automated Release" : "Broadcasted Live";
+
+            if (id) {
+              const res = await window.LeagueDB.updateAnnouncement(id, annData);
+              if (res.success) {
+                showToast(`✓ Announcement Updated & ${actionWord}: "${annData.title}"`);
+                resetAnnouncementForm();
+                loadAnnouncements();
+              } else {
+                alert("Failed to update announcement: " + (res.error || 'Unknown error'));
+              }
             } else {
-              alert("Failed to broadcast announcement: " + (res.error || 'Unknown error'));
+              const res = await window.LeagueDB.createAnnouncement(annData);
+              if (res.success) {
+                showToast(`✓ New Announcement ${actionWord}: "${annData.title}"`);
+                resetAnnouncementForm();
+                loadAnnouncements();
+              } else {
+                alert("Failed to broadcast announcement: " + (res.error || 'Unknown error'));
+              }
             }
+          } catch (err) {
+            console.error("Error submitting announcement:", err);
+            alert("Error submitting announcement: " + (err.message || String(err)));
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
           }
         });
 

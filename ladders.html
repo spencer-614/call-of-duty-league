@@ -72,23 +72,29 @@
             </div>
           </div>
         </a>
+      </div>
 
-        <!-- Platform Mode Switcher -->
-        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
-          <a href="index.html" class="fl-mode-btn" title="Go to Frontline Franchised League">🛡 League</a>
-          <a href="ladders.html" class="fl-mode-btn active" title="Frontline Arena Circuit">⚔ Arena</a>
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="ladders.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+            <span>⚔</span> <span>Arena</span>
+          </a>
         </div>
-
-        <!-- Main Navigation Links (Match Finder removed from top nav) -->
-        <nav class="fl-main-nav" aria-label="Arena Navigation">
-          <a href="ladders.html" class="active">Ladders</a>
-          <a href="arena-tournaments.html">Tournaments</a>
-          <a href="rules.html">CDL Rules</a>
-          <a href="arena-profile.html#my-teams">My Teams</a>
-        </nav>
       </div>
 
       <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="ladders.html" class="active">Ladders</a>
+          <a href="arena-tournaments.html">Tournaments</a>
+          <a href="arena-profile.html#my-teams">My Teams</a>
+        </nav>
+
         <!-- Active Squad Status or Profile CTA -->
         <div id="arena-header-squad-container">
           <button type="button" class="btn-crimson" onclick="openCreateTeamModal()" style="font-size:12px; padding:9px 18px; display:inline-flex; align-items:center; gap:8px;">
@@ -325,17 +331,8 @@
             </div>
 
             <div id="recent-matches-ticker-list" style="display:flex; flex-direction:column; gap:4px;">
-              <div class="fl-mini-match-row">
-                <span style="color:#ffffff; font-weight:700;">Apex Predators <span style="color:#64748b; font-weight:normal;">vs</span> OpTic Academy</span>
-                <span style="color:#10b981; font-weight:900;">3 - 1</span>
-              </div>
-              <div class="fl-mini-match-row">
-                <span style="color:#ffffff; font-weight:700;">FaZe Challengers <span style="color:#64748b; font-weight:normal;">vs</span> Toronto Youth</span>
-                <span style="color:#10b981; font-weight:900;">3 - 0</span>
-              </div>
-              <div class="fl-mini-match-row">
-                <span style="color:#ffffff; font-weight:700;">Subliners Elite <span style="color:#64748b; font-weight:normal;">vs</span> Seattle Surge</span>
-                <span style="color:#10b981; font-weight:900;">3 - 2</span>
+              <div style="font-size:11.5px; color:#64748b; padding:12px 6px; text-align:center;">
+                No recent matches recorded yet.
               </div>
             </div>
 
@@ -404,13 +401,13 @@
         <form id="form-create-squad" onsubmit="handleCreateTeam(event)">
           <div class="ladder-form-group">
             <label for="squad-name">Team Name *</label>
-            <input type="text" id="squad-name" class="ladder-input" placeholder="e.g. Apex Predators" required maxlength="30" />
+            <input type="text" id="squad-name" class="ladder-input" placeholder="e.g. Shadow Syndicate" required maxlength="30" />
           </div>
 
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
             <div class="ladder-form-group">
               <label for="squad-tag">Clan Tag (2-5 Chars) *</label>
-              <input type="text" id="squad-tag" class="ladder-input" placeholder="APEX" required maxlength="5" style="text-transform:uppercase;" />
+              <input type="text" id="squad-tag" class="ladder-input" placeholder="SHDW" required maxlength="5" style="text-transform:uppercase;" />
             </div>
             <div class="ladder-form-group">
               <label for="squad-ladder-type">Target Ladder *</label>
@@ -924,6 +921,12 @@
                 </div>
               `;
             }).join("");
+          } else {
+            container.innerHTML = `
+              <div style="font-size:11.5px; color:#64748b; padding:12px 6px; text-align:center;">
+                No recent matches recorded yet.
+              </div>
+            `;
           }
         } catch (e) {
           console.warn("Could not load recent matches ticker:", e);

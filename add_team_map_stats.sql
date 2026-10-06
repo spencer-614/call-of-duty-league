@@ -35,43 +35,6 @@ BEGIN
 END
 $$;
 
--- 4. Insert Sample Team Map Records
-INSERT INTO team_map_records (team_id, map_name, game_mode, wins, losses, win_rate, streak, recent_score, recent_result) VALUES
--- Night Shift (NSH)
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Karachi', 'Hardpoint', 3, 0, 100, '3W', '250 - 210 vs Vantage', 'W'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Sub Base', 'Hardpoint', 2, 1, 67, '1W', '250 - 195 vs Redline', 'W'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Rio', 'Hardpoint', 2, 1, 67, '2W', '250 - 225 vs Static', 'W'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Highrise', 'Search & Destroy', 3, 0, 100, '3W', '6 - 4 vs Vantage', 'W'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Rio', 'Search & Destroy', 2, 0, 100, '2W', '6 - 2 vs Redline', 'W'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Karachi', 'Search & Destroy', 0, 1, 0, '1L', '4 - 6 vs Vantage', 'L'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Invasion', 'Control', 2, 2, 50, '1L', '2 - 3 vs Vantage', 'L'),
-((SELECT id FROM teams WHERE name = 'Night Shift' LIMIT 1), 'Highrise', 'Control', 2, 1, 67, '1W', '3 - 1 vs Redline', 'W'),
+-- 4. Sample Team Map Records (Clean initial state — real map stats are computed dynamically from official match results)
+-- Records are populated automatically when matches are reported.
 
--- Vantage (VTG)
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Karachi', 'Hardpoint', 2, 2, 50, '1L', '210 - 250 vs Night Shift', 'L'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), '6 Star', 'Hardpoint', 2, 1, 67, '2W', '250 - 180 vs Static', 'W'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Vista', 'Hardpoint', 1, 1, 50, '1W', '250 - 220 vs Redline', 'W'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Highrise', 'Search & Destroy', 2, 2, 50, '1L', '4 - 6 vs Night Shift', 'L'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Karachi', 'Search & Destroy', 2, 0, 100, '2W', '6 - 4 vs Night Shift', 'W'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Terminal', 'Search & Destroy', 1, 1, 50, '1W', '6 - 3 vs Redline', 'W'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Invasion', 'Control', 3, 1, 75, '2W', '3 - 2 vs Night Shift', 'W'),
-((SELECT id FROM teams WHERE name = 'Vantage' LIMIT 1), 'Highrise', 'Control', 1, 1, 50, '1L', '1 - 3 vs Redline', 'L'),
-
--- Redline (RED)
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Sub Base', 'Hardpoint', 1, 2, 33, '1L', '195 - 250 vs Night Shift', 'L'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Karachi', 'Hardpoint', 2, 1, 67, '1W', '250 - 220 vs Static', 'W'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Rio', 'Hardpoint', 1, 2, 33, '1L', '215 - 250 vs Vantage', 'L'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Rio', 'Search & Destroy', 1, 2, 33, '1L', '2 - 6 vs Night Shift', 'L'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Karachi', 'Search & Destroy', 2, 1, 67, '1W', '6 - 4 vs Night Shift', 'W'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Highrise', 'Search & Destroy', 1, 1, 50, '1W', '6 - 5 vs Static', 'W'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Highrise', 'Control', 2, 1, 67, '1W', '3 - 1 vs Vantage', 'W'),
-((SELECT id FROM teams WHERE name = 'Redline' LIMIT 1), 'Invasion', 'Control', 1, 2, 33, '1L', '1 - 3 vs Night Shift', 'L'),
-
--- Static (STC)
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), '6 Star', 'Hardpoint', 1, 2, 33, '1L', '180 - 250 vs Vantage', 'L'),
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), 'Karachi', 'Hardpoint', 1, 2, 33, '1L', '220 - 250 vs Redline', 'L'),
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), 'Sub Base', 'Hardpoint', 1, 2, 33, '1W', '250 - 235 vs Redline', 'W'),
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), 'Highrise', 'Search & Destroy', 1, 2, 33, '1L', '5 - 6 vs Redline', 'L'),
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), 'Terminal', 'Search & Destroy', 1, 2, 33, '1L', '3 - 6 vs Vantage', 'L'),
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), 'Invasion', 'Control', 1, 2, 33, '1W', '3 - 2 vs Redline', 'W'),
-((SELECT id FROM teams WHERE name = 'Static' LIMIT 1), 'Highrise', 'Control', 1, 3, 25, '2L', '0 - 3 vs Night Shift', 'L');

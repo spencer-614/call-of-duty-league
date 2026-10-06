@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS staff_roles (
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL UNIQUE,
     display_name TEXT,
-    role TEXT NOT NULL DEFAULT 'referee', -- 'commissioner', 'referee', 'roster_manager', 'recruiter', 'broadcaster', 'rulebook_admin'
+    role TEXT NOT NULL DEFAULT 'referee', -- 'commissioner', 'referee', 'stats_official', 'roster_manager', 'recruiter', 'broadcaster', 'rulebook_admin'
     custom_permissions TEXT[], -- optional array of tab IDs e.g. ARRAY['tab-matches', 'tab-schedule']
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),

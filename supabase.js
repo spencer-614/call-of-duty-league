@@ -11,8 +11,13 @@ const RAW_SUPABASE_URL = "https://sllilxkbmxheclhgstcq.supabase.co/rest/v1/"; //
 const SUPABASE_URL = RAW_SUPABASE_URL ? RAW_SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "") : "";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsbGlseGtibXhoZWNsaGdzdGNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzOTkzMjYsImV4cCI6MjEwNTk3NTMyNn0.SKF3AueHX_70LQHeRrRlMvKvJ4coH_1kgg60zsp1LDM"; // e.g. eyJhbGciOi...
 
-// Helper to determine if actual Supabase credentials have been entered
+// Helper to determine if database backend is active (Railway Node or Supabase)
+const isRailwayBackendActive = () => {
+  return typeof window !== "undefined" && window.location && window.location.protocol.startsWith("http");
+};
+
 const isSupabaseConfigured = () => {
+  if (isRailwayBackendActive()) return true;
   return (
     SUPABASE_URL &&
     SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" &&
@@ -30,9 +35,219 @@ const PAYPAL_CONFIG = {
   receiverEmail: "admin@frontlineleague.com"
 };
 
-// Initialize Supabase Client if library is loaded and configured
+// Railway PostgreSQL Client Adapter (Drop-in replacement for Supabase Client)
+function createRailwayClient() {
+  return {
+    from(table) {
+      let queryParams = {};
+      let filters = [];
+      let orderBy = [];
+      let limitCount = null;
+      let isSingle = false;
+      let isMaybeSingle = false;
+
+      const builder = {
+        select(cols = "*") {
+          queryParams.select = cols;
+          return builder;
+        },
+        eq(col, val) {
+          filters.push({ col, op: "eq", val });
+          return builder;
+        },
+        neq(col, val) {
+          filters.push({ col, op: "neq", val });
+          return builder;
+        },
+        gte(col, val) {
+          filters.push({ col, op: "gte", val });
+          return builder;
+        },
+        lte(col, val) {
+          filters.push({ col, op: "lte", val });
+          return builder;
+        },
+        in(col, vals) {
+          filters.push({ col, op: "in", val: vals });
+          return builder;
+        },
+        order(col, opts = { ascending: true }) {
+          orderBy.push({ col, ascending: opts && opts.ascending !== false });
+          return builder;
+        },
+        limit(n) {
+          limitCount = n;
+          return builder;
+        },
+        single() {
+          isSingle = true;
+          return builder;
+        },
+        maybeSingle() {
+          isMaybeSingle = true;
+          return builder;
+        },
+        async then(resolve, reject) {
+          try {
+            const url = "/api/data/" + encodeURIComponent(table) + "?q=" + encodeURIComponent(
+              JSON.stringify({ filters, orderBy, limit: limitCount })
+            );
+            const res = await fetch(url);
+            const json = await res.json();
+            if (json.error) return resolve({ data: null, error: json.error });
+            let data = json.data;
+            if (isSingle || isMaybeSingle) {
+              data = Array.isArray(data) ? (data[0] || null) : data;
+            }
+            return resolve({ data, error: null });
+          } catch (err) {
+            console.warn(`Railway query error on ${table}:`, err);
+            return resolve({ data: null, error: err });
+          }
+        },
+        async insert(payload) {
+          try {
+            const res = await fetch("/api/data/" + encodeURIComponent(table), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            return {
+              data: json.data,
+              error: json.error || null,
+              select() { return Promise.resolve({ data: json.data, error: json.error || null }); }
+            };
+          } catch (err) {
+            return { data: null, error: err, select() { return Promise.resolve({ data: null, error: err }); } };
+          }
+        },
+        async upsert(payload) {
+          try {
+            const res = await fetch("/api/data/" + encodeURIComponent(table) + "/upsert", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            return {
+              data: json.data,
+              error: json.error || null,
+              select() { return Promise.resolve({ data: json.data, error: json.error || null }); }
+            };
+          } catch (err) {
+            return { data: null, error: err, select() { return Promise.resolve({ data: null, error: err }); } };
+          }
+        },
+        update(payload) {
+          const updateFilters = [...filters];
+          const updateBuilder = {
+            eq(col, val) {
+              updateFilters.push({ col, op: "eq", val });
+              return updateBuilder;
+            },
+            async then(resolve) {
+              try {
+                const res = await fetch("/api/data/" + encodeURIComponent(table), {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ updates: payload, filters: updateFilters })
+                });
+                const json = await res.json();
+                return resolve({ data: json.data, error: json.error || null });
+              } catch (err) {
+                return resolve({ data: null, error: err });
+              }
+            }
+          };
+          return updateBuilder;
+        },
+        delete() {
+          const deleteFilters = [...filters];
+          const deleteBuilder = {
+            eq(col, val) {
+              deleteFilters.push({ col, op: "eq", val });
+              return deleteBuilder;
+            },
+            gte(col, val) {
+              deleteFilters.push({ col, op: "gte", val });
+              return deleteBuilder;
+            },
+            in(col, vals) {
+              deleteFilters.push({ col, op: "in", val: vals });
+              return deleteBuilder;
+            },
+            async then(resolve) {
+              try {
+                const res = await fetch("/api/data/" + encodeURIComponent(table), {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ filters: deleteFilters })
+                });
+                const json = await res.json();
+                return resolve({ data: json.data, error: json.error || null });
+              } catch (err) {
+                return resolve({ data: null, error: err });
+              }
+            }
+          };
+          return deleteBuilder;
+        }
+      };
+      return builder;
+    },
+    auth: {
+      async getSession() {
+        const u = localStorage.getItem("frontline_arena_auth_user");
+        return { data: { session: u ? { user: JSON.parse(u) } : null }, error: null };
+      },
+      async getUser() {
+        const u = localStorage.getItem("frontline_arena_auth_user");
+        return { data: { user: u ? JSON.parse(u) : null }, error: null };
+      },
+      async signInWithPassword({ email, password }) {
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          const json = await res.json();
+          if (json.user) {
+            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(json.user));
+            return { data: { user: json.user, session: { user: json.user } }, error: null };
+          }
+          return { data: { user: null, session: null }, error: json.error || "Login failed" };
+        } catch (err) {
+          return { data: null, error: err.message };
+        }
+      },
+      async signUp({ email, password, options }) {
+        const user = { id: "usr_" + Date.now(), email, user_metadata: options?.data || {} };
+        localStorage.setItem("frontline_arena_auth_user", JSON.stringify(user));
+        return { data: { user, session: { user } }, error: null };
+      },
+      async signOut() {
+        localStorage.removeItem("frontline_arena_auth_user");
+        return { error: null };
+      },
+      async updateUser(updates) {
+        let u = JSON.parse(localStorage.getItem("frontline_arena_auth_user") || "{}");
+        Object.assign(u, updates);
+        localStorage.setItem("frontline_arena_auth_user", JSON.stringify(u));
+        return { data: { user: u }, error: null };
+      }
+    }
+  };
+}
+
+// Initialize Client (Railway Node Server if on HTTP/HTTPS, or Supabase fallback)
 let dbClient = null;
-if (window.supabase && isSupabaseConfigured()) {
+if (isRailwayBackendActive()) {
+  dbClient = createRailwayClient();
+  window.dbClient = dbClient;
+  window.supabaseClient = dbClient;
+} else if (window.supabase && isSupabaseConfigured()) {
   dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   window.dbClient = dbClient;
   window.supabaseClient = dbClient;
@@ -41,50 +256,9 @@ window.SUPABASE_CONFIG = { url: SUPABASE_URL, key: SUPABASE_ANON_KEY };
 
 // Fallback Mock Data (displayed if Supabase credentials have not been configured yet)
 const MOCK_DATA = {
-  teams: [
-    { id: 1, name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)", wins: 5, losses: 1, points: 50 },
-    { id: 2, name: "Vantage", tag: "VTG", division: "Division 1 (Pro)", wins: 4, losses: 2, points: 40 },
-    { id: 3, name: "Redline", tag: "RED", division: "Division 2 (Challengers)", wins: 3, losses: 3, points: 30 },
-    { id: 4, name: "Static", tag: "STC", division: "Division 2 (Challengers)", wins: 1, losses: 5, points: 10 },
-    { id: 5, name: "Underdogs", tag: "UND", division: "Open Division", wins: 2, losses: 4, points: 20 }
-  ],
-  players: [
-    { id: 1, gamertag: "Apex", discord_name: "Apex", activision_id: "Apex#8392014", role: "SMG", rank: "1.5", skill_rank: "1.5", division: "Division 1 (Pro)", status: "Active", kdr: 1.28, total_kills: 342, total_deaths: 267, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
-    { id: 2, gamertag: "Ghost", discord_name: "Ghost", activision_id: "Ghost#4920111", role: "Main AR", rank: "1.0", skill_rank: "1.0", division: "Division 1 (Pro)", status: "Active", kdr: 1.15, total_kills: 298, total_deaths: 259, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
-    { id: 3, gamertag: "Viper", discord_name: "Viper", activision_id: "Viper#9382012", role: "Flex", rank: "1.0", skill_rank: "1.0", division: "Division 1 (Pro)", status: "Active", kdr: 1.05, total_kills: 275, total_deaths: 262, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
-    { id: 4, gamertag: "Blitz", discord_name: "Blitz", activision_id: "Blitz#1928374", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Division 1 (Pro)", status: "Active", kdr: 0.98, total_kills: 250, total_deaths: 255, teams: { name: "Night Shift", tag: "NSH", division: "Division 1 (Pro)" } },
-    { id: 5, gamertag: "Specter", discord_name: "Specter", activision_id: "Specter#7492810", role: "Main AR", rank: "1.5", skill_rank: "1.5", division: "Division 1 (Pro)", status: "Active", kdr: 1.22, total_kills: 310, total_deaths: 254, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
-    { id: 6, gamertag: "Havoc", discord_name: "Havoc", activision_id: "Havoc#6291038", role: "SMG", rank: "1.0", skill_rank: "1.0", division: "Division 1 (Pro)", status: "Active", kdr: 1.10, total_kills: 290, total_deaths: 263, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
-    { id: 7, gamertag: "Zero", discord_name: "Zero", activision_id: "Zero#8192039", role: "Flex", rank: "0.5", skill_rank: "0.5", division: "Division 1 (Pro)", status: "Active", kdr: 1.02, total_kills: 260, total_deaths: 255, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
-    { id: 8, gamertag: "Ranger", discord_name: "Ranger", activision_id: "Ranger#3918274", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Division 1 (Pro)", status: "Active", kdr: 0.95, total_kills: 230, total_deaths: 242, teams: { name: "Vantage", tag: "VTG", division: "Division 1 (Pro)" } },
-    { id: 9, gamertag: "Reaper", discord_name: "Reaper", activision_id: "Reaper#2918374", role: "Main AR", rank: "1.5", skill_rank: "1.5", division: "Division 2 (Challengers)", status: "Active", kdr: 1.18, total_kills: 305, total_deaths: 258, teams: { name: "Redline", tag: "RED", division: "Division 2 (Challengers)" } },
-    { id: 10, gamertag: "Pulse", discord_name: "Pulse", activision_id: "Pulse#8472910", role: "SMG", rank: "1.0", skill_rank: "1.0", division: "Division 2 (Challengers)", status: "Active", kdr: 1.04, total_kills: 280, total_deaths: 270, teams: { name: "Redline", tag: "RED", division: "Division 2 (Challengers)" } },
-    { id: 11, gamertag: "Titan", discord_name: "Titan", activision_id: "Titan#3829104", role: "Main AR", rank: "1.0", skill_rank: "1.0", division: "Division 2 (Challengers)", status: "Active", kdr: 1.06, total_kills: 265, total_deaths: 250, teams: { name: "Static", tag: "STC", division: "Division 2 (Challengers)" } },
-    { id: 12, gamertag: "Flash", discord_name: "Flash", activision_id: "Flash#1948201", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Division 2 (Challengers)", status: "Active", kdr: 0.94, total_kills: 235, total_deaths: 250, teams: { name: "Static", tag: "STC", division: "Division 2 (Challengers)" } },
-    // Free Agents & Community entries from Directory
-    { id: 13, gamertag: "btc", discord_name: "btc", activision_id: "btc#4380973", role: "Flex", rank: "0.5", skill_rank: "0.5", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 14, gamertag: "c0m-_-", discord_name: "c0m-_-", activision_id: "c0m#1095449", role: "SMG", rank: "1.0", skill_rank: "1.0", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 15, gamertag: "Clix04", discord_name: "Clix04", activision_id: "[LFT]Maddengamer04#2877956", role: "Main AR", rank: "1.5", skill_rank: "1.5", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 16, gamertag: "CoolRanchhh", discord_name: "CoolRanchhh", activision_id: "CoolRanch#7450412", role: "SMG", rank: "0.5", skill_rank: "0.5", division: "Open Division", status: "Active", kdr: 0.54, total_kills: 142, total_deaths: 263, teams: { name: "Underdogs", tag: "UND", division: "Open Division" }, team_name: "Underdogs" },
-    { id: 17, gamertag: "Vortex", discord_name: "Vortex", activision_id: "Vortex#8291034", role: "Flex", rank: "1.0", skill_rank: "1.0", division: "Free Agent", status: "Free Agent", kdr: null, total_kills: 0, total_deaths: 0, teams: null, team_name: "Free Agent" },
-    { id: 18, gamertag: "Shadow", discord_name: "Shadow", activision_id: "Shadow#9102938", role: "Sniper", rank: "0.5", skill_rank: "0.5", division: "Free Agent", status: "Free Agent", kdr: 1.12, total_kills: 410, total_deaths: 366, teams: null, team_name: "Free Agent" }
-  ],
-  signups: [
-    {
-      id: 1,
-      gamertag: "Invictus",
-      activision_id: "Invictus#123456",
-      discord_username: "itzinvictus_",
-      role: "Flex",
-      platform: "PC",
-      registration_type: "Free Agent",
-      team_name: null,
-      region: "NA Central",
-      notes: null,
-      status: "Pending",
-      created_at: new Date().toISOString()
-    }
-  ],
+  teams: [],
+  players: [],
+  signups: [],
   staffRoles: [
     { id: 1, email: "admin@frontlineleague.com", display_name: "League Director", role: "commissioner", notes: "Primary commissioner" },
     { id: 2, email: "referee@frontlineleague.com", display_name: "Head Referee", role: "referee", notes: "Match scoring & map stats" },
@@ -270,523 +444,20 @@ const MOCK_DATA = {
       message: "Rosters for Season 1 lock this Friday at 11:59 PM EST. Team captains must ensure all player Activision IDs and roles are confirmed in the recruitment terminal before seedings are locked.",
       tag: "Tournament Alert",
       tag_color: "lime",
+      image_url: null,
+      image_fit: "contain",
       link_url: "brackets.html",
       link_text: "View Tournament Brackets ↗",
       is_active: true,
-      pinned: true,
+      pinned: false,
       created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
       updated_at: new Date(Date.now() - 3600000 * 24).toISOString()
     }
   ],
-  vods: [
-    {
-      id: 1,
-      title: "Frontline Championship — Night Shift vs Vantage",
-      stage: "Grand Finals",
-      is_live: true,
-      team1_score: 3,
-      team2_score: 1,
-      team1: { name: "Night Shift" },
-      team2: { name: "Vantage" },
-      vod_url: "callofduty"
-    },
-    {
-      id: 2,
-      title: "Redline vs Static — Week 3 Hardpoint Clash",
-      stage: "Week 3",
-      is_live: false,
-      team1_score: 3,
-      team2_score: 2,
-      team1: { name: "Redline" },
-      team2: { name: "Static" },
-      vod_url: "https://twitch.tv/callofduty"
-    }
-  ],
-  scheduled_matches: [
-    {
-      id: 1,
-      week_number: 1,
-      season_type: "preseason",
-      week_label: "Preseason Week 1",
-      match_number: 1,
-      team1_id: 1,
-      team1_name: "Night Shift",
-      team1_tag: "NSH",
-      team1_score: 3,
-      team2_id: 3,
-      team2_name: "Redline",
-      team2_tag: "RED",
-      team2_score: 1,
-      winner_id: 1,
-      winner_name: "Night Shift",
-      status: "Completed",
-      scheduled_date: "2026-10-09",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: "callofduty",
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      week_number: 1,
-      season_type: "preseason",
-      week_label: "Preseason Week 1",
-      match_number: 2,
-      team1_id: 2,
-      team1_name: "Vantage",
-      team1_tag: "VTG",
-      team1_score: 3,
-      team2_id: 4,
-      team2_name: "Static",
-      team2_tag: "STC",
-      team2_score: 2,
-      winner_id: 2,
-      winner_name: "Vantage",
-      status: "Completed",
-      scheduled_date: "2026-10-09",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: "callofduty",
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 3,
-      week_number: 2,
-      season_type: "preseason",
-      week_label: "Preseason Week 2",
-      match_number: 3,
-      team1_id: 1,
-      team1_name: "Night Shift",
-      team1_tag: "NSH",
-      team1_score: 2,
-      team2_id: 2,
-      team2_name: "Vantage",
-      team2_tag: "VTG",
-      team2_score: 1,
-      winner_id: null,
-      winner_name: null,
-      status: "Live",
-      scheduled_date: "2026-10-16",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: "callofduty",
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 4,
-      week_number: 2,
-      season_type: "preseason",
-      week_label: "Preseason Week 2",
-      match_number: 4,
-      team1_id: 3,
-      team1_name: "Redline",
-      team1_tag: "RED",
-      team1_score: 0,
-      team2_id: 4,
-      team2_name: "Static",
-      team2_tag: "STC",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-10-16",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: "callofduty",
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 5,
-      week_number: 3,
-      season_type: "regular",
-      week_label: "Regular Season Week 1",
-      match_number: 5,
-      team1_id: 1,
-      team1_name: "Night Shift",
-      team1_tag: "NSH",
-      team1_score: 0,
-      team2_id: 4,
-      team2_name: "Static",
-      team2_tag: "STC",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-10-23",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 6,
-      week_number: 3,
-      season_type: "regular",
-      week_label: "Regular Season Week 1",
-      match_number: 6,
-      team1_id: 2,
-      team1_name: "Vantage",
-      team1_tag: "VTG",
-      team1_score: 0,
-      team2_id: 3,
-      team2_name: "Redline",
-      team2_tag: "RED",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-10-23",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 7,
-      week_number: 4,
-      season_type: "regular",
-      week_label: "Regular Season Week 2",
-      match_number: 7,
-      team1_id: 2,
-      team1_name: "Vantage",
-      team1_tag: "VTG",
-      team1_score: 0,
-      team2_id: 4,
-      team2_name: "Static",
-      team2_tag: "STC",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-10-30",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 8,
-      week_number: 4,
-      season_type: "regular",
-      week_label: "Regular Season Week 2",
-      match_number: 8,
-      team1_id: 1,
-      team1_name: "Night Shift",
-      team1_tag: "NSH",
-      team1_score: 0,
-      team2_id: 3,
-      team2_name: "Redline",
-      team2_tag: "RED",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-10-30",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 9,
-      week_number: 5,
-      season_type: "regular",
-      week_label: "Regular Season Week 3",
-      match_number: 9,
-      team1_id: 1,
-      team1_name: "Night Shift",
-      team1_tag: "NSH",
-      team1_score: 0,
-      team2_id: 2,
-      team2_name: "Vantage",
-      team2_tag: "VTG",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-06",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 10,
-      week_number: 5,
-      season_type: "regular",
-      week_label: "Regular Season Week 3",
-      match_number: 10,
-      team1_id: 3,
-      team1_name: "Redline",
-      team1_tag: "RED",
-      team1_score: 0,
-      team2_id: 4,
-      team2_name: "Static",
-      team2_tag: "STC",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-06",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 11,
-      week_number: 6,
-      season_type: "regular",
-      week_label: "Regular Season Week 4",
-      match_number: 11,
-      team1_id: 4,
-      team1_name: "Static",
-      team1_tag: "STC",
-      team1_score: 0,
-      team2_id: 1,
-      team2_name: "Night Shift",
-      team2_tag: "NSH",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-13",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 12,
-      week_number: 6,
-      season_type: "regular",
-      week_label: "Regular Season Week 4",
-      match_number: 12,
-      team1_id: 3,
-      team1_name: "Redline",
-      team1_tag: "RED",
-      team1_score: 0,
-      team2_id: 2,
-      team2_name: "Vantage",
-      team2_tag: "VTG",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-13",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 13,
-      week_number: 7,
-      season_type: "regular",
-      week_label: "Regular Season Week 5",
-      match_number: 13,
-      team1_id: 4,
-      team1_name: "Static",
-      team1_tag: "STC",
-      team1_score: 0,
-      team2_id: 2,
-      team2_name: "Vantage",
-      team2_tag: "VTG",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-20",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 14,
-      week_number: 7,
-      season_type: "regular",
-      week_label: "Regular Season Week 5",
-      match_number: 14,
-      team1_id: 3,
-      team1_name: "Redline",
-      team1_tag: "RED",
-      team1_score: 0,
-      team2_id: 1,
-      team2_name: "Night Shift",
-      team2_tag: "NSH",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-20",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 15,
-      week_number: 8,
-      season_type: "regular",
-      week_label: "Regular Season Week 6",
-      match_number: 15,
-      team1_id: 2,
-      team1_name: "Vantage",
-      team1_tag: "VTG",
-      team1_score: 0,
-      team2_id: 1,
-      team2_name: "Night Shift",
-      team2_tag: "NSH",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-27",
-      scheduled_time: "6:00 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 16,
-      week_number: 8,
-      season_type: "regular",
-      week_label: "Regular Season Week 6",
-      match_number: 16,
-      team1_id: 4,
-      team1_name: "Static",
-      team1_tag: "STC",
-      team1_score: 0,
-      team2_id: 3,
-      team2_name: "Redline",
-      team2_tag: "RED",
-      team2_score: 0,
-      winner_id: null,
-      winner_name: null,
-      status: "Scheduled",
-      scheduled_date: "2026-11-27",
-      scheduled_time: "7:30 PM EST",
-      best_of: 5,
-      stream_url: null,
-      standings_recorded: false,
-      created_at: new Date().toISOString()
-    }
-  ],
-  map_stats: {
-    1: [ // Apex (Night Shift)
-      { id: 1, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Vantage", kills: 32, deaths: 21, damage: 4820, kdr: 1.52, result: "W", score: "250 - 210", match_date: "2026-09-24" },
-      { id: 2, map_name: "Highrise", game_mode: "Search & Destroy", opponent_team: "Vantage", kills: 9, deaths: 5, damage: 1450, kdr: 1.80, result: "W", score: "6 - 4", match_date: "2026-09-24" },
-      { id: 3, map_name: "Invasion", game_mode: "Control", opponent_team: "Vantage", kills: 24, deaths: 19, damage: 3610, kdr: 1.26, result: "L", score: "2 - 3", match_date: "2026-09-24" },
-      { id: 4, map_name: "Sub Base", game_mode: "Hardpoint", opponent_team: "Redline", kills: 29, deaths: 22, damage: 4390, kdr: 1.32, result: "W", score: "250 - 195", match_date: "2026-09-18" },
-      { id: 5, map_name: "Rio", game_mode: "Search & Destroy", opponent_team: "Redline", kills: 11, deaths: 4, damage: 1820, kdr: 2.75, result: "W", score: "6 - 2", match_date: "2026-09-18" }
-    ],
-    2: [ // Ghost (Night Shift)
-      { id: 6, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Vantage", kills: 26, deaths: 18, damage: 4410, kdr: 1.44, result: "W", score: "250 - 210", match_date: "2026-09-24" },
-      { id: 7, map_name: "Highrise", game_mode: "Search & Destroy", opponent_team: "Vantage", kills: 7, deaths: 6, damage: 1200, kdr: 1.17, result: "W", score: "6 - 4", match_date: "2026-09-24" },
-      { id: 8, map_name: "Invasion", game_mode: "Control", opponent_team: "Vantage", kills: 21, deaths: 20, damage: 3450, kdr: 1.05, result: "L", score: "2 - 3", match_date: "2026-09-24" },
-      { id: 9, map_name: "Sub Base", game_mode: "Hardpoint", opponent_team: "Redline", kills: 27, deaths: 19, damage: 4100, kdr: 1.42, result: "W", score: "250 - 195", match_date: "2026-09-18" }
-    ],
-    5: [ // Specter (Vantage)
-      { id: 10, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Night Shift", kills: 29, deaths: 24, damage: 4650, kdr: 1.21, result: "L", score: "210 - 250", match_date: "2026-09-24" },
-      { id: 11, map_name: "Highrise", game_mode: "Search & Destroy", opponent_team: "Night Shift", kills: 8, deaths: 7, damage: 1310, kdr: 1.14, result: "L", score: "4 - 6", match_date: "2026-09-24" },
-      { id: 12, map_name: "Invasion", game_mode: "Control", opponent_team: "Night Shift", kills: 27, deaths: 18, damage: 4120, kdr: 1.50, result: "W", score: "3 - 2", match_date: "2026-09-24" },
-      { id: 13, map_name: "6 Star", game_mode: "Hardpoint", opponent_team: "Static", kills: 34, deaths: 21, damage: 5100, kdr: 1.62, result: "W", score: "250 - 180", match_date: "2026-09-17" }
-    ],
-    9: [ // Reaper (Redline)
-      { id: 14, map_name: "Sub Base", game_mode: "Hardpoint", opponent_team: "Night Shift", kills: 26, deaths: 25, damage: 4120, kdr: 1.04, result: "L", score: "195 - 250", match_date: "2026-09-18" },
-      { id: 15, map_name: "Rio", game_mode: "Search & Destroy", opponent_team: "Night Shift", kills: 6, deaths: 7, damage: 980, kdr: 0.86, result: "L", score: "2 - 6", match_date: "2026-09-18" },
-      { id: 16, map_name: "Karachi", game_mode: "Hardpoint", opponent_team: "Static", kills: 31, deaths: 20, damage: 4750, kdr: 1.55, result: "W", score: "250 - 220", match_date: "2026-09-11" }
-    ]
-  },
-  team_map_records: {
-    1: { // Night Shift (NSH) - 5W-1L, 50 PTS
-      overall: { wins: 5, losses: 1, points: 50, map_wins: 16, map_losses: 6, map_win_rate: 73 },
-      modes: {
-        hardpoint: { wins: 7, losses: 2, win_rate: 78, avg_score: "248 - 208" },
-        snd: { wins: 5, losses: 1, win_rate: 83, avg_score: "5.8 - 3.5" },
-        control: { wins: 4, losses: 3, win_rate: 57, avg_score: "2.7 - 2.1" }
-      },
-      maps: [
-        { map_name: "Karachi", game_mode: "Hardpoint", wins: 3, losses: 0, win_rate: 100, streak: "3W", recent_score: "250 - 210 vs Vantage", recent_result: "W" },
-        { map_name: "Sub Base", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "250 - 195 vs Redline", recent_result: "W" },
-        { map_name: "Rio", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "2W", recent_score: "250 - 225 vs Static", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 3, losses: 0, win_rate: 100, streak: "3W", recent_score: "6 - 4 vs Vantage", recent_result: "W" },
-        { map_name: "Rio", game_mode: "Search & Destroy", wins: 2, losses: 0, win_rate: 100, streak: "2W", recent_score: "6 - 2 vs Redline", recent_result: "W" },
-        { map_name: "Karachi", game_mode: "Search & Destroy", wins: 0, losses: 1, win_rate: 0, streak: "1L", recent_score: "4 - 6 vs Vantage", recent_result: "L" },
-        { map_name: "Invasion", game_mode: "Control", wins: 2, losses: 2, win_rate: 50, streak: "1L", recent_score: "2 - 3 vs Vantage", recent_result: "L" },
-        { map_name: "Highrise", game_mode: "Control", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "3 - 1 vs Redline", recent_result: "W" }
-      ]
-    },
-    2: { // Vantage (VTG) - 4W-2L, 40 PTS
-      overall: { wins: 4, losses: 2, points: 40, map_wins: 14, map_losses: 9, map_win_rate: 61 },
-      modes: {
-        hardpoint: { wins: 5, losses: 4, win_rate: 56, avg_score: "235 - 220" },
-        snd: { wins: 5, losses: 3, win_rate: 63, avg_score: "5.4 - 4.1" },
-        control: { wins: 4, losses: 2, win_rate: 67, avg_score: "2.8 - 2.0" }
-      },
-      maps: [
-        { map_name: "Karachi", game_mode: "Hardpoint", wins: 2, losses: 2, win_rate: 50, streak: "1L", recent_score: "210 - 250 vs Night Shift", recent_result: "L" },
-        { map_name: "6 Star", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "2W", recent_score: "250 - 180 vs Static", recent_result: "W" },
-        { map_name: "Vista", game_mode: "Hardpoint", wins: 1, losses: 1, win_rate: 50, streak: "1W", recent_score: "250 - 220 vs Redline", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 2, losses: 2, win_rate: 50, streak: "1L", recent_score: "4 - 6 vs Night Shift", recent_result: "L" },
-        { map_name: "Karachi", game_mode: "Search & Destroy", wins: 2, losses: 0, win_rate: 100, streak: "2W", recent_score: "6 - 4 vs Night Shift", recent_result: "W" },
-        { map_name: "Terminal", game_mode: "Search & Destroy", wins: 1, losses: 1, win_rate: 50, streak: "1W", recent_score: "6 - 3 vs Redline", recent_result: "W" },
-        { map_name: "Invasion", game_mode: "Control", wins: 3, losses: 1, win_rate: 75, streak: "2W", recent_score: "3 - 2 vs Night Shift", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Control", wins: 1, losses: 1, win_rate: 50, streak: "1L", recent_score: "1 - 3 vs Redline", recent_result: "L" }
-      ]
-    },
-    3: { // Redline (RED) - 3W-3L, 30 PTS
-      overall: { wins: 3, losses: 3, points: 30, map_wins: 11, map_losses: 12, map_win_rate: 48 },
-      modes: {
-        hardpoint: { wins: 4, losses: 5, win_rate: 44, avg_score: "228 - 236" },
-        snd: { wins: 4, losses: 4, win_rate: 50, avg_score: "4.8 - 4.9" },
-        control: { wins: 3, losses: 3, win_rate: 50, avg_score: "2.3 - 2.5" }
-      },
-      maps: [
-        { map_name: "Sub Base", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "195 - 250 vs Night Shift", recent_result: "L" },
-        { map_name: "Karachi", game_mode: "Hardpoint", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "250 - 220 vs Static", recent_result: "W" },
-        { map_name: "Rio", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "215 - 250 vs Vantage", recent_result: "L" },
-        { map_name: "Rio", game_mode: "Search & Destroy", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "2 - 6 vs Night Shift", recent_result: "L" },
-        { map_name: "Karachi", game_mode: "Search & Destroy", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "6 - 4 vs Night Shift", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 1, losses: 1, win_rate: 50, streak: "1W", recent_score: "6 - 5 vs Static", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Control", wins: 2, losses: 1, win_rate: 67, streak: "1W", recent_score: "3 - 1 vs Vantage", recent_result: "W" },
-        { map_name: "Invasion", game_mode: "Control", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "1 - 3 vs Night Shift", recent_result: "L" }
-      ]
-    },
-    4: { // Static (STC) - 1W-5L, 10 PTS
-      overall: { wins: 1, losses: 5, points: 10, map_wins: 7, map_losses: 16, map_win_rate: 30 },
-      modes: {
-        hardpoint: { wins: 3, losses: 6, win_rate: 33, avg_score: "210 - 245" },
-        snd: { wins: 2, losses: 5, win_rate: 29, avg_score: "3.7 - 5.6" },
-        control: { wins: 2, losses: 5, win_rate: 29, avg_score: "1.8 - 2.8" }
-      },
-      maps: [
-        { map_name: "6 Star", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "180 - 250 vs Vantage", recent_result: "L" },
-        { map_name: "Karachi", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "220 - 250 vs Redline", recent_result: "L" },
-        { map_name: "Sub Base", game_mode: "Hardpoint", wins: 1, losses: 2, win_rate: 33, streak: "1W", recent_score: "250 - 235 vs Redline", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Search & Destroy", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "5 - 6 vs Redline", recent_result: "L" },
-        { map_name: "Terminal", game_mode: "Search & Destroy", wins: 1, losses: 2, win_rate: 33, streak: "1L", recent_score: "3 - 6 vs Vantage", recent_result: "L" },
-        { map_name: "Invasion", game_mode: "Control", wins: 1, losses: 2, win_rate: 33, streak: "1W", recent_score: "3 - 2 vs Redline", recent_result: "W" },
-        { map_name: "Highrise", game_mode: "Control", wins: 1, losses: 3, win_rate: 25, streak: "2L", recent_score: "0 - 3 vs Night Shift", recent_result: "L" }
-      ]
-    }
-  }
+  vods: [],
+  scheduled_matches: [],
+  map_stats: {},
+  team_map_records: {}
 };
 
 // Unified Data Access API
@@ -811,8 +482,8 @@ window.LeagueDB = {
           .select("*")
           .order("points", { ascending: false })
           .order("wins", { ascending: false });
-        if (!error && data && data.length > 0) return data;
-        console.warn("Supabase fetch returned empty/error, using fallback:", error);
+        if (!error && data) return data;
+        console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
@@ -828,8 +499,8 @@ window.LeagueDB = {
           .from("teams")
           .select("*, players(*)")
           .order("points", { ascending: false });
-        if (!error && data && data.length > 0) return data;
-        console.warn("Supabase fetch returned empty/error, using fallback:", error);
+        if (!error && data) return data;
+        console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
@@ -884,8 +555,8 @@ window.LeagueDB = {
           .from("vods")
           .select("*, team1:team1_id(name), team2:team2_id(name)")
           .order("created_at", { ascending: false });
-        if (!error && data && data.length > 0) return data;
-        console.warn("Supabase fetch returned empty/error, using fallback:", error);
+        if (!error && data) return data;
+        console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
@@ -2020,6 +1691,133 @@ window.LeagueDB = {
     return { success: true, telemetry };
   },
 
+  // Admin: Batch Commit Player Map Stats (Used by AI Scoreboard Scanner)
+  async addPlayerMapStatsBatch(statsArray) {
+    if (!Array.isArray(statsArray) || statsArray.length === 0) {
+      return { success: false, error: "No player stats provided." };
+    }
+    const inserted = [];
+    const errors = [];
+    const playerIdsToSync = new Set();
+
+    for (const stat of statsArray) {
+      try {
+        const res = await this.addPlayerMapStat(stat);
+        if (res.success) {
+          inserted.push(res.data);
+          if (stat.player_id) playerIdsToSync.add(Number(stat.player_id));
+        } else {
+          errors.push(res.error || "Failed stat insert");
+        }
+      } catch (err) {
+        errors.push(err.message || err);
+      }
+    }
+
+    // Ensure all players are synced
+    for (const pid of playerIdsToSync) {
+      try {
+        await this.syncPlayerTotals(pid);
+      } catch (e) {}
+    }
+
+    return {
+      success: inserted.length > 0,
+      insertedCount: inserted.length,
+      inserted,
+      errors: errors.length > 0 ? errors : null
+    };
+  },
+
+  // Admin: Record Team Map Outcome (Wins/Losses per Map & Mode in team_map_records)
+  async recordTeamMapStat(teamId, mapName, gameMode, result = "W", recentScore = "") {
+    if (!teamId) return { success: false, error: "Team ID is required" };
+    const isWin = String(result).toUpperCase() === "W";
+
+    if (dbClient) {
+      try {
+        const { data: existing } = await dbClient
+          .from("team_map_records")
+          .select("*")
+          .eq("team_id", teamId)
+          .ilike("map_name", mapName.trim())
+          .ilike("game_mode", gameMode.trim())
+          .maybeSingle();
+
+        if (existing) {
+          const newWins = (existing.wins || 0) + (isWin ? 1 : 0);
+          const newLosses = (existing.losses || 0) + (isWin ? 0 : 1);
+          const total = newWins + newLosses;
+          const winRate = total > 0 ? Math.round((newWins / total) * 100) : 0;
+          const streak = isWin ? "1W" : "1L";
+
+          const { data, error } = await dbClient
+            .from("team_map_records")
+            .update({
+              wins: newWins,
+              losses: newLosses,
+              win_rate: winRate,
+              streak,
+              recent_score: recentScore || existing.recent_score,
+              recent_result: isWin ? "W" : "L"
+            })
+            .eq("id", existing.id)
+            .select();
+          return { success: !error, data: data?.[0] };
+        } else {
+          const { data, error } = await dbClient
+            .from("team_map_records")
+            .insert([{
+              team_id: teamId,
+              map_name: mapName.trim(),
+              game_mode: gameMode.trim(),
+              wins: isWin ? 1 : 0,
+              losses: isWin ? 0 : 1,
+              win_rate: isWin ? 100 : 0,
+              streak: isWin ? "1W" : "1L",
+              recent_score: recentScore || null,
+              recent_result: isWin ? "W" : "L"
+            }])
+            .select();
+          return { success: !error, data: data?.[0] };
+        }
+      } catch (err) {
+        console.warn("Supabase recordTeamMapStat warning:", err);
+      }
+    }
+
+    // Local storage fallback
+    try {
+      const key = "frontline_team_map_records_" + teamId;
+      let list = JSON.parse(localStorage.getItem(key)) || [];
+      const idx = list.findIndex(m => m.map_name.toLowerCase() === mapName.toLowerCase() && m.game_mode.toLowerCase() === gameMode.toLowerCase());
+      if (idx !== -1) {
+        list[idx].wins = (list[idx].wins || 0) + (isWin ? 1 : 0);
+        list[idx].losses = (list[idx].losses || 0) + (isWin ? 0 : 1);
+        const tot = list[idx].wins + list[idx].losses;
+        list[idx].win_rate = Math.round((list[idx].wins / tot) * 100);
+        list[idx].recent_score = recentScore;
+        list[idx].recent_result = isWin ? "W" : "L";
+      } else {
+        list.push({
+          id: Date.now(),
+          team_id: teamId,
+          map_name: mapName,
+          game_mode: gameMode,
+          wins: isWin ? 1 : 0,
+          losses: isWin ? 0 : 1,
+          win_rate: isWin ? 100 : 0,
+          recent_score: recentScore,
+          recent_result: isWin ? "W" : "L"
+        });
+      }
+      localStorage.setItem(key, JSON.stringify(list));
+      return { success: true, mock: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
   // Admin / Internal: Sync & Recalculate Player's Season Totals from Map Stats
   async syncPlayerTotals(playerId) {
     if (!playerId) return null;
@@ -2376,7 +2174,41 @@ window.LeagueDB = {
   // ==========================================
   // LEAGUE ANNOUNCEMENTS & INTEL BROADCAST
   // ==========================================
-  async getAnnouncements(includeInactive = false) {
+  _getStoredAnnouncements() {
+    try {
+      const stored = localStorage.getItem("frontline_announcements");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  _saveStoredAnnouncements(list) {
+    try {
+      if (Array.isArray(list)) {
+        localStorage.setItem("frontline_announcements", JSON.stringify(list));
+      }
+    } catch (e) {}
+  },
+
+  _notifyAnnouncementChange(ann) {
+    try {
+      if (typeof window !== "undefined") {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel("frontline_announcements_channel");
+          bc.postMessage({ type: "ANNOUNCEMENT_CHANGED", data: ann, timestamp: Date.now() });
+          bc.close();
+        }
+        localStorage.setItem("frontline_announcements_last_update", Date.now().toString());
+        window.dispatchEvent(new CustomEvent("frontline_announcement_changed", { detail: ann }));
+      }
+    } catch (_) {}
+  },
+
+  async getAnnouncements(includeInactive = false, includeScheduled = false) {
+    let list = null;
     if (dbClient) {
       try {
         let query = dbClient
@@ -2390,21 +2222,42 @@ window.LeagueDB = {
         }
 
         const { data, error } = await query;
-        if (!error && data) {
-          return data;
-        }
-        if (error) {
-          console.warn("Supabase league_announcements returned error, falling back to mock:", error.message || error);
+        if (!error && data && data.length > 0) {
+          list = data;
+          this._saveStoredAnnouncements(data);
+        } else if (error) {
+          console.warn("Supabase league_announcements returned error, falling back to local:", error.message || error);
         }
       } catch (err) {
-        console.warn("Supabase getAnnouncements query error, using fallback:", err);
+        console.warn("Supabase getAnnouncements query error, using local fallback:", err);
       }
     }
 
-    let list = Array.isArray(MOCK_DATA.announcements) ? [...MOCK_DATA.announcements] : [];
+    if (!list || list.length === 0) {
+      list = this._getStoredAnnouncements();
+    }
+    if (!list || list.length === 0) {
+      list = Array.isArray(MOCK_DATA.announcements) ? [...MOCK_DATA.announcements] : [];
+      this._saveStoredAnnouncements(list);
+    }
+
     if (!includeInactive) {
       list = list.filter(a => a.is_active !== false);
     }
+
+    // Filter out future scheduled announcements unless explicitly requested (e.g. by admin console)
+    if (!includeScheduled) {
+      const now = new Date();
+      list = list.filter(a => {
+        if (!a.scheduled_for) return true;
+        try {
+          return new Date(a.scheduled_for) <= now;
+        } catch (_) {
+          return true;
+        }
+      });
+    }
+
     // Sort pinned first, then newest
     return list.sort((a, b) => {
       if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
@@ -2412,8 +2265,8 @@ window.LeagueDB = {
     });
   },
 
-  async getLatestAnnouncement() {
-    const list = await this.getAnnouncements(false);
+  async getLatestAnnouncement(includeScheduled = false) {
+    const list = await this.getAnnouncements(false, includeScheduled);
     return list && list.length > 0 ? list[0] : null;
   },
 
@@ -2423,8 +2276,11 @@ window.LeagueDB = {
       message: announcementData.message,
       tag: announcementData.tag || "Official Update",
       tag_color: announcementData.tag_color || "lime",
+      image_url: announcementData.image_url || null,
+      image_fit: announcementData.image_fit || "contain",
       link_url: announcementData.link_url || null,
       link_text: announcementData.link_text || null,
+      scheduled_for: announcementData.scheduled_for || null,
       is_active: announcementData.is_active !== undefined ? !!announcementData.is_active : true,
       pinned: announcementData.pinned !== undefined ? !!announcementData.pinned : false,
       created_at: new Date().toISOString(),
@@ -2433,37 +2289,105 @@ window.LeagueDB = {
 
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
+        let insertRecord = { ...record };
+        let { data, error } = await dbClient
           .from("league_announcements")
-          .insert([record])
+          .insert([insertRecord])
           .select();
+
+        // If schema cache lacks optional columns (image_fit, scheduled_for), retry with fallback payload
+        if (error && (error.code === "PGRST204" || (error.message && error.message.includes("column")))) {
+          console.warn("Supabase missing optional announcement column, auto-retrying insert...", error.message || error.code);
+          if (error.message?.includes("scheduled_for")) delete insertRecord.scheduled_for;
+          if (error.message?.includes("image_fit")) delete insertRecord.image_fit;
+          if (error.code === "PGRST204") {
+            delete insertRecord.scheduled_for;
+            delete insertRecord.image_fit;
+          }
+          const retry = await dbClient
+            .from("league_announcements")
+            .insert([insertRecord])
+            .select();
+          data = retry.data;
+          error = retry.error;
+        }
+
         if (error) throw error;
-        if (data && data.length > 0) return { success: true, data: data[0] };
+        if (data && data.length > 0) {
+          const stored = this._getStoredAnnouncements() || [];
+          stored.unshift(data[0]);
+          this._saveStoredAnnouncements(stored);
+          this._notifyAnnouncementChange(data[0]);
+          return { success: true, data: data[0] };
+        }
       } catch (err) {
-        console.warn("Supabase createAnnouncement error, falling back to mock storage:", err);
+        console.warn("Supabase createAnnouncement error, falling back to local storage:", err);
       }
     }
 
-    // Fallback Mock Storage
+    // Fallback Local & Mock Storage
     record.id = Date.now();
     if (!MOCK_DATA.announcements) MOCK_DATA.announcements = [];
     MOCK_DATA.announcements.unshift(record);
+    const stored = this._getStoredAnnouncements() || [...MOCK_DATA.announcements];
+    if (!stored.some(a => String(a.id) === String(record.id))) {
+      stored.unshift(record);
+    }
+    this._saveStoredAnnouncements(stored);
+    this._notifyAnnouncementChange(record);
     return { success: true, data: record, mock: true };
   },
 
   async updateAnnouncement(id, updates) {
     const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    if (cleanUpdates.image_url === undefined && updates.image_url !== undefined) {
+      cleanUpdates.image_url = updates.image_url;
+    }
+    if (cleanUpdates.image_fit === undefined && updates.image_fit !== undefined) {
+      cleanUpdates.image_fit = updates.image_fit;
+    }
+    if (cleanUpdates.scheduled_for === undefined && updates.scheduled_for !== undefined) {
+      cleanUpdates.scheduled_for = updates.scheduled_for;
+    }
+
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
+        let updatePayload = { ...cleanUpdates };
+        let { data, error } = await dbClient
           .from("league_announcements")
-          .update(cleanUpdates)
+          .update(updatePayload)
           .eq("id", id)
           .select();
+
+        // If schema cache lacks optional columns, retry with fallback payload
+        if (error && (error.code === "PGRST204" || (error.message && error.message.includes("column")))) {
+          console.warn("Supabase missing optional column on update, auto-retrying update...", error.message || error.code);
+          if (error.message?.includes("scheduled_for")) delete updatePayload.scheduled_for;
+          if (error.message?.includes("image_fit")) delete updatePayload.image_fit;
+          if (error.code === "PGRST204") {
+            delete updatePayload.scheduled_for;
+            delete updatePayload.image_fit;
+          }
+          const retry = await dbClient
+            .from("league_announcements")
+            .update(updatePayload)
+            .eq("id", id)
+            .select();
+          data = retry.data;
+          error = retry.error;
+        }
+
         if (error) throw error;
-        if (data && data.length > 0) return { success: true, data: data[0] };
+        if (data && data.length > 0) {
+          const stored = this._getStoredAnnouncements() || [];
+          const idx = stored.findIndex(a => String(a.id) === String(id));
+          if (idx !== -1) stored[idx] = { ...stored[idx], ...cleanUpdates };
+          this._saveStoredAnnouncements(stored);
+          this._notifyAnnouncementChange(data[0]);
+          return { success: true, data: data[0] };
+        }
       } catch (err) {
-        console.warn("Supabase updateAnnouncement error, updating in mock storage:", err);
+        console.warn("Supabase updateAnnouncement error, updating in local storage:", err);
       }
     }
 
@@ -2471,10 +2395,18 @@ window.LeagueDB = {
       const idx = MOCK_DATA.announcements.findIndex(a => String(a.id) === String(id));
       if (idx !== -1) {
         MOCK_DATA.announcements[idx] = { ...MOCK_DATA.announcements[idx], ...cleanUpdates };
-        return { success: true, data: MOCK_DATA.announcements[idx], mock: true };
       }
     }
-    return { success: false, error: "Announcement not found in memory" };
+    const stored = this._getStoredAnnouncements() || [];
+    const idx = stored.findIndex(a => String(a.id) === String(id));
+    if (idx !== -1) {
+      stored[idx] = { ...stored[idx], ...cleanUpdates };
+      this._saveStoredAnnouncements(stored);
+      this._notifyAnnouncementChange(stored[idx]);
+      return { success: true, data: stored[idx], mock: true };
+    }
+    this._notifyAnnouncementChange(cleanUpdates);
+    return { success: true, data: cleanUpdates, mock: true };
   },
 
   async deleteAnnouncement(id) {
@@ -2486,18 +2418,20 @@ window.LeagueDB = {
           .eq("id", id)
           .select();
         if (error) throw error;
-        return { success: true, data };
       } catch (err) {
-        console.warn("Supabase deleteAnnouncement error, deleting from mock storage:", err);
+        console.warn("Supabase deleteAnnouncement error, deleting from local storage:", err);
       }
     }
 
     if (MOCK_DATA.announcements) {
-      const initLen = MOCK_DATA.announcements.length;
       MOCK_DATA.announcements = MOCK_DATA.announcements.filter(a => String(a.id) !== String(id));
-      return { success: true, mock: true, deleted: initLen !== MOCK_DATA.announcements.length };
     }
-    return { success: true, mock: true };
+    const stored = this._getStoredAnnouncements() || [];
+    const filtered = stored.filter(a => String(a.id) !== String(id));
+    this._saveStoredAnnouncements(filtered);
+    this._notifyAnnouncementChange({ id, deleted: true });
+
+    return { success: true, id: id };
   },
 
   // ==========================================
@@ -3460,7 +3394,10 @@ window.LeagueDB = {
 
     let winnerId = null;
     let winnerName = null;
-    if (s1 > s2) {
+    if (resultData.winner_id !== undefined && resultData.winner_id !== null && resultData.winner_id !== "") {
+      winnerId = resultData.winner_id;
+      winnerName = resultData.winner_name || (winnerId == match.team1_id ? match.team1_name : match.team2_name);
+    } else if (s1 > s2) {
       winnerId = match.team1_id;
       winnerName = match.team1_name;
     } else if (s2 > s1) {
@@ -3508,6 +3445,10 @@ window.LeagueDB = {
     } catch (e) {}
 
     return { success: true, match };
+  },
+
+  recordMatchScore(matchId, resultData) {
+    return this.recordScheduledMatchResult(matchId, resultData);
   },
 
   // Update match details (date, time, teams, stream, etc.)
@@ -3636,10 +3577,13 @@ window.LeagueDB = {
   // ==========================================
   // PLAYER / USER AUTHENTICATION (SUPABASE AUTH)
   // ==========================================
-  async signUpPlayer(email, password, gamertag = "", activisionId = "") {
+  async signUpPlayer(email, password, gamertag = "", activisionId = "", playerRole = "Flex", region = "NA East", platform = "PC") {
     const cleanEmail = (email || "").trim();
     const cleanGamertag = (gamertag || "").trim() || (cleanEmail.includes("@") ? cleanEmail.split("@")[0] : cleanEmail);
     const cleanActivision = (activisionId || "").trim() || `${cleanGamertag}#1234567`;
+    const cleanRole = (playerRole || "").trim() || "Flex";
+    const cleanRegion = (region || "").trim() || "NA East";
+    const cleanPlatform = (platform || "").trim() || "PC";
 
     if (!cleanEmail) {
       return { success: false, error: "Email address is required." };
@@ -3662,68 +3606,33 @@ window.LeagueDB = {
           gamertag: cleanGamertag,
           username: cleanGamertag,
           activision_id: cleanActivision,
-          role: "player"
+          role: cleanRole,
+          tactical_role: cleanRole,
+          region: cleanRegion,
+          platform: cleanPlatform,
+          discord_name: cleanGamertag,
+          profile_completed: true
         }
       };
+
       try {
         localStorage.setItem("frontline_league_auth_user", JSON.stringify(localUser));
-        const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-        const filtered = customAccounts.filter(a =>
-          (a.email && a.email.toLowerCase() !== cleanEmail.toLowerCase()) &&
-          (a.gamertag && a.gamertag.toLowerCase() !== cleanGamertag.toLowerCase())
-        );
-        filtered.push({
-          id: localUser.id,
-          gamertag: cleanGamertag,
-          username: cleanGamertag,
-          email: cleanEmail,
-          activision_id: cleanActivision,
-          password: password,
-          tag: "LEAGUE",
-          team_name: "Free Agent",
-          elo: 1200,
-          tier: "Specialist",
-          avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-          created_at: new Date().toISOString()
-        });
-        localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filtered));
       } catch (e) {}
 
-      // Automatically place into recruitment queue
+      // Automatically sync into all tables & caches
       try {
-        await this.submitSignup({
+        await this.syncPlayerDossierAcrossTables({
+          userId: localUser.id,
           gamertag: cleanGamertag,
-          activision_id: cleanActivision,
-          discord_username: cleanGamertag,
-          role: "Flex",
-          platform: "PC",
-          region: "NA East",
-          registration_type: "Free Agent",
-          team_name: null,
-          notes: `[Account: ${cleanEmail}] Website recruit registration`,
-          status: "Pending"
+          activisionId: cleanActivision,
+          role: cleanRole,
+          region: cleanRegion,
+          platform: cleanPlatform,
+          discordName: cleanGamertag,
+          email: cleanEmail
         });
-      } catch (signupErr) {
-        console.warn("Auto-queue on signup notice:", signupErr);
-      }
-
-      // Auto-sync into Arena Free Agents directory
-      try {
-        if (window.LadderDB && typeof window.LadderDB.registerFreeAgentFromAccount === "function") {
-          window.LadderDB.registerFreeAgentFromAccount({
-            id: localUser.id,
-            gamertag: cleanGamertag,
-            email: cleanEmail,
-            activision_id: cleanActivision,
-            tag: "LFT",
-            elo: 1200,
-            role: "Flex",
-            ladder_pref: "4v4_variant",
-            created_at: new Date().toISOString()
-          });
-        }
-      } catch (faErr) {
-        console.warn("Free agent auto-sync notice:", faErr);
+      } catch (syncErr) {
+        console.warn("Local sync dossier notice:", syncErr);
       }
 
       return {
@@ -3733,6 +3642,7 @@ window.LeagueDB = {
         requiresEmailConfirmation: false
       };
     }
+
     try {
       const { data, error } = await dbClient.auth.signUp({
         email: cleanEmail,
@@ -3742,7 +3652,12 @@ window.LeagueDB = {
             gamertag: cleanGamertag,
             username: cleanGamertag,
             activision_id: cleanActivision,
-            role: "player"
+            role: cleanRole,
+            tactical_role: cleanRole,
+            region: cleanRegion,
+            platform: cleanPlatform,
+            discord_name: cleanGamertag,
+            profile_completed: true
           }
         }
       });
@@ -3752,62 +3667,22 @@ window.LeagueDB = {
       if (data?.user) {
         try {
           localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
-          const customAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-          const filtered = customAccounts.filter(a =>
-            (a.email && a.email.toLowerCase() !== cleanEmail.toLowerCase()) &&
-            (a.gamertag && a.gamertag.toLowerCase() !== cleanGamertag.toLowerCase())
-          );
-          filtered.push({
-            id: data.user.id,
-            gamertag: cleanGamertag,
-            username: cleanGamertag,
-            email: cleanEmail,
-            activision_id: cleanActivision,
-            tag: "LEAGUE",
-            team_name: "Free Agent",
-            elo: 1200,
-            tier: "Specialist",
-            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-            created_at: new Date().toISOString()
-          });
-          localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filtered));
         } catch (e) {}
 
-        // Automatically place into recruitment queue
+        // Automatically sync into all tables & caches
         try {
-          await this.submitSignup({
+          await this.syncPlayerDossierAcrossTables({
+            userId: data.user.id,
             gamertag: cleanGamertag,
-            activision_id: cleanActivision,
-            discord_username: cleanGamertag,
-            role: "Flex",
-            platform: "PC",
-            region: "NA East",
-            registration_type: "Free Agent",
-            team_name: null,
-            notes: `[Account: ${cleanEmail}] Website recruit registration`,
-            status: "Pending"
+            activisionId: cleanActivision,
+            role: cleanRole,
+            region: cleanRegion,
+            platform: cleanPlatform,
+            discordName: cleanGamertag,
+            email: cleanEmail
           });
-        } catch (signupErr) {
-          console.warn("Auto-queue on signup notice:", signupErr);
-        }
-
-        // Auto-sync into Arena Free Agents directory
-        try {
-          if (window.LadderDB && typeof window.LadderDB.registerFreeAgentFromAccount === "function") {
-            window.LadderDB.registerFreeAgentFromAccount({
-              id: data.user.id,
-              gamertag: cleanGamertag,
-              email: cleanEmail,
-              activision_id: cleanActivision,
-              tag: "LFT",
-              elo: 1200,
-              role: "Flex",
-              ladder_pref: "4v4_variant",
-              created_at: new Date().toISOString()
-            });
-          }
-        } catch (faErr) {
-          console.warn("Free agent auto-sync notice:", faErr);
+        } catch (syncErr) {
+          console.warn("Multi-table sync on signup notice:", syncErr);
         }
       }
       return {
@@ -3954,6 +3829,803 @@ window.LeagueDB = {
   },
 
   // ==========================================
+  // DISCORD IDENTITY & COMBATANT DOSSIER SYNC
+  // ==========================================
+  getDiscordIdentity(user) {
+    if (!user) return null;
+    const meta = user.user_metadata || {};
+    const appMeta = user.app_metadata || {};
+    const identities = user.identities || [];
+    const isDiscord = appMeta.provider === "discord" ||
+                      (appMeta.providers && appMeta.providers.includes("discord")) ||
+                      identities.some(i => i.provider === "discord") ||
+                      !!meta.provider_id ||
+                      !!meta.discord_username ||
+                      !!meta.custom_claims?.global_name;
+
+    const globalName = meta.custom_claims?.global_name || meta.full_name || meta.name || "";
+    const handle = meta.user_name || meta.preferred_username || meta.username || meta.discord_username || "";
+    const primaryName = globalName || handle || (user.email ? user.email.split("@")[0] : "Operative");
+    const handleTag = handle ? `@${handle}` : (globalName ? `@${globalName}` : "");
+    const avatarUrl = meta.avatar_url || meta.picture || "";
+
+    return {
+      isDiscord: !!isDiscord,
+      primaryName,
+      handle,
+      globalName,
+      handleTag,
+      avatarUrl
+    };
+  },
+
+  // ==========================================
+  // UNIFIED PLAYER DOSSIER MULTI-TABLE SYNC
+  // ==========================================
+  async syncPlayerDossierAcrossTables(payload = {}) {
+    const {
+      userId,
+      gamertag,
+      activisionId,
+      role = "Flex",
+      region = "NA East",
+      platform = "PC",
+      discordName,
+      avatarUrl,
+      email
+    } = payload;
+
+    const cleanGamertag = (gamertag || "").trim();
+    const cleanActivision = (activisionId || "").trim();
+    const cleanRole = (role || "").trim() || "Flex";
+    const cleanRegion = (region || "").trim() || "NA East";
+    const cleanPlatform = (platform || "").trim() || "PC";
+    const cleanDiscord = (discordName || "").trim() || cleanGamertag;
+    const cleanAvatar = avatarUrl || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80";
+
+    if (!cleanGamertag) return { success: false, error: "Gamertag is required." };
+
+    // 1. Supabase Auth update if logged in
+    if (dbClient && typeof dbClient.auth?.updateUser === "function") {
+      try {
+        await dbClient.auth.updateUser({
+          data: {
+            gamertag: cleanGamertag,
+            username: cleanGamertag,
+            name: cleanGamertag,
+            activision_id: cleanActivision,
+            role: cleanRole,
+            tactical_role: cleanRole,
+            region: cleanRegion,
+            platform: cleanPlatform,
+            discord_name: cleanDiscord,
+            discord_username: cleanDiscord,
+            profile_completed: true,
+            avatar_url: cleanAvatar
+          }
+        });
+      } catch (authErr) {
+        console.warn("Auth updateUser sync notice:", authErr);
+      }
+    }
+
+    // 2. Sync public.players table (Insert or Update)
+    if (dbClient) {
+      try {
+        let existingPlayer = null;
+        if (userId) {
+          try {
+            const { data: pById } = await dbClient
+              .from("players")
+              .select("id, gamertag")
+              .eq("user_id", userId)
+              .maybeSingle();
+            if (pById) existingPlayer = pById;
+          } catch (e) {}
+        }
+        if (!existingPlayer) {
+          try {
+            const { data: pByTag } = await dbClient
+              .from("players")
+              .select("id, gamertag")
+              .ilike("gamertag", cleanGamertag)
+              .maybeSingle();
+            if (pByTag) existingPlayer = pByTag;
+          } catch (e) {}
+        }
+
+        if (existingPlayer) {
+          const updateObj = {
+            gamertag: cleanGamertag,
+            activision_id: cleanActivision,
+            role: cleanRole,
+            region: cleanRegion,
+            platform: cleanPlatform,
+            discord_name: cleanDiscord
+          };
+          if (userId) updateObj.user_id = userId;
+          if (cleanAvatar) updateObj.avatar_url = cleanAvatar;
+
+          const { error: updErr } = await dbClient
+            .from("players")
+            .update(updateObj)
+            .eq("id", existingPlayer.id);
+
+          if (updErr) {
+            // Fallback for core columns only if custom columns aren't migrated
+            await dbClient
+              .from("players")
+              .update({
+                gamertag: cleanGamertag,
+                role: cleanRole,
+                avatar_url: cleanAvatar
+              })
+              .eq("id", existingPlayer.id);
+          }
+        } else {
+          const insertObj = {
+            gamertag: cleanGamertag,
+            activision_id: cleanActivision,
+            role: cleanRole,
+            region: cleanRegion,
+            platform: cleanPlatform,
+            discord_name: cleanDiscord,
+            avatar_url: cleanAvatar,
+            kdr: 1.00,
+            wins: 0,
+            losses: 0,
+            total_kills: 0,
+            total_deaths: 0
+          };
+          if (userId) insertObj.user_id = userId;
+
+          const { error: insErr } = await dbClient
+            .from("players")
+            .insert([insertObj]);
+
+          if (insErr) {
+            // Fallback for core columns
+            await dbClient
+              .from("players")
+              .insert([{
+                gamertag: cleanGamertag,
+                role: cleanRole,
+                avatar_url: cleanAvatar,
+                kdr: 1.00,
+                wins: 0,
+                losses: 0
+              }]);
+          }
+        }
+      } catch (pErr) {
+        console.warn("Supabase players sync notice:", pErr);
+      }
+    }
+
+    // 3. Sync public.league_signups table (Insert or Update)
+    try {
+      await this.submitSignup({
+        user_id: userId || null,
+        gamertag: cleanGamertag,
+        activision_id: cleanActivision,
+        discord_username: cleanDiscord,
+        role: cleanRole,
+        platform: cleanPlatform,
+        region: cleanRegion,
+        registration_type: "Free Agent",
+        notes: `[Auto-Registered: ${email || cleanDiscord || cleanGamertag}]`,
+        status: "Pending"
+      });
+    } catch (sErr) {
+      console.warn("Supabase league_signups sync notice:", sErr);
+    }
+
+    // 4. Sync public.arena_free_agents table (Insert or Update)
+    if (dbClient) {
+      try {
+        let existingFA = null;
+        if (userId) {
+          try {
+            const { data: faById } = await dbClient
+              .from("arena_free_agents")
+              .select("id")
+              .eq("user_id", String(userId))
+              .maybeSingle();
+            if (faById) existingFA = faById;
+          } catch (e) {}
+        }
+        if (!existingFA) {
+          try {
+            const { data: faByTag } = await dbClient
+              .from("arena_free_agents")
+              .select("id")
+              .ilike("gamertag", cleanGamertag)
+              .maybeSingle();
+            if (faByTag) existingFA = faByTag;
+          } catch (e) {}
+        }
+
+        const faPayload = {
+          user_id: userId ? String(userId) : null,
+          gamertag: cleanGamertag,
+          activision_id: cleanActivision,
+          discord: cleanDiscord,
+          clan_tag: "LFT",
+          primary_role: cleanRole,
+          secondary_role: "Main AR",
+          platform: cleanPlatform,
+          region: cleanRegion,
+          avatar_url: cleanAvatar,
+          ladder_pref: "4v4_variant",
+          elo: 1200,
+          kdr: 1.00,
+          availability: "Active / Daily",
+          is_active: true,
+          is_new_user: true
+        };
+
+        if (existingFA) {
+          await dbClient
+            .from("arena_free_agents")
+            .update({
+              activision_id: cleanActivision,
+              discord: cleanDiscord,
+              primary_role: cleanRole,
+              platform: cleanPlatform,
+              region: cleanRegion,
+              avatar_url: cleanAvatar,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", existingFA.id);
+        } else {
+          await dbClient
+            .from("arena_free_agents")
+            .insert([faPayload]);
+        }
+      } catch (faErr) {
+        console.warn("Supabase arena_free_agents sync notice:", faErr);
+      }
+    }
+
+    // 5. Sync Local Storage across all game profiles
+    try {
+      const card = JSON.parse(localStorage.getItem("frontline_league_player_card")) || {
+        team: "Free Agent",
+        tag: "FA",
+        division: "Division 1 · Premier",
+        contract: "UNSIGNED FREE AGENT"
+      };
+      card.gamertag = cleanGamertag;
+      card.activision = cleanActivision;
+      card.role = cleanRole;
+      card.discord = cleanDiscord;
+      card.region = cleanRegion;
+      card.platform = cleanPlatform;
+      localStorage.setItem("frontline_league_player_card", JSON.stringify(card));
+    } catch (e) {}
+
+    try {
+      const arenaAuth = JSON.parse(localStorage.getItem("frontline_arena_auth_user")) || {};
+      arenaAuth.id = userId || arenaAuth.id || ("usr_" + Date.now());
+      if (email) arenaAuth.email = email;
+      arenaAuth.gamertag = cleanGamertag;
+      arenaAuth.username = cleanGamertag;
+      arenaAuth.activision_id = cleanActivision;
+      arenaAuth.discord = cleanDiscord;
+      arenaAuth.role = cleanRole;
+      arenaAuth.region = cleanRegion;
+      arenaAuth.platform = cleanPlatform;
+      arenaAuth.avatar_url = cleanAvatar;
+      localStorage.setItem("frontline_arena_auth_user", JSON.stringify(arenaAuth));
+    } catch (e) {}
+
+    try {
+      const arenaAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const idx = arenaAccounts.findIndex(a =>
+        (userId && a.id === userId) ||
+        (email && a.email && a.email.toLowerCase() === email.toLowerCase()) ||
+        (a.gamertag && a.gamertag.toLowerCase() === cleanGamertag.toLowerCase())
+      );
+      const accObj = {
+        id: userId || ("usr_" + Date.now()),
+        email: email || `${cleanGamertag.toLowerCase()}@frontlineleague.com`,
+        gamertag: cleanGamertag,
+        username: cleanGamertag,
+        activision_id: cleanActivision,
+        role: cleanRole,
+        region: cleanRegion,
+        platform: cleanPlatform,
+        discord: cleanDiscord,
+        avatar_url: cleanAvatar,
+        elo: 1200,
+        tier: "Specialist",
+        tag: "ARENA"
+      };
+      if (idx >= 0) {
+        arenaAccounts[idx] = { ...arenaAccounts[idx], ...accObj };
+      } else {
+        arenaAccounts.push(accObj);
+      }
+      localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(arenaAccounts));
+    } catch (e) {}
+
+    try {
+      const faKey = "frontline_arena_free_agents";
+      const localFAs = JSON.parse(localStorage.getItem(faKey)) || [];
+      const faIdx = localFAs.findIndex(f =>
+        (userId && f.user_id === String(userId)) ||
+        (f.gamertag && f.gamertag.toLowerCase() === cleanGamertag.toLowerCase())
+      );
+      const faItem = {
+        id: "fa_" + Date.now(),
+        user_id: userId ? String(userId) : null,
+        gamertag: cleanGamertag,
+        activision_id: cleanActivision,
+        discord: cleanDiscord,
+        clan_tag: "LFT",
+        primary_role: cleanRole,
+        platform: cleanPlatform,
+        region: cleanRegion,
+        avatar_url: cleanAvatar,
+        ladder_pref: "4v4_variant",
+        elo: 1200,
+        kdr: 1.00,
+        availability: "Active / Daily"
+      };
+      if (faIdx >= 0) {
+        localFAs[faIdx] = { ...localFAs[faIdx], ...faItem };
+      } else {
+        localFAs.push(faItem);
+      }
+      localStorage.setItem(faKey, JSON.stringify(localFAs));
+    } catch (e) {}
+
+    // 6. Sync LadderDB if loaded
+    try {
+      if (window.LadderDB && typeof window.LadderDB.registerFreeAgentFromAccount === "function") {
+        await window.LadderDB.registerFreeAgentFromAccount({
+          id: userId || ("usr_" + Date.now()),
+          gamertag: cleanGamertag,
+          email: email || `${cleanGamertag.toLowerCase()}@frontlineleague.com`,
+          activision_id: cleanActivision,
+          tag: "LFT",
+          elo: 1200,
+          role: cleanRole,
+          region: cleanRegion,
+          platform: cleanPlatform,
+          discord: cleanDiscord,
+          ladder_pref: "4v4_variant",
+          created_at: new Date().toISOString()
+        });
+      }
+      if (window.LadderDB && typeof window.LadderDB.updatePlayerProfile === "function") {
+        await window.LadderDB.updatePlayerProfile({
+          gamertag: cleanGamertag,
+          activision_id: cleanActivision,
+          role: cleanRole,
+          region: cleanRegion,
+          platform: cleanPlatform,
+          discord: cleanDiscord
+        });
+      }
+    } catch (lErr) {
+      console.warn("LadderDB sync notice:", lErr);
+    }
+
+    return { success: true };
+  },
+
+  async completeCombatantDossier(payload = {}) {
+    const { gamertag, activisionId, role, region, platform, discordName, avatarUrl } = payload;
+    const cleanGamertag = (gamertag || "").trim();
+    const cleanActivision = (activisionId || "").trim();
+    const cleanRole = (role || "").trim() || "Flex";
+    const cleanRegion = (region || "").trim() || "NA East";
+    const cleanPlatform = (platform || "").trim() || "PC";
+    const cleanDiscord = (discordName || "").trim() || cleanGamertag;
+
+    if (!cleanGamertag) {
+      return { success: false, error: "Please choose a username for the website / gamertag." };
+    }
+    if (!cleanActivision) {
+      return { success: false, error: "Activision ID is required (e.g. Username#1234567)." };
+    }
+
+    // Retrieve active auth user
+    let user = null;
+    const authRes = await this.getAuthUser();
+    if (authRes.success && authRes.user) {
+      user = authRes.user;
+    } else {
+      try {
+        user = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+      } catch (e) {}
+    }
+
+    if (!user) {
+      user = {
+        id: "usr_" + Date.now(),
+        email: cleanDiscord.includes("@") ? cleanDiscord : `${cleanGamertag.toLowerCase()}@frontlineleague.com`,
+        user_metadata: {}
+      };
+    }
+
+    if (!user.user_metadata) user.user_metadata = {};
+    user.user_metadata.gamertag = cleanGamertag;
+    user.user_metadata.username = cleanGamertag;
+    user.user_metadata.name = cleanGamertag;
+    user.user_metadata.activision_id = cleanActivision;
+    user.user_metadata.role = cleanRole;
+    user.user_metadata.tactical_role = cleanRole;
+    user.user_metadata.region = cleanRegion;
+    user.user_metadata.platform = cleanPlatform;
+    user.user_metadata.discord_name = cleanDiscord;
+    user.user_metadata.discord_username = cleanDiscord;
+    user.user_metadata.profile_completed = true;
+    if (avatarUrl) user.user_metadata.avatar_url = avatarUrl;
+
+    // Synchronize across all database tables & caches
+    await this.syncPlayerDossierAcrossTables({
+      userId: user.id,
+      gamertag: cleanGamertag,
+      activisionId: cleanActivision,
+      role: cleanRole,
+      region: cleanRegion,
+      platform: cleanPlatform,
+      discordName: cleanDiscord,
+      avatarUrl: avatarUrl || user.user_metadata?.avatar_url,
+      email: user.email
+    });
+
+    try {
+      localStorage.setItem("frontline_league_auth_user", JSON.stringify(user));
+    } catch (e) {}
+
+    // Clear Discord pending flag
+    try {
+      sessionStorage.removeItem("frontline_discord_oauth_pending");
+    } catch (e) {}
+
+    // Broadcast event
+    window.dispatchEvent(new CustomEvent("frontline_dossier_completed", {
+      detail: { user, gamertag: cleanGamertag, activision_id: cleanActivision, role: cleanRole, region: cleanRegion, platform: cleanPlatform, discord_name: cleanDiscord }
+    }));
+
+    return { success: true, user };
+  },
+
+  showDiscordDossierModal({ user, onComplete, onCancel } = {}) {
+    const discordInfo = this.getDiscordIdentity(user) || {
+      primaryName: "Discord Operative",
+      handle: "operative",
+      globalName: "Operative",
+      avatarUrl: ""
+    };
+    const meta = user?.user_metadata || {};
+    const existingGamertag = meta.gamertag || meta.username || discordInfo.globalName || discordInfo.handle || "";
+    const existingActivision = meta.activision_id || "";
+    const existingRole = meta.role || meta.tactical_role || "Flex";
+    const existingRegion = meta.region || "NA East";
+    const existingPlatform = meta.platform || "PC";
+
+    let modal = document.getElementById("modal-discord-dossier");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "modal-discord-dossier";
+      modal.className = "modal-overlay";
+      modal.style.cssText = "display:flex; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99999; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(8px);";
+      modal.innerHTML = `
+        <div class="account-gate-card" style="background:#13150f; border:1px solid #5865F2; box-shadow:0 0 45px rgba(88,101,242,0.3); max-width:540px; width:100%; padding:32px 28px; position:relative; margin:0; text-align:left;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+            <div>
+              <div class="gate-kicker" style="color:#5865F2; display:flex; align-items:center; gap:6px; font-weight:800; font-size:11px; letter-spacing:1px; text-transform:uppercase;">
+                <span>⚡ DISCORD SIGN-IN // ACCOUNT ONBOARDING</span>
+              </div>
+              <h2 class="gate-title" style="margin:4px 0 0; font-size:26px; font-family:var(--display, Impact, sans-serif); text-transform:uppercase; color:#fff;">
+                COMPLETE <span style="color:var(--lime, #d5f45b);">COMBATANT PROFILE</span>
+              </h2>
+            </div>
+            <button type="button" id="btn-close-discord-dossier" style="background:none; border:none; color:var(--muted, #b8baa9); font-size:22px; cursor:pointer; padding:4px 8px; line-height:1;" title="Dismiss modal">✕</button>
+          </div>
+
+          <p class="gate-subtitle" style="margin-bottom:16px; font-size:13px; color:var(--muted, #b8baa9); line-height:1.5;">
+            Welcome! Your Discord is verified. To complete your Frontline league account, provide your Activision ID, combat role, and regional timezone below.
+          </p>
+
+          <!-- Verified Discord Account Card -->
+          <div style="display:flex; align-items:center; gap:14px; background:#141724; border:1px solid #2d3654; padding:12px 16px; border-radius:4px; margin-bottom:20px;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#5865F2; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
+              <img id="discord-badge-avatar" src="" style="width:100%; height:100%; object-fit:cover; display:none;" alt="Discord Avatar" />
+              <svg id="discord-badge-fallback-icon" width="24" height="24" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:10.5px; font-weight:800; color:#5865F2; letter-spacing:1px; text-transform:uppercase;">Connected Discord Account</div>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+                <strong id="discord-badge-username" style="font-size:15px; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Username#0000</strong>
+                <span style="background:#5865f225; color:#8ea1e1; font-size:10px; font-weight:800; padding:2px 6px; border:1px solid #5865f250; border-radius:3px;">OAUTH VERIFIED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Banner inside modal -->
+          <div id="discord-dossier-error-banner" class="gate-error-banner" style="display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; font-size:13px; padding:10px 14px; margin-bottom:14px; border-radius:2px;"></div>
+
+          <!-- The Dossier Form -->
+          <form id="form-discord-dossier" class="signup-form" style="display:flex; flex-direction:column; gap:14px;">
+            
+            <!-- 1. Gamertag / Website Alias -->
+            <div class="form-group" style="text-align:left;">
+              <label class="form-label" for="discord-dossier-gamertag" style="display:block; font-size:12px; font-weight:700; color:var(--text, #f5f5f0); text-transform:uppercase; margin-bottom:6px;">
+                Website Gamertag / Competitor Handle <span class="req" style="color:var(--lime, #d5f45b);">*</span>
+              </label>
+              <input
+                type="text"
+                id="discord-dossier-gamertag"
+                class="form-control"
+                placeholder="e.g. Apex, Ghost, Shotzzy"
+                required
+                autocomplete="nickname"
+                style="width:100%; box-sizing:border-box; background:#080a07; border:1px solid #333d1c; padding:10px 14px; color:#fff; font-size:13.5px; border-radius:2px;"
+              />
+              <span class="form-hint" style="font-size:11px; color:var(--muted, #b8baa9); margin-top:4px; display:block;">Your competitive handle across Frontline leaderboards & rosters</span>
+            </div>
+
+            <!-- 2. Activision ID -->
+            <div class="form-group" style="text-align:left;">
+              <label class="form-label" for="discord-dossier-activision" style="display:block; font-size:12px; font-weight:700; color:var(--text, #f5f5f0); text-transform:uppercase; margin-bottom:6px;">
+                Activision ID <span class="req" style="color:var(--lime, #d5f45b);">*</span>
+              </label>
+              <input
+                type="text"
+                id="discord-dossier-activision"
+                class="form-control"
+                placeholder="e.g. Apex#1928374"
+                required
+                autocomplete="off"
+                style="width:100%; box-sizing:border-box; background:#080a07; border:1px solid #333d1c; padding:10px 14px; color:#fff; font-size:13.5px; border-radius:2px;"
+              />
+              <span class="form-hint" style="font-size:11px; color:var(--muted, #b8baa9); margin-top:4px; display:block;">Include numbers (#1234567) for matchmaking invitations & stats tracking</span>
+            </div>
+
+            <!-- 3. Tactical Role & Battle Platform Grid -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="discord-dossier-role" style="display:block; font-size:12px; font-weight:700; color:var(--text, #f5f5f0); text-transform:uppercase; margin-bottom:6px;">
+                  Tactical Role <span class="req" style="color:var(--lime, #d5f45b);">*</span>
+                </label>
+                <select id="discord-dossier-role" class="form-control" required style="width:100%; box-sizing:border-box; background:#080a07; border:1px solid #333d1c; padding:10px 14px; color:#fff; font-size:13.5px; border-radius:2px;">
+                  <option value="Flex" selected>Flex / Hybrid</option>
+                  <option value="Main AR">Main AR / Anchor</option>
+                  <option value="SMG">SMG / Entry Fragger</option>
+                  <option value="Sniper">Sniper / Slayer</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="discord-dossier-platform" style="display:block; font-size:12px; font-weight:700; color:var(--text, #f5f5f0); text-transform:uppercase; margin-bottom:6px;">
+                  Battle Platform <span class="req" style="color:var(--lime, #d5f45b);">*</span>
+                </label>
+                <select id="discord-dossier-platform" class="form-control" required style="width:100%; box-sizing:border-box; background:#080a07; border:1px solid #333d1c; padding:10px 14px; color:#fff; font-size:13.5px; border-radius:2px;">
+                  <option value="PC" selected>PC (Battle.net / Steam)</option>
+                  <option value="PlayStation">PlayStation 5 / PS4</option>
+                  <option value="Xbox">Xbox Series X|S / One</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 4. Operational Region / Timezone -->
+            <div class="form-group" style="text-align:left;">
+              <label class="form-label" for="discord-dossier-region" style="display:block; font-size:12px; font-weight:700; color:var(--text, #f5f5f0); text-transform:uppercase; margin-bottom:6px;">
+                Timezone / Operational Region <span class="req" style="color:var(--lime, #d5f45b);">*</span>
+              </label>
+              <select id="discord-dossier-region" class="form-control" required style="width:100%; box-sizing:border-box; background:#080a07; border:1px solid #333d1c; padding:10px 14px; color:#fff; font-size:13.5px; border-radius:2px;">
+                <option value="NA East" selected>North America — East (EST / CST)</option>
+                <option value="NA Central">North America — Central (CST)</option>
+                <option value="NA West">North America — West (PST / MST)</option>
+                <option value="EU">Europe (GMT / CET)</option>
+                <option value="Other">Other / International</option>
+              </select>
+              <span class="form-hint" style="font-size:11px; color:var(--muted, #b8baa9); margin-top:4px; display:block;">Server ping optimization, match scheduling, and ladder queue</span>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-discord-dossier-submit" class="btn-submit-signup" style="width:100%; justify-content:center; margin-top:8px; background:var(--lime, #d5f45b); color:#000; border:none; padding:14px; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.8px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+              <span>Create Profile &amp; Unlock Dossier</span>
+              <span style="font-size:16px;">⚡</span>
+            </button>
+
+            <div style="font-size:11.5px; color:var(--muted, #b8baa9); text-align:center; margin-top:4px;">
+              Signed into the wrong Discord? <a href="javascript:void(0)" id="link-discord-dossier-signout" style="color:#ef4444; font-weight:700; text-decoration:underline;">Disconnect / Sign Out</a>
+            </div>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    // Populate Discord card details
+    const badgeUsername = modal.querySelector("#discord-badge-username");
+    if (badgeUsername) badgeUsername.textContent = discordInfo.handleTag ? `${discordInfo.primaryName} (${discordInfo.handleTag})` : discordInfo.primaryName;
+
+    const badgeAvatar = modal.querySelector("#discord-badge-avatar");
+    const badgeFallback = modal.querySelector("#discord-badge-fallback-icon");
+    if (discordInfo.avatarUrl) {
+      if (badgeAvatar) {
+        badgeAvatar.src = discordInfo.avatarUrl;
+        badgeAvatar.style.display = "block";
+      }
+      if (badgeFallback) badgeFallback.style.display = "none";
+    } else {
+      if (badgeAvatar) badgeAvatar.style.display = "none";
+      if (badgeFallback) badgeFallback.style.display = "block";
+    }
+
+    // Prefill form inputs
+    const inputGamertag = modal.querySelector("#discord-dossier-gamertag");
+    if (inputGamertag) inputGamertag.value = existingGamertag;
+
+    const inputActivision = modal.querySelector("#discord-dossier-activision");
+    if (inputActivision) {
+      inputActivision.value = existingActivision;
+      setTimeout(() => inputActivision.focus(), 150);
+    }
+
+    const selectRole = modal.querySelector("#discord-dossier-role");
+    if (selectRole && existingRole) {
+      selectRole.value = existingRole;
+    }
+
+    const selectPlatform = modal.querySelector("#discord-dossier-platform");
+    if (selectPlatform && existingPlatform) {
+      selectPlatform.value = existingPlatform;
+    }
+
+    const selectRegion = modal.querySelector("#discord-dossier-region");
+    if (selectRegion && existingRegion) {
+      selectRegion.value = existingRegion;
+    }
+
+    const errBanner = modal.querySelector("#discord-dossier-error-banner");
+    if (errBanner) {
+      errBanner.style.display = "none";
+      errBanner.textContent = "";
+    }
+
+    modal.style.display = "flex";
+
+    // Setup close and sign-out handlers
+    const btnClose = modal.querySelector("#btn-close-discord-dossier");
+    if (btnClose) {
+      btnClose.onclick = () => {
+        modal.style.display = "none";
+        sessionStorage.removeItem("frontline_discord_oauth_pending");
+        if (typeof onCancel === "function") onCancel();
+      };
+    }
+
+    const linkSignout = modal.querySelector("#link-discord-dossier-signout");
+    if (linkSignout) {
+      linkSignout.onclick = async () => {
+        modal.style.display = "none";
+        sessionStorage.removeItem("frontline_discord_oauth_pending");
+        await this.signOutPlayer();
+        window.location.reload();
+      };
+    }
+
+    // Setup submit handler
+    const form = modal.querySelector("#form-discord-dossier");
+    const submitBtn = modal.querySelector("#btn-discord-dossier-submit");
+    if (form) {
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        if (errBanner) errBanner.style.display = "none";
+
+        const gamertag = inputGamertag?.value.trim() || "";
+        const activisionId = inputActivision?.value.trim() || "";
+        const role = selectRole?.value || "Flex";
+        const platform = selectPlatform?.value || "PC";
+        const region = selectRegion?.value || "NA East";
+
+        if (!gamertag) {
+          if (errBanner) {
+            errBanner.textContent = "Please enter your competitive gamertag / username.";
+            errBanner.style.display = "block";
+          }
+          return;
+        }
+
+        if (!activisionId) {
+          if (errBanner) {
+            errBanner.textContent = "Activision ID is required (e.g. Username#1234567).";
+            errBanner.style.display = "block";
+          }
+          return;
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span>SAVING COMBATANT DOSSIER...</span><span>⏳</span>`;
+        }
+
+        try {
+          const res = await this.completeCombatantDossier({
+            gamertag,
+            activisionId,
+            role,
+            platform,
+            region,
+            discordName: discordInfo.primaryName,
+            avatarUrl: discordInfo.avatarUrl
+          });
+
+          if (res.success) {
+            modal.style.display = "none";
+            if (typeof onComplete === "function") {
+              onComplete({
+                success: true,
+                user: res.user,
+                gamertag,
+                activisionId,
+                role,
+                platform,
+                region,
+                discordName: discordInfo.primaryName
+              });
+            }
+          } else {
+            if (errBanner) {
+              errBanner.textContent = res.error || "Failed to save profile.";
+              errBanner.style.display = "block";
+            }
+          }
+        } catch (err) {
+          if (errBanner) {
+            errBanner.textContent = err.message || "An unexpected error occurred.";
+            errBanner.style.display = "block";
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Create Profile &amp; Unlock Dossier</span><span style="font-size:16px;">⚡</span>`;
+          }
+        }
+      };
+    }
+  },
+
+  async autoCheckDiscordOnboarding() {
+    if (typeof window === "undefined" || !window.document) return;
+    // Don't trigger if already visible or on admin panel
+    const existingModal = document.getElementById("modal-discord-dossier");
+    if (existingModal && existingModal.style.display !== "none") return;
+    if (window.location.pathname.endsWith("admin.html")) return;
+
+    const authRes = await this.getAuthUser();
+    if (!authRes?.success || !authRes?.user) return;
+    const user = authRes.user;
+    const meta = user.user_metadata || {};
+    const discordInfo = this.getDiscordIdentity(user);
+    const isDiscord = discordInfo && discordInfo.isDiscord;
+    const isPending = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
+    const needsDossier = !meta.activision_id || !meta.profile_completed || !meta.role || !meta.region || !meta.platform;
+
+    if ((isDiscord || isPending) && needsDossier) {
+      this.showDiscordDossierModal({
+        user,
+        onComplete: () => {
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
+        },
+        onCancel: () => {
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
+        }
+      });
+    }
+  },
+
+  // ==========================================
   // STAFF ROLES & PERMISSIONS (RBAC)
   // ==========================================
   STAFF_ROLES: {
@@ -3968,8 +4640,15 @@ window.LeagueDB = {
       key: "referee",
       title: "Match Referee",
       badgeClass: "role-badge-referee",
-      description: "Authorized to record match series scores, enter map statistics, manage schedules, and adjudicate ladder disputes.",
+      description: "Authorized to record match series scores, enter individual player combat statistics, manage schedules, and adjudicate ladder disputes.",
       tabs: ["tab-matches", "tab-player-stats", "tab-schedule", "tab-ladder-disputes"]
+    },
+    stats_official: {
+      key: "stats_official",
+      title: "Stats & Scoring Official",
+      badgeClass: "role-badge-referee",
+      description: "Authorized for match score reporting, player map statistics calculation, and telemetry updates.",
+      tabs: ["tab-matches", "tab-player-stats"]
     },
     roster_manager: {
       key: "roster_manager",
@@ -4182,701 +4861,10 @@ window.LeagueDB = {
 // FRONTLINE ARENA LADDER DATABASE API (SEPARATE FROM LEAGUE STANDINGS)
 // ==============================================================================
 const MOCK_LADDER_DATA = {
-  teams: [
-    // 4v4 Variant
-    {
-      id: 101,
-      name: "Apex Predators",
-      tag: "APEX",
-      avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "4v4_variant",
-      captain_name: "ViperX",
-      elo: 2045,
-      tier: "Apex Prestige",
-      wins: 18,
-      losses: 2,
-      streak: 6,
-      players: [
-        {
-          gamertag: "ViperX",
-          role: "Captain / Main AR",
-          elo: 2045,
-          wins: 18,
-          losses: 2,
-          activision_id: "ViperX#8392014",
-          discord: "viperx_cdl",
-          avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Predator",
-          role: "SMG Entry",
-          elo: 1980,
-          wins: 17,
-          losses: 3,
-          activision_id: "Predator#4412903",
-          discord: "predator_cod",
-          avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Kobra",
-          role: "SMG Slayer",
-          elo: 1940,
-          wins: 16,
-          losses: 3,
-          activision_id: "Kobra#7721094",
-          discord: "kobra_fps",
-          avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Venom",
-          role: "Flex / Support",
-          elo: 1910,
-          wins: 15,
-          losses: 4,
-          activision_id: "Venom#1938472",
-          discord: "venom_cdl",
-          avatar_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 102,
-      name: "Crimson Syndicate",
-      tag: "CRIM",
-      avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "4v4_variant",
-      captain_name: "Havoc",
-      elo: 1880,
-      tier: "Commander",
-      wins: 14,
-      losses: 4,
-      streak: 3,
-      players: [
-        {
-          gamertag: "Havoc",
-          role: "Captain / Main AR",
-          elo: 1880,
-          wins: 14,
-          losses: 4,
-          activision_id: "Havoc#6291038",
-          discord: "havoc_snd",
-          avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Scarlet",
-          role: "SMG Slayer",
-          elo: 1820,
-          wins: 13,
-          losses: 5,
-          activision_id: "Scarlet#5521904",
-          discord: "scarlet_crim",
-          avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Bloodline",
-          role: "Flex",
-          elo: 1790,
-          wins: 12,
-          losses: 5,
-          activision_id: "Bloodline#8831920",
-          discord: "bloodline_cod",
-          avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Reign",
-          role: "Entry Sub",
-          elo: 1750,
-          wins: 11,
-          losses: 6,
-          activision_id: "Reign#2049182",
-          discord: "reign_fps",
-          avatar_url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 103,
-      name: "Ghost Protocol",
-      tag: "GPRT",
-      avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "4v4_variant",
-      captain_name: "Specter",
-      elo: 1690,
-      tier: "Warlord",
-      wins: 11,
-      losses: 5,
-      streak: 2,
-      players: [
-        {
-          gamertag: "Specter",
-          role: "Captain / Flex",
-          elo: 1690,
-          wins: 11,
-          losses: 5,
-          activision_id: "Specter#7492810",
-          discord: "specter_cdl",
-          avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Mirage",
-          role: "Main AR",
-          elo: 1640,
-          wins: 10,
-          losses: 6,
-          activision_id: "Mirage#3321945",
-          discord: "mirage_gprt",
-          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Shadow",
-          role: "SMG Slayer",
-          elo: 1610,
-          wins: 9,
-          losses: 6,
-          activision_id: "Shadow#4491028",
-          discord: "shadow_gprt",
-          avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Wraith",
-          role: "Obj Sub",
-          elo: 1580,
-          wins: 8,
-          losses: 7,
-          activision_id: "Wraith#1192837",
-          discord: "wraith_cdl",
-          avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 104,
-      name: "Vanguard Prime",
-      tag: "VNG",
-      avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "4v4_variant",
-      captain_name: "Phantom",
-      elo: 1520,
-      tier: "Vanguard",
-      wins: 9,
-      losses: 6,
-      streak: 1,
-      players: [
-        {
-          gamertag: "Phantom",
-          role: "Captain / Main AR",
-          elo: 1520,
-          wins: 9,
-          losses: 6,
-          activision_id: "Phantom#9821043",
-          discord: "phantom_vng",
-          avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Sentinel",
-          role: "SMG Entry",
-          elo: 1480,
-          wins: 8,
-          losses: 6,
-          activision_id: "Sentinel#6629104",
-          discord: "sentinel_cod",
-          avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Titan",
-          role: "Flex",
-          elo: 1450,
-          wins: 8,
-          losses: 7,
-          activision_id: "Titan#5591827",
-          discord: "titan_vng",
-          avatar_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Aegis",
-          role: "Support Sub",
-          elo: 1410,
-          wins: 7,
-          losses: 7,
-          activision_id: "Aegis#3301928",
-          discord: "aegis_fps",
-          avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 105,
-      name: "Sub Base Kings",
-      tag: "SBK",
-      avatar_url: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "4v4_variant",
-      captain_name: "Blitz",
-      elo: 1340,
-      tier: "Specialist",
-      wins: 7,
-      losses: 7,
-      streak: 0,
-      players: [
-        {
-          gamertag: "Blitz",
-          role: "Captain / Flex",
-          elo: 1340,
-          wins: 7,
-          losses: 7,
-          activision_id: "Blitz#1928374",
-          discord: "blitz_sbk",
-          avatar_url: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Anchor",
-          role: "Main AR",
-          elo: 1310,
-          wins: 6,
-          losses: 7,
-          activision_id: "Anchor#4401928",
-          discord: "anchor_fps",
-          avatar_url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "SubZero",
-          role: "SMG Slayer",
-          elo: 1280,
-          wins: 6,
-          losses: 8,
-          activision_id: "SubZero#7729104",
-          discord: "subzero_cod",
-          avatar_url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Riptide",
-          role: "Entry Sub",
-          elo: 1250,
-          wins: 5,
-          losses: 8,
-          activision_id: "Riptide#8820194",
-          discord: "riptide_cdl",
-          avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 106,
-      name: "Rookie Regime",
-      tag: "RREG",
-      avatar_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "4v4_variant",
-      captain_name: "NewbieSniper",
-      elo: 1120,
-      tier: "Operator",
-      wins: 3,
-      losses: 6,
-      streak: -1,
-      players: [
-        {
-          gamertag: "NewbieSniper",
-          role: "Captain / Sniper",
-          elo: 1120,
-          wins: 3,
-          losses: 6,
-          activision_id: "NewbieSniper#5501928",
-          discord: "newbie_cod",
-          avatar_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "FreshShot",
-          role: "Flex",
-          elo: 1100,
-          wins: 3,
-          losses: 6,
-          activision_id: "FreshShot#9920194",
-          discord: "freshshot_fps",
-          avatar_url: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "GreenHorn",
-          role: "SMG",
-          elo: 1070,
-          wins: 2,
-          losses: 6,
-          activision_id: "GreenHorn#1129384",
-          discord: "greenhorn_cdl",
-          avatar_url: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "Cadet",
-          role: "AR Support",
-          elo: 1040,
-          wins: 2,
-          losses: 7,
-          activision_id: "Cadet#4482019",
-          discord: "cadet_cod",
-          avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-
-    // 2v2 SnD
-    {
-      id: 201,
-      name: "Duo Demons",
-      tag: "DEMN",
-      avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "2v2_snd",
-      captain_name: "Reaper",
-      elo: 1950,
-      tier: "Commander",
-      wins: 15,
-      losses: 3,
-      streak: 5,
-      players: [
-        {
-          gamertag: "Reaper",
-          role: "Captain / Slayer",
-          elo: 1950,
-          wins: 15,
-          losses: 3,
-          activision_id: "Reaper#7719284",
-          discord: "reaper_snd",
-          avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "SoulEater",
-          role: "Bomb Carrier / Sub",
-          elo: 1920,
-          wins: 14,
-          losses: 3,
-          activision_id: "SoulEater#8839201",
-          discord: "souleater_demn",
-          avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 202,
-      name: "Silent Scope Duo",
-      tag: "SSD",
-      avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "2v2_snd",
-      captain_name: "DeadSilence",
-      elo: 1740,
-      tier: "Warlord",
-      wins: 12,
-      losses: 4,
-      streak: 2,
-      players: [
-        {
-          gamertag: "DeadSilence",
-          role: "Captain / Sniper",
-          elo: 1740,
-          wins: 12,
-          losses: 4,
-          activision_id: "DeadSilence#3391029",
-          discord: "deadsilence_cod",
-          avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "GhostFoot",
-          role: "Support AR",
-          elo: 1710,
-          wins: 11,
-          losses: 4,
-          activision_id: "GhostFoot#4492018",
-          discord: "ghostfoot_ssd",
-          avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 203,
-      name: "Bomb Site Rushers",
-      tag: "BSR",
-      avatar_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "2v2_snd",
-      captain_name: "NinjaDefuse",
-      elo: 1480,
-      tier: "Vanguard",
-      wins: 8,
-      losses: 5,
-      streak: 1,
-      players: [
-        {
-          gamertag: "NinjaDefuse",
-          role: "Captain / Ninja Clutcher",
-          elo: 1480,
-          wins: 8,
-          losses: 5,
-          activision_id: "NinjaDefuse#1192840",
-          discord: "ninjadefuse_bsr",
-          avatar_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80"
-        },
-        {
-          gamertag: "SmokeGrenade",
-          role: "Entry Sub",
-          elo: 1430,
-          wins: 7,
-          losses: 5,
-          activision_id: "SmokeGrenade#2294810",
-          discord: "smoke_snd",
-          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-
-    // 1v1 Radar / Gunfight
-    {
-      id: 301,
-      name: "Lone Wolf Solo",
-      tag: "LONE",
-      avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "1v1_radar",
-      captain_name: "Apex",
-      elo: 2010,
-      tier: "Apex Prestige",
-      wins: 22,
-      losses: 1,
-      streak: 8,
-      players: [
-        {
-          gamertag: "Apex",
-          role: "Solo Duelist",
-          elo: 2010,
-          wins: 22,
-          losses: 1,
-          activision_id: "Apex#1928374",
-          discord: "apex_radar",
-          avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    },
-    {
-      id: 302,
-      name: "QuickScopeGod",
-      tag: "QSG",
-      avatar_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80",
-      ladder_type: "1v1_radar",
-      captain_name: "Pulse",
-      elo: 1675,
-      tier: "Warlord",
-      wins: 13,
-      losses: 7,
-      streak: 3,
-      players: [
-        {
-          gamertag: "Pulse",
-          role: "Solo Duelist",
-          elo: 1675,
-          wins: 13,
-          losses: 7,
-          activision_id: "Pulse#9928103",
-          discord: "pulse_qsg",
-          avatar_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80"
-        }
-      ]
-    }
-  ],
-  challenges: [
-    {
-      id: 501,
-      ladder_type: "4v4_variant",
-      team_a: { id: 102, name: "Crimson Syndicate", tag: "CRIM", avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80", elo: 1880, tier: "Commander" },
-      best_of: 5,
-      status: "open",
-      scheduled_time: "Tonight @ 9:00 PM EST",
-      notes: "Looking for Top 10 Squad. CDL Rules, Karachi/Sub Base."
-    },
-    {
-      id: 502,
-      ladder_type: "2v2_snd",
-      team_a: { id: 201, name: "Duo Demons", tag: "DEMN", avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80", elo: 1950, tier: "Commander" },
-      best_of: 3,
-      status: "open",
-      scheduled_time: "ASAP / Next 30 Mins",
-      notes: "2v2 SnD Any Map. Central host preferred."
-    },
-    {
-      id: 503,
-      ladder_type: "1v1_radar",
-      team_a: { id: 302, name: "QuickScopeGod", tag: "QSG", avatar_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80", elo: 1675, tier: "Warlord" },
-      best_of: 3,
-      status: "open",
-      scheduled_time: "Ready Now",
-      notes: "1v1 Snipers Only. Radar Always On."
-    }
-  ],
-  disputes: [
-    {
-      id: 901,
-      match_id: 501,
-      ladder_type: "4v4_variant",
-      submitted_by: "Automated System (Score Conflict)",
-      dispute_reason: "Score Mismatch: Apex Predators reported 3-1, while Crimson Syndicate reported 1-3. Proof submitted.",
-      proof_url: "https://twitch.tv/videos/sample_match_vod",
-      status: "open",
-      team_a_name: "Apex Predators",
-      team_a_tag: "APEX",
-      team_b_name: "Crimson Syndicate",
-      team_b_tag: "CRIM",
-      team_a_score: 3,
-      team_b_score: 1,
-      team_b_reported_a: 1,
-      team_b_reported_b: 3,
-      created_at: new Date(Date.now() - 4200000).toISOString()
-    }
-  ],
-  free_agents: [
-    {
-      id: "fa-1",
-      gamertag: "GhostRider",
-      clan_tag: "LFT",
-      elo: 1980,
-      kdr: 1.28,
-      ladder_pref: "4v4_variant",
-      primary_role: "Main AR",
-      secondary_role: "Flex",
-      platform: "PC",
-      region: "NA East",
-      mic: true,
-      availability: "Daily 6PM - 12AM EST",
-      discord: "ghostrider_cdl",
-      activision_id: "GhostRider#4928104",
-      bio: "Main AR anchor. Disciplined spawn holder, callouts on point, Karachi/Invasion specialist.",
-      avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 4).toISOString()
-    },
-    {
-      id: "fa-2",
-      gamertag: "Nyx",
-      clan_tag: "SOLO",
-      elo: 1895,
-      kdr: 1.34,
-      ladder_pref: "2v2_snd",
-      primary_role: "Sniper / Slayer",
-      secondary_role: "SMG",
-      platform: "PlayStation 5",
-      region: "NA Central",
-      mic: true,
-      availability: "Weekends & Tournaments",
-      discord: "nyx_snd",
-      activision_id: "Nyx#9182741",
-      bio: "High first-blood percentage search and destroy sniper. Looking for a duo for cash cups.",
-      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 8).toISOString()
-    },
-    {
-      id: "fa-3",
-      gamertag: "Kinetics",
-      clan_tag: "LFT",
-      elo: 2060,
-      kdr: 1.41,
-      ladder_pref: "4v4_variant",
-      primary_role: "Entry SMG",
-      secondary_role: "Main Slayer",
-      platform: "PC",
-      region: "NA Central",
-      mic: true,
-      availability: "Competitive Scrims & Ladder",
-      discord: "kinetics_fps",
-      activision_id: "Kinetics#3819204",
-      bio: "Former T32 challenger cup sub. Aggressive entry breaks, high engagement pace.",
-      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 12).toISOString()
-    },
-    {
-      id: "fa-4",
-      gamertag: "HavocShot",
-      clan_tag: "LFT",
-      elo: 1720,
-      kdr: 1.19,
-      ladder_pref: "1v1_radar",
-      primary_role: "Main Slayer",
-      secondary_role: "Flex",
-      platform: "Xbox Series X",
-      region: "NA West",
-      mic: true,
-      availability: "Evenings PST",
-      discord: "havocshot",
-      activision_id: "HavocShot#1829031",
-      bio: "1v1 radar specialist and reliable 2v2 gunner. Sharp centering and snap aim.",
-      avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 18).toISOString()
-    },
-    {
-      id: "fa-5",
-      gamertag: "Cipher",
-      clan_tag: "LFT",
-      elo: 1640,
-      kdr: 1.15,
-      ladder_pref: "4v4_variant",
-      primary_role: "Flex",
-      secondary_role: "Main AR",
-      platform: "PlayStation 5",
-      region: "NA East",
-      mic: true,
-      availability: "Flexible schedule",
-      discord: "cipher_cod",
-      activision_id: "Cipher#7718293",
-      bio: "True flex. Runs Rival-9 or MCW depending on veto. Constant callouts and rotation discipline.",
-      avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 24).toISOString()
-    },
-    {
-      id: "fa-6",
-      gamertag: "Valkyrie",
-      clan_tag: "LFT",
-      elo: 1850,
-      kdr: 1.25,
-      ladder_pref: "2v2_snd",
-      primary_role: "SMG Slayer",
-      secondary_role: "Objective",
-      platform: "PC",
-      region: "Europe",
-      mic: true,
-      availability: "EU evenings / Cash cups",
-      discord: "valk_eu",
-      activision_id: "Valkyrie#5501928",
-      bio: "EU sub looking for regular 2v2 partner. Fast bomb plants and post-plant defense.",
-      avatar_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 30).toISOString()
-    },
-    {
-      id: "fa-7",
-      gamertag: "Bulldozer",
-      clan_tag: "LFT",
-      elo: 1510,
-      kdr: 1.08,
-      ladder_pref: "4v4_variant",
-      primary_role: "Objective SMG",
-      secondary_role: "Flex",
-      platform: "Xbox Series X",
-      region: "NA East",
-      mic: true,
-      availability: "Nights & Weekends",
-      discord: "bulldozer_obj",
-      activision_id: "Bulldozer#6619284",
-      bio: "Hardpoint hill soaker and trophy system carrier. Early rotator who plays for the win.",
-      avatar_url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 36).toISOString()
-    },
-    {
-      id: "fa-8",
-      gamertag: "Phantom",
-      clan_tag: "LFT",
-      elo: 1780,
-      kdr: 1.22,
-      ladder_pref: "4v4_variant",
-      primary_role: "Main AR",
-      secondary_role: "Sniper",
-      platform: "PC",
-      region: "NA West",
-      mic: true,
-      availability: "Competitive weekend tournaments",
-      discord: "phantom_west",
-      activision_id: "Phantom#8812903",
-      bio: "Long range anchor, holds god-headglitches on Terminal & Invasion. Ice in Search round 11.",
-      avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date(Date.now() - 3600000 * 42).toISOString()
-    }
-  ]
+  teams: [],
+  challenges: [],
+  disputes: [],
+  free_agents: []
 };
 
 window.LadderDB = {
@@ -5267,7 +5255,7 @@ window.LadderDB = {
         ladder_type: foundChal.ladder_type || "4v4_variant",
         best_of: foundChal.best_of || 5,
         status: "in_progress",
-        team_a: foundChal.team_a || { id: 101, name: "Apex Predators", tag: "APEX", avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80", elo: 2045, tier: "Apex Prestige" },
+        team_a: foundChal.team_a || { id: 1, name: "Team 1", tag: "T1", avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80", elo: 1200, tier: "Specialist" },
         team_b: acceptingTeam,
         notes: foundChal.notes || "CDL Rules",
         server_info: "Dallas (Central Host)",
@@ -5316,12 +5304,12 @@ window.LadderDB = {
             status: found.status || "in_progress",
             team_b: found.team_b || {
               id: 102,
-              name: "Crimson Syndicate",
-              tag: "CRIM",
+              name: "Opponent Squad",
+              tag: "TBD",
               avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-              captain_name: "Havoc",
-              elo: 1880,
-              tier: "Commander"
+              captain_name: "Opponent",
+              elo: 1200,
+              tier: "Specialist"
             }
           };
         }
@@ -5333,18 +5321,18 @@ window.LadderDB = {
       return {
         ...mockChal,
         team_b: {
-          id: 101,
-          name: "Apex Predators",
-          tag: "APEX",
-          avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-          captain_name: "ViperX",
-          elo: 2045,
-          tier: "Apex Prestige"
+          id: 2,
+          name: "Team 2",
+          tag: "T2",
+          avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
+          captain_name: "Captain 2",
+          elo: 1200,
+          tier: "Specialist"
         }
       };
     }
 
-    // Default match if generic or unknown ID requested (e.g. #FR-1049)
+    // Default match if generic or unknown ID requested
     return {
       id: matchId || 1049,
       ladder_type: "4v4_variant",
@@ -5352,22 +5340,22 @@ window.LadderDB = {
       status: "in_progress",
       server_info: "Dallas (Central Host)",
       team_a: {
-        id: 101,
-        name: "Apex Predators",
-        tag: "APEX",
+        id: 1,
+        name: "Team 1",
+        tag: "T1",
         avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-        captain_name: "ViperX",
-        elo: 2045,
-        tier: "Apex Prestige"
+        captain_name: "Captain 1",
+        elo: 1200,
+        tier: "Specialist"
       },
       team_b: {
-        id: 102,
-        name: "Crimson Syndicate",
-        tag: "CRIM",
+        id: 2,
+        name: "Team 2",
+        tag: "T2",
         avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-        captain_name: "Havoc",
-        elo: 1880,
-        tier: "Commander"
+        captain_name: "Captain 2",
+        elo: 1200,
+        tier: "Specialist"
       },
       created_at: new Date().toISOString()
     };
@@ -5424,35 +5412,6 @@ window.LadderDB = {
       else matches = active;
     } catch (e) {}
 
-    if (matches.length === 0) {
-      matches = [
-        {
-          id: 1049,
-          ladder_type: ladderType || "4v4_variant",
-          best_of: 5,
-          status: "in_progress",
-          team_a: {
-            id: 101,
-            name: "Apex Predators",
-            tag: "APEX",
-            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-            captain_name: "ViperX",
-            elo: 2045,
-            tier: "Apex Prestige"
-          },
-          team_b: {
-            id: 102,
-            name: "Crimson Syndicate",
-            tag: "CRIM",
-            avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-            captain_name: "Havoc",
-            elo: 1880,
-            tier: "Commander"
-          },
-          created_at: new Date(Date.now() - 1800000).toISOString()
-        }
-      ];
-    }
     return matches;
   },
 
@@ -5462,9 +5421,7 @@ window.LadderDB = {
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return [
-      { sender: "System", tag: "SYS", text: "Match room initialized. Good luck, have fun!", isSystem: true, timestamp: "Just now" },
-      { sender: "ViperX", tag: "APEX", text: "Host is ready on Dallas server. GL!", isSystem: false, timestamp: "2 mins ago" },
-      { sender: "Havoc", tag: "CRIM", text: "Got it, let's finish the map veto first.", isSystem: false, timestamp: "1 min ago" }
+      { sender: "System", tag: "SYS", text: "Match room initialized. Good luck, have fun!", isSystem: true, timestamp: "Just now" }
     ];
   },
 
@@ -5739,64 +5696,7 @@ window.LadderDB = {
     }
 
     // 2. Presets
-    const knownPresets = [
-      {
-        id: "viperx",
-        gamertag: "ViperX",
-        username: "ViperX",
-        tag: "APEX",
-        team_id: 101,
-        team_name: "Apex Predators",
-        elo: 2045,
-        tier: "Apex Prestige",
-        avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-        discord: "viperx_cdl",
-        activision_id: "ViperX#8392014",
-        email: "viperx@frontlinearena.com"
-      },
-      {
-        id: "havoc",
-        gamertag: "Havoc",
-        username: "Havoc",
-        tag: "CRIM",
-        team_id: 102,
-        team_name: "Crimson Syndicate",
-        elo: 1880,
-        tier: "Commander",
-        avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-        discord: "havoc_snd",
-        activision_id: "Havoc#6291038",
-        email: "havoc@frontlinearena.com"
-      },
-      {
-        id: "specter",
-        gamertag: "Specter",
-        username: "Specter",
-        tag: "GPRT",
-        team_id: 103,
-        team_name: "Ghost Protocol",
-        elo: 1690,
-        tier: "Warlord",
-        avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-        discord: "specter_cdl",
-        activision_id: "Specter#7492810",
-        email: "specter@frontlinearena.com"
-      },
-      {
-        id: "phantom",
-        gamertag: "Phantom",
-        username: "Phantom",
-        tag: "VNG",
-        team_id: 104,
-        team_name: "Vanguard Prime",
-        elo: 1520,
-        tier: "Vanguard",
-        avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
-        discord: "phantom_vng",
-        activision_id: "Phantom#9821043",
-        email: "phantom@frontlinearena.com"
-      }
-    ];
+    const knownPresets = [];
 
     let found = knownPresets.find(p => p.gamertag.toLowerCase() === clean || (p.username && p.username.toLowerCase() === clean));
     if (found) return found;
@@ -5903,56 +5803,7 @@ window.LadderDB = {
     }
 
     // 2. Preset / Known Arena Players Directory
-    const knownPresets = [
-      {
-        gamertag: "ViperX",
-        tag: "APEX",
-        team_id: 101,
-        team_name: "Apex Predators",
-        elo: 2045,
-        tier: "Apex Prestige",
-        avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-        discord: "viperx_cdl",
-        activision_id: "ViperX#8392014",
-        email: "viperx@frontlinearena.com"
-      },
-      {
-        gamertag: "Havoc",
-        tag: "CRIM",
-        team_id: 102,
-        team_name: "Crimson Syndicate",
-        elo: 1880,
-        tier: "Commander",
-        avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-        discord: "havoc_snd",
-        activision_id: "Havoc#6291038",
-        email: "havoc@frontlinearena.com"
-      },
-      {
-        gamertag: "Specter",
-        tag: "GPRT",
-        team_id: 103,
-        team_name: "Ghost Protocol",
-        elo: 1690,
-        tier: "Warlord",
-        avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-        discord: "specter_cdl",
-        activision_id: "Specter#7492810",
-        email: "specter@frontlinearena.com"
-      },
-      {
-        gamertag: "Phantom",
-        tag: "VNG",
-        team_id: 104,
-        team_name: "Vanguard Prime",
-        elo: 1520,
-        tier: "Vanguard",
-        avatar_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
-        discord: "phantom_vng",
-        activision_id: "Phantom#9821043",
-        email: "phantom@frontlinearena.com"
-      }
-    ];
+    const knownPresets = [];
 
     let found = knownPresets.find(p => 
       p.gamertag.toLowerCase() === cleanId.toLowerCase() || 
@@ -6037,7 +5888,7 @@ window.LadderDB = {
     let supabaseUserId = null;
     if (window.LeagueDB && typeof window.LeagueDB.signUpPlayer === "function") {
       try {
-        const supaRes = await window.LeagueDB.signUpPlayer(cleanEmail, cleanPassword, cleanGamertag, cleanActivision);
+        const supaRes = await window.LeagueDB.signUpPlayer(cleanEmail, cleanPassword, cleanGamertag, cleanActivision, role);
         if (supaRes && supaRes.user) {
           supabaseUserId = supaRes.user.id;
         }
@@ -6095,7 +5946,7 @@ window.LadderDB = {
 
     // Auto-sync into Arena Free Agents directory
     try {
-      this.registerFreeAgentFromAccount(newPlayer);
+      await this.registerFreeAgentFromAccount(newPlayer);
     } catch (faErr) {
       console.warn("Free agent auto-sync notice:", faErr);
     }
@@ -6127,11 +5978,6 @@ window.LadderDB = {
         );
         if (isTaken) {
           return { success: false, error: `Username "${targetGamertag}" is already taken by another operative. Please choose a different handle.` };
-        }
-
-        const knownPresetNames = ["viperx", "havoc", "specter", "phantom"];
-        if (knownPresetNames.includes(targetGamertag.toLowerCase()) && !knownPresetNames.includes(oldGamertag.toLowerCase())) {
-          return { success: false, error: `Username "${targetGamertag}" is reserved. Please select another gamertag.` };
         }
       } catch (e) {}
     }
@@ -6244,357 +6090,6 @@ window.LadderDB = {
     const gt = player.gamertag.toLowerCase();
     const tag = (player.tag || "").toLowerCase();
 
-    // Check if player is ViperX (Apex Predators)
-    if (gt === "viperx" || tag === "apex" || (player.team_name && player.team_name.toLowerCase().includes("apex"))) {
-      let liveScores = "3 – 1";
-      try {
-        const rep = JSON.parse(localStorage.getItem("frontline_match_report_1049"));
-        if (rep && rep.firstReport) {
-          liveScores = `${rep.firstReport.teamAScore} – ${rep.firstReport.teamBScore}`;
-        }
-      } catch (e) {}
-
-      return [
-        {
-          id: 1049,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Today • 8:30 PM EST",
-          timestamp: Date.now() - 1800000,
-          opponent_name: "Crimson Syndicate",
-          opponent_tag: "CRIM",
-          opponent_avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Havoc",
-          opponent_elo: 1880,
-          status: "in_progress",
-          outcome: "in_progress",
-          my_score: 3,
-          opp_score: 1,
-          score_display: liveScores,
-          maps: "Karachi HP • Skidrow SnD • Invasion CTL • Sub Base HP",
-          best_of: 5
-        },
-        {
-          id: 1048,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Oct 1, 2026 • 6:15 PM EST",
-          timestamp: Date.now() - 86400000,
-          opponent_name: "Ghost Protocol",
-          opponent_tag: "GPRT",
-          opponent_avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Specter",
-          opponent_elo: 1690,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 0,
-          score_display: "3 – 0",
-          maps: "Sub Base HP (250-184) • Terminal SnD (6-2) • Highrise CTL (3-1)",
-          best_of: 5
-        },
-        {
-          id: 1045,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 29, 2026 • 9:00 PM EST",
-          timestamp: Date.now() - 172800000,
-          opponent_name: "Vanguard Prime",
-          opponent_tag: "VNG",
-          opponent_avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Phantom",
-          opponent_elo: 1520,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 1,
-          score_display: "3 – 1",
-          maps: "Karachi HP (250-210) • Skidrow SnD (4-6) • Invasion CTL (3-2) • Terminal HP (250-195)",
-          best_of: 5
-        },
-        {
-          id: 1039,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 27, 2026 • 8:00 PM EST",
-          timestamp: Date.now() - 345600000,
-          opponent_name: "Crimson Syndicate",
-          opponent_tag: "CRIM",
-          opponent_avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Havoc",
-          opponent_elo: 1880,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 2,
-          score_display: "3 – 2",
-          maps: "Karachi HP (250-244) • Rio SnD (6-5) • Highrise CTL (2-3) • Sub Base HP (230-250) • Terminal SnD (6-5)",
-          best_of: 5
-        },
-        {
-          id: 1034,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 25, 2026 • 7:30 PM EST",
-          timestamp: Date.now() - 518400000,
-          opponent_name: "Sub Base Kings",
-          opponent_tag: "SBK",
-          opponent_avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Blitz",
-          opponent_elo: 1340,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 0,
-          score_display: "3 – 0",
-          maps: "Sub Base HP (250-135) • Skidrow SnD (6-1) • Invasion CTL (3-0)",
-          best_of: 5
-        },
-        {
-          id: 1028,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 23, 2026 • 9:45 PM EST",
-          timestamp: Date.now() - 691200000,
-          opponent_name: "Rookie Regime",
-          opponent_tag: "RREG",
-          opponent_avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "NewbieSniper",
-          opponent_elo: 1120,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 0,
-          score_display: "3 – 0",
-          maps: "Rio HP (250-112) • Karachi SnD (6-0) • Highrise CTL (3-0)",
-          best_of: 5
-        },
-        {
-          id: 1022,
-          ladder_name: "2v2 Search & Destroy",
-          ladder_type: "2v2_snd",
-          date: "Sep 21, 2026 • 10:15 PM EST",
-          timestamp: Date.now() - 864000000,
-          opponent_name: "Duo Demons",
-          opponent_tag: "DEMN",
-          opponent_avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Reaper",
-          opponent_elo: 1950,
-          status: "completed",
-          outcome: "victory",
-          my_score: 2,
-          opp_score: 0,
-          score_display: "2 – 0",
-          maps: "Karachi SnD (6-3) • Terminal SnD (6-4)",
-          best_of: 3
-        },
-        {
-          id: 1016,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 18, 2026 • 8:15 PM EST",
-          timestamp: Date.now() - 1123200000,
-          opponent_name: "Ghost Protocol",
-          opponent_tag: "GPRT",
-          opponent_avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Specter",
-          opponent_elo: 1690,
-          status: "completed",
-          outcome: "defeat",
-          my_score: 2,
-          opp_score: 3,
-          score_display: "2 – 3",
-          maps: "Karachi HP (250-230) • Skidrow SnD (3-6) • Invasion CTL (3-1) • Rio HP (241-250) • Terminal SnD (4-6)",
-          best_of: 5
-        },
-        {
-          id: 1011,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 15, 2026 • 7:00 PM EST",
-          timestamp: Date.now() - 1382400000,
-          opponent_name: "Vanguard Prime",
-          opponent_tag: "VNG",
-          opponent_avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Phantom",
-          opponent_elo: 1520,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 0,
-          score_display: "3 – 0",
-          maps: "Sub Base HP (250-189) • Karachi SnD (6-2) • Highrise CTL (3-1)",
-          best_of: 5
-        },
-        {
-          id: 1005,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 12, 2026 • 9:30 PM EST",
-          timestamp: Date.now() - 1641600000,
-          opponent_name: "Crimson Syndicate",
-          opponent_tag: "CRIM",
-          opponent_avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Havoc",
-          opponent_elo: 1880,
-          status: "completed",
-          outcome: "defeat",
-          my_score: 1,
-          opp_score: 3,
-          score_display: "1 – 3",
-          maps: "Rio HP (215-250) • Skidrow SnD (6-4) • Invasion CTL (1-3) • Sub Base HP (205-250)",
-          best_of: 5
-        }
-      ];
-    }
-
-    // Check if player is Havoc (Crimson Syndicate)
-    if (gt === "havoc" || tag === "crim" || (player.team_name && player.team_name.toLowerCase().includes("crimson"))) {
-      let liveScores = "1 – 3";
-      try {
-        const rep = JSON.parse(localStorage.getItem("frontline_match_report_1049"));
-        if (rep && rep.firstReport) {
-          liveScores = `${rep.firstReport.teamBScore} – ${rep.firstReport.teamAScore}`;
-        }
-      } catch (e) {}
-
-      return [
-        {
-          id: 1049,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Today • 8:30 PM EST",
-          timestamp: Date.now() - 1800000,
-          opponent_name: "Apex Predators",
-          opponent_tag: "APEX",
-          opponent_avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "ViperX",
-          opponent_elo: 2045,
-          status: "in_progress",
-          outcome: "in_progress",
-          my_score: 1,
-          opp_score: 3,
-          score_display: liveScores,
-          maps: "Karachi HP • Skidrow SnD • Invasion CTL • Sub Base HP",
-          best_of: 5
-        },
-        {
-          id: 1047,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 30, 2026 • 8:00 PM EST",
-          timestamp: Date.now() - 86400000,
-          opponent_name: "Vanguard Prime",
-          opponent_tag: "VNG",
-          opponent_avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Phantom",
-          opponent_elo: 1520,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 1,
-          score_display: "3 – 1",
-          maps: "Karachi HP (250-190) • Skidrow SnD (6-2) • Invasion CTL (2-3) • Rio HP (250-205)",
-          best_of: 5
-        },
-        {
-          id: 1043,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 28, 2026 • 7:15 PM EST",
-          timestamp: Date.now() - 259200000,
-          opponent_name: "Sub Base Kings",
-          opponent_tag: "SBK",
-          opponent_avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Blitz",
-          opponent_elo: 1340,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 0,
-          score_display: "3 – 0",
-          maps: "Sub Base HP (250-160) • Terminal SnD (6-3) • Highrise CTL (3-0)",
-          best_of: 5
-        },
-        {
-          id: 1039,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 27, 2026 • 8:00 PM EST",
-          timestamp: Date.now() - 345600000,
-          opponent_name: "Apex Predators",
-          opponent_tag: "APEX",
-          opponent_avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "ViperX",
-          opponent_elo: 2045,
-          status: "completed",
-          outcome: "defeat",
-          my_score: 2,
-          opp_score: 3,
-          score_display: "2 – 3",
-          maps: "Karachi HP (244-250) • Rio SnD (5-6) • Highrise CTL (3-2) • Sub Base HP (250-230) • Terminal SnD (5-6)",
-          best_of: 5
-        },
-        {
-          id: 1031,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 24, 2026 • 9:00 PM EST",
-          timestamp: Date.now() - 604800000,
-          opponent_name: "Ghost Protocol",
-          opponent_tag: "GPRT",
-          opponent_avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "Specter",
-          opponent_elo: 1690,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 2,
-          score_display: "3 – 2",
-          maps: "Rio HP (250-210) • Skidrow SnD (4-6) • Invasion CTL (3-1) • Karachi HP (215-250) • Terminal SnD (6-4)",
-          best_of: 5
-        },
-        {
-          id: 1025,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 22, 2026 • 6:45 PM EST",
-          timestamp: Date.now() - 777600000,
-          opponent_name: "Rookie Regime",
-          opponent_tag: "RREG",
-          opponent_avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "NewbieSniper",
-          opponent_elo: 1120,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 0,
-          score_display: "3 – 0",
-          maps: "Sub Base HP (250-130) • Karachi SnD (6-1) • Invasion CTL (3-0)",
-          best_of: 5
-        },
-        {
-          id: 1005,
-          ladder_name: "4v4 CDL Variant",
-          ladder_type: "4v4_variant",
-          date: "Sep 12, 2026 • 9:30 PM EST",
-          timestamp: Date.now() - 1641600000,
-          opponent_name: "Apex Predators",
-          opponent_tag: "APEX",
-          opponent_avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-          opponent_captain: "ViperX",
-          opponent_elo: 2045,
-          status: "completed",
-          outcome: "victory",
-          my_score: 3,
-          opp_score: 1,
-          score_display: "3 – 1",
-          maps: "Rio HP (250-215) • Skidrow SnD (4-6) • Invasion CTL (3-1) • Sub Base HP (250-205)",
-          best_of: 5
-        }
-      ];
-    }
-
     // Dynamic checks for active localStorage matches matching this player or team
     const customMatches = [];
     try {
@@ -6666,32 +6161,6 @@ window.LadderDB = {
     const tag = (player.tag || "").toLowerCase();
 
     // Specific presets
-    if (gt === "viperx" || tag === "apex") {
-      return {
-        wins: 18,
-        losses: 2,
-        winRate: "90.0%",
-        streak: "+6",
-        totalMatches: 20,
-        completedMatches: 19,
-        inProgress: 1,
-        disputed: 0
-      };
-    }
-
-    if (gt === "havoc" || tag === "crim") {
-      return {
-        wins: 14,
-        losses: 4,
-        winRate: "77.8%",
-        streak: "+3",
-        totalMatches: 18,
-        completedMatches: 17,
-        inProgress: 1,
-        disputed: 0
-      };
-    }
-
     const matches = this.getPlayerMatchHistory(player);
     let wins = 0;
     let losses = 0;
@@ -6754,182 +6223,7 @@ window.LadderDB = {
     const gt = player.gamertag.toLowerCase();
     const tag = (player.tag || "").toLowerCase();
 
-    // Presets for ViperX, Havoc, Specter
-    if (gt === "viperx" || tag === "apex") {
-      const mySaved4v4 = this.getMyTeam("4v4_variant");
-      const mySaved2v2 = this.getMyTeam("2v2_snd");
-      const mySaved1v1 = this.getMyTeam("1v1_radar");
-
-      return [
-        {
-          ladder_type: "4v4_variant",
-          ladder_name: "4v4 CDL Variant",
-          circuit: "Variant (HP / SnD / CTL)",
-          icon: "⚔",
-          team: mySaved4v4 || {
-            id: 101,
-            name: "Apex Predators",
-            tag: "APEX",
-            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-            captain_name: "ViperX",
-            role: "Captain / Starter",
-            elo: 2045,
-            tier: "Apex Prestige",
-            wins: 18,
-            losses: 2,
-            streak: 6
-          }
-        },
-        {
-          ladder_type: "2v2_snd",
-          ladder_name: "2v2 Search & Destroy",
-          circuit: "Search & Destroy Only",
-          icon: "🎯",
-          team: mySaved2v2 || {
-            id: 210,
-            name: "Apex Duo",
-            tag: "APEX",
-            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-            captain_name: "ViperX",
-            role: "Captain",
-            elo: 1920,
-            tier: "Commander",
-            wins: 8,
-            losses: 1,
-            streak: 4
-          }
-        },
-        {
-          ladder_type: "1v1_radar",
-          ladder_name: "1v1 Radar Gunfight",
-          circuit: "Radar Always-On Gunfight",
-          icon: "💀",
-          team: mySaved1v1 || {
-            id: 301,
-            name: "Lone Wolf Solo",
-            tag: "LONE",
-            avatar_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80",
-            captain_name: "ViperX",
-            role: "Solo Operator",
-            elo: 2010,
-            tier: "Apex Prestige",
-            wins: 22,
-            losses: 1,
-            streak: 8
-          }
-        }
-      ];
-    }
-
-    if (gt === "havoc" || tag === "crim") {
-      const mySaved4v4 = this.getMyTeam("4v4_variant");
-      const mySaved2v2 = this.getMyTeam("2v2_snd");
-      const mySaved1v1 = this.getMyTeam("1v1_radar");
-
-      return [
-        {
-          ladder_type: "4v4_variant",
-          ladder_name: "4v4 CDL Variant",
-          circuit: "Variant (HP / SnD / CTL)",
-          icon: "⚔",
-          team: mySaved4v4 || {
-            id: 102,
-            name: "Crimson Syndicate",
-            tag: "CRIM",
-            avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-            captain_name: "Havoc",
-            role: "Captain / Starter",
-            elo: 1880,
-            tier: "Commander",
-            wins: 14,
-            losses: 4,
-            streak: 3
-          }
-        },
-        {
-          ladder_type: "2v2_snd",
-          ladder_name: "2v2 Search & Destroy",
-          circuit: "Search & Destroy Only",
-          icon: "🎯",
-          team: mySaved2v2 || {
-            id: 211,
-            name: "Crimson SnD Duo",
-            tag: "CRIM",
-            avatar_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80",
-            captain_name: "Havoc",
-            role: "Captain",
-            elo: 1750,
-            tier: "Warlord",
-            wins: 9,
-            losses: 3,
-            streak: 2
-          }
-        },
-        {
-          ladder_type: "1v1_radar",
-          ladder_name: "1v1 Radar Gunfight",
-          circuit: "Radar Always-On Gunfight",
-          icon: "💀",
-          team: mySaved1v1 || null
-        }
-      ];
-    }
-
-    if (gt === "specter" || tag === "gprt") {
-      const mySaved4v4 = this.getMyTeam("4v4_variant");
-      const mySaved2v2 = this.getMyTeam("2v2_snd");
-      const mySaved1v1 = this.getMyTeam("1v1_radar");
-
-      return [
-        {
-          ladder_type: "4v4_variant",
-          ladder_name: "4v4 CDL Variant",
-          circuit: "Variant (HP / SnD / CTL)",
-          icon: "⚔",
-          team: mySaved4v4 || {
-            id: 103,
-            name: "Ghost Protocol",
-            tag: "GPRT",
-            avatar_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=150&auto=format&fit=crop&q=80",
-            captain_name: "Specter",
-            role: "Captain / Starter",
-            elo: 1690,
-            tier: "Warlord",
-            wins: 11,
-            losses: 5,
-            streak: 2
-          }
-        },
-        {
-          ladder_type: "2v2_snd",
-          ladder_name: "2v2 Search & Destroy",
-          circuit: "Search & Destroy Only",
-          icon: "🎯",
-          team: mySaved2v2 || {
-            id: 202,
-            name: "Silent Scope Duo",
-            tag: "SSD",
-            avatar_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80",
-            captain_name: "Specter",
-            role: "Starter",
-            elo: 1740,
-            tier: "Warlord",
-            wins: 12,
-            losses: 4,
-            streak: 2
-          }
-        },
-        {
-          ladder_type: "1v1_radar",
-          ladder_name: "1v1 Radar Gunfight",
-          circuit: "Radar Always-On Gunfight",
-          icon: "💀",
-          team: mySaved1v1 || null
-        }
-      ];
-    }
-
-    // Custom accounts: retrieve exactly ONE team per ladder stored in frontline_my_team_<ladder_type>
+    // Retrieve exactly ONE team per ladder stored in frontline_my_team_<ladder_type>
     return ladders.map(l => {
       const myTeam = this.getMyTeam(l.id);
       return {
@@ -6995,13 +6289,66 @@ window.LadderDB = {
   // Free Agents (LFT) directory for Frontline Arena
   async getFreeAgents(filters = {}) {
     let list = [];
-    try {
-      const stored = localStorage.getItem("frontline_arena_free_agents");
-      if (stored) {
-        list = JSON.parse(stored);
-      }
-    } catch (e) {}
 
+    // 1. Query Supabase 'arena_free_agents' table if configured
+    if (dbClient) {
+      try {
+        let query = dbClient
+          .from("arena_free_agents")
+          .select("*")
+          .eq("is_active", true)
+          .order("elo", { ascending: false });
+
+        if (filters.ladder && filters.ladder !== "all") {
+          query = query.or(`ladder_pref.eq.${filters.ladder},ladder_pref.eq.all`);
+        }
+
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          list = data.map(row => ({
+            id: row.id,
+            gamertag: row.gamertag,
+            clan_tag: row.clan_tag || "LFT",
+            elo: Number(row.elo) || 1200,
+            kdr: Number(row.kdr) || 1.15,
+            ladder_pref: row.ladder_pref || "4v4_variant",
+            primary_role: row.primary_role || "Flex",
+            secondary_role: row.secondary_role || "Main AR",
+            role: row.primary_role || "Flex",
+            platform: row.platform || "Crossplay",
+            region: row.region || "NA East",
+            discord: row.discord || "",
+            activision_id: row.activision_id || "",
+            availability: row.availability || "Active / Daily",
+            bio: row.bio || "Competitive operator looking for team.",
+            avatar_url: row.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            mic: row.mic !== false,
+            created_at: row.created_at || new Date().toISOString(),
+            isNewUser: !!row.is_new_user,
+            user_id: row.user_id
+          }));
+
+          // Cache in localStorage as local fallback
+          try {
+            localStorage.setItem("frontline_arena_free_agents", JSON.stringify(list));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn("Supabase arena_free_agents query notice:", err);
+      }
+    }
+
+    // 2. Fallback to LocalStorage if Supabase didn't yield results
+    if (!list || list.length === 0) {
+      try {
+        const stored = localStorage.getItem("frontline_arena_free_agents");
+        if (stored) {
+          list = JSON.parse(stored);
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback to Mock Data if still empty
     if (!list || list.length === 0) {
       list = (MOCK_LADDER_DATA.free_agents || []).slice();
     }
@@ -7059,7 +6406,7 @@ window.LadderDB = {
     }
 
     if (filters.ladder && filters.ladder !== "all") {
-      list = list.filter(fa => fa.ladder_pref === filters.ladder);
+      list = list.filter(fa => fa.ladder_pref === filters.ladder || fa.ladder_pref === "all");
     }
     if (filters.role && filters.role !== "all") {
       const r = filters.role.toLowerCase();
@@ -7078,19 +6425,9 @@ window.LadderDB = {
     return list;
   },
 
-  registerFreeAgentFromAccount(userData) {
+  async registerFreeAgentFromAccount(userData) {
     if (!userData || !userData.gamertag) return null;
     const cleanGamertag = userData.gamertag.trim();
-    let list = [];
-    try {
-      const stored = localStorage.getItem("frontline_arena_free_agents");
-      list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
-    } catch (e) {
-      list = (MOCK_LADDER_DATA.free_agents || []).slice();
-    }
-
-    // Remove any existing entry for this gamertag
-    list = list.filter(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() !== cleanGamertag.toLowerCase());
 
     const newAgent = {
       id: "fa-" + (userData.id || Date.now()),
@@ -7111,9 +6448,49 @@ window.LadderDB = {
       bio: userData.bio || `Newly enlisted operator (${cleanGamertag}) registered on website. Looking for active CDL team.`,
       avatar_url: userData.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
       created_at: userData.created_at || new Date().toISOString(),
-      isNewUser: true
+      isNewUser: true,
+      is_active: true,
+      user_id: userData.id ? String(userData.id) : null
     };
 
+    // 1. Persist to Supabase arena_free_agents table
+    if (dbClient) {
+      try {
+        await dbClient.from("arena_free_agents").upsert({
+          gamertag: newAgent.gamertag,
+          clan_tag: newAgent.clan_tag,
+          elo: newAgent.elo,
+          kdr: newAgent.kdr,
+          ladder_pref: newAgent.ladder_pref,
+          primary_role: newAgent.primary_role,
+          secondary_role: newAgent.secondary_role,
+          platform: newAgent.platform,
+          region: newAgent.region,
+          mic: newAgent.mic,
+          availability: newAgent.availability,
+          discord: newAgent.discord,
+          activision_id: newAgent.activision_id,
+          bio: newAgent.bio,
+          avatar_url: newAgent.avatar_url,
+          is_new_user: true,
+          is_active: true,
+          user_id: newAgent.user_id,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "gamertag" });
+      } catch (dbErr) {
+        console.warn("Supabase registerFreeAgentFromAccount notice:", dbErr);
+      }
+    }
+
+    // 2. Persist locally to localStorage
+    let list = [];
+    try {
+      const stored = localStorage.getItem("frontline_arena_free_agents");
+      list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
+    } catch (e) {
+      list = (MOCK_LADDER_DATA.free_agents || []).slice();
+    }
+    list = list.filter(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() !== cleanGamertag.toLowerCase());
     list.unshift(newAgent);
     try {
       localStorage.setItem("frontline_arena_free_agents", JSON.stringify(list));
@@ -7124,14 +6501,6 @@ window.LadderDB = {
   },
 
   async postFreeAgent(agentData) {
-    let list = [];
-    try {
-      const stored = localStorage.getItem("frontline_arena_free_agents");
-      list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
-    } catch (e) {
-      list = (MOCK_LADDER_DATA.free_agents || []).slice();
-    }
-
     const newAgent = {
       id: "fa-" + Date.now(),
       gamertag: agentData.gamertag || "Operator",
@@ -7149,17 +6518,69 @@ window.LadderDB = {
       activision_id: agentData.activision_id || "",
       bio: agentData.bio || "Competitive operator looking for team.",
       avatar_url: agentData.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      is_new_user: true,
+      is_active: true
     };
 
+    // 1. Persist to Supabase arena_free_agents table
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient.from("arena_free_agents").upsert({
+          gamertag: newAgent.gamertag,
+          clan_tag: newAgent.clan_tag,
+          elo: newAgent.elo,
+          kdr: newAgent.kdr,
+          ladder_pref: newAgent.ladder_pref,
+          primary_role: newAgent.primary_role,
+          secondary_role: newAgent.secondary_role,
+          platform: newAgent.platform,
+          region: newAgent.region,
+          mic: newAgent.mic,
+          availability: newAgent.availability,
+          discord: newAgent.discord,
+          activision_id: newAgent.activision_id,
+          bio: newAgent.bio,
+          avatar_url: newAgent.avatar_url,
+          is_new_user: true,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "gamertag" }).select();
+        if (!error && data && data.length > 0) {
+          newAgent.id = data[0].id;
+        }
+      } catch (err) {
+        console.warn("Supabase postFreeAgent notice:", err);
+      }
+    }
+
+    // 2. Persist locally to localStorage
+    let list = [];
+    try {
+      const stored = localStorage.getItem("frontline_arena_free_agents");
+      list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
+    } catch (e) {
+      list = (MOCK_LADDER_DATA.free_agents || []).slice();
+    }
+    list = list.filter(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() !== newAgent.gamertag.toLowerCase());
     list.unshift(newAgent);
     try {
       localStorage.setItem("frontline_arena_free_agents", JSON.stringify(list));
     } catch (e) {}
+
+    window.dispatchEvent(new CustomEvent("frontline_free_agents_updated", { detail: { agent: newAgent } }));
     return newAgent;
   },
 
   async deleteFreeAgent(agentId) {
+    if (dbClient) {
+      try {
+        await dbClient.from("arena_free_agents").delete().eq("id", agentId);
+      } catch (err) {
+        console.warn("Supabase deleteFreeAgent notice:", err);
+      }
+    }
+
     try {
       const stored = localStorage.getItem("frontline_arena_free_agents");
       let list = stored ? JSON.parse(stored) : (MOCK_LADDER_DATA.free_agents || []).slice();
@@ -7310,3 +6731,103 @@ window.LadderDB = {
   );
 })();
 
+
+
+// Client-side cache migration: cleanse legacy placeholder teams/players from localStorage
+(function scrubLegacyPlaceholderCache() {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    const placeholderNames = [
+      "apex predators", "crimson syndicate", "ghost protocol", "vanguard prime",
+      "sub base kings", "rookie regime", "duo demons", "silent scope duo",
+      "bomb site rushers", "lone wolf solo", "quickscopegod", "night shift",
+      "vantage", "redline", "static", "underdogs", "havok", "clayster", "attach", "standy"
+    ];
+
+    // Check my teams
+    ["4v4_variant", "2v2_snd", "1v1_radar"].forEach(lt => {
+      const myTeamKey = "frontline_my_team_" + lt;
+      const t = localStorage.getItem(myTeamKey);
+      if (t) {
+        try {
+          const parsed = JSON.parse(t);
+          if (parsed && parsed.name && placeholderNames.includes(parsed.name.toLowerCase().trim())) {
+            localStorage.removeItem(myTeamKey);
+          }
+        } catch(e) {}
+      }
+
+      // Check ladder teams cache
+      const listKey = "frontline_ladder_teams_" + lt;
+      const l = localStorage.getItem(listKey);
+      if (l) {
+        try {
+          const teams = JSON.parse(l);
+          if (Array.isArray(teams)) {
+            const cleaned = teams.filter(tm => !placeholderNames.includes((tm.name || "").toLowerCase().trim()));
+            localStorage.setItem(listKey, JSON.stringify(cleaned));
+          }
+        } catch(e) {}
+      }
+    });
+
+    // Check league player card
+    const card = localStorage.getItem("frontline_league_player_card");
+    if (card) {
+      try {
+        const pc = JSON.parse(card);
+        if (pc && (pc.gamertag === "Havok" || (pc.team && pc.team.toLowerCase().includes("legion")))) {
+          localStorage.removeItem("frontline_league_player_card");
+        }
+      } catch(e) {}
+    }
+
+    // Check arena free agents
+    const faKey = "frontline_arena_free_agents";
+    const fa = localStorage.getItem(faKey);
+    if (fa) {
+      try {
+        const agents = JSON.parse(fa);
+        if (Array.isArray(agents)) {
+          const dummyFA = ["ghostrider", "nyx", "bulletproof", "valkyrie", "staticpulse", "lonereaper"];
+          const cleanedFA = agents.filter(a => !dummyFA.includes((a.gamertag || "").toLowerCase().trim()));
+          localStorage.setItem(faKey, JSON.stringify(cleanedFA));
+        }
+      } catch(e) {}
+    }
+  } catch(e) {
+    console.warn("Legacy cache scrub notice:", e);
+  }
+})();
+
+// ==============================================================================
+// AUTO-CHECK DISCORD ONBOARDING & COMBATANT DOSSIER PROMPT
+// ==============================================================================
+(function initDiscordOnboardingCheck() {
+  if (typeof window === "undefined") return;
+
+  async function checkOnboarding() {
+    if (!window.LeagueDB || typeof window.LeagueDB.autoCheckDiscordOnboarding !== "function") return;
+    try {
+      await window.LeagueDB.autoCheckDiscordOnboarding();
+    } catch (e) {
+      console.warn("Discord onboarding check notice:", e);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => setTimeout(checkOnboarding, 600));
+  } else {
+    setTimeout(checkOnboarding, 600);
+  }
+
+  if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
+    try {
+      dbClient.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+          setTimeout(checkOnboarding, 400);
+        }
+      });
+    } catch (e) {}
+  }
+})();

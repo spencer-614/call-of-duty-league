@@ -367,8 +367,8 @@
           <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
         </div>
         <div class="footer-links">
-          <a href="#league" style="color:var(--lime);" class="active">League</a>
-          <a href="#standings">Standings</a>
+          <a href="#league" class="active" id="footer-link-league">League</a>
+          <a href="#standings" id="footer-link-standings">Standings</a>
           <a href="schedule.html">Schedule</a>
           <a href="teams.html">Teams</a>
           <a href="players.html">Players</a>
@@ -406,6 +406,15 @@
                 <td style="color:var(--lime); font-weight:bold;">${team.points ?? 0}</td>
               </tr>
             `).join("");
+          } else {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="4" style="text-align:center; padding:24px 12px; color:var(--muted); font-size:12px;">
+                  No franchise teams registered yet.<br />
+                  <a href="signup.html" style="color:var(--lime); text-decoration:none; font-weight:bold; display:inline-block; margin-top:6px;">Enlist your squad ↗</a>
+                </td>
+              </tr>
+            `;
           }
         } catch (e) {
           console.error("Failed to render standings:", e);
@@ -426,46 +435,54 @@
         const aside = document.getElementById("league-announcements-aside");
         if (!aside) return;
         try {
-          const ann = await window.LeagueDB.getLatestAnnouncement();
-          if (!ann || ann.is_active === false) {
+          const list = await window.LeagueDB.getAnnouncements(false);
+          if (!list || list.length === 0) {
             aside.style.display = "none";
+            aside.innerHTML = "";
             return;
           }
 
-          const colorClass = ["amber", "red", "cyan"].includes(ann.tag_color) ? ann.tag_color : "";
-          const beaconClass = colorClass ? `announcement-beacon ${colorClass}` : "announcement-beacon";
-          const tagClass = colorClass ? `announcement-tag ${colorClass}` : "announcement-tag";
-          const bannerClass = colorClass ? `announcement-banner ${colorClass}` : "announcement-banner";
+          aside.innerHTML = list.map((ann) => {
+            const colorClass = ["amber", "red", "cyan"].includes(ann.tag_color) ? ann.tag_color : "";
+            const beaconClass = colorClass ? `announcement-beacon ${colorClass}` : "announcement-beacon";
+            const tagClass = colorClass ? `announcement-tag ${colorClass}` : "announcement-tag";
+            const bannerClass = colorClass ? `announcement-banner ${colorClass}` : "announcement-banner";
 
-          let dateStr = "";
-          if (ann.created_at) {
-            try {
-              const d = new Date(ann.created_at);
-              dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-            } catch (e) {}
-          }
+            let dateStr = "";
+            if (ann.created_at) {
+              try {
+                const d = new Date(ann.created_at);
+                dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+              } catch (e) {}
+            }
 
-          const linkHtml = ann.link_url ? `
-            <a href="${escapeHtml(ann.link_url)}" class="announcement-cta">
-              ${escapeHtml(ann.link_text || "Learn More ↗")}
-            </a>
-          ` : "";
+            const linkHtml = ann.link_url ? `
+              <a href="${escapeHtml(ann.link_url)}" class="announcement-cta">
+                ${escapeHtml(ann.link_text || "Learn More ↗")}
+              </a>
+            ` : "";
 
-          aside.innerHTML = `
-            <div class="${bannerClass}">
-              <div class="announcement-header">
-                <div class="announcement-badge-group">
-                  <span class="${beaconClass}"></span>
-                  <span class="${tagClass}">${escapeHtml(ann.tag || "OFFICIAL DISPATCH")}</span>
-                  ${ann.pinned ? '<span style="font-size:11px; font-weight:800; color:var(--lime); letter-spacing:0.8px; background:#1f2214; border:1px solid #4a5420; padding:2px 6px; text-transform:uppercase;">PINNED</span>' : ""}
+            return `
+              <div class="${bannerClass}">
+                <div class="announcement-header">
+                  <div class="announcement-badge-group">
+                    <span class="${beaconClass}"></span>
+                    <span class="${tagClass}">${escapeHtml(ann.tag || "OFFICIAL DISPATCH")}</span>
+                    ${ann.pinned ? '<span style="font-size:11px; font-weight:800; color:var(--lime); letter-spacing:0.8px; background:#1f2214; border:1px solid #4a5420; padding:2px 6px; text-transform:uppercase;">PINNED</span>' : ""}
+                  </div>
+                  ${dateStr ? `<span class="announcement-date">TRANSMITTED ${escapeHtml(dateStr)}</span>` : ""}
                 </div>
-                ${dateStr ? `<span class="announcement-date">TRANSMITTED ${escapeHtml(dateStr)}</span>` : ""}
+                <h3 class="announcement-title">${escapeHtml(ann.title)}</h3>
+                <p class="announcement-body">${escapeHtml(ann.message)}</p>
+                ${ann.image_url ? `
+                  <div class="announcement-media ${ann.image_fit === 'cover' ? 'fit-cover' : (ann.image_fit === 'banner' ? 'fit-banner' : '')}">
+                    <img src="${escapeHtml(ann.image_url)}" alt="${escapeHtml(ann.title)}" class="announcement-img" loading="lazy" />
+                  </div>
+                ` : ""}
+                ${linkHtml}
               </div>
-              <h3 class="announcement-title">${escapeHtml(ann.title)}</h3>
-              <p class="announcement-body">${escapeHtml(ann.message)}</p>
-              ${linkHtml}
-            </div>
-          `;
+            `;
+          }).join("");
           aside.style.display = "block";
         } catch (e) {
           console.error("Failed to render announcements:", e);
@@ -475,6 +492,41 @@
 
       renderAnnouncements();
       renderStandings();
+
+      // Real-time Reactive Watchers: Auto-updates homepage when admin broadcasts announcements
+      if (typeof window !== "undefined") {
+        if (window.BroadcastChannel) {
+          try {
+            const annChannel = new BroadcastChannel("frontline_announcements_channel");
+            annChannel.onmessage = () => {
+              renderAnnouncements();
+            };
+          } catch (_) {}
+        }
+        window.addEventListener("storage", (e) => {
+          if (e.key === "frontline_announcements" || e.key === "frontline_announcements_last_update") {
+            renderAnnouncements();
+          }
+        });
+        window.addEventListener("frontline_announcement_changed", () => {
+          renderAnnouncements();
+        });
+
+        // Supabase Realtime channel subscription
+        if (window.supabaseClient) {
+          try {
+            window.supabaseClient
+              .channel("realtime_league_announcements")
+              .on("postgres_changes", { event: "*", schema: "public", table: "league_announcements" }, () => {
+                renderAnnouncements();
+              })
+              .subscribe();
+          } catch (_) {}
+        }
+
+        // Periodic schedule ticker check: checks every 60s to unlock announcements as scheduled timestamps arrive
+        setInterval(renderAnnouncements, 60000);
+      }
 
       // User-Centered Navigation: Close dropdown on outside click or Escape key
       document.addEventListener("click", (e) => {
@@ -503,6 +555,54 @@
         window.addEventListener("focus", resumeTicker);
         document.addEventListener("visibilitychange", () => {
           if (!document.hidden) resumeTicker();
+        });
+      })();
+
+      // Footer Links Active Scrollspy & Smooth Standings Navigation
+      (function initFooterLinksScrollspy() {
+        const linkLeague = document.getElementById("footer-link-league") || document.querySelector('.footer-links a[href="#league"]');
+        const linkStandings = document.getElementById("footer-link-standings") || document.querySelector('.footer-links a[href="#standings"]');
+        const secLeague = document.getElementById("league");
+        const secStandings = document.getElementById("standings");
+
+        function updateActiveFooterLink() {
+          if (!linkLeague || !linkStandings) return;
+
+          const scrollY = window.scrollY || window.pageYOffset;
+          const windowHeight = window.innerHeight;
+          const docHeight = document.documentElement.scrollHeight;
+          const isAtBottom = (scrollY + windowHeight) >= (docHeight - 120);
+
+          const standingsRect = secStandings?.getBoundingClientRect();
+          // Active when standings is in view or scrolled near/at bottom of the page
+          const isStandingsVisible = standingsRect && (standingsRect.top <= (windowHeight * 0.55));
+
+          if (isAtBottom || isStandingsVisible) {
+            linkStandings.classList.add("active");
+            linkLeague.classList.remove("active");
+          } else {
+            linkLeague.classList.add("active");
+            linkStandings.classList.remove("active");
+          }
+        }
+
+        window.addEventListener("scroll", updateActiveFooterLink, { passive: true });
+        window.addEventListener("resize", updateActiveFooterLink, { passive: true });
+        window.addEventListener("pageshow", updateActiveFooterLink);
+        setTimeout(updateActiveFooterLink, 100);
+
+        // Smooth scroll handler on click
+        [linkLeague, linkStandings].forEach((link) => {
+          link?.addEventListener("click", (e) => {
+            const targetId = link.getAttribute("href")?.replace("#", "");
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+              e.preventDefault();
+              targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+              history.pushState(null, "", `#${targetId}`);
+              setTimeout(updateActiveFooterLink, 350);
+            }
+          });
         });
       })();
     </script>

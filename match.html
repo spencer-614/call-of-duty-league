@@ -5,77 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080a0f" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>Frontline Arena — GameBattles Match Room &amp; CDL Veto</title>
+    <title>Frontline Arena — Competitive Match Room &amp; CDL Veto</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script src="bullet-sparks.js" defer></script>
   </head>
   <body class="gb-body">
-    <!-- Arena Top Navigation Header with Red Logo and Platform Switch -->
-    <header class="header" style="background:#0a0c10; border-bottom:1px solid #1e2430;">
-      <div class="wrap nav">
-        <!-- Brand with Crimson Red Logo -->
-        <a class="brand" href="arena.html">
-          <img src="images/arenalogo_1.png" alt="Frontline Arena Logo" class="brand-logo" />
-          <div class="brand-text">
-            <span class="brand-title" style="color:#ffffff; text-shadow:0 0 14px rgba(255,30,68,0.45);">FRONTLINE</span>
-            <small class="brand-sub" style="color:#ff1e44; font-weight:800; letter-spacing:1px;">ARENA</small>
-            <div class="brand-status status-arena">
-              <span class="nav-beacon"></span>
-              <span>MATCH ROOM ACTIVE</span>
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER (MATCH ROOM)
+         ========================================================================= -->
+    <header class="fl-topbar">
+      <div class="fl-topbar-left">
+        <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
+        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+          <div class="fl-brand-logo-wrapper">
+            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+          </div>
+          <div class="fl-brand-info">
+            <div class="fl-brand-text">
+              <span class="brand-frontline">FRONTLINE</span>
+              <span class="brand-arena">ARENA</span>
+            </div>
+            <div class="fl-circuit-tag-row">
+              <span class="fl-circuit-badge">COMPETITIVE ARENA</span>
+              <div class="fl-live-beacon">
+                <span class="fl-live-dot"></span>
+                <span>MATCH ROOM ACTIVE</span>
+              </div>
             </div>
           </div>
         </a>
+      </div>
 
-        <!-- Header Center Hub with Welcome Above Mode Switcher -->
-        <div class="header-center-hub">
-          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
-          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-            <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
-              <span>🛡</span> <span>League</span>
-            </a>
-            <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
-              <span>⚔</span> <span>Arena</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- User-Centered Navigation Actions (Top Right) -->
-        <div class="nav-right-hub">
-          <div class="menu-toggle">
-            <input type="checkbox" id="menu-toggle" />
-            <label for="menu-toggle" class="menu-label-btn arena" aria-label="Toggle Arena navigation menu">
-              <span>☰</span>
-              <span>Explore Arena</span>
-              <span class="menu-arrow">▾</span>
-            </label>
-            <nav class="links" aria-label="Arena navigation">
-              <div class="nav-dropdown-grid" style="grid-template-columns: 1fr; min-width: 270px;">
-                <div class="nav-dropdown-col">
-                  <a href="ladders.html" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
-                    <span class="nav-icon">⚔</span> <span>Competitive Ladders &amp; Match Finder</span>
-                  </a>
-                  <a href="profile.html#my-teams" id="nav-arena-my-teams-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
-                    <span class="nav-icon">🛡</span> <span>My Teams</span>
-                  </a>
-                  <a href="profile.html" id="nav-arena-profile-link" class="nav-link-highlight arena" style="font-size: 13px; font-weight: 800; padding: 12px 16px; display:flex; align-items:center; gap:10px; margin-top:6px; border-top:1px solid #1e283a;">
-                    <span class="nav-icon" id="nav-arena-profile-icon">🔑</span>
-                    <span id="nav-arena-profile-text">Login</span>
-                  </a>
-                </div>
-              </div>
-            </nav>
-          </div>
-
-          <div id="observer-role-indicator" style="font-size:12px; color:#94a3b8;"></div>
-          <a href="ladders.html" class="btn-crimson-outline" style="font-size:11px; padding:6px 12px; text-decoration:none;">
-            ← Ladders
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+            <span>⚔</span> <span>Arena</span>
           </a>
         </div>
       </div>
+
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="ladders.html">Ladders</a>
+          <a href="arena-tournaments.html">Tournaments</a>
+          <a href="arena-profile.html#my-teams">My Teams</a>
+        </nav>
+
+        <div id="observer-role-indicator" style="font-size:12px; color:#94a3b8;"></div>
+        <a href="ladders.html" class="btn-crimson-outline" style="font-size:12px; padding:8px 16px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+          <span>←</span> <span>Return to Ladders</span>
+        </a>
+      </div>
     </header>
 
-    <!-- GameBattles Breadcrumb Bar -->
+    <!-- Frontline Arena Breadcrumb Bar -->
     <div class="gb-breadcrumb-bar">
       <div class="gb-breadcrumb-inner">
         <a href="arena.html">Arena Home</a>
@@ -88,7 +78,7 @@
 
     <main class="gb-content-wrap" style="padding-top: 24px;">
       <!-- =====================================================================
-           CHECKMATE GAMING PRIVACY GATE: LOCKED FOR NON-PARTICIPANTS
+           FRONTLINE ARENA PRIVACY GATE: LOCKED FOR NON-PARTICIPANTS
            ===================================================================== -->
       <div id="private-match-lock-screen" class="private-match-lock-card" style="display:none;">
         <div class="private-match-lock-icon">🔒</div>
@@ -101,14 +91,14 @@
         <div class="private-match-team-preview">
           <div class="private-team-block">
             <img id="lock-team1-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Team 1" />
-            <div class="private-team-name" id="lock-team1-name">Apex Predators</div>
-            <span class="val-badge" id="lock-team1-tag">[APEX]</span>
+            <div class="private-team-name" id="lock-team1-name">Team 1 [TBD]</div>
+            <span class="val-badge" id="lock-team1-tag">[TBD]</span>
           </div>
           <div class="private-vs-divider">VS</div>
           <div class="private-team-block">
             <img id="lock-team2-img" src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80" alt="Team 2" />
-            <div class="private-team-name" id="lock-team2-name">Crimson Syndicate</div>
-            <span class="val-badge" id="lock-team2-tag">[CRIM]</span>
+            <div class="private-team-name" id="lock-team2-name">Team 2 [TBD]</div>
+            <span class="val-badge" id="lock-team2-tag">[TBD]</span>
           </div>
         </div>
 
@@ -198,8 +188,8 @@
               <img id="veto-team1-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Team 1" class="squad-avatar-img" style="width:52px; height:52px;" />
               <div>
                 <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase;" id="team1-role-badge">TEAM 1 (HOST ADVANTAGE)</span>
-                <div class="veto-team-name" id="veto-team1-name">Apex Predators <span class="squad-tag">[APEX]</span></div>
-                <div style="font-size:11px; color:#94a3b8;" id="veto-team1-tier">Apex Prestige • 2045 ELO</div>
+                <div class="veto-team-name" id="veto-team1-name">Team 1 <span class="squad-tag">[TBD]</span></div>
+                <div style="font-size:11px; color:#94a3b8;" id="veto-team1-tier">Specialist • 1200 ELO</div>
               </div>
             </div>
 
@@ -221,8 +211,8 @@
             <div class="veto-team-card team-b" id="team2-card">
               <div>
                 <span style="font-size:11px; color:#3b82f6; font-weight:800; text-transform:uppercase;" id="team2-role-badge">TEAM 2 (CHALLENGER)</span>
-                <div class="veto-team-name" id="veto-team2-name">Crimson Syndicate <span class="squad-tag">[CRIM]</span></div>
-                <div style="font-size:11px; color:#94a3b8;" id="veto-team2-tier">Commander • 1880 ELO</div>
+                <div class="veto-team-name" id="veto-team2-name">Team 2 <span class="squad-tag">[TBD]</span></div>
+                <div style="font-size:11px; color:#94a3b8;" id="veto-team2-tier">Specialist • 1200 ELO</div>
               </div>
               <img id="veto-team2-img" src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80" alt="Team 2" class="squad-avatar-img" style="width:52px; height:52px;" />
             </div>
@@ -233,7 +223,7 @@
             <!-- Left: Turn Indicator & Map Cards -->
             <div class="veto-main-process">
               <div class="veto-turn-indicator" id="veto-turn-banner">
-                <span id="veto-turn-text">👉 Apex Predators' Turn to Strike Hardpoint Map</span>
+                <span id="veto-turn-text">👉 Awaiting Coin Toss / Map Selection Strike</span>
               </div>
 
               <!-- 5 CDL Maps Rotation Grid -->
@@ -242,7 +232,7 @@
               </div>
             </div>
 
-            <!-- Right: Checkmate Gaming Match Chat & Score Report -->
+            <!-- Right: Frontline Arena Match Chat & Score Report -->
             <div class="cmg-match-ops">
               <!-- Match Chat Box -->
               <div class="match-chat-box">
@@ -517,7 +507,7 @@
         }
       }
 
-      // Checkmate Gaming Access Control Gate
+      // Frontline Arena Access Control Gate
       function evaluateAccessAndRender() {
         const myTeam = window.LadderDB.getMyTeam(activeMatch.ladder_type);
         const teamA = activeMatch.team_a;

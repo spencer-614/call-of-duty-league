@@ -35,22 +35,29 @@
             </div>
           </div>
         </a>
+      </div>
 
-        <!-- Platform Mode Switcher -->
-        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
-          <a href="profile.html" class="fl-mode-btn" title="Go to Frontline Franchised League Profile">🛡 League</a>
-          <a href="arena-profile.html" class="fl-mode-btn active" title="Frontline Arena Profile">⚔ Arena</a>
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="profile.html" class="mode-switch-btn" title="Go to Frontline Franchised League Profile">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="arena-profile.html" class="mode-switch-btn active-arena" title="Frontline Arena Profile">
+            <span>⚔</span> <span>Arena</span>
+          </a>
         </div>
+      </div>
 
-        <!-- Main Navigation Links (Top Nav Links Stay Here!) -->
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
           <a href="ladders.html">Ladders</a>
           <a href="arena-tournaments.html">Tournaments</a>
           <a href="arena-profile.html#my-teams" class="active">My Teams</a>
         </nav>
-      </div>
 
-      <div class="fl-topbar-right">
         <div id="arena-header-squad-container">
           <a href="ladders.html" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
             <span>⚔</span> <span>View Ladders ↗</span>
@@ -81,22 +88,22 @@
             <div class="profile-user-left">
               <div class="profile-avatar-box">
                 <img id="user-avatar-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Player Avatar" />
-                <span class="profile-tag-pill" id="user-clan-tag">[APEX]</span>
+                <span class="profile-tag-pill" id="user-clan-tag">[TAG]</span>
               </div>
               <div class="profile-details">
                 <div class="profile-badge-row">
-                  <span class="profile-tier-badge tier-apex" id="user-tier-badge">
-                    <span>⚡</span> <span id="user-tier-name">Apex Prestige</span>
+                  <span class="profile-tier-badge tier-specialist" id="user-tier-badge">
+                    <span>🎯</span> <span id="user-tier-name">Specialist</span>
                   </span>
                   <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;" id="user-status-pill">
                     ● ACTIVE COMBATANT
                   </span>
                 </div>
-                <h2 id="user-gamertag-display">ViperX</h2>
+                <h2 id="user-gamertag-display">Operative</h2>
                 <div class="profile-submeta">
-                  <span><strong style="color:#fff;">Team:</strong> <span id="user-team-name" style="color:#ff1e44;">Apex Predators</span></span>
-                  <span><strong style="color:#fff;">Activision:</strong> <span id="user-activision-id">ViperX#8392014</span></span>
-                  <span><strong style="color:#fff;">Discord:</strong> <span id="user-discord-tag">viperx_cdl</span></span>
+                  <span><strong style="color:#fff;">Team:</strong> <span id="user-team-name" style="color:#ff1e44;">No Squad Assigned</span></span>
+                  <span><strong style="color:#fff;">Activision:</strong> <span id="user-activision-id">—</span></span>
+                  <span><strong style="color:#fff;">Discord:</strong> <span id="user-discord-tag">—</span></span>
                 </div>
               </div>
             </div>
@@ -132,45 +139,45 @@
           <!-- Total Wins -->
           <div class="record-stat-card stat-wins">
             <span class="stat-label">Wins</span>
-            <div class="stat-value" id="stat-wins-num">18</div>
+            <div class="stat-value" id="stat-wins-num">0</div>
             <div class="stat-sub">Victories Recorded</div>
           </div>
 
           <!-- Total Losses -->
           <div class="record-stat-card stat-losses">
             <span class="stat-label">Losses</span>
-            <div class="stat-value" id="stat-losses-num">2</div>
+            <div class="stat-value" id="stat-losses-num">0</div>
             <div class="stat-sub">Series Defeats</div>
           </div>
 
           <!-- Win Percentage -->
           <div class="record-stat-card stat-rate">
             <span class="stat-label">Win Rate</span>
-            <div class="stat-value" id="stat-winrate-num">90.0%</div>
+            <div class="stat-value" id="stat-winrate-num">0.0%</div>
             <div class="record-progress-bar-wrap">
-              <div class="record-progress-bar-fill" id="stat-winrate-bar" style="width: 90%;"></div>
+              <div class="record-progress-bar-fill" id="stat-winrate-bar" style="width: 0%;"></div>
             </div>
           </div>
 
           <!-- Current Streak -->
           <div class="record-stat-card stat-streak">
             <span class="stat-label">Win Streak</span>
-            <div class="stat-value" id="stat-streak-num">+6</div>
+            <div class="stat-value" id="stat-streak-num">0</div>
             <div class="stat-sub">Current Momentum</div>
           </div>
 
           <!-- Total Matches -->
           <div class="record-stat-card">
             <span class="stat-label">Total Matches</span>
-            <div class="stat-value" id="stat-matches-num">20</div>
+            <div class="stat-value" id="stat-matches-num">0</div>
             <div class="stat-sub">Competitive Series</div>
           </div>
 
           <!-- ELO Rating -->
           <div class="record-stat-card">
             <span class="stat-label">Ladder ELO</span>
-            <div class="stat-value" style="color:#ff1e44;" id="stat-elo-num">2045</div>
-            <div class="stat-sub" id="stat-tier-sub">Apex Prestige</div>
+            <div class="stat-value" style="color:#ff1e44;" id="stat-elo-num">1200</div>
+            <div class="stat-sub" id="stat-tier-sub">Specialist</div>
           </div>
         </div>
 
@@ -382,6 +389,24 @@
               <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Enter your Activision ID with hashtag numbers for match lobby invites &amp; score reporting</span>
             </div>
 
+            <!-- 5. Tactical Role -->
+            <div style="margin-bottom:18px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                Tactical Role <span style="color:#e11d48;">*</span>
+              </label>
+              <select
+                id="reg-role"
+                required
+                style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+              >
+                <option value="Flex" selected>Flex / Hybrid</option>
+                <option value="Main AR">Main AR / Anchor</option>
+                <option value="SMG">SMG / Entry Fragger</option>
+                <option value="Sniper">Sniper / Slayer</option>
+              </select>
+              <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Your primary competitive weapon role</span>
+            </div>
+
             <button type="submit" class="btn-crimson" style="width:100%; justify-content:center; padding:14px; font-size:13px;">
               <span>🛡</span> <span>Register &amp; Create Profile</span>
             </button>
@@ -544,7 +569,31 @@
             if (session?.user) {
               const u = session.user;
               const meta = u.user_metadata || {};
-              const gamertag = meta.gamertag || meta.username || meta.custom_claims?.global_name || meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "Operative");
+              const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
+                ? window.LeagueDB.getDiscordIdentity(u)
+                : null;
+              const isDiscord = discordInfo && discordInfo.isDiscord;
+              const isPendingOAuth = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
+              const needsDossier = !meta.activision_id || !meta.role || !meta.profile_completed || !meta.region || !meta.platform;
+
+              if ((isDiscord || isPendingOAuth) && (needsDossier || isPendingOAuth)) {
+                if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
+                  window.LeagueDB.showDiscordDossierModal({
+                    user: u,
+                    onComplete: (dRes) => {
+                      sessionStorage.removeItem("frontline_discord_oauth_pending");
+                      renderProfilePage();
+                    },
+                    onCancel: () => {
+                      sessionStorage.removeItem("frontline_discord_oauth_pending");
+                      renderProfilePage();
+                    }
+                  });
+                }
+              }
+
+              const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || meta.custom_claims?.global_name || meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "Operative");
+              const discordName = meta.discord_name || meta.discord_username || discordInfo?.primaryName || gamertag;
               const userObj = {
                 id: u.id,
                 email: u.email,
@@ -552,10 +601,13 @@
                 username: gamertag,
                 tag: "ARENA",
                 activision_id: meta.activision_id || `${gamertag}#1234567`,
-                discord: meta.custom_claims?.global_name || meta.full_name || meta.name || gamertag,
+                discord: discordName,
                 avatar_url: meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
                 elo: 1200,
-                tier: "Specialist"
+                tier: "Specialist",
+                role: meta.role || "Flex",
+                region: meta.region || "NA East",
+                platform: meta.platform || "PC"
               };
               try {
                 localStorage.setItem("frontline_arena_auth_user", JSON.stringify(userObj));
@@ -842,11 +894,13 @@
           btn.disabled = true;
           btn.innerHTML = `<span>Connecting to Discord...</span> <span>⏳</span>`;
         }
+        sessionStorage.setItem("frontline_discord_oauth_pending", "true");
         try {
           if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
             const redirectUrl = window.location.origin + window.location.pathname;
             const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
             if (!res.success) {
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
               alert("Discord Sign In Error: " + (res.error || "Failed to start Discord authentication."));
               if (btn) {
                 btn.disabled = false;
@@ -854,10 +908,12 @@
               }
             }
           } else {
+            sessionStorage.removeItem("frontline_discord_oauth_pending");
             alert("Database client is initializing. Please try again in a moment.");
             if (btn) btn.disabled = false;
           }
         } catch (err) {
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
           alert("Error: " + err.message);
           if (btn) btn.disabled = false;
         }
@@ -885,6 +941,7 @@
         const password = document.getElementById("reg-password")?.value || "";
         const gamertag = document.getElementById("reg-gamertag")?.value.trim() || "";
         const activision = document.getElementById("reg-activision")?.value.trim() || "";
+        const role = document.getElementById("reg-role")?.value || "Flex";
         const clanTag = document.getElementById("reg-clantag")?.value.trim() || "";
 
         if (!email) {
@@ -917,7 +974,8 @@
             password,
             gamertag,
             activision_id: activision,
-            clan_tag: clanTag
+            clan_tag: clanTag,
+            role
           });
 
           if (res.success) {

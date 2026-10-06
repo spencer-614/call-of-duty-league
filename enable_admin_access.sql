@@ -145,13 +145,20 @@ CREATE TABLE IF NOT EXISTS league_announcements (
     message TEXT NOT NULL,
     tag TEXT DEFAULT 'Official Update',
     tag_color TEXT DEFAULT 'lime',
+    image_url TEXT,
+    image_fit TEXT DEFAULT 'contain',
     link_url TEXT,
     link_text TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     pinned BOOLEAN DEFAULT FALSE,
+    scheduled_for TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE league_announcements ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE league_announcements ADD COLUMN IF NOT EXISTS image_fit TEXT DEFAULT 'contain';
+ALTER TABLE league_announcements ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMPTZ;
 
 ALTER TABLE league_announcements ENABLE ROW LEVEL SECURITY;
 

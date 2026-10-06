@@ -56,7 +56,7 @@ CREATE TABLE player_map_stats (
     player_id BIGINT REFERENCES players(id) ON DELETE CASCADE,
     map_name TEXT NOT NULL,       -- e.g. "Sub Base", "Karachi", "Invasion", "Rio", "Highrise", "6 Star", "Terminal"
     game_mode TEXT NOT NULL,      -- e.g. "Hardpoint", "Search & Destroy", "Control"
-    opponent_team TEXT,           -- e.g. "Vantage", "Redline", "Static", "Night Shift"
+    opponent_team TEXT,           -- e.g. "Atlanta FaZe", "OpTic Texas", "Boston Breach"
     kills INT DEFAULT 0,
     deaths INT DEFAULT 0,
     damage INT DEFAULT 0,
@@ -87,82 +87,11 @@ CREATE POLICY "Allow public read access on player_map_stats" ON player_map_stats
     FOR SELECT USING (true);
 
 -- ==============================================================================
--- 7. SEED DATA (Initial teams, players, and match vods)
+-- 7. SEED DATA (Clean initialization - No placeholder teams or players)
 -- ==============================================================================
+-- New database installations begin with clean tables. Teams and players are
+-- added via user signups, team registrations, and admin management.
 
--- Insert Teams
-INSERT INTO teams (name, tag, wins, losses, points) VALUES
-('Night Shift', 'NSH', 5, 1, 50),
-('Vantage', 'VTG', 4, 2, 40),
-('Redline', 'RED', 3, 3, 30),
-('Static', 'STC', 1, 5, 10);
-
--- Insert Players (linked to teams by team name)
-INSERT INTO players (gamertag, team_id, role, kdr, total_kills, total_deaths) VALUES
-('Apex', (SELECT id FROM teams WHERE name = 'Night Shift'), 'SMG', 1.28, 342, 267),
-('Ghost', (SELECT id FROM teams WHERE name = 'Night Shift'), 'Main AR', 1.15, 298, 259),
-('Viper', (SELECT id FROM teams WHERE name = 'Night Shift'), 'Flex', 1.05, 275, 262),
-('Blitz', (SELECT id FROM teams WHERE name = 'Night Shift'), 'SMG', 0.98, 250, 255),
-
-('Specter', (SELECT id FROM teams WHERE name = 'Vantage'), 'Main AR', 1.22, 310, 254),
-('Havoc', (SELECT id FROM teams WHERE name = 'Vantage'), 'SMG', 1.10, 290, 263),
-('Zero', (SELECT id FROM teams WHERE name = 'Vantage'), 'Flex', 1.02, 260, 255),
-('Ranger', (SELECT id FROM teams WHERE name = 'Vantage'), 'SMG', 0.95, 230, 242),
-
-('Reaper', (SELECT id FROM teams WHERE name = 'Redline'), 'Main AR', 1.18, 305, 258),
-('Pulse', (SELECT id FROM teams WHERE name = 'Redline'), 'SMG', 1.04, 280, 270),
-('Nova', (SELECT id FROM teams WHERE name = 'Redline'), 'Flex', 0.97, 245, 252),
-('Shadow', (SELECT id FROM teams WHERE name = 'Redline'), 'SMG', 0.91, 220, 241),
-
-('Titan', (SELECT id FROM teams WHERE name = 'Static'), 'Main AR', 1.06, 265, 250),
-('Flash', (SELECT id FROM teams WHERE name = 'Static'), 'SMG', 0.94, 235, 250),
-('Echo', (SELECT id FROM teams WHERE name = 'Static'), 'Flex', 0.89, 210, 236),
-('Phantom', (SELECT id FROM teams WHERE name = 'Static'), 'SMG', 0.85, 195, 229);
-
--- Insert VODs / Live Broadcasts (Twitch channels & past broadcasts)
-INSERT INTO vods (title, stage, team1_id, team2_id, team1_score, team2_score, vod_url, is_live) VALUES
-('Frontline Championship — Night Shift vs Vantage', 'Grand Finals', 
-    (SELECT id FROM teams WHERE name = 'Night Shift'), 
-    (SELECT id FROM teams WHERE name = 'Vantage'), 
-    0, 0, 
-    'callofduty', -- Put your Twitch channel name or full twitch URL here
-    true),
-('Redline vs Static — Week 3 Hardpoint Clash', 'Week 3', 
-    (SELECT id FROM teams WHERE name = 'Redline'), 
-    (SELECT id FROM teams WHERE name = 'Static'), 
-    3, 2, 
-    'https://twitch.tv/callofduty', 
-    false);
-
--- Insert Individual Player Map Stats (Sample map matches for Apex, Ghost, Specter, Reaper, Titan)
-INSERT INTO player_map_stats (player_id, map_name, game_mode, opponent_team, kills, deaths, damage, kdr, result, score, match_date) VALUES
--- Apex (Night Shift)
-((SELECT id FROM players WHERE gamertag = 'Apex'), 'Karachi', 'Hardpoint', 'Vantage', 32, 21, 4820, 1.52, 'W', '250 - 210', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Apex'), 'Highrise', 'Search & Destroy', 'Vantage', 9, 5, 1450, 1.80, 'W', '6 - 4', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Apex'), 'Invasion', 'Control', 'Vantage', 24, 19, 3610, 1.26, 'L', '2 - 3', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Apex'), 'Sub Base', 'Hardpoint', 'Redline', 29, 22, 4390, 1.32, 'W', '250 - 195', '2026-09-18'),
-((SELECT id FROM players WHERE gamertag = 'Apex'), 'Rio', 'Search & Destroy', 'Redline', 11, 4, 1820, 2.75, 'W', '6 - 2', '2026-09-18'),
-
--- Ghost (Night Shift)
-((SELECT id FROM players WHERE gamertag = 'Ghost'), 'Karachi', 'Hardpoint', 'Vantage', 26, 18, 4410, 1.44, 'W', '250 - 210', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Ghost'), 'Highrise', 'Search & Destroy', 'Vantage', 7, 6, 1200, 1.17, 'W', '6 - 4', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Ghost'), 'Invasion', 'Control', 'Vantage', 21, 20, 3450, 1.05, 'L', '2 - 3', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Ghost'), 'Sub Base', 'Hardpoint', 'Redline', 27, 19, 4100, 1.42, 'W', '250 - 195', '2026-09-18'),
-
--- Specter (Vantage)
-((SELECT id FROM players WHERE gamertag = 'Specter'), 'Karachi', 'Hardpoint', 'Night Shift', 29, 24, 4650, 1.21, 'L', '210 - 250', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Specter'), 'Highrise', 'Search & Destroy', 'Night Shift', 8, 7, 1310, 1.14, 'L', '4 - 6', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Specter'), 'Invasion', 'Control', 'Night Shift', 27, 18, 4120, 1.50, 'W', '3 - 2', '2026-09-24'),
-((SELECT id FROM players WHERE gamertag = 'Specter'), '6 Star', 'Hardpoint', 'Static', 34, 21, 5100, 1.62, 'W', '250 - 180', '2026-09-17'),
-
--- Reaper (Redline)
-((SELECT id FROM players WHERE gamertag = 'Reaper'), 'Sub Base', 'Hardpoint', 'Night Shift', 26, 25, 4120, 1.04, 'L', '195 - 250', '2026-09-18'),
-((SELECT id FROM players WHERE gamertag = 'Reaper'), 'Rio', 'Search & Destroy', 'Night Shift', 6, 7, 980, 0.86, 'L', '2 - 6', '2026-09-18'),
-((SELECT id FROM players WHERE gamertag = 'Reaper'), 'Karachi', 'Hardpoint', 'Static', 31, 20, 4750, 1.55, 'W', '250 - 220', '2026-09-11'),
-
--- Titan (Static)
-((SELECT id FROM players WHERE gamertag = 'Titan'), '6 Star', 'Hardpoint', 'Vantage', 24, 26, 3890, 0.92, 'L', '180 - 250', '2026-09-17'),
-((SELECT id FROM players WHERE gamertag = 'Titan'), 'Karachi', 'Hardpoint', 'Redline', 25, 23, 3950, 1.09, 'L', '220 - 250', '2026-09-11');
 
 -- ==============================================================================
 -- 8. LEAGUE SIGNUPS / REGISTRATIONS TABLE

@@ -20,757 +20,994 @@
   // COMPREHENSIVE BRACKET DATA BY DIVISION
   // ============================================================================
   const BRACKET_DATA = {
-    // --------------------------------------------------------------------------
-    // DIVISION 1: PREMIER CHAMPIONSHIP (Double Elimination)
-    // --------------------------------------------------------------------------
-    premier: {
-      id: "premier",
-      name: "Premier Championship",
-      tier: "Division 1 · Pro Tier",
-      badge: "ELITE DIVISION",
-      format: "8-Team Double Elimination (Best of 5)",
-      prizePool: "$1,000 USD",
-      status: "CHAMPIONSHIP STAGE",
-      description: "The top 8 franchise squads battling in the definitive Frontline double-elimination tournament.",
-      ruleset: "CDL V4 Competitive Settings · 4v4 HP / S&D / CTL",
-      explainer: {
-        kicker: "COMPETITIVE FRAMEWORK // PRO DIVISION 1",
-        title: 'How Premier <span style="color:var(--lime);">Double Elimination Works</span>',
-        items: [
-          {
-            title: "1. Double Elimination Format",
-            text: "Division 1 operates on a full double-elimination structure. A team that loses in the Winners (Upper) Bracket drops to the Elimination (Lower) Bracket for a second opportunity. A second loss results in complete tournament elimination."
-          },
-          {
-            title: "2. Best of 5 Series Rotation",
-            text: "Standard CDL match rotation: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Control (First to 3), Map 4 Hardpoint, and Map 5 Search & Destroy. All series are played to first to 3 map wins."
-          },
-          {
-            title: "3. Grand Finals & Bracket Reset",
-            text: "The squad advancing undefeated from the Winners Bracket enters Grand Finals with 1-series advantage. The team emerging from the Elimination Bracket must win two consecutive Best of 5 series (Bracket Reset) to claim the championship title."
-          },
-          {
-            title: "4. Live Telemetry & VODs",
-            text: "Click on any match card in the bracket to review individual map telemetry, series scoreboard breakdowns, slayer MVPs, and link directly to full stream broadcasts."
-          }
-        ]
-      },
-      stages: [
+  "premier": {
+    "id": "premier",
+    "name": "Premier Championship",
+    "tier": "Division 1 · Pro Tier",
+    "badge": "ELITE DIVISION",
+    "format": "8-Team Double Elimination (Best of 5)",
+    "prizePool": "$1,000 USD",
+    "status": "CHAMPIONSHIP STAGE",
+    "description": "The top 8 franchise squads battling in the definitive Frontline double-elimination tournament.",
+    "ruleset": "CDL V4 Competitive Settings · 4v4 HP / S&D / CTL",
+    "explainer": {
+      "kicker": "COMPETITIVE FRAMEWORK // PRO DIVISION 1",
+      "title": "How Premier <span style=\"color:var(--lime);\">Double Elimination Works</span>",
+      "items": [
         {
-          id: "winners",
-          name: "Winners Bracket (Upper)",
-          rounds: [
-            {
-              roundId: "ub-qf",
-              name: "Upper Quarterfinals",
-              badge: "Round 1",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M1",
-                  code: "UB-QF1",
-                  status: "Completed",
-                  time: "Fri · 6:00 PM EST",
-                  team1: { seed: 1, name: "Night Shift", tag: "NSH", score: 3, winner: true },
-                  team2: { seed: 8, name: "Ironclad", tag: "ICD", score: 0, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 180", winner: "Night Shift" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "6 - 2", winner: "Night Shift" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 0", winner: "Night Shift" }
-                  ],
-                  mvp: "Apex (1.45 K/D · 74 Kills)",
-                  vodUrl: "livestreams.html"
-                },
-                {
-                  id: "M2",
-                  code: "UB-QF2",
-                  status: "Completed",
-                  time: "Fri · 7:15 PM EST",
-                  team1: { seed: 4, name: "Static", tag: "STC", score: 2, winner: false },
-                  team2: { seed: 5, name: "Sub Zero", tag: "SBZ", score: 3, winner: true },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Sub Base", score: "242 - 250", winner: "Sub Zero" },
-                    { number: 2, mode: "Search & Destroy", map: "Rio", score: "6 - 4", winner: "Static" },
-                    { number: 3, mode: "Control", map: "Karachi", score: "3 - 2", winner: "Static" },
-                    { number: 4, mode: "Hardpoint", map: "Invasion", score: "215 - 250", winner: "Sub Zero" },
-                    { number: 5, mode: "Search & Destroy", map: "Highrise", score: "4 - 6", winner: "Sub Zero" }
-                  ],
-                  mvp: "Frost (1.28 K/D · 88 Kills)",
-                  vodUrl: "livestreams.html"
-                },
-                {
-                  id: "M3",
-                  code: "UB-QF3",
-                  status: "Completed",
-                  time: "Fri · 8:30 PM EST",
-                  team1: { seed: 2, name: "Vantage", tag: "VTG", score: 3, winner: true },
-                  team2: { seed: 7, name: "Apex Predators", tag: "APX", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Rio", score: "250 - 195", winner: "Vantage" },
-                    { number: 2, mode: "Search & Destroy", map: "Karachi", score: "6 - 3", winner: "Vantage" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "1 - 3", winner: "Apex Predators" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "250 - 210", winner: "Vantage" }
-                  ],
-                  mvp: "Specter (1.34 K/D · 79 Kills)",
-                  vodUrl: "livestreams.html"
-                },
-                {
-                  id: "M4",
-                  code: "UB-QF4",
-                  status: "Completed",
-                  time: "Fri · 9:45 PM EST",
-                  team1: { seed: 3, name: "Redline", tag: "RED", score: 3, winner: true },
-                  team2: { seed: 6, name: "Havoc Esports", tag: "HVC", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 240", winner: "Redline" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "4 - 6", winner: "Havoc Esports" },
-                    { number: 3, mode: "Control", map: "Karachi", score: "3 - 1", winner: "Redline" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "210 - 250", winner: "Havoc Esports" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "6 - 4", winner: "Redline" }
-                  ],
-                  mvp: "Reaper (1.26 K/D · 91 Kills)",
-                  vodUrl: "livestreams.html"
-                }
-              ]
-            },
-            {
-              roundId: "ub-sf",
-              name: "Upper Semifinals",
-              badge: "Round 2",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M7",
-                  code: "UB-SF1",
-                  status: "Completed",
-                  time: "Sat · 4:00 PM EST",
-                  team1: { seed: 1, name: "Night Shift", tag: "NSH", score: 3, winner: true },
-                  team2: { seed: 5, name: "Sub Zero", tag: "SBZ", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 205", winner: "Night Shift" },
-                    { number: 2, mode: "Search & Destroy", map: "Invasion", score: "5 - 6", winner: "Sub Zero" },
-                    { number: 3, mode: "Control", map: "Highrise", score: "3 - 1", winner: "Night Shift" },
-                    { number: 4, mode: "Hardpoint", map: "Rio", score: "250 - 190", winner: "Night Shift" }
-                  ],
-                  mvp: "Ghost (1.38 K/D · Clutch 1v2)",
-                  vodUrl: "livestreams.html"
-                },
-                {
-                  id: "M8",
-                  code: "UB-SF2",
-                  status: "Completed",
-                  time: "Sat · 5:30 PM EST",
-                  team1: { seed: 2, name: "Vantage", tag: "VTG", score: 3, winner: true },
-                  team2: { seed: 3, name: "Redline", tag: "RED", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Sub Base", score: "250 - 230", winner: "Vantage" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "4 - 6", winner: "Redline" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "2 - 3", winner: "Redline" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "250 - 215", winner: "Vantage" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "6 - 5", winner: "Vantage" }
-                  ],
-                  mvp: "Havoc (1.31 K/D · Round 11 ACE)",
-                  vodUrl: "livestreams.html"
-                }
-              ]
-            },
-            {
-              roundId: "ub-f",
-              name: "Winners Finals",
-              badge: "Upper Final",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M11",
-                  code: "UB-F",
-                  status: "Completed",
-                  time: "Sun · 2:00 PM EST",
-                  team1: { seed: 1, name: "Night Shift", tag: "NSH", score: 3, winner: true },
-                  team2: { seed: 2, name: "Vantage", tag: "VTG", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 238", winner: "Night Shift" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "4 - 6", winner: "Vantage" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 2", winner: "Night Shift" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "220 - 250", winner: "Vantage" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "6 - 4", winner: "Night Shift" }
-                  ],
-                  mvp: "Apex (1.42 K/D · 102 Total Kills)",
-                  note: "Winner advances directly to Grand Finals. Loser drops to Losers Finals.",
-                  vodUrl: "livestreams.html"
-                }
-              ]
-            }
-          ]
+          "title": "1. Double Elimination Format",
+          "text": "Division 1 operates on a full double-elimination structure. A team that loses in the Winners (Upper) Bracket drops to the Elimination (Lower) Bracket for a second opportunity. A second loss results in complete tournament elimination."
         },
         {
-          id: "elimination",
-          name: "Elimination Bracket (Lower)",
-          rounds: [
-            {
-              roundId: "lb-r1",
-              name: "Elimination Round 1",
-              badge: "Do or Die",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M5",
-                  code: "LB-R1A",
-                  status: "Completed",
-                  time: "Sat · 1:00 PM EST",
-                  team1: { seed: 8, name: "Ironclad", tag: "ICD", score: 1, winner: false },
-                  team2: { seed: 4, name: "Static", tag: "STC", score: 3, winner: true },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Rio", score: "250 - 180", winner: "Static" },
-                    { number: 2, mode: "Search & Destroy", map: "Karachi", score: "4 - 6", winner: "Ironclad" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 1", winner: "Static" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "250 - 220", winner: "Static" }
-                  ],
-                  mvp: "Titan (1.29 K/D · 76 Kills)"
-                },
-                {
-                  id: "M6",
-                  code: "LB-R1B",
-                  status: "Completed",
-                  time: "Sat · 2:30 PM EST",
-                  team1: { seed: 7, name: "Apex Predators", tag: "APX", score: 1, winner: false },
-                  team2: { seed: 6, name: "Havoc Esports", tag: "HVC", score: 3, winner: true },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "210 - 250", winner: "Havoc Esports" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "6 - 4", winner: "Apex Predators" },
-                    { number: 3, mode: "Control", map: "Karachi", score: "1 - 3", winner: "Havoc Esports" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "190 - 250", winner: "Havoc Esports" }
-                  ],
-                  mvp: "Bullet (1.32 K/D · 81 Kills)"
-                }
-              ]
-            },
-            {
-              roundId: "lb-qf",
-              name: "Elimination Quarterfinals",
-              badge: "Top 6",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M9",
-                  code: "LB-QF1",
-                  status: "Completed",
-                  time: "Sat · 7:00 PM EST",
-                  team1: { seed: 3, name: "Redline", tag: "RED", score: 3, winner: true },
-                  team2: { seed: 4, name: "Static", tag: "STC", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 210", winner: "Redline" },
-                    { number: 2, mode: "Search & Destroy", map: "Rio", score: "6 - 2", winner: "Redline" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "2 - 3", winner: "Static" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "250 - 195", winner: "Redline" }
-                  ],
-                  mvp: "Pulse (1.27 K/D · 72 Kills)"
-                },
-                {
-                  id: "M10",
-                  code: "LB-QF2",
-                  status: "Completed",
-                  time: "Sat · 8:30 PM EST",
-                  team1: { seed: 5, name: "Sub Zero", tag: "SBZ", score: 3, winner: true },
-                  team2: { seed: 6, name: "Havoc Esports", tag: "HVC", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Rio", score: "235 - 250", winner: "Havoc Esports" },
-                    { number: 2, mode: "Search & Destroy", map: "Karachi", score: "6 - 4", winner: "Sub Zero" },
-                    { number: 3, mode: "Control", map: "Highrise", score: "3 - 2", winner: "Sub Zero" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "210 - 250", winner: "Havoc Esports" },
-                    { number: 5, mode: "Search & Destroy", map: "Highrise", score: "6 - 3", winner: "Sub Zero" }
-                  ],
-                  mvp: "Glacier (1.30 K/D · 89 Kills)"
-                }
-              ]
-            },
-            {
-              roundId: "lb-sf",
-              name: "Elimination Semifinals",
-              badge: "Top 4",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M12",
-                  code: "LB-SF",
-                  status: "Completed",
-                  time: "Sun · 3:30 PM EST",
-                  team1: { seed: 3, name: "Redline", tag: "RED", score: 3, winner: true },
-                  team2: { seed: 5, name: "Sub Zero", tag: "SBZ", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 245", winner: "Redline" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "3 - 6", winner: "Sub Zero" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 1", winner: "Redline" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "205 - 250", winner: "Sub Zero" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "6 - 4", winner: "Redline" }
-                  ],
-                  mvp: "Reaper (1.35 K/D · 94 Kills)"
-                }
-              ]
-            },
-            {
-              roundId: "lb-f",
-              name: "Losers Finals",
-              badge: "Bronze / Runner-Up",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M13",
-                  code: "LB-F",
-                  status: "Completed",
-                  time: "Sun · 5:00 PM EST",
-                  team1: { seed: 2, name: "Vantage", tag: "VTG", score: 3, winner: true },
-                  team2: { seed: 3, name: "Redline", tag: "RED", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Rio", score: "250 - 215", winner: "Vantage" },
-                    { number: 2, mode: "Search & Destroy", map: "Karachi", score: "6 - 4", winner: "Vantage" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "2 - 3", winner: "Redline" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "250 - 228", winner: "Vantage" }
-                  ],
-                  mvp: "Specter (1.36 K/D · 82 Kills)",
-                  note: "Vantage advances to Grand Finals. Redline finishes in 3rd Place."
-                }
-              ]
-            }
-          ]
+          "title": "2. Best of 5 Series Rotation",
+          "text": "Standard CDL match rotation: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Control (First to 3), Map 4 Hardpoint, and Map 5 Search & Destroy. All series are played to first to 3 map wins."
         },
         {
-          id: "finals",
-          name: "Championship Grand Finals",
-          rounds: [
-            {
-              roundId: "gf",
-              name: "Grand Finals",
-              badge: "CHAMPIONSHIP MATCH",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "M14",
-                  code: "GF-M1",
-                  status: "Live",
-                  time: "Sun · 7:00 PM EST",
-                  team1: { seed: 1, name: "Night Shift", tag: "NSH", score: 2, winner: null },
-                  team2: { seed: 2, name: "Vantage", tag: "VTG", score: 2, winner: null },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 242", winner: "Night Shift" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "4 - 6", winner: "Vantage" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 1", winner: "Night Shift" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "235 - 250", winner: "Vantage" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "LIVE: Round 9", winner: "IN PROGRESS" }
-                  ],
-                  mvp: "Map 5 Game Decider in Progress",
-                  note: "Night Shift possesses Winners Advantage. Vantage must win 2 consecutive Bo5 series to complete bracket reset.",
-                  vodUrl: "livestreams.html"
-                }
-              ]
-            }
-          ]
+          "title": "3. Grand Finals & Bracket Reset",
+          "text": "The squad advancing undefeated from the Winners Bracket enters Grand Finals with 1-series advantage. The team emerging from the Elimination Bracket must win two consecutive Best of 5 series (Bracket Reset) to claim the championship title."
+        },
+        {
+          "title": "4. Live Telemetry & VODs",
+          "text": "Click on any match card in the bracket to review individual map telemetry, series scoreboard breakdowns, slayer MVPs, and link directly to full stream broadcasts."
         }
       ]
     },
-
-    // --------------------------------------------------------------------------
-    // DIVISION 2: CHALLENGERS DIVISION (Contenders Tier)
-    // --------------------------------------------------------------------------
-    challengers: {
-      id: "challengers",
-      name: "Challengers Division",
-      tier: "Division 2 · Contenders Tier",
-      badge: "CONTENDERS",
-      format: "8-Team Double Elimination (Best of 5)",
-      prizePool: "$500 USD + Tier-1 Promotion",
-      status: "WEEK 4 · ELIMINATION STAGE",
-      description: "Amateur & franchise development teams fighting for league glory, prize cash, and Premier Division promotion.",
-      ruleset: "CDL Competitive Standard · 4v4 Roster Lock",
-      explainer: {
-        kicker: "CONTENDERS FRAMEWORK // DIVISION 2",
-        title: 'How Challengers <span style="color:var(--lime);">Double Elimination Works</span>',
-        items: [
+    "stages": [
+      {
+        "id": "winners",
+        "name": "Winners Bracket (Upper)",
+        "rounds": [
           {
-            title: "1. Double Elimination Format",
-            text: "Division 2 operates on a competitive double-elimination structure. Squads defeated in the Winners Bracket drop into the Elimination Bracket for a redemption run. A second defeat results in tournament elimination."
+            "roundId": "ub-qf",
+            "name": "Upper Quarterfinals",
+            "badge": "Round 1",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M1",
+                "code": "UB-QF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 1,
+                  "name": "Seed #1 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 8,
+                  "name": "Seed #8 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "M2",
+                "code": "UB-QF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 4,
+                  "name": "Seed #4 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 5,
+                  "name": "Seed #5 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "M3",
+                "code": "UB-QF3",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 2,
+                  "name": "Seed #2 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 7,
+                  "name": "Seed #7 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "M4",
+                "code": "UB-QF4",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 3,
+                  "name": "Seed #3 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 6,
+                  "name": "Seed #6 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
           },
           {
-            title: "2. Best of 5 Series Rotation",
-            text: "Official CDL competitive rule set: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Control (First to 3), Map 4 Hardpoint, and Map 5 Search & Destroy decider. All series are played first to 3 map wins."
+            "roundId": "ub-sf",
+            "name": "Upper Semifinals",
+            "badge": "Round 2",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M7",
+                "code": "UB-SF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of M1",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M2",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "M8",
+                "code": "UB-SF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of M3",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M4",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
           },
           {
-            title: "3. Grand Finals & Premier Promotion",
-            text: "The Challengers tournament champion claims the $500 prize pool and an automatic promotional berth into Division 1 Premier. The Elimination Bracket finalist must win two consecutive series to achieve a bracket reset."
-          },
-          {
-            title: "4. Live Telemetry & Scout Reports",
-            text: "Click any match in the bracket to inspect map telemetry, player performance metrics, match MVPs, and link to broadcast VODs."
+            "roundId": "ub-f",
+            "name": "Winners Finals",
+            "badge": "Upper Final",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M11",
+                "code": "UB-F",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of M7",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M8",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
           }
         ]
       },
-      stages: [
+      {
+        "id": "losers",
+        "name": "Elimination Bracket (Lower)",
+        "rounds": [
+          {
+            "roundId": "lb-r1",
+            "name": "Elimination Round 1",
+            "badge": "Lower R1",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M5",
+                "code": "LB-R1A",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of M1",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Loser of M2",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "M6",
+                "code": "LB-R1B",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of M3",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Loser of M4",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
+          },
+          {
+            "roundId": "lb-qf",
+            "name": "Elimination Quarterfinals",
+            "badge": "Lower QF",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M9",
+                "code": "LB-QF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of M8",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M5",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "M10",
+                "code": "LB-QF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of M7",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M6",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
+          },
+          {
+            "roundId": "lb-sf",
+            "name": "Elimination Semifinals",
+            "badge": "Lower Semi",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M12",
+                "code": "LB-SF",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of M9",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M10",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
+          },
+          {
+            "roundId": "lb-f",
+            "name": "Losers Finals",
+            "badge": "Lower Final",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M13",
+                "code": "LB-F",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of M11",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of M12",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Winner advances to Grand Finals."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "grandfinals",
+        "name": "Championship Grand Finals",
+        "rounds": [
+          {
+            "roundId": "gf",
+            "name": "Grand Finals",
+            "badge": "Championship",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "M14",
+                "code": "GF-M1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winners Champion (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Elimination Champion (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Winners Bracket team possesses 1-series advantage."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "challengers": {
+    "id": "challengers",
+    "name": "Challengers Division",
+    "tier": "Division 2 · Tier 2",
+    "badge": "CHALLENGERS CIRCUIT",
+    "format": "8-Team Double Elimination (Best of 5)",
+    "prizePool": "$500 USD",
+    "status": "PLAYOFF STAGE",
+    "description": "Challengers Division 2 Championship bracket featuring upcoming competitive rosters.",
+    "ruleset": "CDL V4 Competitive Settings · 4v4 HP / S&D / CTL",
+    "explainer": {
+      "kicker": "COMPETITIVE FRAMEWORK // DIVISION 2",
+      "title": "Challengers <span style=\"color:var(--lime);\">Circuit Structure</span>",
+      "items": [
         {
-          id: "winners",
-          name: "Winners Bracket",
-          rounds: [
-            {
-              roundId: "ch-ub-qf",
-              name: "Upper Quarterfinals",
-              badge: "Round 1",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "C1",
-                  code: "CH-QF1",
-                  status: "Completed",
-                  time: "Fri · 5:00 PM EST",
-                  team1: { seed: 1, name: "Underdogs", tag: "UND", score: 3, winner: true },
-                  team2: { seed: 8, name: "Ghost Recon", tag: "GHR", score: 0, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 165", winner: "Underdogs" },
-                    { number: 2, mode: "Search & Destroy", map: "Rio", score: "6 - 1", winner: "Underdogs" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 0", winner: "Underdogs" }
-                  ],
-                  mvp: "CoolRanchhh (1.48 K/D)"
-                },
-                {
-                  id: "C2",
-                  code: "CH-QF2",
-                  status: "Completed",
-                  time: "Fri · 6:15 PM EST",
-                  team1: { seed: 4, name: "Phantom Squad", tag: "PHT", score: 3, winner: true },
-                  team2: { seed: 5, name: "Neon Militia", tag: "NNM", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Sub Base", score: "250 - 210", winner: "Phantom Squad" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "6 - 4", winner: "Phantom Squad" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "1 - 3", winner: "Neon Militia" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "250 - 195", winner: "Phantom Squad" }
-                  ],
-                  mvp: "Ghosty (1.29 K/D)"
-                },
-                {
-                  id: "C3",
-                  code: "CH-QF3",
-                  status: "Completed",
-                  time: "Fri · 7:30 PM EST",
-                  team1: { seed: 2, name: "Grim Syndicate", tag: "GRM", score: 3, winner: true },
-                  team2: { seed: 7, name: "Overdrive", tag: "OVD", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 190", winner: "Grim Syndicate" },
-                    { number: 2, mode: "Search & Destroy", map: "Rio", score: "6 - 3", winner: "Grim Syndicate" },
-                    { number: 3, mode: "Control", map: "Karachi", score: "2 - 3", winner: "Overdrive" },
-                    { number: 4, mode: "Hardpoint", map: "Invasion", score: "250 - 215", winner: "Grim Syndicate" }
-                  ],
-                  mvp: "Grimm (1.33 K/D)"
-                },
-                {
-                  id: "C4",
-                  code: "CH-QF4",
-                  status: "Completed",
-                  time: "Fri · 8:45 PM EST",
-                  team1: { seed: 3, name: "Rogue Ops", tag: "RGO", score: 3, winner: true },
-                  team2: { seed: 6, name: "Bulletproof", tag: "BLP", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Sub Base", score: "250 - 240", winner: "Rogue Ops" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "4 - 6", winner: "Bulletproof" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 1", winner: "Rogue Ops" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "215 - 250", winner: "Bulletproof" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "6 - 4", winner: "Rogue Ops" }
-                  ],
-                  mvp: "ShadowStrike (1.25 K/D)"
-                }
-              ]
-            },
-            {
-              roundId: "ch-ub-sf",
-              name: "Upper Semifinals",
-              badge: "Round 2",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "C7",
-                  code: "CH-SF1",
-                  status: "Completed",
-                  time: "Sat · 3:00 PM EST",
-                  team1: { seed: 1, name: "Underdogs", tag: "UND", score: 3, winner: true },
-                  team2: { seed: 4, name: "Phantom Squad", tag: "PHT", score: 2, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 235", winner: "Underdogs" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "3 - 6", winner: "Phantom Squad" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 2", winner: "Underdogs" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "210 - 250", winner: "Phantom Squad" },
-                    { number: 5, mode: "Search & Destroy", map: "Rio", score: "6 - 3", winner: "Underdogs" }
-                  ],
-                  mvp: "Maddengamer (1.31 K/D)"
-                },
-                {
-                  id: "C8",
-                  code: "CH-SF2",
-                  status: "Completed",
-                  time: "Sat · 4:30 PM EST",
-                  team1: { seed: 2, name: "Grim Syndicate", tag: "GRM", score: 3, winner: true },
-                  team2: { seed: 3, name: "Rogue Ops", tag: "RGO", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Rio", score: "250 - 210", winner: "Grim Syndicate" },
-                    { number: 2, mode: "Search & Destroy", map: "Karachi", score: "6 - 4", winner: "Grim Syndicate" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "1 - 3", winner: "Rogue Ops" },
-                    { number: 4, mode: "Hardpoint", map: "Karachi", score: "250 - 225", winner: "Grim Syndicate" }
-                  ],
-                  mvp: "Cynic (1.34 K/D)"
-                }
-              ]
-            },
-            {
-              roundId: "ch-ub-f",
-              name: "Winners Finals",
-              badge: "Upper Final",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "C11",
-                  code: "CH-WF",
-                  status: "Completed",
-                  time: "Sun · 1:00 PM EST",
-                  team1: { seed: 1, name: "Underdogs", tag: "UND", score: 3, winner: true },
-                  team2: { seed: 2, name: "Grim Syndicate", tag: "GRM", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 220", winner: "Underdogs" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "6 - 5", winner: "Underdogs" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "1 - 3", winner: "Grim Syndicate" },
-                    { number: 4, mode: "Hardpoint", map: "Sub Base", score: "250 - 215", winner: "Underdogs" }
-                  ],
-                  mvp: "CoolRanchhh (1.39 K/D)",
-                  note: "Underdogs qualify for Challengers Grand Finals."
-                }
-              ]
-            }
-          ]
+          "title": "1. Semi-Pro Pathway",
+          "text": "The premier feeder division for players fighting for a spot in Division 1 franchise scouting lists."
         },
         {
-          id: "elimination",
-          name: "Elimination Bracket",
-          rounds: [
-            {
-              roundId: "ch-lb-f",
-              name: "Challengers Losers Finals",
-              badge: "Elimination",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "C13",
-                  code: "CH-LF",
-                  status: "Live",
-                  time: "Sun · 4:00 PM EST",
-                  team1: { seed: 2, name: "Grim Syndicate", tag: "GRM", score: 2, winner: null },
-                  team2: { seed: 4, name: "Phantom Squad", tag: "PHT", score: 1, winner: null },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Sub Base", score: "250 - 215", winner: "Grim Syndicate" },
-                    { number: 2, mode: "Search & Destroy", map: "Rio", score: "4 - 6", winner: "Phantom Squad" },
-                    { number: 3, mode: "Control", map: "Karachi", score: "3 - 2", winner: "Grim Syndicate" },
-                    { number: 4, mode: "Hardpoint", map: "Invasion", score: "In Progress", winner: null }
-                  ],
-                  mvp: "Map 4 In Progress",
-                  note: "Winner advances to play Underdogs in the Challengers Grand Finals."
-                }
-              ]
-            }
-          ]
+          "title": "2. Double Elimination Progression",
+          "text": "Teams eliminated in upper rounds fight through the lower bracket for a second shot at the Grand Finals."
         },
         {
-          id: "finals",
-          name: "Challengers Grand Finals",
-          rounds: [
-            {
-              roundId: "ch-gf",
-              name: "Grand Finals",
-              badge: "TITLE MATCH",
-              bestOf: "BO5",
-              matches: [
-                {
-                  id: "C14",
-                  code: "CH-GF",
-                  status: "Scheduled",
-                  time: "Sun · 6:30 PM EST",
-                  team1: { seed: 1, name: "Underdogs", tag: "UND", score: 0, winner: null },
-                  team2: { seed: null, name: "Winner of C13", tag: "TBD", score: 0, winner: null },
-                  maps: [],
-                  mvp: "Scheduled",
-                  note: "Challengers Championship Decider + Promotion Berth."
-                }
-              ]
-            }
-          ]
+          "title": "3. Scout Scoring Integration",
+          "text": "Telemetry from all Challengers matches directly factors into the Draft Scouting Grade algorithm."
         }
       ]
     },
-
-    // --------------------------------------------------------------------------
-    // DIVISION 3: OPEN RECRUIT CUP (Grassroots Tier - Single Elimination)
-    // --------------------------------------------------------------------------
-    open: {
-      id: "open",
-      name: "Open Recruit Cup",
-      tier: "Division 3 · Open Tier",
-      badge: "GRASSROOTS",
-      format: "8-Team Single Elimination + 3rd Place (Best of 3)",
-      prizePool: "$250 USD + Challengers Seed",
-      status: "ROUND 2 · SEMIFINALS",
-      description: "Open community tournament for free agents, newly drafted squads, and grassroots combatants.",
-      ruleset: "CDL 4v4 Ruleset · Best of 3 (HP / S&D / CTL)",
-      explainer: {
-        kicker: "GRASSROOTS FRAMEWORK // DIVISION 3",
-        title: 'How Open Recruit <span style="color:var(--lime);">Single Elimination Works</span>',
-        items: [
+    "stages": [
+      {
+        "id": "winners",
+        "name": "Winners Bracket",
+        "rounds": [
           {
-            title: "1. Single Elimination Knockout",
-            text: "Division 3 operates on a pure single-elimination knockout format. There is no lower bracket—one series defeat results in immediate tournament elimination. Every round is sudden death."
+            "roundId": "ch-ub-qf",
+            "name": "Upper Quarterfinals",
+            "badge": "Round 1",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "C1",
+                "code": "CH-QF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 1,
+                  "name": "Seed #1 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 8,
+                  "name": "Seed #8 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "C2",
+                "code": "CH-QF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 4,
+                  "name": "Seed #4 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 5,
+                  "name": "Seed #5 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "C3",
+                "code": "CH-QF3",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 2,
+                  "name": "Seed #2 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 7,
+                  "name": "Seed #7 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "C4",
+                "code": "CH-QF4",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 3,
+                  "name": "Seed #3 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 6,
+                  "name": "Seed #6 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
           },
           {
-            title: "2. Best of 3 Series (Finals BO5)",
-            text: "Quarterfinals and Semifinals are played as Best of 3 (Map 1 Hardpoint, Map 2 Search & Destroy, Map 3 Control). The Grand Finals title match elevates to a Best of 5 championship showdown."
+            "roundId": "ch-ub-sf",
+            "name": "Upper Semifinals",
+            "badge": "Round 2",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "C7",
+                "code": "CH-SF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of C1",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of C2",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "C8",
+                "code": "CH-SF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of C3",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of C4",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
           },
           {
-            title: "3. Bronze Final (3rd Place Playoff)",
-            text: "Losing semifinalists battle in a dedicated 3rd Place match to determine final tournament podium standing and earn priority qualification points."
-          },
-          {
-            title: "4. Talent Scouting & Promotion",
-            text: "The Open Recruit Cup champion earns direct promotion into the Challengers Division. Outstanding performers are highlighted on the Free Agent board for franchise scouts."
+            "roundId": "ch-ub-f",
+            "name": "Winners Finals",
+            "badge": "Upper Final",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "C11",
+                "code": "CH-WF",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of C7",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of C8",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Winner qualifies for Challengers Grand Finals."
+              }
+            ]
           }
         ]
       },
-      stages: [
+      {
+        "id": "losers",
+        "name": "Elimination Bracket",
+        "rounds": [
+          {
+            "roundId": "ch-lb-f",
+            "name": "Challengers Losers Finals",
+            "badge": "Lower Final",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "C13",
+                "code": "CH-LF",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of C11",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Lower Semifinal Winner",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Winner advances to play in Challengers Grand Finals."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "grandfinals",
+        "name": "Challengers Grand Finals",
+        "rounds": [
+          {
+            "roundId": "ch-gf",
+            "name": "Grand Finals",
+            "badge": "Championship",
+            "bestOf": "BO5",
+            "matches": [
+              {
+                "id": "C14",
+                "code": "CH-GF",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winners Champion (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of C13 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Winners Bracket team possesses 1-series advantage."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "open": {
+    "id": "open",
+    "name": "Open Recruit Cup",
+    "tier": "Division 3 · Open Tier",
+    "badge": "GRASSROOTS RECRUIT",
+    "format": "8-Team Single Elimination + 3rd Place Match (Best of 3)",
+    "prizePool": "$250 USD",
+    "status": "CUP STAGE",
+    "description": "Open amateur and community recruitment cup where rising players compete for team scouting.",
+    "ruleset": "CDL V4 Competitive Settings · 4v4 HP / S&D / CTL (Best of 3)",
+    "explainer": {
+      "kicker": "COMPETITIVE FRAMEWORK // DIVISION 3",
+      "title": "Open Recruit <span style=\"color:var(--lime);\">Cup System</span>",
+      "items": [
         {
-          id: "main",
-          name: "Championship Bracket",
-          rounds: [
-            {
-              roundId: "op-qf",
-              name: "Quarterfinals",
-              badge: "Round 1",
-              bestOf: "BO3",
-              matches: [
-                {
-                  id: "O1",
-                  code: "OP-QF1",
-                  status: "Completed",
-                  time: "Sat · 12:00 PM EST",
-                  team1: { seed: 1, name: "Delta Force", tag: "DLT", score: 2, winner: true },
-                  team2: { seed: 8, name: "Recon Unit", tag: "RCN", score: 0, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 140", winner: "Delta Force" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "6 - 2", winner: "Delta Force" }
-                  ],
-                  mvp: "Bravo (1.52 K/D)"
-                },
-                {
-                  id: "O2",
-                  code: "OP-QF2",
-                  status: "Completed",
-                  time: "Sat · 1:00 PM EST",
-                  team1: { seed: 4, name: "Shadow Legion", tag: "SHD", score: 2, winner: true },
-                  team2: { seed: 5, name: "Bad Company", tag: "BDC", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Sub Base", score: "250 - 220", winner: "Shadow Legion" },
-                    { number: 2, mode: "Search & Destroy", map: "Rio", score: "4 - 6", winner: "Bad Company" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 1", winner: "Shadow Legion" }
-                  ],
-                  mvp: "Nocturne (1.24 K/D)"
-                },
-                {
-                  id: "O3",
-                  code: "OP-QF3",
-                  status: "Completed",
-                  time: "Sat · 2:00 PM EST",
-                  team1: { seed: 2, name: "Vector Nine", tag: "V9", score: 2, winner: true },
-                  team2: { seed: 7, name: "Alpha Squad", tag: "ALP", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 200", winner: "Vector Nine" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "5 - 6", winner: "Alpha Squad" },
-                    { number: 3, mode: "Control", map: "Karachi", score: "3 - 2", winner: "Vector Nine" }
-                  ],
-                  mvp: "Vector (1.28 K/D)"
-                },
-                {
-                  id: "O4",
-                  code: "OP-QF4",
-                  status: "Completed",
-                  time: "Sat · 3:00 PM EST",
-                  team1: { seed: 3, name: "Midnight Marauders", tag: "MDN", score: 2, winner: true },
-                  team2: { seed: 6, name: "Havoc Academy", tag: "HVA", score: 1, winner: false },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Rio", score: "240 - 250", winner: "Havoc Academy" },
-                    { number: 2, mode: "Search & Destroy", map: "Karachi", score: "6 - 4", winner: "Midnight Marauders" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "3 - 1", winner: "Midnight Marauders" }
-                  ],
-                  mvp: "Dusk (1.30 K/D)"
-                }
-              ]
-            },
-            {
-              roundId: "op-sf",
-              name: "Semifinals",
-              badge: "Semifinals",
-              bestOf: "BO3",
-              matches: [
-                {
-                  id: "O5",
-                  code: "OP-SF1",
-                  status: "Live",
-                  time: "Sun · 1:30 PM EST",
-                  team1: { seed: 1, name: "Delta Force", tag: "DLT", score: 1, winner: null },
-                  team2: { seed: 4, name: "Shadow Legion", tag: "SHD", score: 1, winner: null },
-                  maps: [
-                    { number: 1, mode: "Hardpoint", map: "Karachi", score: "250 - 210", winner: "Delta Force" },
-                    { number: 2, mode: "Search & Destroy", map: "Highrise", score: "3 - 6", winner: "Shadow Legion" },
-                    { number: 3, mode: "Control", map: "Invasion", score: "Map 3 In Progress", winner: null }
-                  ],
-                  mvp: "Map 3 Live Decider"
-                },
-                {
-                  id: "O6",
-                  code: "OP-SF2",
-                  status: "Scheduled",
-                  time: "Sun · 2:45 PM EST",
-                  team1: { seed: 2, name: "Vector Nine", tag: "V9", score: 0, winner: null },
-                  team2: { seed: 3, name: "Midnight Marauders", tag: "MDN", score: 0, winner: null },
-                  maps: [],
-                  mvp: "Scheduled"
-                }
-              ]
-            },
-            {
-              roundId: "op-gf",
-              name: "Finals & 3rd Place",
-              badge: "TITLE & PODIUM",
-              bestOf: "BO5 / BO3",
-              matches: [
-                {
-                  id: "O7",
-                  code: "OP-GF",
-                  status: "Scheduled",
-                  time: "Sun · 5:30 PM EST",
-                  bestOf: "BO5",
-                  team1: { seed: null, name: "Winner of O5", tag: "TBD", score: 0, winner: null },
-                  team2: { seed: null, name: "Winner of O6", tag: "TBD", score: 0, winner: null },
-                  maps: [],
-                  mvp: "Scheduled",
-                  note: "Recruit Division Champions + Automatic promotion seed into Challengers."
-                },
-                {
-                  id: "O8",
-                  code: "OP-3RD",
-                  status: "Scheduled",
-                  time: "Sun · 4:15 PM EST",
-                  bestOf: "BO3",
-                  team1: { seed: null, name: "Loser of O5", tag: "TBD", score: 0, winner: null },
-                  team2: { seed: null, name: "Loser of O6", tag: "TBD", score: 0, winner: null },
-                  maps: [],
-                  mvp: "Scheduled",
-                  note: "Bronze Final (3rd Place Playoff) · Best of 3."
-                }
-              ]
-            }
-          ]
+          "title": "1. Single Elimination Knockout",
+          "text": "Fast-paced single elimination format. Win or go home across three intense rounds of Best of 3 series."
+        },
+        {
+          "title": "2. 3rd Place Consolation Match",
+          "text": "Semifinalists who fall in round 2 compete in an official 3rd place consolation match for division points."
+        },
+        {
+          "title": "3. Community Scout Showcase",
+          "text": "All players who compete in the Open Recruit Cup receive entry into the verified Free Agent recruitment database."
         }
       ]
-    }
-  };
+    },
+    "stages": [
+      {
+        "id": "championship",
+        "name": "Championship Bracket",
+        "rounds": [
+          {
+            "roundId": "op-qf",
+            "name": "Quarterfinals",
+            "badge": "Round 1",
+            "bestOf": "BO3",
+            "matches": [
+              {
+                "id": "O1",
+                "code": "OP-QF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 1,
+                  "name": "Seed #1 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 8,
+                  "name": "Seed #8 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "O2",
+                "code": "OP-QF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 4,
+                  "name": "Seed #4 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 5,
+                  "name": "Seed #5 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "O3",
+                "code": "OP-QF3",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 2,
+                  "name": "Seed #2 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 7,
+                  "name": "Seed #7 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "O4",
+                "code": "OP-QF4",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": 3,
+                  "name": "Seed #3 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": 6,
+                  "name": "Seed #6 (TBD)",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
+          },
+          {
+            "roundId": "op-sf",
+            "name": "Semifinals",
+            "badge": "Round 2",
+            "bestOf": "BO3",
+            "matches": [
+              {
+                "id": "O5",
+                "code": "OP-SF1",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of O1",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of O2",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              },
+              {
+                "id": "O6",
+                "code": "OP-SF2",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of O3",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of O4",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null
+              }
+            ]
+          },
+          {
+            "roundId": "op-f",
+            "name": "Finals & 3rd Place",
+            "badge": "Medal Rounds",
+            "bestOf": "BO3",
+            "matches": [
+              {
+                "id": "O7",
+                "code": "OP-GF",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Winner of O5",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Winner of O6",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Championship Match · Best of 3"
+              },
+              {
+                "id": "O8",
+                "code": "OP-3RD",
+                "status": "Scheduled",
+                "time": "Scheduled Series",
+                "team1": {
+                  "seed": null,
+                  "name": "Loser of O5",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "team2": {
+                  "seed": null,
+                  "name": "Loser of O6",
+                  "tag": "TBD",
+                  "score": 0,
+                  "winner": null
+                },
+                "maps": [],
+                "mvp": "TBD upon series completion",
+                "vodUrl": null,
+                "note": "Bronze Medal 3rd Place Consolation Match"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+};
 
   // State
   let currentDivision = "premier";

@@ -402,6 +402,46 @@
                 <span class="form-hint">Enter your Activision ID with hashtag numbers (e.g. Name#1234567) for match invitations & stats</span>
               </div>
 
+              <!-- 5. Tactical Role & Battle Platform -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group" style="text-align:left;">
+                  <label class="form-label" for="reg-role">
+                    Tactical Role <span class="req">*</span>
+                  </label>
+                  <select id="reg-role" class="form-control" required>
+                    <option value="Flex" selected>Flex / Hybrid</option>
+                    <option value="Main AR">Main AR / Anchor</option>
+                    <option value="SMG">SMG / Entry Fragger</option>
+                    <option value="Sniper">Sniper / Slayer</option>
+                  </select>
+                </div>
+                <div class="form-group" style="text-align:left;">
+                  <label class="form-label" for="reg-platform">
+                    Battle Platform <span class="req">*</span>
+                  </label>
+                  <select id="reg-platform" class="form-control" required>
+                    <option value="PC" selected>PC (Battle.net / Steam)</option>
+                    <option value="PlayStation">PlayStation 5 / PS4</option>
+                    <option value="Xbox">Xbox Series X|S / One</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 6. Operational Region / Timezone -->
+              <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="reg-region">
+                  Timezone / Operational Region <span class="req">*</span>
+                </label>
+                <select id="reg-region" class="form-control" required>
+                  <option value="NA East" selected>North America — East (EST / CST)</option>
+                  <option value="NA Central">North America — Central (CST)</option>
+                  <option value="NA West">North America — West (PST / MST)</option>
+                  <option value="EU">Europe (GMT / CET)</option>
+                  <option value="Other">Other / International</option>
+                </select>
+                <span class="form-hint">Server matchmaking ping, scheduled scrims, and ladder events</span>
+              </div>
+
               <button type="submit" id="btn-create-acc-submit" class="btn-submit-signup" style="width:100%; justify-content:center; margin-top:8px;">
                 <span>Create Account &amp; Unlock Registration</span>
                 <span style="font-size:16px;">⚡</span>
@@ -466,6 +506,8 @@
                 <span style="color:var(--muted); font-size:12px;">VERIFIED COMBATANT:</span>
                 <strong id="combatant-display-email" style="color:#fff;">combatant@example.com</strong>
                 <span id="combatant-display-gamertag" style="color:var(--lime); font-weight:700;"></span>
+                <span id="combatant-display-discord" style="color:#8ea1e1; font-weight:700; font-size:12px;"></span>
+                <button type="button" id="btn-edit-discord-dossier" style="background:rgba(88,101,242,0.15); border:1px solid rgba(88,101,242,0.4); color:#8ea1e1; font-size:11px; padding:3px 8px; cursor:pointer; text-transform:uppercase; margin-left:6px; border-radius:2px; display:none;" title="Update Activision ID & Role">✏️ Edit Dossier</button>
               </div>
               <button type="button" id="btn-player-signout" class="btn-player-signout" title="Sign out of player account">
                 <span>Sign Out / Switch Account</span>
@@ -695,7 +737,7 @@
                       id="team_name_input"
                       name="team_name_input"
                       class="form-control"
-                      placeholder="e.g. Night Shift, Vantage, Apex Predators"
+                      placeholder="e.g. Dallas Empire, Atlanta FaZe, OpTic Texas"
                       required
                       autocomplete="off"
                     />
@@ -1270,17 +1312,42 @@
         const meta = user.user_metadata || {};
         
         // Extract gamertag / discord alias cleanly
-        const metaGamertag = meta.gamertag || meta.username || meta.custom_claims?.global_name || meta.full_name || meta.name || (email ? email.split("@")[0] : "Operative");
-        const metaDiscord = meta.custom_claims?.global_name || meta.full_name || meta.name || meta.discord_username || metaGamertag;
+        const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
+          ? window.LeagueDB.getDiscordIdentity(user)
+          : null;
+        const isDiscord = discordInfo && discordInfo.isDiscord;
+        const metaGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || meta.custom_claims?.global_name || meta.full_name || meta.name || (email ? email.split("@")[0] : "Operative");
+        const metaDiscord = meta.discord_name || meta.discord_username || discordInfo?.primaryName || meta.custom_claims?.global_name || meta.full_name || meta.name || metaGamertag;
         const metaActivision = meta.activision_id || "";
-        const metaDiscordId = meta.provider_id || meta.sub || meta.discord_user_id || "";
+        const metaRole = meta.role || meta.tactical_role || "Flex";
 
         if (displayEmail) displayEmail.textContent = email || metaDiscord;
         if (displayGamertag) {
           displayGamertag.textContent = metaGamertag ? `[${metaGamertag}]` : "";
         }
 
-        // Prefill Gamertag in Solo Free Agent form if empty
+        const displayDiscord = document.getElementById("combatant-display-discord");
+        if (displayDiscord) {
+          displayDiscord.textContent = metaDiscord ? `[Discord: ${metaDiscord}]` : "";
+        }
+
+        const btnEditDossier = document.getElementById("btn-edit-discord-dossier");
+        if (btnEditDossier) {
+          btnEditDossier.style.display = "inline-block";
+          btnEditDossier.onclick = () => {
+            if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
+              window.LeagueDB.showDiscordDossierModal({
+                user: currentCombatantUser,
+                onComplete: (dRes) => {
+                  unlockRegistrationTerminal(dRes.user);
+                  showGateSuccess(`✓ Dossier updated for <strong>${escapeHtml(dRes.discordName)}</strong> (Activision: <strong>${escapeHtml(dRes.activisionId)}</strong>, Role: <strong>${escapeHtml(dRes.role)}</strong>).`);
+                }
+              });
+            }
+          };
+        }
+
+        // Prefill Gamertag in Solo Free Agent form if empty or generic
         const gamertagInput = document.getElementById("gamertag");
         if (gamertagInput && (!gamertagInput.value || gamertagInput.value === "Operative")) {
           gamertagInput.value = metaGamertag;
@@ -1294,8 +1361,26 @@
 
         // Prefill Activision ID in Solo Free Agent form if empty
         const activisionInput = document.getElementById("activision_id");
-        if (activisionInput && !activisionInput.value && metaActivision) {
+        if (activisionInput && (!activisionInput.value || activisionInput.value.includes("#1234567")) && metaActivision) {
           activisionInput.value = metaActivision;
+        }
+
+        // Prefill Tactical Role in Solo Free Agent form
+        const roleSelect = document.getElementById("role");
+        if (roleSelect && metaRole) {
+          roleSelect.value = metaRole;
+        }
+
+        // Prefill Battle Platform in Solo Free Agent form
+        const platformSelect = document.getElementById("platform");
+        if (platformSelect && (meta.platform || meta.battle_platform)) {
+          platformSelect.value = meta.platform || meta.battle_platform;
+        }
+
+        // Prefill Operational Region in Solo Free Agent form
+        const regionSelect = document.getElementById("region");
+        if (regionSelect && (meta.region || meta.operational_region)) {
+          regionSelect.value = meta.region || meta.operational_region;
         }
 
         // Prefill Captain Gamertag & Activision ID in Team Franchise form if empty
@@ -1336,19 +1421,49 @@
         clearGateBanners();
       }
 
+      function handleCombatantAuthSuccess(user) {
+        currentCombatantUser = user;
+        const meta = user.user_metadata || {};
+        const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
+          ? window.LeagueDB.getDiscordIdentity(user)
+          : null;
+        const isDiscord = discordInfo && discordInfo.isDiscord;
+        const isPendingOAuth = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
+        const needsDossier = !meta.activision_id || !meta.role || !meta.profile_completed || !meta.region || !meta.platform;
+
+        if ((isDiscord || isPendingOAuth) && (needsDossier || isPendingOAuth)) {
+          if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
+            window.LeagueDB.showDiscordDossierModal({
+              user,
+              onComplete: (dossierResult) => {
+                sessionStorage.removeItem("frontline_discord_oauth_pending");
+                unlockRegistrationTerminal(dossierResult.user);
+                showGateSuccess(`✓ Discord profile confirmed for <strong>${escapeHtml(dossierResult.discordName)}</strong>! Dossier updated with Activision ID <strong>${escapeHtml(dossierResult.activisionId)}</strong> and Role <strong>${escapeHtml(dossierResult.role)}</strong>. Season 1 registration unlocked below.`);
+              },
+              onCancel: () => {
+                sessionStorage.removeItem("frontline_discord_oauth_pending");
+                unlockRegistrationTerminal(user);
+              }
+            });
+            return;
+          }
+        }
+        unlockRegistrationTerminal(user);
+      }
+
       // Check active player session on page load & OAuth redirect returns
       async function checkInitialCombatantAuth() {
         if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
           const res = await window.LeagueDB.getAuthUser();
           if (res?.success && res.user) {
-            unlockRegistrationTerminal(res.user);
+            handleCombatantAuthSuccess(res.user);
             return;
           }
         }
         if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
           const session = await window.LeagueDB.getAuthSession();
           if (session?.user) {
-            unlockRegistrationTerminal(session.user);
+            handleCombatantAuthSuccess(session.user);
             return;
           }
         }
@@ -1360,7 +1475,7 @@
         try {
           dbClient.auth.onAuthStateChange((event, session) => {
             if (session?.user) {
-              unlockRegistrationTerminal(session.user);
+              handleCombatantAuthSuccess(session.user);
             }
           });
         } catch (e) {}
@@ -1370,6 +1485,7 @@
       const btnDiscordAuth = document.getElementById("btn-discord-auth");
       btnDiscordAuth?.addEventListener("click", async () => {
         clearGateBanners();
+        sessionStorage.setItem("frontline_discord_oauth_pending", "true");
         btnDiscordAuth.disabled = true;
         const originalHtml = btnDiscordAuth.innerHTML;
         btnDiscordAuth.innerHTML = `<span>Connecting to Discord Authorization...</span> <span>⏳</span>`;
@@ -1379,16 +1495,19 @@
             const redirectUrl = window.location.origin + window.location.pathname;
             const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
             if (!res.success) {
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
               showGateError(res.error || "Failed to initiate Discord authentication.");
               btnDiscordAuth.disabled = false;
               btnDiscordAuth.innerHTML = originalHtml;
             }
           } else {
+            sessionStorage.removeItem("frontline_discord_oauth_pending");
             showGateError("Database client is not initialized.");
             btnDiscordAuth.disabled = false;
             btnDiscordAuth.innerHTML = originalHtml;
           }
         } catch (err) {
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
           showGateError(err.message || "An unexpected error occurred during Discord authentication.");
           btnDiscordAuth.disabled = false;
           btnDiscordAuth.innerHTML = originalHtml;
@@ -1405,6 +1524,9 @@
         const passwordConfirm = document.getElementById("reg-password-confirm")?.value || "";
         const gamertag = document.getElementById("reg-gamertag")?.value.trim() || "";
         const activisionId = document.getElementById("reg-activision-id")?.value.trim() || "";
+        const role = document.getElementById("reg-role")?.value || "Flex";
+        const platform = document.getElementById("reg-platform")?.value || "PC";
+        const region = document.getElementById("reg-region")?.value || "NA East";
         const submitBtn = document.getElementById("btn-create-acc-submit");
 
         if (!email) {
@@ -1439,16 +1561,19 @@
 
         try {
           if (window.LeagueDB && typeof window.LeagueDB.signUpPlayer === "function") {
-            const res = await window.LeagueDB.signUpPlayer(email, password, gamertag, activisionId);
+            const res = await window.LeagueDB.signUpPlayer(email, password, gamertag, activisionId, role, region, platform);
             if (res.success) {
               const activeUser = res.user || {
                 email,
-                user_metadata: { gamertag, username: gamertag, activision_id: activisionId }
+                user_metadata: { gamertag, username: gamertag, activision_id: activisionId, role, region, platform }
               };
               if (!activeUser.user_metadata) activeUser.user_metadata = {};
               activeUser.user_metadata.gamertag = gamertag;
               activeUser.user_metadata.username = gamertag;
               activeUser.user_metadata.activision_id = activisionId;
+              activeUser.user_metadata.role = role;
+              activeUser.user_metadata.region = region;
+              activeUser.user_metadata.platform = platform;
 
               unlockRegistrationTerminal(activeUser);
 

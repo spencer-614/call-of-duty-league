@@ -35,29 +35,33 @@
             </div>
           </div>
         </a>
+      </div>
 
-        <!-- Platform Mode Switcher -->
-        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
-          <a href="players.html" class="fl-mode-btn" title="Go to Frontline Franchised League Players">🛡 League</a>
-          <a href="arena-free-agents.html" class="fl-mode-btn active" title="Frontline Arena Free Agents">⚔ Arena</a>
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="players.html" class="mode-switch-btn" title="Go to Frontline Franchised League Players">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="arena-free-agents.html" class="mode-switch-btn active-arena" title="Frontline Arena Free Agents">
+            <span>⚔</span> <span>Arena</span>
+          </a>
         </div>
+      </div>
 
-        <!-- Main Navigation Links (No Match Finder, No CDL Rules) -->
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
           <a href="ladders.html">Ladders</a>
           <a href="arena-tournaments.html">Tournaments</a>
           <a href="arena-profile.html#my-teams">My Teams</a>
         </nav>
-      </div>
 
-      <div class="fl-topbar-right">
-        <button type="button" class="btn-crimson" onclick="openPostLftModal()" style="font-size:12px; padding:9px 18px; display:inline-flex; align-items:center; gap:8px;">
-          <span>⚡</span> <span>Post Free Agent Card ↗</span>
-        </button>
         <div id="arena-header-squad-container">
-          <a href="arena-profile.html#my-teams" class="btn-crimson-outline" style="font-size:12px; padding:8px 16px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            <span>🛡</span> <span>My Teams</span>
-          </a>
+          <button type="button" class="btn-crimson" onclick="openPostLftModal()" style="font-size:12px; padding:8px 16px; display:inline-flex; align-items:center; gap:6px;">
+            <span>⚡</span> <span>Post Free Agent Card ↗</span>
+          </button>
         </div>
       </div>
     </header>
@@ -127,15 +131,15 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
               <div>
                 <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Total LFT</span>
-                <strong id="stat-total-fa" style="color:#ffffff; font-size:16px;">8 Available</strong>
+                <strong id="stat-total-fa" style="color:#ffffff; font-size:16px;">0 Available</strong>
               </div>
               <div>
                 <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Avg K/D</span>
-                <strong id="stat-avg-kd" style="color:#22c55e; font-size:16px;">1.24 K/D</strong>
+                <strong id="stat-avg-kd" style="color:#22c55e; font-size:16px;">0.00 K/D</strong>
               </div>
               <div>
                 <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Apex Tier</span>
-                <strong id="stat-apex-fa" style="color:#fde047; font-size:16px;">4 Operators</strong>
+                <strong id="stat-apex-fa" style="color:#fde047; font-size:16px;">0 Operators</strong>
               </div>
               <div>
                 <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Hardware</span>
@@ -155,7 +159,7 @@
             <span>SELECT LADDER DISCIPLINE:</span>
           </div>
           <div style="font-size:12px; color:#94a3b8;">
-            Showing <strong id="agents-count-display" style="color:#ffffff;">8</strong> operators on active board
+            Showing <strong id="agents-count-display" style="color:#ffffff;">0</strong> operators on active board
           </div>
         </div>
 
@@ -163,19 +167,19 @@
         <div class="fl-hero-pills" role="tablist" aria-label="Ladder Free Agent Switcher" style="margin-bottom:0;">
           <button type="button" class="fl-ladder-pill active" id="fa-tab-all" onclick="selectLadderFilter('all')">
             <span>🌐</span> <span>All Ladders</span>
-            <span class="fl-badge-count" id="count-ladder-all" style="margin-left:4px;">8</span>
+            <span class="fl-badge-count" id="count-ladder-all" style="margin-left:4px;">0</span>
           </button>
           <button type="button" class="fl-ladder-pill" id="fa-tab-4v4" onclick="selectLadderFilter('4v4_variant')">
             <span>⚔</span> <span>4v4 CDL Variant</span>
-            <span class="fl-badge-count" id="count-ladder-4v4" style="margin-left:4px;">5</span>
+            <span class="fl-badge-count" id="count-ladder-4v4" style="margin-left:4px;">0</span>
           </button>
           <button type="button" class="fl-ladder-pill" id="fa-tab-2v2" onclick="selectLadderFilter('2v2_snd')">
             <span>💣</span> <span>2v2 Search &amp; Destroy</span>
-            <span class="fl-badge-count" id="count-ladder-2v2" style="margin-left:4px;">2</span>
+            <span class="fl-badge-count" id="count-ladder-2v2" style="margin-left:4px;">0</span>
           </button>
           <button type="button" class="fl-ladder-pill" id="fa-tab-1v1" onclick="selectLadderFilter('1v1_radar')">
             <span>🎯</span> <span>1v1 Radar Gunfight</span>
-            <span class="fl-badge-count" id="count-ladder-1v1" style="margin-left:4px;">1</span>
+            <span class="fl-badge-count" id="count-ladder-1v1" style="margin-left:4px;">0</span>
           </button>
         </div>
       </section>
@@ -396,7 +400,7 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
             <div>
               <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Gamertag *</label>
-              <input type="text" id="lft-gamertag" required placeholder="e.g. ViperX" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
+              <input type="text" id="lft-gamertag" required placeholder="e.g. Deadshot" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
             </div>
             <div>
               <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Clan / Tag</label>
@@ -460,11 +464,11 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
             <div>
               <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Discord Username *</label>
-              <input type="text" id="lft-discord" required placeholder="e.g. viperx#0001" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
+              <input type="text" id="lft-discord" required placeholder="e.g. operative#0001" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
             </div>
             <div>
               <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Activision ID *</label>
-              <input type="text" id="lft-activision" required placeholder="e.g. ViperX#982104" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
+              <input type="text" id="lft-activision" required placeholder="e.g. Deadshot#982104" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
             </div>
           </div>
 

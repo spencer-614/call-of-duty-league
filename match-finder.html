@@ -35,22 +35,29 @@
             </div>
           </div>
         </a>
+      </div>
 
-        <!-- Platform Mode Switcher -->
-        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
-          <a href="schedule.html" class="fl-mode-btn" title="Go to Frontline Franchised League Schedule">🛡 League</a>
-          <a href="match-finder.html" class="fl-mode-btn active" title="Frontline Arena Match Finder">⚔ Arena</a>
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="schedule.html" class="mode-switch-btn" title="Go to Frontline Franchised League Schedule">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="match-finder.html" class="mode-switch-btn active-arena" title="Frontline Arena Match Finder">
+            <span>⚔</span> <span>Arena</span>
+          </a>
         </div>
+      </div>
 
-        <!-- Main Navigation Links (Top Nav Links Stay Here!) -->
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
           <a href="ladders.html">Ladders</a>
           <a href="arena-tournaments.html">Tournaments</a>
           <a href="arena-profile.html#my-teams">My Teams</a>
         </nav>
-      </div>
 
-      <div class="fl-topbar-right">
         <div id="arena-header-squad-container">
           <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="font-size:12px; padding:9px 18px; display:inline-flex; align-items:center; gap:8px;">
             <span>🎯</span> <span>Post Match ↗</span>
@@ -237,53 +244,7 @@
       let currentFinderLadder = 'all';
       let activeChallenges = [];
 
-      const fallbackChallenges = [
-        {
-          id: 'chal-101',
-          ladder_type: '4v4_variant',
-          team_name: 'Apex Predators',
-          team_tag: 'APEX',
-          captain_name: 'ViperX',
-          elo: 2045,
-          tier: 'Apex Prestige',
-          tier_class: 'tier-apex',
-          host: 'Dallas / Central 60Hz',
-          time: 'READY NOW',
-          format: 'Best of 5 CDL Variant',
-          avatar_url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80',
-          notes: 'Standard CDL V4 rules. Fast veto and play.'
-        },
-        {
-          id: 'chal-102',
-          ladder_type: '2v2_snd',
-          team_name: 'Valkyrie Unit',
-          team_tag: 'VAL',
-          captain_name: 'Kallisto',
-          elo: 1820,
-          tier: 'Diamond Tier',
-          tier_class: 'tier-diamond',
-          host: 'Dallas / Central 60Hz',
-          time: 'READY NOW',
-          format: '2v2 SnD (First to 6)',
-          avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80',
-          notes: 'Tactical duos. No snipers in round 1.'
-        },
-        {
-          id: 'chal-103',
-          ladder_type: '1v1_radar',
-          team_name: 'Subliners Academy',
-          team_tag: 'NYSL',
-          captain_name: 'Hydra_Jr',
-          elo: 1540,
-          tier: 'Platinum Tier',
-          tier_class: 'tier-plat',
-          host: 'Host Flip (Coin Flip)',
-          time: 'IN 10 MINUTES',
-          format: '1v1 Radar (First to 7)',
-          avatar_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80',
-          notes: 'Constant radar sweep. SMG only.'
-        }
-      ];
+      const fallbackChallenges = [];
 
       async function loadMatchFinderCards() {
         const root = document.getElementById('match-finder-cards-root');
@@ -292,16 +253,16 @@
         try {
           if (window.LadderDB && typeof window.LadderDB.getMatchFinderChallenges === 'function') {
             const dbChallenges = await window.LadderDB.getMatchFinderChallenges(currentFinderLadder);
-            if (dbChallenges && dbChallenges.length > 0) {
+            if (Array.isArray(dbChallenges)) {
               activeChallenges = dbChallenges;
             } else {
-              activeChallenges = fallbackChallenges;
+              activeChallenges = [];
             }
           } else {
-            activeChallenges = fallbackChallenges;
+            activeChallenges = [];
           }
         } catch (e) {
-          activeChallenges = fallbackChallenges;
+          activeChallenges = [];
         }
 
         renderFilteredChallenges();

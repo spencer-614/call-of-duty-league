@@ -347,7 +347,9 @@
         countLabel.textContent = `${filtered.length} TEAMS ACTIVE`;
 
         if (filtered.length === 0) {
-          container.innerHTML = '<div class="empty-state">No teams found matching your search.</div>';
+          container.innerHTML = query 
+            ? '<div class="empty-state">No teams found matching your search.</div>'
+            : '<div class="empty-state">No franchise teams registered yet.<br /><a href="signup.html" style="color:var(--lime); text-decoration:none; font-weight:bold; display:inline-block; margin-top:10px;">Register your squad now ↗</a></div>';
           return;
         }
 

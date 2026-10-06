@@ -10,13 +10,21 @@ CREATE TABLE IF NOT EXISTS league_announcements (
     message TEXT NOT NULL,
     tag TEXT DEFAULT 'Official Update',
     tag_color TEXT DEFAULT 'lime',           -- 'lime', 'amber', 'red', 'cyan'
+    image_url TEXT,                          -- Embedded graphic banner / screenshot URL or Data URI
+    image_fit TEXT DEFAULT 'contain',        -- 'contain' (auto-fit full image), 'cover' (16:9 crop), 'banner' (21:9 header)
     link_url TEXT,
     link_text TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     pinned BOOLEAN DEFAULT FALSE,
+    scheduled_for TIMESTAMPTZ,               -- Optional future release time; NULL or <= NOW() means live immediately
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure image_url, image_fit, and scheduled_for columns exist if table already existed
+ALTER TABLE league_announcements ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE league_announcements ADD COLUMN IF NOT EXISTS image_fit TEXT DEFAULT 'contain';
+ALTER TABLE league_announcements ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMPTZ;
 
 -- 2. Enable Row Level Security (RLS)
 ALTER TABLE league_announcements ENABLE ROW LEVEL SECURITY;

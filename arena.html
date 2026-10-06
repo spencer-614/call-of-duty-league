@@ -35,22 +35,29 @@
             </div>
           </div>
         </a>
+      </div>
 
-        <!-- Platform Mode Switcher -->
-        <div class="fl-mode-switcher" role="group" aria-label="Circuit Platform Switcher">
-          <a href="index.html" class="fl-mode-btn" title="Go to Frontline Franchised League">🛡 League</a>
-          <a href="arena.html" class="fl-mode-btn active" title="Frontline Arena Circuit">⚔ Arena</a>
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="arena.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+            <span>⚔</span> <span>Arena</span>
+          </a>
         </div>
+      </div>
 
-        <!-- Main Navigation Links (Top Nav Links Stay Here!) -->
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
           <a href="ladders.html">Ladders</a>
           <a href="arena-tournaments.html">Tournaments</a>
           <a href="arena-profile.html#my-teams">My Teams</a>
         </nav>
-      </div>
 
-      <div class="fl-topbar-right">
         <!-- Active Squad Pill or Create Team CTA -->
         <div id="arena-header-squad-container">
           <a href="ladders.html" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
@@ -102,7 +109,7 @@
 
             <div style="background:#0e131d; border:1px solid #1e283a; padding:18px; border-radius:4px;">
               <span style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">Registered Squads</span>
-              <div style="font:900 28px var(--body); color:#ffffff; margin-top:4px;" id="stat-squads-count">18+ Teams</div>
+              <div style="font:900 28px var(--body); color:#ffffff; margin-top:4px;" id="stat-squads-count">0 Teams</div>
               <div style="font-size:11px; color:#64748b; margin-top:2px;">Custom Emblems &amp; Rosters</div>
             </div>
 
@@ -161,7 +168,7 @@
                 </p>
                 <div style="background:#090d14; border:1px solid #192233; padding:10px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
                   <span style="font-size:11px; color:#94a3b8;">Ladder Leader:</span>
-                  <strong style="color:#ff1e44; font-size:12px;">[APEX] Apex Predators (2045 ELO)</strong>
+                  <strong id="leader-4v4" style="color:#ff1e44; font-size:12px;">Open / Unclaimed</strong>
                 </div>
               </div>
 
@@ -196,7 +203,7 @@
                 </p>
                 <div style="background:#090d14; border:1px solid #192233; padding:10px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
                   <span style="font-size:11px; color:#94a3b8;">Ladder Leader:</span>
-                  <strong style="color:#ff1e44; font-size:12px;">[PHNTM] Phantom Five (1680 ELO)</strong>
+                  <strong id="leader-2v2" style="color:#ff1e44; font-size:12px;">Open / Unclaimed</strong>
                 </div>
               </div>
 
@@ -231,7 +238,7 @@
                 </p>
                 <div style="background:#090d14; border:1px solid #192233; padding:10px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
                   <span style="font-size:11px; color:#94a3b8;">Ladder Leader:</span>
-                  <strong style="color:#ff1e44; font-size:12px;">[NYSL] Subliners Academy (1540 ELO)</strong>
+                  <strong id="leader-1v1" style="color:#ff1e44; font-size:12px;">Open / Unclaimed</strong>
                 </div>
               </div>
 
@@ -353,13 +360,13 @@
         <form id="form-create-squad" onsubmit="handleCreateTeam(event)">
           <div class="ladder-form-group">
             <label for="squad-name">Team Name *</label>
-            <input type="text" id="squad-name" class="ladder-input" placeholder="e.g. Apex Predators" required maxlength="30" />
+            <input type="text" id="squad-name" class="ladder-input" placeholder="e.g. Shadow Syndicate" required maxlength="30" />
           </div>
 
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
             <div class="ladder-form-group">
               <label for="squad-tag">Clan Tag (2-5 Chars) *</label>
-              <input type="text" id="squad-tag" class="ladder-input" placeholder="APEX" required maxlength="5" style="text-transform:uppercase;" />
+              <input type="text" id="squad-tag" class="ladder-input" placeholder="SHDW" required maxlength="5" style="text-transform:uppercase;" />
             </div>
             <div class="ladder-form-group">
               <label for="squad-ladder-type">Target Ladder *</label>
@@ -406,17 +413,24 @@
     </div>
 
     <script>
-      // Load squad count for hero
+      // Load squad count and leaders for hero
       async function updateArenaHeroStats() {
         try {
-          const teams4v4 = await window.LadderDB.getLadderTeams('4v4_variant');
-          const teams2v2 = await window.LadderDB.getLadderTeams('2v2_snd');
-          const teams1v1 = await window.LadderDB.getLadderTeams('1v1_radar');
+          const teams4v4 = (await window.LadderDB.getLadderTeams('4v4_variant')) || [];
+          const teams2v2 = (await window.LadderDB.getLadderTeams('2v2_snd')) || [];
+          const teams1v1 = (await window.LadderDB.getLadderTeams('1v1_radar')) || [];
           const total = teams4v4.length + teams2v2.length + teams1v1.length;
           const statEl = document.getElementById('stat-squads-count');
-          if (statEl && total > 0) {
+          if (statEl) {
             statEl.textContent = `${total} Teams`;
           }
+
+          const leader4 = teams4v4[0] ? `[${teams4v4[0].tag}] ${teams4v4[0].name} (${teams4v4[0].elo || 1200} ELO)` : 'Open / Unclaimed';
+          const leader2 = teams2v2[0] ? `[${teams2v2[0].tag}] ${teams2v2[0].name} (${teams2v2[0].elo || 1200} ELO)` : 'Open / Unclaimed';
+          const leader1 = teams1v1[0] ? `[${teams1v1[0].tag}] ${teams1v1[0].name} (${teams1v1[0].elo || 1200} ELO)` : 'Open / Unclaimed';
+          if (document.getElementById('leader-4v4')) document.getElementById('leader-4v4').textContent = leader4;
+          if (document.getElementById('leader-2v2')) document.getElementById('leader-2v2').textContent = leader2;
+          if (document.getElementById('leader-1v1')) document.getElementById('leader-1v1').textContent = leader1;
         } catch (e) {}
       }
       updateArenaHeroStats();
