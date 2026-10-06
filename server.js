@@ -11,18 +11,37 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // PostgreSQL Connection Pool using Railway's DATABASE_URL
+// Note: Railway's internal network (*.railway.internal) DOES NOT support SSL
+const isInternalRailway = !!(process.env.DATABASE_URL && process.env.DATABASE_URL.includes("railway.internal"));
+const isLocalhost = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes("localhost") || process.env.DATABASE_URL.includes("127.0.0.1");
+const useSsl = (!isInternalRailway && !isLocalhost);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost") 
-    ? { rejectUnauthorized: false } 
-    : false
+  ssl: useSsl ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000
+});
+
+// Protect process from unhandled database pool errors
+pool.on("error", (err) => {
+  console.error("PostgreSQL pool background error:", err.message);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
 });
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// Static files (serves index.html, admin.html, draft.html, etc.)
+// Explicit root handler
+app.get(["/", "/index.html"], (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Static files (serves all HTML, CSS, JS, assets)
 app.use(express.static(path.join(__dirname)));
 
 // Health check endpoint
