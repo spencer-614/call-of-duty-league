@@ -32,6 +32,10 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled Rejection:", reason);
 });
 
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -52,11 +56,15 @@ const PAGES = [
   "arena-free-agents", "arena-profile", "arena-tournaments"
 ];
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.get("/", (req, res) => res.sendFile(path.resolve(__dirname, "index.html")));
 
 PAGES.forEach(page => {
-  app.get([`/${page}`, `/${page}.html`], (req, res) => {
-    res.sendFile(path.join(__dirname, `${page}.html`));
+  const filePath = path.resolve(__dirname, `${page}.html`);
+  app.get(`/${page}`, (req, res) => {
+    res.sendFile(filePath);
+  });
+  app.get(`/${page}.html`, (req, res) => {
+    res.sendFile(filePath);
   });
 });
 
@@ -383,8 +391,33 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// Global route error handling
+app.use((err, req, res, next) => {
+  console.error("Express routing error:", err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: "Internal Server Error", message: err.message });
+  }
+});
+
 // Start server - Must bind to 0.0.0.0 for Railway container networking
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Frontline CDL Node server running on 0.0.0.0:${PORT}`);
   console.log(`Database status: ${process.env.DATABASE_URL ? "DATABASE_URL detected" : "No DATABASE_URL found"}`);
 });
+
+// Safe dual-port listener: if Railway set PORT to something other than 3000,
+// ALSO listen on 3000 so that whether Railway's domain routes to $PORT or 3000, it works!
+if (PORT !== 3000) {
+  try {
+    const http = require("http");
+    const server3000 = http.createServer(app);
+    server3000.on("error", (err) => {
+      console.log("Port 3000 fallback status:", err.message);
+    });
+    server3000.listen(3000, "0.0.0.0", () => {
+      console.log("Frontline CDL Node server ALSO safely listening on 0.0.0.0:3000");
+    });
+  } catch (e) {
+    console.log("Dual port startup note:", e.message);
+  }
+}
