@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080a0f" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <title>Frontline Arena — Combatant Profile &amp; Match History</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="bullet-sparks.js" defer></script>
+    <script src="/supabase.js"></script>
+    <script src="/bullet-sparks.js" defer></script>
   </head>
   <body class="gb-body">
     <!-- =========================================================================
@@ -17,9 +17,9 @@
     <header class="fl-topbar">
       <div class="fl-topbar-left">
         <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
-        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+        <a href="/arena/" class="fl-brand-lockup" title="Frontline Arena">
           <div class="fl-brand-logo-wrapper">
-            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
           </div>
           <div class="fl-brand-info">
             <div class="fl-brand-text">
@@ -41,11 +41,14 @@
       <div class="header-center-hub">
         <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
         <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-          <a href="profile.html" class="mode-switch-btn" title="Go to Frontline Franchised League Profile">
+          <a href="/profile/" class="mode-switch-btn" data-mode="league" title="Go to Frontline Franchised League Profile">
             <span>🛡</span> <span>League</span>
           </a>
-          <a href="arena-profile.html" class="mode-switch-btn active-arena" title="Frontline Arena Profile">
+          <a href="/arena/profile/" class="mode-switch-btn active-arena" data-mode="arena" title="Frontline Arena Profile">
             <span>⚔</span> <span>Arena</span>
+          </a>
+          <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <span>🏆</span> <span>Tournaments</span>
           </a>
         </div>
       </div>
@@ -53,13 +56,13 @@
       <div class="fl-topbar-right">
         <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
-          <a href="ladders.html">Ladders</a>
-          <a href="arena-tournaments.html">Tournaments</a>
-          <a href="arena-profile.html#my-teams" class="active">My Teams</a>
+          <a href="/ladders/">Ladders</a>
+          <a href="/arena/tournaments/">Tournaments</a>
+          <a href="/arena/profile/#my-teams" class="active">My Teams</a>
         </nav>
 
         <div id="arena-header-squad-container">
-          <a href="ladders.html" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+          <a href="/ladders/" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
             <span>⚔</span> <span>View Ladders ↗</span>
           </a>
         </div>
@@ -69,9 +72,9 @@
     <!-- Frontline Arena Breadcrumb Bar -->
     <div class="gb-breadcrumb-bar">
       <div class="gb-breadcrumb-inner">
-        <a href="arena.html">Arena Home</a>
+        <a href="/arena/">Arena Home</a>
         <span class="gb-breadcrumb-sep">/</span>
-        <a href="ladders.html">Ladders</a>
+        <a href="/ladders/">Ladders</a>
         <span class="gb-breadcrumb-sep">/</span>
         <strong style="color:#ffffff;" id="gb-breadcrumb-profile-label">Player Profile &amp; Records</strong>
       </div>
@@ -109,10 +112,10 @@
             </div>
 
             <div class="profile-actions-right">
-              <a href="match-finder.html" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+              <a href="/match-finder/" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none;">
                 <span>🎯</span> <span>Find Match</span>
               </a>
-              <a href="arena-profile.html" id="btn-back-my-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none;">
+              <a href="/arena/profile/" id="btn-back-my-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none;">
                 <span>👤</span> <span>My Profile</span>
               </a>
               <button type="button" class="btn-crimson-outline" id="btn-edit-profile" onclick="openEditProfileModal()" style="padding:10px 16px; font-size:12px;">
@@ -197,7 +200,7 @@
                 You can be on strictly <strong>ONE</strong> team per ladder circuit (4v4 Variant, 2v2 SnD, 1v1 Radar).
               </p>
             </div>
-            <a href="ladders.html#register" class="btn-crimson-outline" style="font-size:11px; padding:7px 14px; text-decoration:none;">
+            <a href="/ladders/#register" class="btn-crimson-outline" style="font-size:11px; padding:7px 14px; text-decoration:none;">
               <span>🛡</span> <span>+ Register New Team</span>
             </a>
           </div>
@@ -244,10 +247,10 @@
             <p style="font-size:12px; color:#94a3b8; margin:0;">Browse open challenges on the Match Finder board, post your squad's rules, or climb the ladder.</p>
           </div>
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <a href="match-finder.html" class="btn-crimson" style="padding:10px 20px; font-size:12px; text-decoration:none;">
+            <a href="/match-finder/" class="btn-crimson" style="padding:10px 20px; font-size:12px; text-decoration:none;">
               <span>🎯</span> <span>Open Match Finder ↗</span>
             </a>
-            <a href="ladders.html" class="btn-crimson-outline" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+            <a href="/ladders/" class="btn-crimson-outline" style="padding:10px 18px; font-size:12px; text-decoration:none;">
               <span>⚔</span> <span>View Ladder Standings</span>
             </a>
           </div>
@@ -725,10 +728,10 @@
                   <button type="button" class="btn-crimson" onclick="openTeamRosterModal('${team.id}')" style="padding:8px 10px; font-size:11px; flex:1; justify-content:center;">
                     <span>👥</span> <span>Roster &amp; Stats</span>
                   </button>
-                  <a href="ladders.html?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 10px; font-size:11px; text-decoration:none; flex:1; justify-content:center;">
+                  <a href="/ladders/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 10px; font-size:11px; text-decoration:none; flex:1; justify-content:center;">
                     <span>⚔</span> <span>Ladder</span>
                   </a>
-                  <a href="match-finder.html?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 10px; font-size:11px; text-decoration:none; flex:1; justify-content:center;">
+                  <a href="/match-finder/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 10px; font-size:11px; text-decoration:none; flex:1; justify-content:center;">
                     <span>🎯</span> <span>Matches</span>
                   </a>
                 </div>
@@ -749,7 +752,7 @@
                   <p style="font-size:11px; color:#64748b; margin:0 0 14px; line-height:1.4;">
                     You are allowed strictly 1 team on this circuit. Register your squad to compete.
                   </p>
-                  <a href="ladders.html?ladder=${ladder.ladder_type}&action=register" class="btn-crimson-outline" style="padding:7px 14px; font-size:11px; text-decoration:none;">
+                  <a href="/ladders/?ladder=${ladder.ladder_type}&action=register" class="btn-crimson-outline" style="padding:7px 14px; font-size:11px; text-decoration:none;">
                     <span>+</span> <span>Create / Join Squad ↗</span>
                   </a>
                 </div>
@@ -778,7 +781,7 @@
               <div style="font-size:36px; margin-bottom:8px;">⚔</div>
               <div style="font-size:14px; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:4px;">No Matches in this View</div>
               <div style="font-size:12px; margin-bottom:16px;">Ready to battle? Hop into Match Finder to challenge active arena teams.</div>
-              <a href="match-finder.html" class="btn-crimson" style="padding:8px 16px; font-size:11px; text-decoration:none;">
+              <a href="/match-finder/" class="btn-crimson" style="padding:8px 16px; font-size:11px; text-decoration:none;">
                 <span>🎯</span> <span>Find Open Challenge ↗</span>
               </a>
             </div>
@@ -845,7 +848,7 @@
               </div>
 
               <div>
-                <a href="match.html?id=${m.id}" class="btn-crimson" style="padding:10px 18px; font-size:11px; text-decoration:none; white-space:nowrap;">
+                <a href="/match/?id=${m.id}" class="btn-crimson" style="padding:10px 18px; font-size:11px; text-decoration:none; white-space:nowrap;">
                   <span>👁</span> <span>View Match Room ↗</span>
                 </a>
               </div>
@@ -1126,13 +1129,13 @@
               <div class="roster-player-card">
                 <!-- Left: Avatar & Identity -->
                 <div style="display:flex; align-items:center; gap:14px; min-width:200px;">
-                  <a href="arena-profile.html?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
+                  <a href="/arena/profile/?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
                     <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'}; transition:border-color 0.2s;" alt="${player.gamertag}" class="team-avatar-sm" />
                     <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#22c55e; border:2px solid #090d14; border-radius:50%;" title="Verified Combatant"></span>
                   </a>
                   <div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                      <a href="arena-profile.html?player=${encodeURIComponent(player.gamertag)}" class="team-link-hover" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
+                      <a href="/arena/profile/?player=${encodeURIComponent(player.gamertag)}" class="team-link-hover" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
                         <strong style="color:#ffffff;">${player.gamertag}</strong>
                         <span style="font-size:10px; color:#ff1e44; opacity:0.85;">↗</span>
                       </a>
@@ -1186,7 +1189,7 @@
         // Render Action Buttons
         if (actionsEl) {
           actionsEl.innerHTML = `
-            <a href="ladders.html?ladder=${team.ladder_type || '4v4_variant'}" class="btn-crimson" style="font-size:12px; padding:8px 16px; text-decoration:none;">
+            <a href="/ladders/?ladder=${team.ladder_type || '4v4_variant'}" class="btn-crimson" style="font-size:12px; padding:8px 16px; text-decoration:none;">
               <span>⚔</span> <span>View On Ladder</span>
             </a>
             <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal()" style="font-size:12px; padding:8px 16px;">

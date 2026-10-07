@@ -4,15 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#11120f" />
-    <link rel="stylesheet" href="./styles.css" />
-    <title>Frontline — Division Tournament Brackets</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Frontline — Division Playoff Brackets</title>
   </head>
   <body>
     <!-- Top Header & Navigation -->
     <header class="header">
       <div class="wrap nav">
-        <a class="brand" href="index.html">
-          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+        <a class="brand" href="/home/">
+          <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
           <div class="brand-text">
             <span class="brand-title">FRONTLINE</span>
             <small class="brand-sub">COMMUNITY LEAGUE</small>
@@ -42,11 +42,14 @@
         <div class="header-center-hub">
           <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
           <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-            <a href="brackets.html" class="mode-switch-btn active-league" title="Frontline Franchised League Brackets">
+            <a href="/brackets/" class="mode-switch-btn active-league" data-mode="league" title="Frontline Franchised League Playoff Brackets">
               <span>🛡</span> <span>League</span>
             </a>
-            <a href="arena-tournaments.html" class="mode-switch-btn" title="Frontline Arena Tournaments">
+            <a href="/arena/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Circuit">
               <span>⚔</span> <span>Arena</span>
+            </a>
+            <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+              <span>🏆</span> <span>Tournaments</span>
             </a>
           </div>
         </div>
@@ -64,24 +67,25 @@
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Matches &amp; Tournaments</div>
-                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="brackets.html" style="color:var(--lime);"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="/brackets/" style="color:var(--lime);"><span class="nav-icon">⚔</span> Playoff Brackets</a>
+                  <a href="/tournaments/"><span class="nav-icon">🏆</span> Tournaments Hub</a>
+                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Franchises &amp; Players</div>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="profile.html" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="/teams/"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Media &amp; Directives</div>
-                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
-                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
-                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
             </nav>
@@ -104,12 +108,12 @@
     <main class="wrap">
       <!-- Page Header -->
       <section class="bracket-header-section">
-        <div class="kicker">CHAMPIONSHIP SERIES // TOURNAMENT PROGRESSION</div>
+        <div class="kicker">CHAMPIONSHIP SERIES // PLAYOFF BRACKET PROGRESSION</div>
         <h2 style="font: 800 48px/0.9 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
-          DIVISION <span style="color:var(--lime);">TOURNAMENT BRACKETS</span>
+          DIVISION <span style="color:var(--lime);">PLAYOFF BRACKETS</span>
         </h2>
         <p class="intro">
-          Live tournament progression across all Frontline competitive divisions. Follow the path to the championship from Upper Bracket dominance to Elimination Bracket survival.
+          Live playoff bracket progression across all Frontline competitive divisions. Follow the path to the championship from Upper Bracket dominance to Elimination Bracket survival.
         </p>
       </section>
 
@@ -194,7 +198,7 @@
       <section id="tournament-explainer-section" style="margin: 40px 0 60px; background:var(--panel); border:1px solid var(--line); padding: 32px;">
         <div class="kicker" id="explainer-kicker">COMPETITIVE FRAMEWORK // CDL RULES</div>
         <h3 id="explainer-title" style="font: 800 24px var(--display); text-transform: uppercase; margin: 8px 0 16px; color:var(--text);">
-          How Frontline <span style="color:var(--lime);">Tournament Brackets Work</span>
+          How Frontline <span style="color:var(--lime);">Playoff Brackets Work</span>
         </h3>
         <div id="explainer-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
           <div>
@@ -225,26 +229,27 @@
           <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
         </div>
         <div class="footer-links">
-          <a href="index.html#league">League</a>
-          <a href="index.html#standings">Standings</a>
-          <a href="schedule.html">Schedule</a>
-          <a href="teams.html">Teams</a>
-          <a href="players.html">Players</a>
-          <a href="brackets.html" style="color:var(--lime);" class="active">Brackets</a>
-          <a href="draft.html">Draft HQ</a>
-          <a href="rules.html">Rulebook</a>
-          <a href="livestreams.html">Livestreams</a>
-          <a href="vods.html">VODs</a>
-          <a href="signup.html">Sign Up</a>
+          <a href="/home/#league">League</a>
+          <a href="/home/#standings">Standings</a>
+          <a href="/schedule/">Schedule</a>
+          <a href="/teams/">Teams</a>
+          <a href="/players/">Players</a>
+          <a href="/brackets/" style="color:var(--lime);" class="active">Playoff Brackets</a>
+          <a href="/tournaments/">Tournaments</a>
+          <a href="/draft/">Draft HQ</a>
+          <a href="/rules/">Rulebook</a>
+          <a href="/livestreams/">Livestreams</a>
+          <a href="/vods/">VODs</a>
+          <a href="/signup/">Sign Up</a>
         </div>
       </div>
     </footer>
 
     <!-- Scripts: Supabase DB, Bullet Sparks & Bracket Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabase.js?v=2"></script>
-    <script src="./bullet-sparks.js"></script>
-    <script src="./bracket.js"></script>
+    <script src="/supabase.js?v=2"></script>
+    <script src="/bullet-sparks.js"></script>
+    <script src="/bracket.js"></script>
     <script>
       // User-Centered Navigation: Close dropdown on outside click or Escape key
       document.addEventListener("click", (e) => {

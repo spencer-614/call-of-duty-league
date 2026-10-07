@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#11120f" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <title>Frontline League — Franchise Player Profile &amp; CDL Scouting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="bullet-sparks.js" defer></script>
+    <script src="/supabase.js"></script>
+    <script src="/bullet-sparks.js" defer></script>
   </head>
   <body>
     <!-- =========================================================================
@@ -16,8 +16,8 @@
          ========================================================================= -->
     <header class="header">
       <div class="wrap nav">
-        <a class="brand" href="index.html">
-          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+        <a class="brand" href="/home/">
+          <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
           <div class="brand-text">
             <span class="brand-title">FRONTLINE</span>
             <small class="brand-sub">COMMUNITY LEAGUE</small>
@@ -32,11 +32,14 @@
         <div class="header-center-hub">
           <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
           <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-            <a href="profile.html" class="mode-switch-btn active-league" title="Frontline Franchised League Profile">
+            <a href="/profile/" class="mode-switch-btn active-league" data-mode="league" title="Frontline Franchised League Profile">
               <span>🛡</span> <span>League</span>
             </a>
-            <a href="arena-profile.html" class="mode-switch-btn" title="Frontline Arena Combatant Profile">
+            <a href="/arena/profile/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Combatant Profile">
               <span>⚔</span> <span>Arena</span>
+            </a>
+            <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+              <span>🏆</span> <span>Tournaments</span>
             </a>
           </div>
         </div>
@@ -54,24 +57,25 @@
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Matches &amp; Tournaments</div>
-                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="/brackets/"><span class="nav-icon">⚔</span> Playoff Brackets</a>
+                  <a href="/tournaments/"><span class="nav-icon">🏆</span> Tournaments Hub</a>
+                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Franchises &amp; Players</div>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="profile.html" class="nav-league-profile-link" style="color:var(--lime); display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="/teams/"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="color:var(--lime); display:none;"><span class="nav-icon">👤</span> View Profile</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Media &amp; Directives</div>
-                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
-                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
-                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
             </nav>
@@ -94,9 +98,9 @@
     <!-- League Breadcrumb Bar -->
     <div style="background:#0c0d0a; border-bottom:1px solid #232718; padding:10px 0;">
       <div class="wrap" style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);">
-        <a href="index.html" style="color:var(--muted); text-decoration:none;">League Home</a>
+        <a href="/home/" style="color:var(--muted); text-decoration:none;">League Home</a>
         <span>/</span>
-        <a href="players.html" style="color:var(--muted); text-decoration:none;">Franchise Players</a>
+        <a href="/players/" style="color:var(--muted); text-decoration:none;">Franchise Players</a>
         <span>/</span>
         <strong style="color:var(--lime);" id="league-breadcrumb-gamertag">Player Profile</strong>
       </div>
@@ -129,13 +133,13 @@
             <span>Sign In with Discord</span>
           </button>
 
-          <a href="signup.html" class="btn" style="width:100%; justify-content:center; font-size:13px; padding:12px 18px; text-decoration:none;">
+          <a href="/signup/" class="btn" style="width:100%; justify-content:center; font-size:13px; padding:12px 18px; text-decoration:none;">
             <span>Sign Up / Sign In via Email ↗</span>
           </a>
         </div>
 
         <div style="margin-top:24px; padding-top:16px; border-top:1px solid #232718; font-size:12px; color:var(--muted);">
-          Looking for community rosters? <a href="players.html" style="color:var(--lime); text-decoration:none; font-weight:700;">Explore Community Players ↗</a>
+          Looking for community rosters? <a href="/players/" style="color:var(--lime); text-decoration:none; font-weight:700;">Explore Community Players ↗</a>
         </div>
       </section>
 
@@ -192,10 +196,10 @@
               <button type="button" class="btn" onclick="openLeagueEditModal()" style="font-size:12px; padding:10px 18px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
                 <span>✏️</span> <span>Edit Profile</span>
               </button>
-              <a href="teams.html" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none;">
+              <a href="/teams/" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none;">
                 <span>🛡</span> <span>View Franchise Roster</span>
               </a>
-              <a href="arena-profile.html" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none; border-color:#ff1e44; color:#ff1e44;">
+              <a href="/arena/profile/" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none; border-color:#ff1e44; color:#ff1e44;">
                 <span>⚔</span> <span>Go to Arena Profile ↗</span>
               </a>
               <button type="button" onclick="signOutLeagueProfile()" class="btn btn-outline" style="font-size:12px; padding:10px 16px; border-color:#5a2323; color:#f87171; cursor:pointer;" title="Sign out of your account">
@@ -275,13 +279,13 @@
               <div style="font-size:24px; margin-bottom:8px;">🛡️</div>
               <strong style="color:#ffffff; font-size:13px; display:block; margin-bottom:4px;">No Franchise Roster Assigned</strong>
               <div style="font-size:12px; color:var(--muted); max-width:320px; margin:0 auto 14px;">You are currently listed as an Unassigned Free Agent. Enlist a team or join a registered franchise squad.</div>
-              <a href="signup.html" class="btn" style="font-size:11px; padding:6px 14px; text-decoration:none; display:inline-flex;">Register Franchise Squad ↗</a>
+              <a href="/signup/" class="btn" style="font-size:11px; padding:6px 14px; text-decoration:none; display:inline-flex;">Register Franchise Squad ↗</a>
             </div>
           </div>
 
           <div style="margin-top:16px; padding-top:14px; border-top:1px solid #232916; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:12px; color:var(--muted);">Franchise Circuit:</span>
-            <a href="teams.html" style="font-size:12px; color:var(--lime); text-decoration:none; font-weight:800;">View All Teams ↗</a>
+            <a href="/teams/" style="font-size:12px; color:var(--lime); text-decoration:none; font-weight:800;">View All Teams ↗</a>
           </div>
         </div>
 
@@ -291,7 +295,7 @@
             <h3 style="font:800 18px var(--display); text-transform:uppercase; color:#fff; margin:0;">
               Official Match Records &amp; VODs
             </h3>
-            <a href="vods.html" style="font-size:11px; color:var(--lime); text-decoration:none; font-weight:800;">All Broadcast VODs ↗</a>
+            <a href="/vods/" style="font-size:11px; color:var(--lime); text-decoration:none; font-weight:800;">All Broadcast VODs ↗</a>
           </div>
 
           <div id="profile-matches-list" style="display:flex; flex-direction:column; gap:10px;">
@@ -299,13 +303,13 @@
               <div style="font-size:24px; margin-bottom:8px;">📼</div>
               <strong style="color:#ffffff; font-size:13px; display:block; margin-bottom:4px;">No Match Records Recorded Yet</strong>
               <div style="font-size:12px; color:var(--muted); max-width:320px; margin:0 auto 14px;">Sanctioned match broadcasts, telemetry results, and VODs will appear here once official series are played.</div>
-              <a href="schedule.html" class="btn btn-outline" style="font-size:11px; padding:6px 14px; text-decoration:none; display:inline-flex;">View Match Schedule ↗</a>
+              <a href="/schedule/" class="btn btn-outline" style="font-size:11px; padding:6px 14px; text-decoration:none; display:inline-flex;">View Match Schedule ↗</a>
             </div>
           </div>
 
           <div style="margin-top:16px; padding-top:14px; border-top:1px solid #232916; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:12px; color:var(--muted);">Tournament Progression:</span>
-            <a href="brackets.html" style="font-size:12px; color:var(--lime); text-decoration:none; font-weight:800;">Championship Bracket ↗</a>
+            <a href="/brackets/" style="font-size:12px; color:var(--lime); text-decoration:none; font-weight:800;">Championship Bracket ↗</a>
           </div>
         </div>
 
@@ -324,7 +328,7 @@
             This profile manages your <strong>Franchised League</strong> career, contract status, and division tournaments. To view your grassroots Arena ELO ratings, 4v4/2v2 squads, and Match Finder challenges, switch to your Arena Profile.
           </p>
         </div>
-        <a href="arena-profile.html" class="btn" style="background:#ff1e44; border-color:#ff1e44; color:#fff; font-size:13px; padding:12px 24px; text-decoration:none;">
+        <a href="/arena/profile/" class="btn" style="background:#ff1e44; border-color:#ff1e44; color:#fff; font-size:13px; padding:12px 24px; text-decoration:none;">
           <span>⚔</span> <span>Open Arena Profile ↗</span>
         </a>
       </section>
@@ -436,7 +440,7 @@
     <footer class="footer" style="background:#090a07; border-top:1px solid #232718; padding:32px 0;">
       <div class="wrap" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <img src="images/leaguelogo_1.png" style="width:34px; height:34px;" alt="Frontline League" />
+          <img src="/images/leaguelogo_1.png" style="width:34px; height:34px;" alt="Frontline League" />
           <div style="font-size:12px; color:var(--muted);">
             <strong style="color:#ffffff;">FRONTLINE COMMUNITY LEAGUE</strong> · Franchised Division Circuit.<br />
             Grassroots community tournament following the official CDL competitive ruleset.

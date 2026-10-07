@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080a0f" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <title>Frontline Arena — Match Finder &amp; Live Challenge Board</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="bullet-sparks.js" defer></script>
+    <script src="/supabase.js"></script>
+    <script src="/bullet-sparks.js" defer></script>
   </head>
   <body class="gb-body">
     <!-- =========================================================================
@@ -17,9 +17,9 @@
     <header class="fl-topbar">
       <div class="fl-topbar-left">
         <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
-        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+        <a href="/arena/" class="fl-brand-lockup" title="Frontline Arena">
           <div class="fl-brand-logo-wrapper">
-            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
           </div>
           <div class="fl-brand-info">
             <div class="fl-brand-text">
@@ -41,11 +41,14 @@
       <div class="header-center-hub">
         <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
         <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-          <a href="schedule.html" class="mode-switch-btn" title="Go to Frontline Franchised League Schedule">
+          <a href="/schedule/" class="mode-switch-btn" data-mode="league" title="Go to Frontline Franchised League Schedule">
             <span>🛡</span> <span>League</span>
           </a>
-          <a href="match-finder.html" class="mode-switch-btn active-arena" title="Frontline Arena Match Finder">
+          <a href="/match-finder/" class="mode-switch-btn active-arena" data-mode="arena" title="Frontline Arena Match Finder">
             <span>⚔</span> <span>Arena</span>
+          </a>
+          <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <span>🏆</span> <span>Tournaments</span>
           </a>
         </div>
       </div>
@@ -53,9 +56,9 @@
       <div class="fl-topbar-right">
         <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
-          <a href="ladders.html">Ladders</a>
-          <a href="arena-tournaments.html">Tournaments</a>
-          <a href="arena-profile.html#my-teams">My Teams</a>
+          <a href="/ladders/">Ladders</a>
+          <a href="/arena/tournaments/">Tournaments</a>
+          <a href="/arena/profile/#my-teams">My Teams</a>
         </nav>
 
         <div id="arena-header-squad-container">
@@ -69,9 +72,9 @@
     <!-- Frontline Arena Breadcrumb Bar -->
     <div class="gb-breadcrumb-bar">
       <div class="gb-breadcrumb-inner">
-        <a href="arena.html">Arena Home</a>
+        <a href="/arena/">Arena Home</a>
         <span class="gb-breadcrumb-sep">/</span>
-        <a href="ladders.html">Ladders</a>
+        <a href="/ladders/">Ladders</a>
         <span class="gb-breadcrumb-sep">/</span>
         <strong style="color:#ffffff;">Match Finder Challenge Board</strong>
       </div>
@@ -97,7 +100,7 @@
             <button type="button" class="btn-crimson" onclick="openPostChallengeModal()" style="padding:12px 24px; font-size:13px; display:inline-flex; align-items:center; gap:8px;">
               <span>🎯</span> <span>Post Open Challenge</span>
             </button>
-            <a href="arena-profile.html#my-teams" class="btn-crimson-outline" style="padding:12px 20px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <a href="/arena/profile/#my-teams" class="btn-crimson-outline" style="padding:12px 20px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
               <span>🛡</span> <span>Manage Squads</span>
             </a>
           </div>
@@ -144,7 +147,7 @@
             <span style="font-size:10.5px; color:#ff1e44; font-weight:800; letter-spacing:1px; text-transform:uppercase;">REAL-TIME TELEMETRY</span>
             <h3 style="font:800 18px var(--display); text-transform:uppercase; color:#fff; margin:2px 0 0;">Recently Concluded Series</h3>
           </div>
-          <a href="match.html" style="font-size:11px; color:#ff1e44; text-decoration:none; font-weight:800;">View Match Resolution ↗</a>
+          <a href="/match/" style="font-size:11px; color:#ff1e44; text-decoration:none; font-weight:800;">View Match Resolution ↗</a>
         </div>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;" id="finder-recent-matches">
@@ -154,7 +157,7 @@
               <strong style="font-size:13px; color:#fff;">[APEX] Apex vs [CRIM] Crimson</strong>
               <div style="font-size:11px; color:#64748b;">4v4 CDL Variant · Hardpoint, SnD, Control</div>
             </div>
-            <a href="match.html" class="btn-crimson-outline" style="font-size:10px; padding:6px 10px; text-decoration:none;">VOD / Veto</a>
+            <a href="/match/" class="btn-crimson-outline" style="font-size:10px; padding:6px 10px; text-decoration:none;">VOD / Veto</a>
           </div>
 
           <div style="background:#090d14; border:1px solid #1c2738; padding:14px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
@@ -163,7 +166,7 @@
               <strong style="font-size:13px; color:#fff;">[VAL] Valkyrie vs [PHNTM] Phantom</strong>
               <div style="font-size:11px; color:#64748b;">2v2 SnD · Highrise Decider</div>
             </div>
-            <a href="match.html" class="btn-crimson-outline" style="font-size:10px; padding:6px 10px; text-decoration:none;">VOD / Veto</a>
+            <a href="/match/" class="btn-crimson-outline" style="font-size:10px; padding:6px 10px; text-decoration:none;">VOD / Veto</a>
           </div>
         </div>
       </div>
@@ -228,7 +231,7 @@
     <footer class="footer" style="background:#06080d; border-top:1px solid #161e2c; padding:32px 0;">
       <div class="wrap" style="max-width:1240px; margin:0 auto; padding:0 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <img src="images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
+          <img src="/images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
           <div style="font-size:12px; color:#94a3b8;">
             <strong style="color:#ffffff;">FRONTLINE ARENA</strong> · Match Finder &amp; Live Challenges.<br />
             Grassroots Call of Duty competitive platform following the official CDL ruleset.
@@ -355,12 +358,12 @@
         const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
         if (!player || !player.gamertag) {
           alert('You must sign in with your Arena combatant profile to accept challenges.\nRedirecting to Arena Profile...');
-          window.location.href = 'arena-profile.html#login';
+          window.location.href = '/arena/profile/#login';
           return;
         }
 
         // Navigate directly into active CDL Veto Room
-        window.location.href = 'match.html?id=' + encodeURIComponent(id);
+        window.location.href = '/match/?id=' + encodeURIComponent(id);
       }
 
       function openPostChallengeModal() {
@@ -378,7 +381,7 @@
         const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
         if (!player || !player.gamertag) {
           alert('You must sign in with your Arena combatant profile to post challenges.\nRedirecting to Arena Profile...');
-          window.location.href = 'arena-profile.html#login';
+          window.location.href = '/arena/profile/#login';
           return;
         }
 

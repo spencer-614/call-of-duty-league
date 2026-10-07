@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080a0f" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <title>Frontline Arena — Competitive Tournaments &amp; Cash Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="bullet-sparks.js" defer></script>
+    <script src="/supabase.js"></script>
+    <script src="/bullet-sparks.js" defer></script>
   </head>
   <body class="gb-body">
     <!-- =========================================================================
@@ -17,9 +17,9 @@
     <header class="fl-topbar">
       <div class="fl-topbar-left">
         <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
-        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+        <a href="/arena/" class="fl-brand-lockup" title="Frontline Arena">
           <div class="fl-brand-logo-wrapper">
-            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
           </div>
           <div class="fl-brand-info">
             <div class="fl-brand-text">
@@ -41,11 +41,14 @@
       <div class="header-center-hub">
         <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
         <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-          <a href="brackets.html" class="mode-switch-btn" title="Go to Frontline Franchised League Brackets">
+          <a href="/brackets/" class="mode-switch-btn" data-mode="league" title="Go to Frontline Franchised League Playoff Brackets">
             <span>🛡</span> <span>League</span>
           </a>
-          <a href="arena-tournaments.html" class="mode-switch-btn active-arena" title="Frontline Arena Tournaments">
+          <a href="/arena/tournaments/" class="mode-switch-btn active-arena" data-mode="arena" title="Frontline Arena Tournaments">
             <span>⚔</span> <span>Arena</span>
+          </a>
+          <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <span>🏆</span> <span>Tournaments</span>
           </a>
         </div>
       </div>
@@ -53,13 +56,13 @@
       <div class="fl-topbar-right">
         <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
-          <a href="ladders.html">Ladders</a>
-          <a href="arena-tournaments.html" class="active">Tournaments</a>
-          <a href="arena-profile.html#my-teams">My Teams</a>
+          <a href="/ladders/">Ladders</a>
+          <a href="/arena/tournaments/" class="active">Tournaments</a>
+          <a href="/arena/profile/#my-teams">My Teams</a>
         </nav>
 
         <div id="arena-header-squad-container">
-          <a href="arena-profile.html#my-teams" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+          <a href="/arena/profile/#my-teams" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
             <span>🛡</span> <span>Register Squad ↗</span>
           </a>
         </div>
@@ -69,7 +72,7 @@
     <!-- Frontline Arena Breadcrumb Bar -->
     <div class="gb-breadcrumb-bar">
       <div class="gb-breadcrumb-inner">
-        <a href="arena.html">Arena Home</a>
+        <a href="/arena/">Arena Home</a>
         <span class="gb-breadcrumb-sep">/</span>
         <strong style="color:#ffffff;">Competitive Tournaments &amp; Cash Cups</strong>
       </div>
@@ -93,10 +96,10 @@
             <a href="#active-tournaments" class="btn-crimson" style="padding:11px 22px; font-size:12px; text-decoration:none;">
               <span>🏆</span> <span>Browse Active Tournaments</span>
             </a>
-            <a href="arena-profile.html#my-teams" class="btn-crimson-outline" style="padding:11px 20px; font-size:12px; text-decoration:none;">
+            <a href="/arena/profile/#my-teams" class="btn-crimson-outline" style="padding:11px 20px; font-size:12px; text-decoration:none;">
               <span>🛡</span> <span>Manage Squad Roster</span>
             </a>
-            <a href="rules.html" class="btn-crimson-outline" style="padding:11px 18px; font-size:12px; text-decoration:none;">
+            <a href="/rules/" class="btn-crimson-outline" style="padding:11px 18px; font-size:12px; text-decoration:none;">
               <span>📜</span> <span>CDL V4 Tournament Rules</span>
             </a>
           </div>
@@ -342,7 +345,7 @@
             </div>
 
             <div style="display:flex; gap:10px;">
-              <a href="ladders.html" class="btn-crimson" style="flex:1; padding:10px; font-size:12px; text-decoration:none; text-align:center;">
+              <a href="/ladders/" class="btn-crimson" style="flex:1; padding:10px; font-size:12px; text-decoration:none; text-align:center;">
                 <span>⚔</span> <span>Climb Ladder to Qualify</span>
               </a>
               <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('invitational')">
@@ -385,7 +388,7 @@
               <span style="color:#94a3b8; font-weight:600; font-size:13px;">Seed #8 Squad</span>
               <strong style="color:#64748b; font-size:14px;">-</strong>
             </div>
-            <a href="match-finder.html" class="btn-crimson-outline" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
+            <a href="/match-finder/" class="btn-crimson-outline" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
               Tournament Match Finder ↗
             </a>
           </div>
@@ -404,7 +407,7 @@
               <span style="color:#94a3b8; font-weight:600; font-size:13px;">Seed #5 Squad</span>
               <strong style="color:#64748b; font-size:14px;">-</strong>
             </div>
-            <a href="match-finder.html" class="btn-crimson-outline" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
+            <a href="/match-finder/" class="btn-crimson-outline" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
               Tournament Match Finder ↗
             </a>
           </div>
@@ -423,7 +426,7 @@
               <span style="color:#ffffff; font-weight:800; font-size:13px;">Quarterfinal 2 Winner</span>
               <span style="color:#94a3b8; font-size:12px;">Seed #2 Bracket</span>
             </div>
-            <a href="arena-tournaments.html" class="btn-crimson" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
+            <a href="/arena/tournaments/" class="btn-crimson" style="display:block; text-align:center; padding:6px; font-size:11px; margin-top:10px; text-decoration:none;">
               Register Tournament Squad ↗
             </a>
           </div>
@@ -437,10 +440,10 @@
           <p style="font-size:13px; color:#94a3b8; margin:0;">Post an open challenge on the Match Finder board or accept open matches right now.</p>
         </div>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          <a href="match-finder.html" class="btn-crimson" style="padding:10px 20px; font-size:12px; text-decoration:none;">
+          <a href="/match-finder/" class="btn-crimson" style="padding:10px 20px; font-size:12px; text-decoration:none;">
             <span>🎯</span> <span>Open Match Finder ↗</span>
           </a>
-          <a href="ladders.html" class="btn-crimson-outline" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+          <a href="/ladders/" class="btn-crimson-outline" style="padding:10px 18px; font-size:12px; text-decoration:none;">
             <span>📊</span> <span>Ladder Standings</span>
           </a>
         </div>
@@ -451,7 +454,7 @@
     <footer class="footer" style="background:#06080d; border-top:1px solid #161e2c; padding:32px 0;">
       <div class="wrap" style="max-width:1240px; margin:0 auto; padding:0 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <img src="images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
+          <img src="/images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
           <div style="font-size:12px; color:#94a3b8;">
             <strong style="color:#ffffff;">FRONTLINE ARENA</strong> · Competitive Circuit &amp; Tournaments.<br />
             Grassroots Call of Duty competitive platform following the official CDL ruleset.
@@ -484,7 +487,7 @@
         const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
         if (!player || !player.gamertag) {
           alert('You must be signed in with an active Arena combatant profile to register a squad.\nRedirecting to Arena Profile...');
-          window.location.href = 'arena-profile.html#login';
+          window.location.href = '/arena/profile/#login';
           return;
         }
         alert('Squad registration submitted for: ' + title + '\nCaptain: [' + (player.tag || 'TAG') + '] ' + player.gamertag + '\nCheck-in opens 1 hour before bracket start.');

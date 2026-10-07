@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#11120f" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <title>Frontline — Teams & Rosters</title>
     <style>
       .teams-header {
@@ -175,8 +175,8 @@
   <body>
     <header class="header">
       <div class="wrap nav">
-        <a class="brand" href="index.html">
-          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+        <a class="brand" href="/home/">
+          <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
           <div class="brand-text">
             <span class="brand-title">FRONTLINE</span>
             <small class="brand-sub">COMMUNITY LEAGUE</small>
@@ -215,24 +215,25 @@
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Matches &amp; Tournaments</div>
-                  <a href="schedule.html"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="/brackets/"><span class="nav-icon">⚔</span> Playoff Brackets</a>
+                  <a href="/tournaments/"><span class="nav-icon">🏆</span> Tournaments Hub</a>
+                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Franchises &amp; Players</div>
-                  <a href="teams.html" style="color:var(--lime);"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="profile.html" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="/teams/" style="color:var(--lime);"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Media &amp; Directives</div>
-                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
-                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
-                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
             </nav>
@@ -262,7 +263,7 @@
           Full lineups for every competing squad, active starting rosters, and current season points.
         </p>
         <div style="margin-top: 16px;">
-          <a href="signup.html#team" class="cta" style="display:inline-flex; align-items:center; gap:8px;">
+          <a href="/signup/#team" class="cta" style="display:inline-flex; align-items:center; gap:8px;">
             <span>Register a Team or Organization</span>
             <span style="font-size:14px;">↗</span>
           </a>
@@ -293,27 +294,27 @@
           <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
         </div>
         <div class="footer-links">
-          <a href="index.html#league">League</a>
-          <a href="index.html#standings">Standings</a>
-          <a href="schedule.html">Schedule</a>
-          <a href="teams.html" style="color:var(--lime);" class="active">Teams</a>
-          <a href="players.html">Players</a>
-          <a href="brackets.html">Brackets</a>
-          <a href="draft.html">Draft HQ</a>
-          <a href="rules.html">Rulebook</a>
-          <a href="livestreams.html">Livestreams</a>
-          <a href="vods.html">VODs</a>
-          <a href="signup.html">Sign Up</a>
+          <a href="/home/#league">League</a>
+          <a href="/home/#standings">Standings</a>
+          <a href="/schedule/">Schedule</a>
+          <a href="/teams/" style="color:var(--lime);" class="active">Teams</a>
+          <a href="/players/">Players</a>
+          <a href="/brackets/">Brackets</a>
+          <a href="/draft/">Draft HQ</a>
+          <a href="/rules/">Rulebook</a>
+          <a href="/livestreams/">Livestreams</a>
+          <a href="/vods/">VODs</a>
+          <a href="/signup/">Sign Up</a>
         </div>
       </div>
     </footer>
 
     <!-- Supabase JS Client, Data Loader, Modals & Bullet Impact Sparks -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabase.js?v=2"></script>
-    <script src="./player-modal.js"></script>
-    <script src="./team-modal.js"></script>
-    <script src="./bullet-sparks.js"></script>
+    <script src="/supabase.js?v=2"></script>
+    <script src="/player-modal.js"></script>
+    <script src="/team-modal.js"></script>
+    <script src="/bullet-sparks.js"></script>
     <script>
       let allTeams = [];
 
@@ -348,7 +349,7 @@
         if (filtered.length === 0) {
           container.innerHTML = query 
             ? '<div class="empty-state">No teams found matching your search.</div>'
-            : '<div class="empty-state">No franchise teams registered yet.<br /><a href="signup.html" style="color:var(--lime); text-decoration:none; font-weight:bold; display:inline-block; margin-top:10px;">Register your squad now ↗</a></div>';
+            : '<div class="empty-state">No franchise teams registered yet.<br /><a href="/signup/" style="color:var(--lime); text-decoration:none; font-weight:bold; display:inline-block; margin-top:10px;">Register your squad now ↗</a></div>';
           return;
         }
 

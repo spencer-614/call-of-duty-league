@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080a0f" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <title>Frontline Arena — Competitive Ladders &amp; Leaderboards</title>
     <style>
       .team-clickable {
@@ -44,8 +44,8 @@
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="bullet-sparks.js" defer></script>
+    <script src="/supabase.js"></script>
+    <script src="/bullet-sparks.js" defer></script>
   </head>
   <body class="gb-body">
     <!-- =========================================================================
@@ -54,9 +54,9 @@
     <header class="fl-topbar">
       <div class="fl-topbar-left">
         <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
-        <a href="arena.html" class="fl-brand-lockup" title="Frontline Arena">
+        <a href="/arena/" class="fl-brand-lockup" title="Frontline Arena">
           <div class="fl-brand-logo-wrapper">
-            <img src="images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
           </div>
           <div class="fl-brand-info">
             <div class="fl-brand-text">
@@ -78,11 +78,14 @@
       <div class="header-center-hub">
         <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
         <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-          <a href="index.html" class="mode-switch-btn" title="Go to Frontline Franchised League">
+          <a href="/home/" class="mode-switch-btn" data-mode="league" title="Go to Frontline Franchised League">
             <span>🛡</span> <span>League</span>
           </a>
-          <a href="ladders.html" class="mode-switch-btn active-arena" title="Frontline Arena Circuit">
+          <a href="/ladders/" class="mode-switch-btn active-arena" data-mode="arena" title="Frontline Arena Circuit">
             <span>⚔</span> <span>Arena</span>
+          </a>
+          <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <span>🏆</span> <span>Tournaments</span>
           </a>
         </div>
       </div>
@@ -90,9 +93,9 @@
       <div class="fl-topbar-right">
         <!-- Main Navigation Links (Moved a bit to the right) -->
         <nav class="fl-main-nav" aria-label="Arena Navigation">
-          <a href="ladders.html" class="active">Ladders</a>
-          <a href="arena-tournaments.html">Tournaments</a>
-          <a href="arena-profile.html#my-teams">My Teams</a>
+          <a href="/ladders/" class="active">Ladders</a>
+          <a href="/arena/tournaments/">Tournaments</a>
+          <a href="/arena/profile/#my-teams">My Teams</a>
         </nav>
 
         <!-- Active Squad Status or Profile CTA -->
@@ -109,30 +112,30 @@
          ========================================================================= -->
     <div class="fl-subnav">
       <div class="fl-game-title-badge">
-        <img src="images/arenalogo_1.png" alt="Emblem" class="fl-game-thumb" />
+        <img src="/images/arenalogo_1.png" alt="Emblem" class="fl-game-thumb" />
         <span>Call of Duty: Modern Warfare III &amp; Black Ops 6</span>
         <span class="fl-change-ladder-link" onclick="openLadderDropdown(event)">[Change Ladder ▼]</span>
       </div>
 
       <div class="fl-subnav-links">
-        <a href="ladders.html" class="fl-subnav-item active">
+        <a href="/ladders/" class="fl-subnav-item active">
           <span>Ladders</span>
           <span class="fl-badge-count">3</span>
         </a>
-        <a href="arena-tournaments.html" class="fl-subnav-item">
+        <a href="/arena/tournaments/" class="fl-subnav-item">
           <span>Tournaments</span>
           <span class="fl-badge-count">8</span>
         </a>
-        <a href="match-finder.html" class="fl-subnav-item">
+        <a href="/match-finder/" class="fl-subnav-item">
           <span>Match Finder</span>
         </a>
-        <a href="arena-free-agents.html" class="fl-subnav-item">
+        <a href="/arena/free-agents/" class="fl-subnav-item">
           <span>Free Agents</span>
         </a>
-        <a href="match.html" class="fl-subnav-item">
+        <a href="/match/" class="fl-subnav-item">
           <span>Match Resolution</span>
         </a>
-        <a href="#standings" class="fl-subnav-item">
+        <a href="/home/#standings" class="fl-subnav-item">
           <span>Global Leaderboard</span>
         </a>
         <a href="https://discord.gg/frontline" target="_blank" rel="noopener noreferrer" class="fl-subnav-item">
@@ -151,7 +154,7 @@
         <div class="fl-hero-left">
           <!-- High-Contrast Hero Emblem Frame -->
           <div class="fl-hero-emblem-box">
-            <img src="images/arenalogo_1.png" alt="Frontline Arena Official Insignia" class="fl-hero-emblem-img" />
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Official Insignia" class="fl-hero-emblem-img" />
           </div>
 
           <div class="fl-hero-text">
@@ -176,7 +179,7 @@
               <button type="button" class="fl-ladder-pill" id="pill-1v1" onclick="selectLadder('1v1_radar')">
                 <span>🎯</span> <span>1v1 Radar</span>
               </button>
-              <a href="match-finder.html" class="fl-ladder-pill" style="text-decoration:none;">
+              <a href="/match-finder/" class="fl-ladder-pill" style="text-decoration:none;">
                 <span>🎯</span> <span>Match Finder ↗</span>
               </a>
               <button type="button" class="fl-ladder-pill" onclick="openCdlRulesModal()">
@@ -315,7 +318,7 @@
               </div>
             </div>
 
-            <a href="arena-tournaments.html" class="fl-sidebar-btn" style="text-decoration:none; margin-bottom:0;">
+            <a href="/arena/tournaments/" class="fl-sidebar-btn" style="text-decoration:none; margin-bottom:0;">
               <span>🏆</span> <span>VIEW PLAYOFF BRACKET</span>
             </a>
           </div>
@@ -337,7 +340,7 @@
             </div>
 
             <div style="margin-top:14px; text-align:center;">
-              <a href="match-finder.html" style="font-size:11.5px; color:#ff1e44; text-decoration:none; font-weight:800; display:inline-flex; align-items:center; gap:4px;">
+              <a href="/match-finder/" style="font-size:11.5px; color:#ff1e44; text-decoration:none; font-weight:800; display:inline-flex; align-items:center; gap:4px;">
                 <span>Open Match Finder Board</span> <span>↗</span>
               </a>
             </div>
@@ -352,7 +355,7 @@
             <p style="font-size:12px; color:#94a3b8; line-height:1.5; margin:0 0 14px;">
               Connect with verified CDL free agents, filter by role (Main AR, SMG, Flex), or post your free agent recruitment card.
             </p>
-            <a href="arena-free-agents.html" class="btn-crimson" style="width:100%; box-sizing:border-box; padding:9px 12px; font-size:11.5px; text-decoration:none; justify-content:center; display:flex; align-items:center; gap:6px;">
+            <a href="/arena/free-agents/" class="btn-crimson" style="width:100%; box-sizing:border-box; padding:9px 12px; font-size:11.5px; text-decoration:none; justify-content:center; display:flex; align-items:center; gap:6px;">
               <span>👥</span> <span>Browse Arena Free Agents ↗</span>
             </a>
           </div>
@@ -367,19 +370,19 @@
     <footer style="background:#07090e; border-top:1px solid #1a2233; padding:32px 24px; text-align:center; color:#64748b; font-size:12px;">
       <div style="max-width:1320px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
         <div style="display:flex; align-items:center; gap:10px;">
-          <img src="images/arenalogo_1.png" style="width:28px; height:28px; object-fit:contain;" alt="Arena Logo" />
+          <img src="/images/arenalogo_1.png" style="width:28px; height:28px; object-fit:contain;" alt="Arena Logo" />
           <strong style="color:#fff;">FRONTLINE ARENA</strong>
           <span style="color:#ff1e44; font-weight:800;">· COMPETITIVE ARENA CIRCUIT</span>
         </div>
         <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
-          <a href="arena.html" style="color:#94a3b8; text-decoration:none;">Arena HQ</a>
-          <a href="ladders.html" style="color:#ff1e44; text-decoration:none; font-weight:700;">Ladders</a>
-          <a href="arena-tournaments.html" style="color:#94a3b8; text-decoration:none;">Tournaments</a>
-          <a href="match-finder.html" style="color:#94a3b8; text-decoration:none;">Match Finder</a>
-          <a href="arena-free-agents.html" style="color:#94a3b8; text-decoration:none;">Free Agents</a>
-          <a href="match.html" style="color:#94a3b8; text-decoration:none;">Match Room</a>
-          <a href="rules.html" style="color:#94a3b8; text-decoration:none;">CDL Rules</a>
-          <a href="index.html" style="color:#d5f45b; text-decoration:none; font-weight:700;">Franchise League ↗</a>
+          <a href="/arena/" style="color:#94a3b8; text-decoration:none;">Arena HQ</a>
+          <a href="/ladders/" style="color:#ff1e44; text-decoration:none; font-weight:700;">Ladders</a>
+          <a href="/arena/tournaments/" style="color:#94a3b8; text-decoration:none;">Tournaments</a>
+          <a href="/match-finder/" style="color:#94a3b8; text-decoration:none;">Match Finder</a>
+          <a href="/arena/free-agents/" style="color:#94a3b8; text-decoration:none;">Free Agents</a>
+          <a href="/match/" style="color:#94a3b8; text-decoration:none;">Match Room</a>
+          <a href="/rules/" style="color:#94a3b8; text-decoration:none;">CDL Rules</a>
+          <a href="/home/" style="color:#d5f45b; text-decoration:none; font-weight:700;">Franchise League ↗</a>
         </div>
       </div>
     </footer>
@@ -619,7 +622,7 @@
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1a2333; padding-top:14px;">
-          <a href="rules.html" class="btn-crimson-outline" style="font-size:12px; padding:8px 16px; text-decoration:none;">
+          <a href="/rules/" class="btn-crimson-outline" style="font-size:12px; padding:8px 16px; text-decoration:none;">
             View Full Rulebook ↗
           </a>
           <button type="button" class="btn-crimson" onclick="closeCdlRulesModal()" style="font-size:12px; padding:8px 18px;">
@@ -733,7 +736,7 @@
           `;
         } else if (currentPlayer) {
           container.innerHTML = `
-            <a href="arena-profile.html" style="text-decoration:none; display:flex; align-items:center; gap:8px; background:#0f1420; border:1px solid #28364d; padding:5px 12px; border-radius:20px;">
+            <a href="/arena/profile/" style="text-decoration:none; display:flex; align-items:center; gap:8px; background:#0f1420; border:1px solid #28364d; padding:5px 12px; border-radius:20px;">
               <img src="${currentPlayer.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:26px; height:26px; border-radius:50%; object-fit:cover; border:1px solid #ff1e44;" />
               <div style="line-height:1.2; text-align:left;">
                 <div style="font-size:11px; font-weight:800; color:#ffffff;">${currentPlayer.gamertag || 'Operator'}</div>
@@ -1047,7 +1050,7 @@
 
           closePostChallengeModal();
           alert("✓ Match Challenge posted to the Challenge Board! Other squads can now accept.");
-          window.location.href = "match-finder.html";
+          window.location.href = "/match-finder/";
         } catch (err) {
           alert("Error posting challenge: " + err.message);
         } finally {
@@ -1177,13 +1180,13 @@
             return `
               <div class="roster-player-card">
                 <div style="display:flex; align-items:center; gap:14px; min-width:200px;">
-                  <a href="arena-profile.html?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
+                  <a href="/arena/profile/?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
                     <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'};" alt="${player.gamertag}" class="team-avatar-sm" />
                     <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#22c55e; border:2px solid #090d14; border-radius:50%;" title="Verified Combatant"></span>
                   </a>
                   <div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                      <a href="arena-profile.html?player=${encodeURIComponent(player.gamertag)}" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
+                      <a href="/arena/profile/?player=${encodeURIComponent(player.gamertag)}" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
                         <strong style="color:#ffffff;">${player.gamertag}</strong>
                         <span style="font-size:10px; color:#ff1e44; opacity:0.85;">↗</span>
                       </a>

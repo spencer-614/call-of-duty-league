@@ -48,24 +48,69 @@ app.use((req, res, next) => {
   next();
 });
 
-// Explicit page route handlers (Supports /arena, /arena.html, /draft, etc.)
-const PAGES = [
-  "index", "arena", "draft", "schedule", "teams", "players", 
-  "ladders", "brackets", "admin", "signup", "profile", "vods", 
-  "livestreams", "rules", "match", "match-finder", 
-  "arena-free-agents", "arena-profile", "arena-tournaments"
+// Root URL redirect -> Redirects to /home/ so URL says /home in the browser
+app.get(["/", "/index.html"], (req, res) => res.redirect(301, "/home/"));
+
+// Hierarchy routes mapping: clean URL to folder index.html
+const HIERARCHY_ROUTES = [
+  { path: "/home", file: "home/index.html" },
+  { path: "/arena", file: "arena/index.html" },
+  { path: "/arena/tournaments", file: "arena/tournaments/index.html" },
+  { path: "/arena/free-agents", file: "arena/free-agents/index.html" },
+  { path: "/arena/profile", file: "arena/profile/index.html" },
+  { path: "/teams", file: "teams/index.html" },
+  { path: "/players", file: "players/index.html" },
+  { path: "/schedule", file: "schedule/index.html" },
+  { path: "/brackets", file: "brackets/index.html" },
+  { path: "/tournaments", file: "tournaments/index.html" },
+  { path: "/draft", file: "draft/index.html" },
+  { path: "/ladders", file: "ladders/index.html" },
+  { path: "/match", file: "match/index.html" },
+  { path: "/match-finder", file: "match-finder/index.html" },
+  { path: "/livestreams", file: "livestreams/index.html" },
+  { path: "/vods", file: "vods/index.html" },
+  { path: "/rules", file: "rules/index.html" },
+  { path: "/signup", file: "signup/index.html" },
+  { path: "/profile", file: "profile/index.html" },
+  { path: "/admin", file: "admin/index.html" }
 ];
 
-app.get("/", (req, res) => res.sendFile(path.resolve(__dirname, "index.html")));
+HIERARCHY_ROUTES.forEach(route => {
+  const filePath = path.resolve(__dirname, route.file);
+  // Match both with and without trailing slash
+  app.get([route.path, `${route.path}/`], (req, res) => {
+    res.sendFile(filePath);
+  });
+});
 
-PAGES.forEach(page => {
-  const filePath = path.resolve(__dirname, `${page}.html`);
-  app.get(`/${page}`, (req, res) => {
-    res.sendFile(filePath);
-  });
-  app.get(`/${page}.html`, (req, res) => {
-    res.sendFile(filePath);
-  });
+// Legacy redirects (backwards compatibility for flat URLs and old bookmarks)
+const LEGACY_REDIRECTS = {
+  "/arena-tournaments": "/arena/tournaments/",
+  "/arena-tournaments.html": "/arena/tournaments/",
+  "/arena-free-agents": "/arena/free-agents/",
+  "/arena-free-agents.html": "/arena/free-agents/",
+  "/arena-profile": "/arena/profile/",
+  "/arena-profile.html": "/arena/profile/",
+  "/arena.html": "/arena/",
+  "/teams.html": "/teams/",
+  "/players.html": "/players/",
+  "/schedule.html": "/schedule/",
+  "/brackets.html": "/brackets/",
+  "/tournaments.html": "/tournaments/",
+  "/draft.html": "/draft/",
+  "/ladders.html": "/ladders/",
+  "/match.html": "/match/",
+  "/match-finder.html": "/match-finder/",
+  "/livestreams.html": "/livestreams/",
+  "/vods.html": "/vods/",
+  "/rules.html": "/rules/",
+  "/signup.html": "/signup/",
+  "/profile.html": "/profile/",
+  "/admin.html": "/admin/"
+};
+
+Object.entries(LEGACY_REDIRECTS).forEach(([oldUrl, newUrl]) => {
+  app.get(oldUrl, (req, res) => res.redirect(301, newUrl));
 });
 
 // Static files (serves images, CSS, JS, assets)

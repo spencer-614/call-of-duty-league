@@ -1176,7 +1176,7 @@
 
     // Live Alert Banner & Watch Live / VOD Action Buttons
     const isLiveMatch = match.status === "Live";
-    const liveStreamUrl = match.liveUrl || match.vodUrl || "livestreams.html";
+    const liveStreamUrl = match.liveUrl || match.vodUrl || "/livestreams/";
 
     const liveAlertBannerHtml = isLiveMatch ? `
       <div class="modal-live-banner">

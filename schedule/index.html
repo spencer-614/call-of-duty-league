@@ -8,7 +8,7 @@
       name="description"
       content="Official 8-Week Match Schedule for the Frontline Call of Duty League: 2 Weeks of Preseason Exhibition followed by 6 Weeks of Regular Season Championship battles."
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <style>
       /* Page-specific styles for 8-Week Match Schedule */
       :root {
@@ -475,8 +475,8 @@
     <!-- Global Header -->
     <header class="header">
       <div class="wrap nav">
-        <a class="brand" href="index.html">
-          <img src="images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+        <a class="brand" href="/home/">
+          <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
           <div class="brand-text">
             <span class="brand-title">FRONTLINE</span>
             <small class="brand-sub">COMMUNITY LEAGUE</small>
@@ -506,11 +506,14 @@
         <div class="header-center-hub">
           <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
           <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-            <a href="index.html" class="mode-switch-btn active-league" title="Frontline Franchised League">
+            <a href="/home/" class="mode-switch-btn active-league" data-mode="league" title="Frontline Franchised League">
               <span>🛡</span> <span>League</span>
             </a>
-            <a href="arena.html" class="mode-switch-btn" title="Frontline Arena Circuit">
+            <a href="/arena/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Circuit">
               <span>⚔</span> <span>Arena</span>
+            </a>
+            <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+              <span>🏆</span> <span>Tournaments</span>
             </a>
           </div>
         </div>
@@ -528,24 +531,25 @@
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Matches &amp; Tournaments</div>
-                  <a href="schedule.html" style="color:var(--lime);"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="brackets.html"><span class="nav-icon">⚔</span> Tournament Brackets</a>
-                  <a href="index.html#standings"><span class="nav-icon">🏆</span> Season Standings</a>
-                  <a href="index.html#league"><span class="nav-icon">⌖</span> The League</a>
+                  <a href="/schedule/" style="color:var(--lime);"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="/brackets/"><span class="nav-icon">⚔</span> Playoff Brackets</a>
+                  <a href="/tournaments/"><span class="nav-icon">🏆</span> Tournaments Hub</a>
+                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Franchises &amp; Players</div>
-                  <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
-                  <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
-                  <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="profile.html" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                  <a href="/teams/"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Media &amp; Directives</div>
-                  <a href="livestreams.html"><span class="nav-icon">🔴</span> Live Broadcast</a>
-                  <a href="vods.html"><span class="nav-icon">📼</span> Match VODs</a>
-                  <a href="rules.html"><span class="nav-icon">📜</span> Official Rulebook</a>
-                  <a href="signup.html" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
                 </div>
               </div>
             </nav>
@@ -661,7 +665,7 @@
       <div class="wrap footer-content">
         <div class="footer-left">
           <div class="footer-brand">
-            <img src="images/leaguelogo_1.png" alt="Frontline League Emblem" class="footer-logo" />
+            <img src="/images/leaguelogo_1.png" alt="Frontline League Emblem" class="footer-logo" />
             <div class="brand-text">
               <span class="brand-title">FRONTLINE</span>
               <small class="brand-sub">COMMUNITY LEAGUE</small>
@@ -675,27 +679,28 @@
           </div>
         </div>
         <div class="footer-links">
-          <a href="index.html#league">The League</a>
-          <a href="index.html#standings">Standings</a>
-          <a href="schedule.html" style="color:var(--lime);" class="active">Schedule</a>
-          <a href="teams.html">Teams</a>
-          <a href="players.html">Players</a>
-          <a href="brackets.html">Brackets</a>
-          <a href="draft.html">Draft HQ</a>
-          <a href="rules.html">Rulebook</a>
-          <a href="livestreams.html">Livestreams</a>
-          <a href="vods.html">VODs</a>
-          <a href="signup.html">Sign Up</a>
+          <a href="/home/#league">The League</a>
+          <a href="/home/#standings">Standings</a>
+          <a href="/schedule/" style="color:var(--lime);" class="active">Schedule</a>
+          <a href="/teams/">Teams</a>
+          <a href="/players/">Players</a>
+          <a href="/brackets/">Playoff Brackets</a>
+          <a href="/tournaments/">Tournaments</a>
+          <a href="/draft/">Draft HQ</a>
+          <a href="/rules/">Rulebook</a>
+          <a href="/livestreams/">Livestreams</a>
+          <a href="/vods/">VODs</a>
+          <a href="/signup/">Sign Up</a>
         </div>
       </div>
     </footer>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabase.js?v=2"></script>
-    <script src="./player-modal.js"></script>
-    <script src="./team-modal.js"></script>
-    <script src="./bullet-sparks.js"></script>
+    <script src="/supabase.js?v=2"></script>
+    <script src="/player-modal.js"></script>
+    <script src="/team-modal.js"></script>
+    <script src="/bullet-sparks.js"></script>
 
     <script>
       (function() {
@@ -900,7 +905,7 @@
                 <span>Best of ${m.best_of || 5}</span>
                 <div style="display:flex; gap:8px;">
                   ${streamUrl ? `
-                    <a href="livestreams.html" class="btn-match-action stream-btn" title="Watch Broadcast">
+                    <a href="/livestreams/" class="btn-match-action stream-btn" title="Watch Broadcast">
                       <span>▶</span>
                       <span>Watch</span>
                     </a>

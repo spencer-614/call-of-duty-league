@@ -44,7 +44,7 @@
     return (
       (document.body && document.body.classList.contains("gb-body")) ||
       !!document.querySelector(".status-arena, .active-arena, .btn-crimson") ||
-      /arena|ladders|match\.html/i.test(window.location.pathname)
+      /arena|ladders|match/i.test(window.location.pathname)
     );
   }
 

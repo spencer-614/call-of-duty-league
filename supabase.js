@@ -231,7 +231,7 @@ const MOCK_DATA = {
       tag_color: "lime",
       image_url: null,
       image_fit: "contain",
-      link_url: "brackets.html",
+      link_url: "/brackets/",
       link_text: "View Tournament Brackets ↗",
       is_active: true,
       pinned: false,
@@ -2405,6 +2405,445 @@ window.LeagueDB = {
   },
 
   // ==============================================================================
+  // PLATFORM SWITCHER & COMMISSIONER VISIBILITY CONTROLS
+  // ==============================================================================
+  DEFAULT_SWITCHER_SETTINGS: {
+    switcher_visible: true,
+    show_league: true,
+    show_arena: true,
+    show_tournaments: true,
+    tournaments_page_enabled: true
+  },
+
+  async getPlatformSwitcherSettings() {
+    let settings = { ...this.DEFAULT_SWITCHER_SETTINGS };
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", "platform_switcher")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            settings = { ...settings, ...parsed };
+            try {
+              localStorage.setItem("frontline_platform_switcher_settings", JSON.stringify(settings));
+            } catch (e) {}
+            return settings;
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn("Supabase platform_switcher query notice:", err);
+      }
+    }
+
+    try {
+      const local = localStorage.getItem("frontline_platform_switcher_settings");
+      if (local) {
+        settings = { ...settings, ...JSON.parse(local) };
+      }
+    } catch (e) {}
+
+    return settings;
+  },
+
+  async savePlatformSwitcherSettings(newSettings) {
+    const current = await this.getPlatformSwitcherSettings();
+    const merged = { ...current, ...newSettings };
+
+    try {
+      localStorage.setItem("frontline_platform_switcher_settings", JSON.stringify(merged));
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "platform_switcher",
+          status_state: merged.switcher_visible ? "active" : "hidden",
+          status_text: JSON.stringify(merged),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (err) {
+        console.warn("Supabase savePlatformSwitcherSettings error:", err);
+      }
+    }
+
+    this.applyPlatformSwitcherSettings(merged);
+    window.dispatchEvent(new CustomEvent("frontline_switcher_settings_changed", { detail: merged }));
+    return { success: true, settings: merged };
+  },
+
+  applyPlatformSwitcherSettings(settings) {
+    if (!settings || typeof document === "undefined") return;
+    const s = { ...this.DEFAULT_SWITCHER_SETTINGS, ...settings };
+
+    const docEl = document.documentElement;
+    if (docEl) {
+      docEl.classList.toggle("hide-platform-switcher", !s.switcher_visible);
+      docEl.classList.toggle("hide-mode-league", s.show_league === false);
+      docEl.classList.toggle("hide-mode-arena", s.show_arena === false);
+      docEl.classList.toggle("hide-mode-tournaments", s.show_tournaments === false);
+    }
+
+    // Direct DOM manipulation across all pills
+    const pills = document.querySelectorAll(".mode-switch-pill");
+    pills.forEach(pill => {
+      if (!s.switcher_visible || (!s.show_league && !s.show_arena && !s.show_tournaments)) {
+        pill.style.display = "none";
+        return;
+      } else {
+        pill.style.display = "";
+      }
+
+      // Check for league button
+      const leagueBtn = pill.querySelector('[data-mode="league"]') || pill.querySelector('a[href*="/home"], a[href*="index.html"], a[href*="players"], a[href*="brackets"]');
+      if (leagueBtn) {
+        leagueBtn.setAttribute("data-mode", "league");
+        leagueBtn.style.display = (s.show_league !== false) ? "" : "none";
+      }
+
+      // Check for arena button
+      const arenaBtn = pill.querySelector('[data-mode="arena"]') || pill.querySelector('a[href*="/arena"], a[href*="arena.html"], a[href*="ladders"]');
+      if (arenaBtn) {
+        arenaBtn.setAttribute("data-mode", "arena");
+        arenaBtn.style.display = (s.show_arena !== false) ? "" : "none";
+      }
+
+      // Check for tournaments button (or inject if missing)
+      let tournBtn = pill.querySelector('[data-mode="tournaments"]') || pill.querySelector('a[href*="tournaments"]');
+      if (!tournBtn) {
+        tournBtn = document.createElement("a");
+        tournBtn.href = "/tournaments/";
+        tournBtn.className = "mode-switch-btn" + (window.location.pathname.includes("tournaments") ? " active-tournaments" : "");
+        tournBtn.setAttribute("data-mode", "tournaments");
+        tournBtn.setAttribute("title", "Frontline Tournaments Hub");
+        tournBtn.innerHTML = `<span>🏆</span> <span>Tournaments</span>`;
+        pill.appendChild(tournBtn);
+      } else {
+        tournBtn.setAttribute("data-mode", "tournaments");
+      }
+      tournBtn.style.display = (s.show_tournaments !== false) ? "" : "none";
+    });
+  },
+
+  initPlatformSwitcher() {
+    if (typeof window === "undefined" || !window.document) return;
+    try {
+      const local = localStorage.getItem("frontline_platform_switcher_settings");
+      const initSettings = local ? JSON.parse(local) : this.DEFAULT_SWITCHER_SETTINGS;
+      this.applyPlatformSwitcherSettings(initSettings);
+    } catch (e) {}
+
+    // Cloud fetch in background
+    setTimeout(async () => {
+      try {
+        const cloudSettings = await this.getPlatformSwitcherSettings();
+        this.applyPlatformSwitcherSettings(cloudSettings);
+      } catch (e) {}
+    }, 100);
+  },
+
+  // ==============================================================================
+  // FRONTLINE TOURNAMENTS HUB SYSTEM
+  // ==============================================================================
+  DEFAULT_TOURNAMENTS: [
+    {
+      id: "tourney_major_1",
+      title: "Frontline Spring Championship Major",
+      format: "4v4 CDL Variant",
+      bracket_type: "Double Elimination",
+      prize_pool: "$2,500 USD",
+      entry_fee: "Free Entry",
+      max_teams: 16,
+      registered_teams: 14,
+      start_date: "2026-10-24",
+      start_time: "6:00 PM EST",
+      status: "Registration Open",
+      image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
+      registration_url: "https://discord.gg/frontline",
+      bracket_url: "/brackets/",
+      description: "Official 4v4 CDL Variant Premier Championship. Best of 5 series on official maps. Top squads battle live on broadcast.",
+      rules_notes: "CDL V4 Competitive Rulebook applies. Map vetoes in match room. Dedicated host server."
+    },
+    {
+      id: "tourney_prime_snd",
+      title: "Saturday Night SnD Prime Cup",
+      format: "2v2 Search & Destroy",
+      bracket_type: "Single Elimination",
+      prize_pool: "$750 USD",
+      entry_fee: "Free Entry",
+      max_teams: 32,
+      registered_teams: 28,
+      start_date: "2026-10-17",
+      start_time: "8:00 PM EST",
+      status: "Registration Open",
+      image_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80",
+      registration_url: "https://discord.gg/frontline",
+      bracket_url: "",
+      description: "High-octane 2v2 Search & Destroy prime tournament. First to 6 rounds wins. Knife for first blood / side choice.",
+      rules_notes: "SnD ruleset. Hardcore & Radar disabled. No snipers in 2v2."
+    },
+    {
+      id: "tourney_radar_1v1",
+      title: "Radar Always On 1v1 Gunfight Showdown",
+      format: "1v1 Radar",
+      bracket_type: "Double Elimination",
+      prize_pool: "$500 USD",
+      entry_fee: "Free Entry",
+      max_teams: 16,
+      registered_teams: 16,
+      start_date: "2026-10-18",
+      start_time: "7:00 PM EST",
+      status: "Live",
+      image_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&auto=format&fit=crop&q=80",
+      registration_url: "",
+      bracket_url: "",
+      description: "Constant UAV radar ping gunfight series. Test raw gunskill, pre-aim speed, and centering under live radar conditions.",
+      rules_notes: "Standard CDL weapon restrictions apply. First to 15 kills wins."
+    },
+    {
+      id: "tourney_challengers_cup",
+      title: "Division 2 Challengers Qualifier Cup",
+      format: "4v4 CDL Variant",
+      bracket_type: "Double Elimination",
+      prize_pool: "$1,000 USD",
+      entry_fee: "Free Entry",
+      max_teams: 16,
+      registered_teams: 8,
+      start_date: "2026-10-31",
+      start_time: "5:00 PM EST",
+      status: "Upcoming",
+      image_url: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=800&auto=format&fit=crop&q=80",
+      registration_url: "https://discord.gg/frontline",
+      bracket_url: "",
+      description: "Path to Pro qualification cup for Division 2 Challengers squads seeking promotion seeds for the Premier division.",
+      rules_notes: "All squads must have active community roster on Frontline League."
+    }
+  ],
+
+  async getTournaments(filters = {}) {
+    let list = [];
+
+    // 1. Try Supabase dedicated table 'tournaments' if created
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("tournaments")
+          .select("*")
+          .order("start_date", { ascending: true });
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          list = data;
+          try {
+            localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
+          } catch (e) {}
+        }
+      } catch (err) {
+        // Table may not exist yet, fallback below
+      }
+    }
+
+    // 2. Try Supabase league_settings row 'tournaments_registry'
+    if ((!list || list.length === 0) && dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", "tournaments_registry")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              list = parsed;
+              try {
+                localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
+              } catch (e) {}
+            }
+          } catch (e) {}
+        }
+      } catch (err) {}
+    }
+
+    // 3. Fallback to localStorage
+    if (!list || list.length === 0) {
+      try {
+        const local = localStorage.getItem("frontline_tournaments_data");
+        if (local) {
+          list = JSON.parse(local);
+        }
+      } catch (e) {}
+    }
+
+    // 4. Default mock fallback
+    if (!list || list.length === 0) {
+      list = [...this.DEFAULT_TOURNAMENTS];
+      try {
+        localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
+      } catch (e) {}
+    }
+
+    // Filter in-memory if requested
+    if (filters) {
+      if (filters.format && filters.format !== "all") {
+        list = list.filter(t => t.format && t.format.toLowerCase().includes(filters.format.toLowerCase()));
+      }
+      if (filters.status && filters.status !== "all") {
+        list = list.filter(t => t.status && t.status.toLowerCase() === filters.status.toLowerCase());
+      }
+      if (filters.query) {
+        const q = filters.query.toLowerCase().trim();
+        list = list.filter(t =>
+          (t.title && t.title.toLowerCase().includes(q)) ||
+          (t.format && t.format.toLowerCase().includes(q)) ||
+          (t.prize_pool && t.prize_pool.toLowerCase().includes(q))
+        );
+      }
+    }
+
+    return list;
+  },
+
+  async saveTournament(tournamentData) {
+    if (!tournamentData || !tournamentData.title) {
+      return { success: false, error: "Tournament title is required." };
+    }
+
+    const currentList = await this.getTournaments();
+    const tourneyId = tournamentData.id || ("t_" + Date.now());
+    const tourneyItem = {
+      ...tournamentData,
+      id: tourneyId,
+      updated_at: new Date().toISOString()
+    };
+
+    const existingIdx = currentList.findIndex(t => String(t.id) === String(tourneyId));
+    if (existingIdx !== -1) {
+      currentList[existingIdx] = tourneyItem;
+    } else {
+      currentList.unshift(tourneyItem);
+    }
+
+    // Save to localStorage
+    try {
+      localStorage.setItem("frontline_tournaments_data", JSON.stringify(currentList));
+    } catch (e) {}
+
+    // Save to Supabase (upsert into tournaments or league_settings)
+    if (dbClient) {
+      try {
+        // Try direct tournaments table first
+        const { error: directErr } = await dbClient.from("tournaments").upsert({
+          id: tourneyItem.id,
+          title: tourneyItem.title,
+          format: tourneyItem.format,
+          bracket_type: tourneyItem.bracket_type,
+          prize_pool: tourneyItem.prize_pool,
+          entry_fee: tourneyItem.entry_fee,
+          max_teams: Number(tourneyItem.max_teams) || 16,
+          registered_teams: Number(tourneyItem.registered_teams) || 0,
+          start_date: tourneyItem.start_date,
+          start_time: tourneyItem.start_time,
+          status: tourneyItem.status,
+          image_url: tourneyItem.image_url,
+          registration_url: tourneyItem.registration_url,
+          bracket_url: tourneyItem.bracket_url,
+          description: tourneyItem.description,
+          rules_notes: tourneyItem.rules_notes,
+          updated_at: new Date().toISOString()
+        });
+
+        if (directErr) {
+          // Fallback to league_settings JSON registry
+          await dbClient.from("league_settings").upsert({
+            id: "tournaments_registry",
+            status_state: "active",
+            status_text: JSON.stringify(currentList),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        }
+      } catch (dbErr) {
+        // Fallback to league_settings
+        try {
+          await dbClient.from("league_settings").upsert({
+            id: "tournaments_registry",
+            status_state: "active",
+            status_text: JSON.stringify(currentList),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        } catch (e) {}
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: tourneyItem }));
+    return { success: true, tournament: tourneyItem };
+  },
+
+  async deleteTournament(tournamentId) {
+    if (!tournamentId) return { success: false, error: "Tournament ID required." };
+    const currentList = await this.getTournaments();
+    const filtered = currentList.filter(t => String(t.id) !== String(tournamentId));
+
+    try {
+      localStorage.setItem("frontline_tournaments_data", JSON.stringify(filtered));
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("tournaments").delete().eq("id", tournamentId);
+      } catch (e) {}
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournaments_registry",
+          status_state: "active",
+          status_text: JSON.stringify(filtered),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (e) {}
+    }
+
+    window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: { id: tournamentId, deleted: true } }));
+    return { success: true };
+  },
+
+  async updateTournamentStatus(tournamentId, newStatus) {
+    const list = await this.getTournaments();
+    const item = list.find(t => String(t.id) === String(tournamentId));
+    if (!item) return { success: false, error: "Tournament not found" };
+    item.status = newStatus;
+    return await this.saveTournament(item);
+  },
+
+  async registerSquadForTournament(tournamentId, squadData) {
+    const list = await this.getTournaments();
+    const item = list.find(t => String(t.id) === String(tournamentId));
+    if (!item) return { success: false, error: "Tournament not found" };
+
+    item.registered_teams = (Number(item.registered_teams) || 0) + 1;
+    await this.saveTournament(item);
+
+    // Persist registration record
+    try {
+      const regKey = "frontline_tournament_registrations";
+      const regs = JSON.parse(localStorage.getItem(regKey)) || [];
+      regs.unshift({
+        id: "reg_" + Date.now(),
+        tournament_id: tournamentId,
+        tournament_title: item.title,
+        ...squadData,
+        registered_at: new Date().toISOString()
+      });
+      localStorage.setItem(regKey, JSON.stringify(regs));
+    } catch (e) {}
+
+    return { success: true, tournament: item };
+  },
+
+  // ==============================================================================
   // RULEBOOK & MATCH DIRECTIVES ENGINE
   // ==============================================================================
   async getRulebook() {
@@ -2933,7 +3372,7 @@ window.LeagueDB = {
         message: `${newPick.team_name} selects ${newPick.player_gamertag} (${newPick.player_role})${isAuto ? ' via automatic system selection' : ''}${newPick.notes ? ` · "${newPick.notes}"` : ""}.`,
         tag: isAuto ? "Auto-Draft" : "Draft Pick",
         tag_color: isAuto ? "amber" : "lime",
-        link_url: "draft.html",
+        link_url: "/draft/",
         link_text: "View Live Draft HQ ↗",
         pinned: false,
         is_active: true
@@ -3233,7 +3672,7 @@ window.LeagueDB = {
         message: `The official league schedule has been drawn: 2 weeks of Preseason exhibition clashes followed by 6 weeks of intense Regular Season competition. Head to the Match Schedule to view all matchups!`,
         tag: "Schedule Alert",
         tag_color: "lime",
-        link_url: "schedule.html",
+        link_url: "/schedule/",
         link_text: "View 8-Week Schedule ↗",
         pinned: true,
         is_active: true
@@ -4884,7 +5323,7 @@ window.LeagueDB = {
 
   async autoCheckDiscordOnboarding() {
     if (typeof window === "undefined" || !window.document) return;
-    if (window.location.pathname.endsWith("admin.html")) return;
+    if (window.location.pathname.includes("/admin")) return;
 
     const authRes = await this.getAuthUser();
     if (!authRes?.success || !authRes?.user) return;
@@ -5015,7 +5454,7 @@ window.LeagueDB = {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-tournaments-hub"]
     },
     referee: {
       key: "referee",
@@ -5251,7 +5690,7 @@ window.LeagueDB = {
     } catch (e) {}
 
     const profileLinks = document.querySelectorAll(
-      '.nav-league-profile-link, #nav-league-profile-link, a[href="profile.html"]'
+      '.nav-league-profile-link, #nav-league-profile-link, a[href="/profile/"], a[href="profile.html"]'
     );
 
     let authUser = null;
@@ -6715,17 +7154,17 @@ window.LadderDB = {
     const myTeamsLink = document.getElementById("nav-arena-my-teams-link");
 
     if (myTeamsLink) {
-      myTeamsLink.href = player && player.gamertag ? "arena-profile.html#my-teams" : "arena-profile.html#login";
+      myTeamsLink.href = player && player.gamertag ? "/arena/profile/#my-teams" : "/arena/profile/#login";
     }
 
     if (linkEl) {
       if (player && player.gamertag) {
-        linkEl.href = "arena-profile.html";
+        linkEl.href = "/arena/profile/";
         linkEl.title = `Signed in as ${player.gamertag} - View Profile & Records`;
         if (iconEl) iconEl.textContent = "👤";
         if (textEl) textEl.textContent = `Profile (${player.gamertag})`;
       } else {
-        linkEl.href = "arena-profile.html#login";
+        linkEl.href = "/arena/profile/#login";
         linkEl.title = "Sign in to Frontline Arena";
         if (iconEl) iconEl.textContent = "🔑";
         if (textEl) textEl.textContent = "Login";
@@ -6737,7 +7176,7 @@ window.LadderDB = {
     if (squadHeaderEl) {
       if (player && player.gamertag) {
         squadHeaderEl.innerHTML = `
-          <a href="arena-profile.html#my-teams" class="gb-my-squad-pill" title="View Active Teams" style="text-decoration:none;">
+          <a href="/arena/profile/#my-teams" class="gb-my-squad-pill" title="View Active Teams" style="text-decoration:none;">
             <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="gb-my-squad-avatar" />
             <div>
               <strong style="color:#ffffff;">[${player.tag || 'TAG'}] ${player.gamertag}</strong>
@@ -6747,7 +7186,7 @@ window.LadderDB = {
         `;
       } else {
         squadHeaderEl.innerHTML = `
-          <a href="arena-profile.html#login" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
+          <a href="/arena/profile/#login" class="btn-crimson" style="font-size:11px; padding:7px 14px; text-decoration:none;">
             <span>🔑</span> <span>Combatant Login</span>
           </a>
         `;
@@ -7225,8 +7664,8 @@ window.LadderDB = {
   let keyBuffer = "";
 
   function triggerAdminRedirect() {
-    if (window.location.pathname.endsWith("admin.html")) return;
-    window.location.href = "admin.html";
+    if (window.location.pathname.includes("/admin")) return;
+    window.location.href = "/admin/";
   }
 
   // Use capture phase on window so nothing intercepts or prevents the event
@@ -7375,8 +7814,16 @@ window.LadderDB = {
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => setTimeout(checkOnboarding, 600));
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.LeagueDB && typeof window.LeagueDB.initPlatformSwitcher === "function") {
+        window.LeagueDB.initPlatformSwitcher();
+      }
+      setTimeout(checkOnboarding, 600);
+    });
   } else {
+    if (window.LeagueDB && typeof window.LeagueDB.initPlatformSwitcher === "function") {
+      window.LeagueDB.initPlatformSwitcher();
+    }
     setTimeout(checkOnboarding, 600);
   }
 
