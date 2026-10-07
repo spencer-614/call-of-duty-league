@@ -11,13 +11,8 @@ const RAW_SUPABASE_URL = "https://sllilxkbmxheclhgstcq.supabase.co/rest/v1/"; //
 const SUPABASE_URL = RAW_SUPABASE_URL ? RAW_SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "") : "";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsbGlseGtibXhoZWNsaGdzdGNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzOTkzMjYsImV4cCI6MjEwNTk3NTMyNn0.SKF3AueHX_70LQHeRrRlMvKvJ4coH_1kgg60zsp1LDM"; // e.g. eyJhbGciOi...
 
-// Helper to determine if database backend is active (Railway Node or Supabase)
-const isRailwayBackendActive = () => {
-  return typeof window !== "undefined" && window.location && window.location.protocol.startsWith("http");
-};
-
+// Helper to determine if actual Supabase credentials have been entered
 const isSupabaseConfigured = () => {
-  if (isRailwayBackendActive()) return true;
   return (
     SUPABASE_URL &&
     SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" &&
@@ -35,219 +30,9 @@ const PAYPAL_CONFIG = {
   receiverEmail: "admin@frontlineleague.com"
 };
 
-// Railway PostgreSQL Client Adapter (Drop-in replacement for Supabase Client)
-function createRailwayClient() {
-  return {
-    from(table) {
-      let queryParams = {};
-      let filters = [];
-      let orderBy = [];
-      let limitCount = null;
-      let isSingle = false;
-      let isMaybeSingle = false;
-
-      const builder = {
-        select(cols = "*") {
-          queryParams.select = cols;
-          return builder;
-        },
-        eq(col, val) {
-          filters.push({ col, op: "eq", val });
-          return builder;
-        },
-        neq(col, val) {
-          filters.push({ col, op: "neq", val });
-          return builder;
-        },
-        gte(col, val) {
-          filters.push({ col, op: "gte", val });
-          return builder;
-        },
-        lte(col, val) {
-          filters.push({ col, op: "lte", val });
-          return builder;
-        },
-        in(col, vals) {
-          filters.push({ col, op: "in", val: vals });
-          return builder;
-        },
-        order(col, opts = { ascending: true }) {
-          orderBy.push({ col, ascending: opts && opts.ascending !== false });
-          return builder;
-        },
-        limit(n) {
-          limitCount = n;
-          return builder;
-        },
-        single() {
-          isSingle = true;
-          return builder;
-        },
-        maybeSingle() {
-          isMaybeSingle = true;
-          return builder;
-        },
-        async then(resolve, reject) {
-          try {
-            const url = "/api/data/" + encodeURIComponent(table) + "?q=" + encodeURIComponent(
-              JSON.stringify({ filters, orderBy, limit: limitCount })
-            );
-            const res = await fetch(url);
-            const json = await res.json();
-            if (json.error) return resolve({ data: null, error: json.error });
-            let data = json.data;
-            if (isSingle || isMaybeSingle) {
-              data = Array.isArray(data) ? (data[0] || null) : data;
-            }
-            return resolve({ data, error: null });
-          } catch (err) {
-            console.warn(`Railway query error on ${table}:`, err);
-            return resolve({ data: null, error: err });
-          }
-        },
-        async insert(payload) {
-          try {
-            const res = await fetch("/api/data/" + encodeURIComponent(table), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-            const json = await res.json();
-            return {
-              data: json.data,
-              error: json.error || null,
-              select() { return Promise.resolve({ data: json.data, error: json.error || null }); }
-            };
-          } catch (err) {
-            return { data: null, error: err, select() { return Promise.resolve({ data: null, error: err }); } };
-          }
-        },
-        async upsert(payload) {
-          try {
-            const res = await fetch("/api/data/" + encodeURIComponent(table) + "/upsert", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-            const json = await res.json();
-            return {
-              data: json.data,
-              error: json.error || null,
-              select() { return Promise.resolve({ data: json.data, error: json.error || null }); }
-            };
-          } catch (err) {
-            return { data: null, error: err, select() { return Promise.resolve({ data: null, error: err }); } };
-          }
-        },
-        update(payload) {
-          const updateFilters = [...filters];
-          const updateBuilder = {
-            eq(col, val) {
-              updateFilters.push({ col, op: "eq", val });
-              return updateBuilder;
-            },
-            async then(resolve) {
-              try {
-                const res = await fetch("/api/data/" + encodeURIComponent(table), {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ updates: payload, filters: updateFilters })
-                });
-                const json = await res.json();
-                return resolve({ data: json.data, error: json.error || null });
-              } catch (err) {
-                return resolve({ data: null, error: err });
-              }
-            }
-          };
-          return updateBuilder;
-        },
-        delete() {
-          const deleteFilters = [...filters];
-          const deleteBuilder = {
-            eq(col, val) {
-              deleteFilters.push({ col, op: "eq", val });
-              return deleteBuilder;
-            },
-            gte(col, val) {
-              deleteFilters.push({ col, op: "gte", val });
-              return deleteBuilder;
-            },
-            in(col, vals) {
-              deleteFilters.push({ col, op: "in", val: vals });
-              return deleteBuilder;
-            },
-            async then(resolve) {
-              try {
-                const res = await fetch("/api/data/" + encodeURIComponent(table), {
-                  method: "DELETE",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ filters: deleteFilters })
-                });
-                const json = await res.json();
-                return resolve({ data: json.data, error: json.error || null });
-              } catch (err) {
-                return resolve({ data: null, error: err });
-              }
-            }
-          };
-          return deleteBuilder;
-        }
-      };
-      return builder;
-    },
-    auth: {
-      async getSession() {
-        const u = localStorage.getItem("frontline_arena_auth_user");
-        return { data: { session: u ? { user: JSON.parse(u) } : null }, error: null };
-      },
-      async getUser() {
-        const u = localStorage.getItem("frontline_arena_auth_user");
-        return { data: { user: u ? JSON.parse(u) : null }, error: null };
-      },
-      async signInWithPassword({ email, password }) {
-        try {
-          const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-          });
-          const json = await res.json();
-          if (json.user) {
-            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(json.user));
-            return { data: { user: json.user, session: { user: json.user } }, error: null };
-          }
-          return { data: { user: null, session: null }, error: json.error || "Login failed" };
-        } catch (err) {
-          return { data: null, error: err.message };
-        }
-      },
-      async signUp({ email, password, options }) {
-        const user = { id: "usr_" + Date.now(), email, user_metadata: options?.data || {} };
-        localStorage.setItem("frontline_arena_auth_user", JSON.stringify(user));
-        return { data: { user, session: { user } }, error: null };
-      },
-      async signOut() {
-        localStorage.removeItem("frontline_arena_auth_user");
-        return { error: null };
-      },
-      async updateUser(updates) {
-        let u = JSON.parse(localStorage.getItem("frontline_arena_auth_user") || "{}");
-        Object.assign(u, updates);
-        localStorage.setItem("frontline_arena_auth_user", JSON.stringify(u));
-        return { data: { user: u }, error: null };
-      }
-    }
-  };
-}
-
-// Initialize Client (Railway Node Server if on HTTP/HTTPS, or Supabase fallback)
+// Initialize Supabase Client if library is loaded and configured
 let dbClient = null;
-if (isRailwayBackendActive()) {
-  dbClient = createRailwayClient();
-  window.dbClient = dbClient;
-  window.supabaseClient = dbClient;
-} else if (window.supabase && isSupabaseConfigured()) {
+if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) {
   dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   window.dbClient = dbClient;
   window.supabaseClient = dbClient;
@@ -3794,6 +3579,10 @@ window.LeagueDB = {
     try {
       localStorage.removeItem("frontline_league_auth_user");
     } catch (e) {}
+    if (typeof this.updateLeagueNavProfile === "function") {
+      this.updateLeagueNavProfile();
+    }
+    window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
     if (!dbClient) return { success: true };
     try {
       await dbClient.auth.signOut();
@@ -4851,6 +4640,71 @@ window.LeagueDB = {
     } catch (e) {
       return { success: false, error: e.message };
     }
+  },
+
+  // Updates the League navigation bar Profile link across all pages
+  // Hides "View Profile" until someone signs up through email or signs in with Discord
+  async updateLeagueNavProfile() {
+    if (typeof document === "undefined") return false;
+
+    const profileLinks = document.querySelectorAll(
+      '.nav-league-profile-link, #nav-league-profile-link, a[href="profile.html"], a[href="profile.html?edit=true"]'
+    );
+
+    let authUser = null;
+    try {
+      if (typeof this.getAuthUser === "function") {
+        const authRes = await this.getAuthUser();
+        if (authRes?.success && authRes?.user) {
+          authUser = authRes.user;
+        }
+      }
+    } catch (e) {}
+
+    if (!authUser) {
+      try {
+        authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+      } catch (e) {}
+    }
+
+    if (!authUser) {
+      try {
+        const sess = await this.getAuthSession();
+        if (sess?.user) authUser = sess.user;
+      } catch (e) {}
+    }
+
+    const isLoggedIn = !!authUser;
+
+    profileLinks.forEach((link) => {
+      const href = link.getAttribute("href") || "";
+      // If it's the separate edit profile link, permanently remove or hide it since View and Edit are merged
+      if (href.includes("profile.html?edit=true") || href.includes("edit=true")) {
+        link.style.display = "none";
+        return;
+      }
+
+      // Do not touch platform switcher buttons (e.g. .mode-switch-btn in header)
+      if (link.classList.contains("mode-switch-btn")) {
+        return;
+      }
+
+      if (isLoggedIn) {
+        link.style.display = "";
+        link.style.removeProperty("display");
+        const meta = authUser.user_metadata || {};
+        const gamertag = meta.gamertag || meta.username || meta.name;
+        if (gamertag && gamertag !== "Operative") {
+          link.innerHTML = `<span class="nav-icon">👤</span> View Profile (${gamertag})`;
+        } else {
+          link.innerHTML = `<span class="nav-icon">👤</span> View Profile`;
+        }
+      } else {
+        link.style.display = "none";
+      }
+    });
+
+    return isLoggedIn;
   },
 
   paypalConfig: PAYPAL_CONFIG,
@@ -6614,6 +6468,49 @@ window.LadderDB = {
     if (e.key === "frontline_arena_user") runNavUpdate();
   });
 })();
+
+// Auto-initialize global League Profile nav status across all pages
+(function initLeagueNavWatcher() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  function runNavUpdate() {
+    if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+      window.LeagueDB.updateLeagueNavProfile();
+    }
+  }
+
+  runNavUpdate();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runNavUpdate);
+  }
+
+  window.addEventListener("frontline_auth_changed", runNavUpdate);
+  window.addEventListener("frontline_dossier_completed", runNavUpdate);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "frontline_league_auth_user" || e.key?.includes("auth-token") || e.key?.includes("supabase.auth.token")) {
+      runNavUpdate();
+    }
+  });
+
+  if (dbClient?.auth?.onAuthStateChange) {
+    try {
+      dbClient.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          try {
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
+          } catch(e) {}
+        } else if (event === "SIGNED_OUT") {
+          try {
+            localStorage.removeItem("frontline_league_auth_user");
+          } catch(e) {}
+        }
+        runNavUpdate();
+      });
+    } catch(e) {}
+  }
+})();
+
 
 
 // ==============================================================================

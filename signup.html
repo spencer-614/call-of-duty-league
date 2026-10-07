@@ -250,8 +250,7 @@
                   <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="profile.html"><span class="nav-icon">👤</span> View Profile</a>
-                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                  <a href="profile.html" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Media &amp; Directives</div>
@@ -1308,6 +1307,12 @@
 
       function unlockRegistrationTerminal(user) {
         currentCombatantUser = user;
+        try {
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(user));
+        } catch (e) {}
+        if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+          window.LeagueDB.updateLeagueNavProfile();
+        }
         const email = user.email || "";
         const meta = user.user_metadata || {};
         
@@ -1416,6 +1421,12 @@
 
       function lockRegistrationTerminal() {
         currentCombatantUser = null;
+        try {
+          localStorage.removeItem("frontline_league_auth_user");
+        } catch (e) {}
+        if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+          window.LeagueDB.updateLeagueNavProfile();
+        }
         if (regTerminal) regTerminal.style.display = "none";
         if (gateContainer) gateContainer.style.display = "block";
         clearGateBanners();

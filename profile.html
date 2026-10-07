@@ -64,8 +64,7 @@
                   <a href="teams.html"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
                   <a href="players.html"><span class="nav-icon">🎯</span> Community Players</a>
                   <a href="draft.html"><span class="nav-icon">⚡</span> General Draft HQ</a>
-                  <a href="profile.html" style="color:var(--lime);"><span class="nav-icon">👤</span> View Profile</a>
-                  <a href="profile.html?edit=true"><span class="nav-icon">✏️</span> Edit Profile</a>
+                  <a href="profile.html" class="nav-league-profile-link" style="color:var(--lime); display:none;"><span class="nav-icon">👤</span> View Profile</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Media &amp; Directives</div>
@@ -104,59 +103,107 @@
     </div>
 
     <main class="wrap" style="padding-top:28px; padding-bottom:70px;">
-      <!-- League Profile Hero Banner -->
-      <section style="background:linear-gradient(135deg, #1b1e15 0%, #11120e 100%); border:1px solid #3d4522; padding:32px; position:relative; box-shadow:0 12px 35px rgba(0,0,0,0.5); margin-bottom:28px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:24px;">
-          <!-- Left: Player Avatar & Core Identity -->
-          <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap;">
-            <div style="position:relative;">
-              <img id="league-user-avatar" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=160&auto=format&fit=crop&q=80" alt="League Player Avatar" style="width:110px; height:110px; object-fit:cover; border:2px solid var(--lime); box-shadow:0 0 20px rgba(213,244,91,0.25);" />
-              <span id="league-user-tag" style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:#0f100d; border:1px solid var(--lime); color:var(--lime); font:800 10px var(--body); letter-spacing:1px; padding:2px 8px; text-transform:uppercase;">
-                [VEGAS]
-              </span>
-            </div>
+      <!-- Status Toast Notification -->
+      <div id="profile-toast" style="display:none; position:fixed; bottom:24px; right:24px; background:#181b12; border:1px solid var(--lime); color:#fff; padding:12px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.8); z-index:99999; font-size:13px; font-weight:700; align-items:center; gap:10px; transition:all 0.3s ease;">
+        <span id="profile-toast-icon">✓</span>
+        <span id="profile-toast-text">Profile updated successfully!</span>
+      </div>
 
-            <div>
-              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
-                <span class="pill" id="league-user-tier" style="color:var(--lime); border-color:#d5f45b50;">
-                  ★ FREE AGENT
-                </span>
-                <span class="pill" id="league-user-contract" style="color:#ffe270; border-color:#ffe27050;">
-                  UNASSIGNED FREE AGENT
-                </span>
-                <span style="font-size:11px; color:#22c55e; font-weight:800; display:inline-flex; align-items:center; gap:4px;">
-                  ● AVAILABLE FOR SIGNING
-                </span>
-              </div>
+      <!-- Unauthenticated Combatant Gate (Shown when not logged in) -->
+      <section id="profile-auth-gate" style="display:none; max-width:620px; margin:40px auto 60px; background:linear-gradient(145deg, #161811 0%, #10110c 100%); border:1px solid #333d1c; padding:38px 32px; box-shadow:0 18px 45px rgba(0,0,0,0.6); text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(213,244,91,0.1); border:1px solid rgba(213,244,91,0.3); color:var(--lime); font:800 11px var(--body); letter-spacing:1.5px; text-transform:uppercase; padding:4px 12px; margin-bottom:14px;">
+          <span>🔒</span> <span>// COMBATANT ACCESS REQUIRED</span>
+        </div>
+        <h2 style="font:800 32px var(--display); text-transform:uppercase; color:#fff; margin:0 0 10px; letter-spacing:0.5px;">
+          Sign In to Access <span style="color:var(--lime);">Your Profile</span>
+        </h2>
+        <p style="font-size:14px; color:var(--muted); line-height:1.6; max-width:480px; margin:0 auto 26px;">
+          You must have an active Frontline League account to view your player card, track official CDL telemetry, or customize your competitive dossier.
+        </p>
 
-              <h1 id="league-user-gamertag" style="font:800 42px/1 var(--display); text-transform:uppercase; margin:0 0 8px; color:#ffffff; letter-spacing:0.5px;">
-                Operative
-              </h1>
+        <div style="display:flex; flex-direction:column; gap:12px; max-width:380px; margin:0 auto;">
+          <button type="button" id="btn-gate-discord" class="btn" onclick="signInWithDiscordGate()" style="width:100%; justify-content:center; background:#5865F2; border-color:#5865F2; color:#fff; font-size:13px; padding:12px 18px; box-shadow:0 4px 16px rgba(88,101,242,0.3); cursor:pointer;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" style="margin-right:8px; vertical-align:middle;">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+            <span>Sign In with Discord</span>
+          </button>
 
-              <div style="display:flex; gap:18px; font-size:13px; color:var(--muted); flex-wrap:wrap;">
-                <span><strong style="color:#ffffff;">Franchise:</strong> <span id="league-user-team" style="color:var(--lime);">Free Agent / Unassigned</span></span>
-                <span><strong style="color:#ffffff;">CDL Role:</strong> <span id="league-user-role" style="color:#cbd5e1;">Flex</span></span>
-                <span><strong style="color:#ffffff;">Input:</strong> <span id="league-user-input">Controller</span></span>
-                <span><strong style="color:#ffffff;">Activision:</strong> <span id="league-user-activision">Unlinked</span></span>
-                <span><strong style="color:#ffffff;">Discord:</strong> <span id="league-user-discord" style="color:#8ea1e1; font-weight:700;">—</span></span>
-              </div>
-            </div>
-          </div>
+          <a href="signup.html" class="btn" style="width:100%; justify-content:center; font-size:13px; padding:12px 18px; text-decoration:none;">
+            <span>Sign Up / Sign In via Email ↗</span>
+          </a>
+        </div>
 
-          <!-- Right: Profile Actions -->
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="button" class="btn" onclick="openLeagueEditModal()" style="font-size:12px; padding:10px 18px;">
-              <span>✏️</span> <span>Edit Player Card</span>
-            </button>
-            <a href="teams.html" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none;">
-              <span>🛡</span> <span>View Franchise Roster</span>
-            </a>
-            <a href="arena-profile.html" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none; border-color:#ff1e44; color:#ff1e44;">
-              <span>⚔</span> <span>Go to Arena Profile ↗</span>
-            </a>
-          </div>
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid #232718; font-size:12px; color:var(--muted);">
+          Looking for community rosters? <a href="players.html" style="color:var(--lime); text-decoration:none; font-weight:700;">Explore Community Players ↗</a>
         </div>
       </section>
+
+      <!-- Authenticated Profile Content Container -->
+      <div id="profile-content-wrap" style="display:none;">
+        <!-- League Profile Hero Banner -->
+        <section style="background:linear-gradient(135deg, #1b1e15 0%, #11120e 100%); border:1px solid #3d4522; padding:32px; position:relative; box-shadow:0 12px 35px rgba(0,0,0,0.5); margin-bottom:28px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:24px;">
+            <!-- Left: Player Avatar & Core Identity -->
+            <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap;">
+              <div style="position:relative;">
+                <img id="league-user-avatar" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=160&auto=format&fit=crop&q=80" alt="League Player Avatar" style="width:110px; height:110px; object-fit:cover; border:2px solid var(--lime); box-shadow:0 0 20px rgba(213,244,91,0.25);" />
+                <span id="league-user-tag" style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:#0f100d; border:1px solid var(--lime); color:var(--lime); font:800 10px var(--body); letter-spacing:1px; padding:2px 8px; text-transform:uppercase;">
+                  [AGENT]
+                </span>
+              </div>
+
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+                  <span class="pill" id="league-user-tier" style="color:var(--lime); border-color:#d5f45b50;">
+                    ★ FREE AGENT
+                  </span>
+                  <span class="pill" id="league-user-contract" style="color:#ffe270; border-color:#ffe27050;">
+                    UNASSIGNED FREE AGENT
+                  </span>
+                  <span style="font-size:11px; color:#22c55e; font-weight:800; display:inline-flex; align-items:center; gap:4px;">
+                    ● AVAILABLE FOR SIGNING
+                  </span>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:12px; margin:0 0 8px; flex-wrap:wrap;">
+                  <h1 id="league-user-gamertag" style="font:800 42px/1 var(--display); text-transform:uppercase; margin:0; color:#ffffff; letter-spacing:0.5px;">
+                    Operative
+                  </h1>
+                  <button type="button" onclick="openLeagueEditModal()" class="btn btn-outline" style="font-size:11px; padding:4px 10px; border-color:#3d4522; color:var(--lime); display:inline-flex; align-items:center; gap:4px; text-transform:uppercase; cursor:pointer;" title="Edit Player Profile">
+                    <span>✏️</span> <span>Edit Profile</span>
+                  </button>
+                </div>
+
+                <div style="display:flex; gap:18px; font-size:13px; color:var(--muted); flex-wrap:wrap;">
+                  <span><strong style="color:#ffffff;">Franchise:</strong> <span id="league-user-team" style="color:var(--lime);">Free Agent / Unassigned</span></span>
+                  <span><strong style="color:#ffffff;">CDL Role:</strong> <span id="league-user-role" style="color:#cbd5e1;">Flex</span></span>
+                  <span><strong style="color:#ffffff;">Platform:</strong> <span id="league-user-platform" style="color:#cbd5e1;">PC</span></span>
+                  <span><strong style="color:#ffffff;">Input:</strong> <span id="league-user-input">Controller</span></span>
+                  <span><strong style="color:#ffffff;">Region:</strong> <span id="league-user-region">NA East</span></span>
+                  <span><strong style="color:#ffffff;">Activision:</strong> <span id="league-user-activision">Unlinked</span></span>
+                  <span><strong style="color:#ffffff;">Discord:</strong> <span id="league-user-discord" style="color:#8ea1e1; font-weight:700;">—</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Profile Actions -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button type="button" class="btn" onclick="openLeagueEditModal()" style="font-size:12px; padding:10px 18px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                <span>✏️</span> <span>Edit Profile</span>
+              </button>
+              <a href="teams.html" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none;">
+                <span>🛡</span> <span>View Franchise Roster</span>
+              </a>
+              <a href="arena-profile.html" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none; border-color:#ff1e44; color:#ff1e44;">
+                <span>⚔</span> <span>Go to Arena Profile ↗</span>
+              </a>
+              <button type="button" onclick="signOutLeagueProfile()" class="btn btn-outline" style="font-size:12px; padding:10px 16px; border-color:#5a2323; color:#f87171; cursor:pointer;" title="Sign out of your account">
+                <span>🚪</span> <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </section>
 
       <!-- League Season 1 Performance Metrics -->
       <section style="margin-bottom:32px;">
@@ -281,65 +328,105 @@
           <span>⚔</span> <span>Open Arena Profile ↗</span>
         </a>
       </section>
+      </div> <!-- end #profile-content-wrap -->
     </main>
 
     <!-- Modal: Edit League Profile Card -->
-    <div id="modal-league-edit" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center; padding:20px;">
-      <div style="background:#14170f; border:1px solid var(--lime); max-width:520px; width:100%; padding:28px; box-shadow:0 0 35px rgba(213,244,91,0.2);">
+    <div id="modal-league-edit" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+      <div style="background:#14170f; border:1px solid var(--lime); max-width:560px; width:100%; padding:28px; box-shadow:0 0 35px rgba(213,244,91,0.2); max-height:90vh; overflow-y:auto; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid #2c3319; padding-bottom:10px;">
-          <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:0;">
-            Edit League Player Card
-          </h3>
-          <button type="button" onclick="closeLeagueEditModal()" style="background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer;">✕</button>
+          <div>
+            <div style="font:800 10.5px var(--body); color:var(--lime); letter-spacing:1px; text-transform:uppercase;">// FRONTLINE DOSSIER HQ</div>
+            <h3 style="font:800 22px var(--display); text-transform:uppercase; color:#fff; margin:2px 0 0;">
+              Edit Player Profile
+            </h3>
+          </div>
+          <button type="button" onclick="closeLeagueEditModal()" style="background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;" title="Close modal">✕</button>
         </div>
 
         <form id="league-edit-form" onsubmit="saveLeagueProfile(event)" style="display:flex; flex-direction:column; gap:14px;">
           <div>
-            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Player Gamertag</label>
-            <input type="text" id="edit-league-gamertag" style="width:100%; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" required />
-          </div>
-
-          <div>
-            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Franchise Team</label>
-            <select id="edit-league-team" style="width:100%; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
-              <option value="Free Agent">Unsigned Free Agent</option>
-            </select>
+            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Gamertag / Player Handle <span style="color:#f87171;">*</span></label>
+            <input type="text" id="edit-league-gamertag" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" required />
           </div>
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">CDL Role</label>
-              <select id="edit-league-role" style="width:100%; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
-                <option value="Entry SMG">Entry SMG</option>
-                <option value="Slaying SMG">Slaying SMG</option>
-                <option value="Main AR">Main AR</option>
-                <option value="Flex AR/SMG">Flex AR/SMG</option>
-                <option value="Sniper / Pick">Sniper / Pick</option>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Franchise Team</label>
+              <select id="edit-league-team" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="Free Agent">Unsigned Free Agent</option>
               </select>
             </div>
             <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Division</label>
-              <select id="edit-league-division" style="width:100%; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">CDL Tactical Role</label>
+              <select id="edit-league-role" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="Flex">Flex / Hybrid</option>
+                <option value="Main AR">Main AR / Anchor</option>
+                <option value="Entry SMG">Entry SMG</option>
+                <option value="Slaying SMG">Slaying SMG</option>
+                <option value="Sniper / Pick">Sniper / Pick</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Division Circuit</label>
+              <select id="edit-league-division" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
                 <option value="Division 1 · Premier">Division 1 · Premier</option>
                 <option value="Division 2 · Challengers">Division 2 · Challengers</option>
                 <option value="Division 3 · Open Recruit">Division 3 · Open Recruit</option>
               </select>
             </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Battle Platform</label>
+              <select id="edit-league-platform" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="PC">PC (Battle.net / Steam)</option>
+                <option value="PlayStation">PlayStation 5 / PS4</option>
+                <option value="Xbox">Xbox Series X|S / One</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Operational Region</label>
+              <select id="edit-league-region" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="NA East">North America — East</option>
+                <option value="NA Central">North America — Central</option>
+                <option value="NA West">North America — West</option>
+                <option value="EU">Europe</option>
+                <option value="Other">Other / International</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Input Device</label>
+              <select id="edit-league-input" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="Controller">Controller</option>
+                <option value="Mouse & Keyboard">Mouse &amp; Keyboard</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Activision ID <span style="color:#f87171;">*</span></label>
+              <input type="text" id="edit-league-activision" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="Player#1234567" required />
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Discord Username</label>
+              <input type="text" id="edit-league-discord" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="Username#0000 or handle" />
+            </div>
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Activision ID</label>
-            <input type="text" id="edit-league-activision" style="width:100%; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="Player#1234567" />
+            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Avatar Image URL (Optional)</label>
+            <input type="url" id="edit-league-avatar" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="https://example.com/avatar.jpg" />
           </div>
 
-          <div>
-            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Discord Username</label>
-            <input type="text" id="edit-league-discord" style="width:100%; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="Username#0000 or handle" />
-          </div>
-
-          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
-            <button type="button" onclick="closeLeagueEditModal()" class="btn btn-outline" style="font-size:12px; padding:8px 16px;">Cancel</button>
-            <button type="submit" class="btn" style="font-size:12px; padding:8px 18px;">Save Changes</button>
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+            <button type="button" onclick="closeLeagueEditModal()" class="btn btn-outline" style="font-size:12px; padding:8px 16px; cursor:pointer;">Cancel</button>
+            <button type="submit" id="btn-save-league-profile" class="btn" style="font-size:12px; padding:8px 20px; cursor:pointer;">Save Changes</button>
           </div>
         </form>
       </div>
@@ -362,74 +449,150 @@
     </footer>
 
     <script>
-      async function loadLeagueProfile() {
-        let p = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {
-          gamertag: 'Operative',
-          team: 'Free Agent',
-          tag: 'AGENT',
-          role: 'Flex AR/SMG',
-          division: 'Division 1 · Premier',
-          activision: 'Unlinked#0000',
-          discord: '',
-          contract: 'UNSIGNED FREE AGENT'
-        };
+      function showProfileToast(msg, isError = false) {
+        const toast = document.getElementById('profile-toast');
+        const icon = document.getElementById('profile-toast-icon');
+        const text = document.getElementById('profile-toast-text');
+        if (!toast || !text) return;
+        text.textContent = msg;
+        if (icon) icon.textContent = isError ? '✕' : '✓';
+        toast.style.borderColor = isError ? '#ef4444' : 'var(--lime)';
+        toast.style.display = 'inline-flex';
+        clearTimeout(window.__profileToastTimer);
+        window.__profileToastTimer = setTimeout(() => {
+          toast.style.display = 'none';
+        }, 4000);
+      }
 
-        // Check if an authenticated user session is active
+      async function checkCurrentAuth() {
         let authUser = null;
         if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
-          const authRes = await window.LeagueDB.getAuthUser();
-          if (authRes.success && authRes.user) {
-            authUser = authRes.user;
-          }
+          try {
+            const authRes = await window.LeagueDB.getAuthUser();
+            if (authRes?.success && authRes.user) {
+              authUser = authRes.user;
+            }
+          } catch (e) {}
         }
         if (!authUser) {
           try {
             authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
           } catch (e) {}
         }
-
-        if (authUser) {
-          const meta = authUser.user_metadata || {};
-          const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
-            ? window.LeagueDB.getDiscordIdentity(authUser)
-            : null;
-          const isDiscord = discordInfo && discordInfo.isDiscord;
-          const isPendingOAuth = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
-          const needsDossier = !meta.activision_id || !meta.role || !meta.profile_completed || !meta.region || !meta.platform;
-
-          if ((isDiscord || isPendingOAuth) && (needsDossier || isPendingOAuth)) {
-            if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
-              window.LeagueDB.showDiscordDossierModal({
-                user: authUser,
-                onComplete: (dRes) => {
-                  sessionStorage.removeItem("frontline_discord_oauth_pending");
-                  loadLeagueProfile();
-                },
-                onCancel: () => {
-                  sessionStorage.removeItem("frontline_discord_oauth_pending");
-                }
-              });
-            }
-          }
-
-          if (meta.gamertag) p.gamertag = meta.gamertag;
-          if (meta.activision_id) p.activision = meta.activision_id;
-          if (meta.role) p.role = meta.role;
-          if (meta.discord_name || meta.discord_username || discordInfo?.primaryName) {
-            p.discord = meta.discord_name || meta.discord_username || discordInfo.primaryName;
-          }
+        if (!authUser && window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
+          try {
+            const sess = await window.LeagueDB.getAuthSession();
+            if (sess?.user) authUser = sess.user;
+          } catch (e) {}
         }
+        return authUser;
+      }
 
-        document.getElementById('league-user-gamertag').textContent = p.gamertag;
-        document.getElementById('league-breadcrumb-gamertag').textContent = p.gamertag;
-        document.getElementById('league-user-team').textContent = p.team || 'Free Agent';
-        document.getElementById('league-user-tag').textContent = '[' + (p.tag || (p.team === 'Free Agent' ? 'AGENT' : (p.team || 'AGENT').slice(0, 5).toUpperCase())) + ']';
-        document.getElementById('league-user-role').textContent = p.role;
-        document.getElementById('league-user-activision').textContent = p.activision;
+      function renderProfileUI(p) {
+        if (!p) return;
+        const gamertagEl = document.getElementById('league-user-gamertag');
+        const breadcrumbEl = document.getElementById('league-breadcrumb-gamertag');
+        const teamEl = document.getElementById('league-user-team');
+        const tagEl = document.getElementById('league-user-tag');
+        const roleEl = document.getElementById('league-user-role');
+        const platformEl = document.getElementById('league-user-platform');
+        const regionEl = document.getElementById('league-user-region');
+        const inputEl = document.getElementById('league-user-input');
+        const activisionEl = document.getElementById('league-user-activision');
         const discordEl = document.getElementById('league-user-discord');
-        if (discordEl) {
-          discordEl.textContent = p.discord ? p.discord : '—';
+        const avatarEl = document.getElementById('league-user-avatar');
+        const contractEl = document.getElementById('league-user-contract');
+        const tierEl = document.getElementById('league-user-tier');
+
+        const displayTag = p.gamertag || 'Operative';
+        if (gamertagEl) gamertagEl.textContent = displayTag;
+        if (breadcrumbEl) breadcrumbEl.textContent = displayTag;
+        if (teamEl) teamEl.textContent = p.team || 'Free Agent';
+        if (tagEl) {
+          const t = p.tag || (p.team === 'Free Agent' ? 'AGENT' : (p.team || 'AGENT').slice(0, 5).toUpperCase());
+          tagEl.textContent = '[' + t + ']';
         }
+        if (roleEl) roleEl.textContent = p.role || 'Flex';
+        if (platformEl) platformEl.textContent = p.platform || 'PC';
+        if (regionEl) regionEl.textContent = p.region || 'NA East';
+        if (inputEl) inputEl.textContent = p.input || 'Controller';
+        if (activisionEl) activisionEl.textContent = p.activision || 'Unlinked';
+        if (discordEl) discordEl.textContent = p.discord ? p.discord : '—';
+        if (avatarEl && p.avatar) avatarEl.src = p.avatar;
+        if (contractEl && p.contract) contractEl.textContent = p.contract;
+        if (tierEl) {
+          tierEl.textContent = p.team && p.team !== 'Free Agent' ? '★ ' + p.team.toUpperCase() : '★ FREE AGENT';
+        }
+      }
+
+      async function loadLeagueProfile() {
+        const authUser = await checkCurrentAuth();
+        const authGate = document.getElementById('profile-auth-gate');
+        const contentWrap = document.getElementById('profile-content-wrap');
+        const breadcrumbEl = document.getElementById('league-breadcrumb-gamertag');
+
+        if (!authUser) {
+          if (authGate) authGate.style.display = 'block';
+          if (contentWrap) contentWrap.style.display = 'none';
+          if (breadcrumbEl) breadcrumbEl.textContent = 'Combatant Gate';
+          return;
+        }
+
+        if (authGate) authGate.style.display = 'none';
+        if (contentWrap) contentWrap.style.display = 'block';
+
+        let p = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {
+          gamertag: 'Operative',
+          team: 'Free Agent',
+          tag: 'AGENT',
+          role: 'Flex',
+          division: 'Division 1 · Premier',
+          activision: 'Unlinked#0000',
+          discord: '',
+          platform: 'PC',
+          region: 'NA East',
+          input: 'Controller',
+          contract: 'UNASSIGNED FREE AGENT'
+        };
+
+        const meta = authUser.user_metadata || {};
+        const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
+          ? window.LeagueDB.getDiscordIdentity(authUser)
+          : null;
+        const isDiscord = discordInfo && discordInfo.isDiscord;
+        const isPendingOAuth = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
+        const needsDossier = !meta.activision_id || !meta.role || !meta.profile_completed || !meta.region || !meta.platform;
+
+        if ((isDiscord || isPendingOAuth) && (needsDossier || isPendingOAuth)) {
+          if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
+            window.LeagueDB.showDiscordDossierModal({
+              user: authUser,
+              onComplete: (dRes) => {
+                sessionStorage.removeItem("frontline_discord_oauth_pending");
+                loadLeagueProfile();
+              },
+              onCancel: () => {
+                sessionStorage.removeItem("frontline_discord_oauth_pending");
+              }
+            });
+          }
+        }
+
+        if (meta.gamertag || meta.username || discordInfo?.globalName) {
+          p.gamertag = meta.gamertag || meta.username || discordInfo?.globalName || p.gamertag;
+        }
+        if (meta.activision_id) p.activision = meta.activision_id;
+        if (meta.role || meta.tactical_role) p.role = meta.role || meta.tactical_role;
+        if (meta.platform || meta.battle_platform) p.platform = meta.platform || meta.battle_platform;
+        if (meta.region || meta.operational_region) p.region = meta.region || meta.operational_region;
+        if (meta.discord_name || meta.discord_username || discordInfo?.primaryName) {
+          p.discord = meta.discord_name || meta.discord_username || discordInfo?.primaryName;
+        }
+        if (meta.avatar_url || discordInfo?.avatarUrl) {
+          p.avatar = meta.avatar_url || discordInfo?.avatarUrl;
+        }
+
+        renderProfileUI(p);
 
         // Try loading dynamic player stats from DB if available
         if (window.LeagueDB && typeof window.LeagueDB.getPlayerStats === 'function' && p.gamertag && p.gamertag !== 'Operative') {
@@ -457,10 +620,14 @@
         const p = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {
           gamertag: 'Operative',
           team: 'Free Agent',
-          role: 'Flex AR/SMG',
+          role: 'Flex',
           division: 'Division 1 · Premier',
           activision: 'Unlinked#0000',
-          discord: ''
+          discord: '',
+          platform: 'PC',
+          region: 'NA East',
+          input: 'Controller',
+          avatar: ''
         };
 
         // Dynamically populate registered teams from database
@@ -481,13 +648,26 @@
           } catch (e) {}
         }
 
-        document.getElementById('edit-league-gamertag').value = p.gamertag;
+        document.getElementById('edit-league-gamertag').value = p.gamertag || '';
         document.getElementById('edit-league-team').value = p.team || 'Free Agent';
-        document.getElementById('edit-league-role').value = p.role;
-        document.getElementById('edit-league-division').value = p.division;
-        document.getElementById('edit-league-activision').value = p.activision;
-        const editDiscord = document.getElementById('edit-league-discord');
-        if (editDiscord) editDiscord.value = p.discord || '';
+        document.getElementById('edit-league-role').value = p.role || 'Flex';
+        document.getElementById('edit-league-division').value = p.division || 'Division 1 · Premier';
+        document.getElementById('edit-league-activision').value = p.activision || '';
+        if (document.getElementById('edit-league-discord')) {
+          document.getElementById('edit-league-discord').value = p.discord || '';
+        }
+        if (document.getElementById('edit-league-platform')) {
+          document.getElementById('edit-league-platform').value = p.platform || 'PC';
+        }
+        if (document.getElementById('edit-league-region')) {
+          document.getElementById('edit-league-region').value = p.region || 'NA East';
+        }
+        if (document.getElementById('edit-league-input')) {
+          document.getElementById('edit-league-input').value = p.input || 'Controller';
+        }
+        if (document.getElementById('edit-league-avatar')) {
+          document.getElementById('edit-league-avatar').value = p.avatar || '';
+        }
 
         modal.style.display = 'flex';
       }
@@ -499,40 +679,136 @@
 
       async function saveLeagueProfile(e) {
         e.preventDefault();
-        const gamertag = document.getElementById('edit-league-gamertag').value.trim() || 'Operator';
-        const team = document.getElementById('edit-league-team').value;
-        const role = document.getElementById('edit-league-role').value;
-        const division = document.getElementById('edit-league-division').value;
-        const activision = document.getElementById('edit-league-activision').value.trim() || 'Player#1234567';
-        const discord = document.getElementById('edit-league-discord')?.value.trim() || '';
+        const submitBtn = document.getElementById('btn-save-league-profile');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving Changes...';
+        }
 
+        const gamertag = document.getElementById('edit-league-gamertag')?.value.trim() || 'Operative';
+        const team = document.getElementById('edit-league-team')?.value || 'Free Agent';
+        const role = document.getElementById('edit-league-role')?.value || 'Flex';
+        const division = document.getElementById('edit-league-division')?.value || 'Division 1 · Premier';
+        const activision = document.getElementById('edit-league-activision')?.value.trim() || 'Player#1234567';
+        const discord = document.getElementById('edit-league-discord')?.value.trim() || '';
+        const platform = document.getElementById('edit-league-platform')?.value || 'PC';
+        const region = document.getElementById('edit-league-region')?.value || 'NA East';
+        const inputDevice = document.getElementById('edit-league-input')?.value || 'Controller';
+        const avatarUrl = document.getElementById('edit-league-avatar')?.value.trim() || '';
+
+        const currentCard = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {};
         const p = {
+          ...currentCard,
           gamertag,
           team,
-          tag: team.slice(0, 5).toUpperCase(),
+          tag: team === 'Free Agent' ? 'AGENT' : team.slice(0, 5).toUpperCase(),
           role,
           division,
           activision,
           discord,
-          contract: 'SIGNED FRANCHISE STARTER'
+          platform,
+          region,
+          input: inputDevice,
+          avatar: avatarUrl || currentCard.avatar || document.getElementById('league-user-avatar')?.src || '',
+          contract: team === 'Free Agent' ? 'UNASSIGNED FREE AGENT' : 'SIGNED FRANCHISE STARTER'
         };
 
         localStorage.setItem('frontline_league_player_card', JSON.stringify(p));
 
         if (window.LeagueDB && typeof window.LeagueDB.completeCombatantDossier === "function") {
-          await window.LeagueDB.completeCombatantDossier({
-            gamertag,
-            activisionId: activision,
-            role,
-            discordName: discord
-          });
+          try {
+            await window.LeagueDB.completeCombatantDossier({
+              gamertag,
+              activisionId: activision,
+              role,
+              region,
+              platform,
+              discordName: discord,
+              avatarUrl: p.avatar
+            });
+          } catch (err) {
+            console.warn("Could not sync dossier across tables:", err);
+          }
+        }
+
+        try {
+          let authUser = JSON.parse(localStorage.getItem('frontline_league_auth_user')) || null;
+          if (authUser) {
+            if (!authUser.user_metadata) authUser.user_metadata = {};
+            authUser.user_metadata.gamertag = gamertag;
+            authUser.user_metadata.username = gamertag;
+            authUser.user_metadata.name = gamertag;
+            authUser.user_metadata.activision_id = activision;
+            authUser.user_metadata.role = role;
+            authUser.user_metadata.region = region;
+            authUser.user_metadata.platform = platform;
+            authUser.user_metadata.discord_name = discord;
+            if (p.avatar) authUser.user_metadata.avatar_url = p.avatar;
+            localStorage.setItem('frontline_league_auth_user', JSON.stringify(authUser));
+          }
+        } catch (err) {}
+
+        if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+          window.LeagueDB.updateLeagueNavProfile();
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Changes';
         }
 
         closeLeagueEditModal();
-        loadLeagueProfile();
+        renderProfileUI(p);
+        showProfileToast('✓ Profile successfully updated and applied!');
+      }
+
+      async function signOutLeagueProfile() {
+        if (confirm("Are you sure you want to sign out of your Frontline combatant profile?")) {
+          if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
+            await window.LeagueDB.signOutPlayer();
+          } else {
+            localStorage.removeItem("frontline_league_auth_user");
+            if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+              window.LeagueDB.updateLeagueNavProfile();
+            }
+          }
+          showProfileToast("✓ Successfully signed out.");
+          loadLeagueProfile();
+        }
+      }
+
+      async function signInWithDiscordGate() {
+        const btn = document.getElementById("btn-gate-discord");
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span>Connecting to Discord...</span> <span>⏳</span>`;
+        }
+        sessionStorage.setItem("frontline_discord_oauth_pending", "true");
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
+            const res = await window.LeagueDB.signInWithDiscord(window.location.href);
+            if (!res.success) {
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
+              alert(res.error || "Failed to initiate Discord sign-in.");
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Sign In with Discord</span>`;
+              }
+            }
+          }
+        } catch (err) {
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
+          alert(err.message || "Discord sign-in failed.");
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>Sign In with Discord</span>`;
+          }
+        }
       }
 
       document.addEventListener('DOMContentLoaded', loadLeagueProfile);
+      window.addEventListener('frontline_auth_changed', loadLeagueProfile);
+      window.addEventListener('frontline_dossier_completed', loadLeagueProfile);
     </script>
   </body>
 </html>
