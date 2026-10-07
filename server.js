@@ -87,6 +87,11 @@ app.get(["/admin", "/admin/", "/admin.html"], (req, res) => {
   res.sendFile(path.resolve(__dirname, "admin.html"));
 });
 
+// Favicon routes
+app.get(["/favicon.ico", "/favicon.png"], (req, res) => {
+  res.sendFile(path.resolve(__dirname, "images/leaguelogo_1.png"));
+});
+
 // Legacy redirects (backwards compatibility for flat URLs and old bookmarks)
 const LEGACY_REDIRECTS = {
   "/arena-tournaments": "/arena/tournaments/",
