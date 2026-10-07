@@ -4244,33 +4244,49 @@ window.LeagueDB = {
     }
   },
 
-  async signInWithDiscord(redirectUrl) {
-    if (!dbClient) {
-      return { success: false, error: "Database client is not connected." };
+    async signInWithDiscord(redirectUrl) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+    const targetRedirect = redirectUrl || (origin + pathname);
+    const directOAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(targetRedirect)}`;
+
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem("frontline_discord_oauth_pending", "true");
     }
-    try {
-      const targetRedirect = redirectUrl || (window.location.origin + window.location.pathname);
-      const { data, error } = await dbClient.auth.signInWithOAuth({
-        provider: "discord",
-        options: {
-          redirectTo: targetRedirect,
-          scopes: "identify email"
+
+    // 1. Try Supabase Client SDK if initialized
+    if (dbClient && dbClient.auth && typeof dbClient.auth.signInWithOAuth === "function") {
+      try {
+        const { data, error } = await dbClient.auth.signInWithOAuth({
+          provider: "discord",
+          options: {
+            redirectTo: targetRedirect,
+            scopes: "identify email"
+          }
+        });
+
+        if (!error && data?.url) {
+          if (typeof window !== "undefined") {
+            window.location.href = data.url;
+          }
+          return { success: true, url: data.url, data };
         }
-      });
-      if (error) {
-        if (error.message && (error.message.toLowerCase().includes("not enabled") || error.code === "validation_failed")) {
-          return {
-            success: false,
-            error: "Discord OAuth is not yet enabled in your Supabase project. In your Supabase Dashboard, go to Authentication -> Providers -> Discord to enable it.",
-            unsupported: true
-          };
+
+        if (error) {
+          console.warn("[LeagueDB] signInWithOAuth returned error, proceeding to direct OAuth:", error.message);
         }
-        return { success: false, error: error.message };
+      } catch (err) {
+        console.warn("[LeagueDB] signInWithOAuth exception, proceeding to direct OAuth:", err);
       }
-      return { success: true, data };
-    } catch (err) {
-      return { success: false, error: err.message || "Failed to initiate Discord authentication." };
     }
+
+    // 2. Direct GoTrue Fallback: Always redirects top-level window directly to Discord authorization
+    if (typeof window !== "undefined") {
+      window.location.href = directOAuthUrl;
+      return { success: true, url: directOAuthUrl };
+    }
+
+    return { success: false, error: "Failed to initiate Discord authentication." };
   },
 
   async signOutPlayer() {
@@ -7928,6 +7944,83 @@ window.LadderDB = {
     }
   } catch(e) {
     console.warn("Legacy cache scrub notice:", e);
+  }
+})();
+
+// ==============================================================================
+// AUTO-PROCESS DISCORD OAUTH CALLBACK TOKENS (#access_token or ?code=)
+// ==============================================================================
+(async function handleDiscordOAuthCallback() {
+  if (typeof window === "undefined") return;
+
+  const hash = window.location.hash || "";
+  const search = window.location.search || "";
+  const hasAccessToken = hash.includes("access_token=");
+  const hasCode = search.includes("code=");
+
+  if (!hasAccessToken && !hasCode) return;
+
+  console.log("[LeagueDB] Detected Discord OAuth redirect tokens in URL. Synchronizing session...");
+
+  // 1. Process Implicit Hash Tokens (#access_token=...&refresh_token=...)
+  if (hasAccessToken) {
+    try {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (accessToken && dbClient && dbClient.auth) {
+        const { data } = await dbClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ""
+        });
+
+        if (data?.user) {
+          console.log("[LeagueDB] Discord OAuth session confirmed for:", data.user.email);
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
+          window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: data.user } }));
+          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: data.user } }));
+
+          if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+            await window.LeagueDB.autoCheckDiscordOnboarding();
+          }
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, document.title, window.location.pathname);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[LeagueDB] Notice processing OAuth hash:", err);
+    }
+  }
+
+  // 2. Process PKCE Query Code (?code=...)
+  if (hasCode) {
+    try {
+      const searchParams = new URLSearchParams(search);
+      const code = searchParams.get("code");
+
+      if (code && dbClient && dbClient.auth && typeof dbClient.auth.exchangeCodeForSession === "function") {
+        const { data } = await dbClient.auth.exchangeCodeForSession(code);
+        if (data?.user) {
+          console.log("[LeagueDB] Discord PKCE session exchanged for:", data.user.email);
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
+          window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: data.user } }));
+          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: data.user } }));
+
+          if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+            await window.LeagueDB.autoCheckDiscordOnboarding();
+          }
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, document.title, window.location.pathname);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[LeagueDB] Notice processing OAuth code exchange:", err);
+    }
   }
 })();
 
