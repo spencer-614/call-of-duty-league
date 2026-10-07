@@ -71,8 +71,7 @@ const HIERARCHY_ROUTES = [
   { path: "/vods", file: "vods/index.html" },
   { path: "/rules", file: "rules/index.html" },
   { path: "/signup", file: "signup/index.html" },
-  { path: "/profile", file: "profile/index.html" },
-  { path: "/admin", file: "admin/index.html" }
+  { path: "/profile", file: "profile/index.html" }
 ];
 
 HIERARCHY_ROUTES.forEach(route => {
@@ -81,6 +80,11 @@ HIERARCHY_ROUTES.forEach(route => {
   app.get([route.path, `${route.path}/`], (req, res) => {
     res.sendFile(filePath);
   });
+});
+
+// Admin panel explicit route (/admin, /admin/, and /admin.html all serve admin.html directly)
+app.get(["/admin", "/admin/", "/admin.html"], (req, res) => {
+  res.sendFile(path.resolve(__dirname, "admin.html"));
 });
 
 // Legacy redirects (backwards compatibility for flat URLs and old bookmarks)
@@ -105,8 +109,7 @@ const LEGACY_REDIRECTS = {
   "/vods.html": "/vods/",
   "/rules.html": "/rules/",
   "/signup.html": "/signup/",
-  "/profile.html": "/profile/",
-  "/admin.html": "/admin/"
+  "/profile.html": "/profile/"
 };
 
 Object.entries(LEGACY_REDIRECTS).forEach(([oldUrl, newUrl]) => {

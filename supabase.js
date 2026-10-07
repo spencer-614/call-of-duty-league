@@ -7664,8 +7664,8 @@ window.LadderDB = {
   let keyBuffer = "";
 
   function triggerAdminRedirect() {
-    if (window.location.pathname.includes("/admin")) return;
-    window.location.href = "/admin/";
+    if (window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin")) return;
+    window.location.href = "/admin";
   }
 
   // Use capture phase on window so nothing intercepts or prevents the event
