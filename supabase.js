@@ -33,9 +33,31 @@ const PAYPAL_CONFIG = {
 // Initialize Supabase Client if library is loaded and configured
 let dbClient = null;
 if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) {
-  dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  window.dbClient = dbClient;
-  window.supabaseClient = dbClient;
+  try {
+    dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.dbClient = dbClient;
+    window.supabaseClient = dbClient;
+
+    dbClient.auth.onAuthStateChange(async (event, session) => {
+      console.log("[LeagueDB] Global Auth Event:", event, session?.user?.email);
+      if (session?.user) {
+        localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
+        localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
+        window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: session.user } }));
+        window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: session.user } }));
+        if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+          await window.LeagueDB.autoCheckDiscordOnboarding();
+        }
+      } else if (event === "SIGNED_OUT") {
+        localStorage.removeItem("frontline_league_auth_user");
+        localStorage.removeItem("frontline_arena_auth_user");
+        window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+        window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null } }));
+      }
+    });
+  } catch(e) {
+    console.warn("Supabase client init notice:", e);
+  }
 }
 window.SUPABASE_CONFIG = { url: SUPABASE_URL, key: SUPABASE_ANON_KEY };
 
@@ -7969,25 +7991,52 @@ window.LadderDB = {
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
 
-      if (accessToken && dbClient && dbClient.auth) {
-        const { data } = await dbClient.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken || ""
-        });
-
-        if (data?.user) {
-          console.log("[LeagueDB] Discord OAuth session confirmed for:", data.user.email);
-          localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
-          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
-          window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: data.user } }));
-          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: data.user } }));
-
-          if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
-            await window.LeagueDB.autoCheckDiscordOnboarding();
+      if (accessToken) {
+        // Direct JWT parsing fallback: Immediately populate user credentials
+        try {
+          const parts = accessToken.split(".");
+          if (parts.length === 3) {
+            const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+            const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            if (payload && (payload.sub || payload.email)) {
+              const jwtUser = {
+                id: payload.sub || "usr_" + Date.now(),
+                email: payload.email || "",
+                user_metadata: payload.user_metadata || {},
+                app_metadata: payload.app_metadata || {}
+              };
+              console.log("[LeagueDB] Discord OAuth token pre-parsed for:", jwtUser.email);
+              localStorage.setItem("frontline_league_auth_user", JSON.stringify(jwtUser));
+              localStorage.setItem("frontline_arena_auth_user", JSON.stringify(jwtUser));
+              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: jwtUser } }));
+              window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: jwtUser } }));
+            }
           }
-          if (window.history && window.history.replaceState) {
-            window.history.replaceState(null, document.title, window.location.pathname);
+        } catch (jwtErr) {
+          console.warn("[LeagueDB] JWT pre-parse notice:", jwtErr);
+        }
+
+        const client = window.dbClient || dbClient;
+        if (client && client.auth && typeof client.auth.setSession === "function") {
+          const { data } = await client.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || ""
+          });
+
+          if (data?.user) {
+            console.log("[LeagueDB] Discord OAuth session confirmed for:", data.user.email);
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
+            window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: data.user } }));
+            window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: data.user } }));
           }
+        }
+
+        if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+          await window.LeagueDB.autoCheckDiscordOnboarding();
+        }
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, document.title, window.location.pathname);
         }
       }
     } catch (err) {

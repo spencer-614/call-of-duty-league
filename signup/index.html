@@ -1481,9 +1481,16 @@
       }
 
       // Listen to real-time auth changes (e.g. when returning from Discord redirect)
-      if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
+      window.addEventListener("frontline_auth_changed", (e) => {
+        if (e.detail?.user) {
+          handleCombatantAuthSuccess(e.detail.user);
+        }
+      });
+
+      const client = window.dbClient || (typeof dbClient !== "undefined" ? dbClient : null);
+      if (client && client.auth) {
         try {
-          dbClient.auth.onAuthStateChange((event, session) => {
+          client.auth.onAuthStateChange((event, session) => {
             if (session?.user) {
               handleCombatantAuthSuccess(session.user);
             }

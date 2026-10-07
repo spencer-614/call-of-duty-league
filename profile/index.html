@@ -472,7 +472,11 @@
 
       async function checkCurrentAuth() {
         let authUser = null;
-        if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
+        try {
+          authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+        } catch (e) {}
+
+        if (!authUser && window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
           try {
             const authRes = await window.LeagueDB.getAuthUser();
             if (authRes?.success && authRes.user) {
@@ -480,26 +484,26 @@
             }
           } catch (e) {}
         }
-        if (!authUser) {
-          try {
-            authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
-          } catch (e) {}
-        }
+
         if (!authUser && window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
           try {
             const sess = await window.LeagueDB.getAuthSession();
             if (sess?.user) authUser = sess.user;
           } catch (e) {}
         }
+
+        // If URL contains OAuth return tokens/code, wait and poll up to 5 times (1.5s total)
         if (!authUser && (window.location.hash.includes("access_token") || window.location.search.includes("code="))) {
-          await new Promise(r => setTimeout(r, 450));
-          try {
-            authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
-            if (!authUser && window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
-              const r2 = await window.LeagueDB.getAuthUser();
-              if (r2?.success && r2.user) authUser = r2.user;
-            }
-          } catch(e) {}
+          for (let attempt = 0; attempt < 5 && !authUser; attempt++) {
+            await new Promise(r => setTimeout(r, 300));
+            try {
+              authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+              if (!authUser && window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
+                const r2 = await window.LeagueDB.getAuthUser();
+                if (r2?.success && r2.user) authUser = r2.user;
+              }
+            } catch(e) {}
+          }
         }
         return authUser;
       }
