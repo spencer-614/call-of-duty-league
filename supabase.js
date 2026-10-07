@@ -2563,7 +2563,7 @@ window.LeagueDB = {
       start_time: "6:00 PM EST",
       status: "Registration Open",
       image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/frontline",
+      registration_url: "https://discord.gg/eWqqC6TZNM",
       bracket_url: "/brackets/",
       description: "Official 4v4 CDL Variant Premier Championship. Best of 5 series on official maps. Top squads battle live on broadcast.",
       rules_notes: "CDL V4 Competitive Rulebook applies. Map vetoes in match room. Dedicated host server."
@@ -2581,7 +2581,7 @@ window.LeagueDB = {
       start_time: "8:00 PM EST",
       status: "Registration Open",
       image_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/frontline",
+      registration_url: "https://discord.gg/eWqqC6TZNM",
       bracket_url: "",
       description: "High-octane 2v2 Search & Destroy prime tournament. First to 6 rounds wins. Knife for first blood / side choice.",
       rules_notes: "SnD ruleset. Hardcore & Radar disabled. No snipers in 2v2."
@@ -2617,7 +2617,7 @@ window.LeagueDB = {
       start_time: "5:00 PM EST",
       status: "Upcoming",
       image_url: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/frontline",
+      registration_url: "https://discord.gg/eWqqC6TZNM",
       bracket_url: "",
       description: "Path to Pro qualification cup for Division 2 Challengers squads seeking promotion seeds for the Premier division.",
       rules_notes: "All squads must have active community roster on Frontline League."
