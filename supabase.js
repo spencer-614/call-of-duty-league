@@ -306,13 +306,16 @@ window.LeagueDB = {
           .order("kdr", { ascending: false });
 
         if (!error && data) {
-          if (data.length === 0) return [];
-          return data.map(p => {
+          // Filter out any unlinked admin accounts from the league players directory
+          const eligibleData = data.filter(p => !this.shouldBlockAdminCombatant(p));
+
+          const list = eligibleData.map(p => {
             const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned')) || p.status === 'Free Agent';
             const division = p.division || p.teams?.division || (isFreeAgent ? 'Free Agent' : (p.kdr >= 1.15 ? 'Division 1 (Pro)' : (p.kdr >= 1.0 ? 'Division 2 (Challengers)' : 'Open Division')));
             const calculatedRank = p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5"));
             return {
               ...p,
+              avatar_url: p.avatar_url || p.photo_url || null,
               discord_name: p.discord_name || p.gamertag,
               activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
               rank: calculatedRank,
@@ -323,13 +326,48 @@ window.LeagueDB = {
               is_free_agent: isFreeAgent
             };
           });
+
+          // Ensure active logged-in user's Discord avatar and FA status are reflected (unless unlinked admin)
+          try {
+            const authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+            if (authUser && !this.shouldBlockAdminCombatant(authUser)) {
+              const meta = authUser?.user_metadata || {};
+              const authTag = (meta.gamertag || meta.username || meta.name || "").trim().toLowerCase();
+              const discordAvatar = meta.avatar_url || meta.picture || authUser?.avatar_url;
+              if (authTag) {
+                const match = list.find(p => (p.gamertag || "").toLowerCase().trim() === authTag);
+                if (match && discordAvatar && !match.avatar_url) {
+                  match.avatar_url = discordAvatar;
+                }
+              }
+            }
+          } catch (e) {}
+
+          return list;
         }
         console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
     }
-    return MOCK_DATA.players;
+
+    const fallbackList = (MOCK_DATA.players || []).filter(p => !this.shouldBlockAdminCombatant(p)).slice();
+    try {
+      const authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+      if (authUser && !this.shouldBlockAdminCombatant(authUser)) {
+        const meta = authUser?.user_metadata || {};
+        const authTag = (meta.gamertag || meta.username || meta.name || "").trim().toLowerCase();
+        const discordAvatar = meta.avatar_url || meta.picture || authUser?.avatar_url;
+        if (authTag) {
+          const match = fallbackList.find(p => (p.gamertag || "").toLowerCase().trim() === authTag);
+          if (match && discordAvatar) {
+            match.avatar_url = discordAvatar;
+          }
+        }
+      }
+    } catch (e) {}
+
+    return fallbackList;
   },
 
   // 3. Fetch All VODs / Matches
@@ -814,6 +852,16 @@ window.LeagueDB = {
     }
 
     const cleanGamertag = String(signupData.gamertag).trim();
+
+    // Guard: Prevent unlinked admin accounts from registering as free agents
+    if (this.shouldBlockAdminCombatant(signupData)) {
+      console.log(`[LeagueDB] submitSignup denied: Admin account (${signupData.email || cleanGamertag}) not linked to Discord email.`);
+      return {
+        success: false,
+        error: "Staff administrator accounts cannot register as free agents unless linked to your verified Discord email."
+      };
+    }
+
     const cleanActivision = signupData.activision_id ? String(signupData.activision_id).trim() : null;
     const cleanDiscord = signupData.discord_username ? String(signupData.discord_username).trim() : cleanGamertag;
     const cleanRole = signupData.role || "Flex";
@@ -823,6 +871,7 @@ window.LeagueDB = {
     const cleanTeamName = signupData.team_name ? String(signupData.team_name).trim() : null;
     const cleanNotes = signupData.notes ? String(signupData.notes).trim() : null;
     const cleanStatus = signupData.status || "Pending";
+    const cleanAvatar = signupData.avatar_url || signupData.photo_url || null;
     const timestamp = signupData.created_at || new Date().toISOString();
 
     // Prepare clean payload strictly adhering to Supabase league_signups schema
@@ -838,6 +887,10 @@ window.LeagueDB = {
       notes: cleanNotes,
       status: cleanStatus
     };
+
+    if (cleanAvatar) {
+      cleanPayload.avatar_url = cleanAvatar;
+    }
 
     if (signupData.user_id) {
       cleanPayload.user_id = signupData.user_id;
@@ -2676,19 +2729,22 @@ window.LeagueDB = {
       signups = await this.getSignups();
     } catch(e) {}
 
-    // Filter free agents from players table
+    // Filter free agents from players table (skipping unlinked admin accounts)
     const faPlayers = (players || []).filter(p => {
+      if (this.shouldBlockAdminCombatant(p)) return false;
       const team = (p.teams?.name || p.team_name || "").toLowerCase();
       const status = (p.status || "").toLowerCase();
       return !p.teams || team === "free agent" || team === "unassigned" || status === "free agent";
     }).map(p => ({
       ...p,
+      avatar_url: p.avatar_url || p.photo_url || null,
       source: "player",
       isDrafted: false
     }));
 
-    // Filter free agents from signups table
+    // Filter free agents from signups table (skipping unlinked admin accounts)
     const faSignups = (signups || []).filter(s => {
+      if (this.shouldBlockAdminCombatant(s)) return false;
       const regType = (s.registration_type || "").toLowerCase();
       return regType.includes("free agent") || !s.team_name;
     }).map(s => ({
@@ -2699,6 +2755,7 @@ window.LeagueDB = {
       role: s.role || "Flex",
       platform: s.platform || "PC",
       region: s.region || "NA East",
+      avatar_url: s.avatar_url || s.photo_url || null,
       notes: s.notes || "Registered via Recruitment Portal",
       rank: "1.0",
       status: "Free Agent",
@@ -2712,7 +2769,7 @@ window.LeagueDB = {
 
     // Deduplicate by gamertag
     const seenTags = new Set();
-    const merged = [];
+    let merged = [];
 
     [...faPlayers, ...faSignups].forEach(p => {
       const lower = (p.gamertag || "").toLowerCase().trim();
@@ -2720,6 +2777,45 @@ window.LeagueDB = {
       seenTags.add(lower);
       merged.push(p);
     });
+
+    // Ensure active logged-in Discord user is automatically represented in Free Agents (unless unlinked admin)
+    try {
+      const authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+      if (authUser && !this.shouldBlockAdminCombatant(authUser)) {
+        const meta = authUser?.user_metadata || {};
+        const authTag = meta.gamertag || meta.username || meta.name;
+        const discordAvatar = meta.avatar_url || meta.picture || authUser?.avatar_url;
+        if (authTag) {
+          const lower = authTag.toLowerCase().trim();
+          const existing = merged.find(p => (p.gamertag || "").toLowerCase().trim() === lower);
+          if (existing) {
+            if (!existing.avatar_url && discordAvatar) {
+              existing.avatar_url = discordAvatar;
+            }
+          } else {
+            merged.unshift({
+              id: `auth-${authUser.id || Date.now()}`,
+              gamertag: authTag,
+              discord_name: meta.discord_name || authTag,
+              activision_id: meta.activision_id || `${authTag}#1234567`,
+              role: meta.role || meta.tactical_role || "Flex",
+              platform: meta.platform || "PC",
+              region: meta.region || "NA East",
+              avatar_url: discordAvatar || null,
+              notes: "Verified League Member",
+              rank: "1.0",
+              status: "Free Agent",
+              kdr: null,
+              total_kills: 0,
+              total_deaths: 0,
+              team_name: "Free Agent",
+              source: "auth",
+              isDrafted: false
+            });
+          }
+        }
+      }
+    } catch(e) {}
 
     // Check draft state for any drafted players in this division
     try {
@@ -2745,7 +2841,8 @@ window.LeagueDB = {
       });
     } catch(e) {}
 
-    return merged;
+    // Final guard: exclude any unlinked admin accounts
+    return merged.filter(p => !this.shouldBlockAdminCombatant(p));
   },
 
   async recordDraftPick(pickData, divisionId = "div-1") {
@@ -2764,6 +2861,7 @@ window.LeagueDB = {
       player_gamertag: pickData.player_gamertag,
       player_role: pickData.player_role || "Flex",
       player_kdr: pickData.player_kdr || null,
+      player_avatar: pickData.player_avatar || null,
       notes: pickData.notes || "",
       is_autodraft: isAuto,
       timestamp: new Date().toISOString()
@@ -2797,6 +2895,34 @@ window.LeagueDB = {
     }
 
     await this.saveDraftState(state, divKey);
+
+    // Persist draft pick assignment to players table and local player card
+    try {
+      if (dbClient) {
+        const { data: teamRows } = await dbClient.from("teams").select("id").ilike("name", newPick.team_name).limit(1);
+        const teamId = teamRows && teamRows.length > 0 ? teamRows[0].id : null;
+        await dbClient
+          .from("players")
+          .update({
+            status: "Active",
+            team_id: teamId,
+            team_name: newPick.team_name
+          })
+          .ilike("gamertag", newPick.player_gamertag);
+      }
+    } catch(dbErr) {
+      console.warn("Draft pick player table sync notice:", dbErr);
+    }
+
+    try {
+      const card = JSON.parse(localStorage.getItem("frontline_league_player_card")) || {};
+      if (card.gamertag && card.gamertag.toLowerCase() === (newPick.player_gamertag || "").toLowerCase()) {
+        card.team = newPick.team_name;
+        card.tag = newPick.team_tag || "CDL";
+        card.contract = `SIGNED DRAFT PICK (RD ${newPick.round} · #${newPick.pick})`;
+        localStorage.setItem("frontline_league_player_card", JSON.stringify(card));
+      }
+    } catch(e) {}
 
     // Broadcast pick to league_announcements as an official update!
     try {
@@ -3624,19 +3750,52 @@ window.LeagueDB = {
     if (!user) return null;
     const meta = user.user_metadata || {};
     const appMeta = user.app_metadata || {};
-    const identities = user.identities || [];
+    const identities = Array.isArray(user.identities) ? user.identities : [];
+    const discordIdent = identities.find(i => i.provider === "discord") || null;
+    const identData = discordIdent?.identity_data || {};
+
     const isDiscord = appMeta.provider === "discord" ||
                       (appMeta.providers && appMeta.providers.includes("discord")) ||
-                      identities.some(i => i.provider === "discord") ||
+                      !!discordIdent ||
                       !!meta.provider_id ||
                       !!meta.discord_username ||
                       !!meta.custom_claims?.global_name;
 
-    const globalName = meta.custom_claims?.global_name || meta.full_name || meta.name || "";
-    const handle = meta.user_name || meta.preferred_username || meta.username || meta.discord_username || "";
+    const globalName = meta.custom_claims?.global_name || identData.custom_claims?.global_name || meta.full_name || meta.name || identData.full_name || "";
+    const handle = meta.user_name || meta.preferred_username || meta.username || meta.discord_username || identData.user_name || identData.username || "";
     const primaryName = globalName || handle || (user.email ? user.email.split("@")[0] : "Operative");
     const handleTag = handle ? `@${handle}` : (globalName ? `@${globalName}` : "");
-    const avatarUrl = meta.avatar_url || meta.picture || "";
+
+    // Extract Discord avatar URL from all possible Supabase OAuth locations
+    let avatarUrl = "";
+    if (meta.avatar_url && !meta.avatar_url.includes("unsplash.com")) {
+      avatarUrl = meta.avatar_url;
+    } else if (meta.picture && !meta.picture.includes("unsplash.com")) {
+      avatarUrl = meta.picture;
+    } else if (identData.avatar_url && !identData.avatar_url.includes("unsplash.com")) {
+      avatarUrl = identData.avatar_url;
+    } else if (identData.picture && !identData.picture.includes("unsplash.com")) {
+      avatarUrl = identData.picture;
+    }
+
+    const discordId = discordIdent?.id || identData.id || meta.provider_id || meta.sub;
+    const avatarHash = identData.avatar || meta.avatar;
+
+    if (!avatarUrl && discordId && avatarHash) {
+      const ext = String(avatarHash).startsWith("a_") ? "gif" : "png";
+      avatarUrl = `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${ext}?size=256`;
+    } else if (!avatarUrl && discordId && isDiscord) {
+      try {
+        const defaultIndex = Number((BigInt(discordId) >> 22n) % 6n);
+        avatarUrl = `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;
+      } catch (e) {
+        avatarUrl = `https://cdn.discordapp.com/embed/avatars/0.png`;
+      }
+    }
+
+    if (avatarUrl && avatarUrl.includes("cdn.discordapp.com") && !avatarUrl.includes("size=")) {
+      avatarUrl += (avatarUrl.includes("?") ? "&" : "?") + "size=256";
+    }
 
     return {
       isDiscord: !!isDiscord,
@@ -3644,8 +3803,281 @@ window.LeagueDB = {
       handle,
       globalName,
       handleTag,
-      avatarUrl
+      avatarUrl,
+      discordId
     };
+  },
+
+  // ==========================================
+  // STAFF ADMIN & DISCORD EMAIL LINKING CHECKS
+  // ==========================================
+  isAccountAdmin(target) {
+    if (!target) return false;
+
+    const staffRoleKeys = [
+      "commissioner", "referee", "stats_official", "roster_manager",
+      "recruiter", "broadcaster", "rulebook_admin", "admin", "staff",
+      "administrator", "mod", "moderator"
+    ];
+
+    const getStaffEmails = () => {
+      const set = new Set([
+        "admin@frontlineleague.com",
+        "referee@frontlineleague.com",
+        "roster@frontlineleague.com",
+        "recruiter@frontlineleague.com",
+        "broadcast@frontlineleague.com"
+      ]);
+      try {
+        const cached = localStorage.getItem("frontline_staff_roles_cache");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(s => {
+              if (s.email) set.add(String(s.email).toLowerCase().trim());
+            });
+          }
+        }
+      } catch (e) {}
+
+      try {
+        if (typeof MOCK_DATA !== "undefined" && Array.isArray(MOCK_DATA?.staffRoles)) {
+          MOCK_DATA.staffRoles.forEach(s => {
+            if (s.email) set.add(String(s.email).toLowerCase().trim());
+          });
+        }
+      } catch (e) {}
+
+      try {
+        const adminEmail = sessionStorage.getItem("frontline_admin_email");
+        if (adminEmail) set.add(String(adminEmail).toLowerCase().trim());
+      } catch (e) {}
+
+      return set;
+    };
+
+    if (typeof target === "string") {
+      const clean = target.toLowerCase().trim();
+      if (clean.includes("@")) {
+        return getStaffEmails().has(clean);
+      }
+      try {
+        const cached = localStorage.getItem("frontline_staff_roles_cache");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.some(s => s.user_id && String(s.user_id) === clean)) {
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    if (typeof target === "object" && target !== null) {
+      const targetEmail = (target.email || target.user_email || "").toLowerCase().trim();
+      if (targetEmail && getStaffEmails().has(targetEmail)) {
+        return true;
+      }
+
+      const uid = target.userId || target.user_id || target.id;
+      if (uid) {
+        try {
+          const cached = localStorage.getItem("frontline_staff_roles_cache");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.some(s => s.user_id && String(s.user_id) === String(uid))) {
+              return true;
+            }
+          }
+        } catch (e) {}
+      }
+
+      const appRole = target.app_metadata?.role;
+      const metaRole = target.user_metadata?.role;
+      const directRole = target.role;
+
+      if (appRole && staffRoleKeys.includes(String(appRole).toLowerCase())) return true;
+      if (metaRole && staffRoleKeys.includes(String(metaRole).toLowerCase())) return true;
+      if (directRole && staffRoleKeys.includes(String(directRole).toLowerCase())) return true;
+
+      if (target.is_staff === true || target.is_admin === true || target.app_metadata?.claims_admin === true) {
+        return true;
+      }
+
+      try {
+        if (sessionStorage.getItem("frontline_admin_session") === "authorized") {
+          const adminEmail = (sessionStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+          if (adminEmail) {
+            if (targetEmail && targetEmail === adminEmail) return true;
+            const currentAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+            if (currentAuth && currentAuth.email && currentAuth.email.toLowerCase().trim() === adminEmail) {
+              if (uid && String(currentAuth.id) === String(uid)) return true;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    return false;
+  },
+
+  async isAccountAdminAsync(target) {
+    if (this.isAccountAdmin(target)) return true;
+
+    if (dbClient) {
+      let emailToCheck = "";
+      let idToCheck = null;
+
+      if (typeof target === "string" && target.includes("@")) {
+        emailToCheck = target.toLowerCase().trim();
+      } else if (typeof target === "object" && target !== null) {
+        emailToCheck = (target.email || target.user_email || "").toLowerCase().trim();
+        idToCheck = target.userId || target.user_id || target.id;
+      }
+
+      try {
+        if (emailToCheck) {
+          const { data, error } = await dbClient
+            .from("staff_roles")
+            .select("id, email, role, user_id")
+            .ilike("email", emailToCheck)
+            .maybeSingle();
+
+          if (!error && data) {
+            try {
+              const cached = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
+              if (!cached.some(c => (c.email || "").toLowerCase() === emailToCheck)) {
+                cached.push(data);
+                localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(cached));
+              }
+            } catch (e) {}
+            return true;
+          }
+        }
+
+        if (idToCheck) {
+          const { data, error } = await dbClient
+            .from("staff_roles")
+            .select("id, email, role, user_id")
+            .eq("user_id", String(idToCheck))
+            .maybeSingle();
+
+          if (!error && data) return true;
+        }
+      } catch (err) {
+        console.warn("isAccountAdminAsync query notice:", err);
+      }
+    }
+
+    return false;
+  },
+
+  isDiscordLinkedToEmail(target) {
+    if (!target) return false;
+
+    let userObj = (typeof target === "object" && target !== null) ? target : null;
+    let targetEmail = "";
+
+    if (typeof target === "string" && target.includes("@")) {
+      targetEmail = target.toLowerCase().trim();
+    } else if (userObj) {
+      targetEmail = (userObj.email || userObj.user_email || "").toLowerCase().trim();
+    }
+
+    // If userObj does not contain identities or app_metadata, check frontline_league_auth_user
+    if (!userObj?.identities && !userObj?.app_metadata) {
+      try {
+        const localAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+        if (localAuth) {
+          const localEmail = (localAuth.email || "").toLowerCase().trim();
+          const localId = String(localAuth.id || "");
+          const targetId = String(userObj?.userId || userObj?.user_id || userObj?.id || "");
+          if ((targetEmail && localEmail === targetEmail) || (targetId && localId === targetId)) {
+            userObj = { ...localAuth, ...(userObj || {}) };
+            if (!targetEmail) targetEmail = localEmail;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!userObj && !targetEmail) return false;
+
+    // 1. Check user identities for Discord provider
+    const identities = Array.isArray(userObj?.identities) ? userObj.identities : [];
+    const discordIdent = identities.find(i => i.provider === "discord");
+    if (discordIdent) {
+      const identEmail = (discordIdent.identity_data?.email || discordIdent.email || "").toLowerCase().trim();
+      if (identEmail && targetEmail && identEmail === targetEmail) {
+        return true;
+      }
+      if (discordIdent.id || discordIdent.identity_id) {
+        if (!identEmail || !targetEmail || identEmail === targetEmail) {
+          return true;
+        }
+      }
+    }
+
+    // 2. Check app_metadata provider
+    const appMeta = userObj?.app_metadata || {};
+    if (appMeta.provider === "discord" || (Array.isArray(appMeta.providers) && appMeta.providers.includes("discord"))) {
+      return true;
+    }
+
+    // 3. Check user_metadata for verified linked Discord email
+    const userMeta = userObj?.user_metadata || {};
+    const metaDiscordEmail = (userMeta.discord_email || userMeta.discord_linked_email || "").toLowerCase().trim();
+    if (metaDiscordEmail && targetEmail && metaDiscordEmail === targetEmail) {
+      return true;
+    }
+    if (userMeta.discord_email_linked === true || userMeta.discord_linked === true) {
+      return true;
+    }
+
+    // 4. Check explicit localStorage link flag
+    if (targetEmail) {
+      try {
+        if (localStorage.getItem("frontline_discord_linked_" + targetEmail) === "true") {
+          return true;
+        }
+      } catch (e) {}
+    }
+
+    return false;
+  },
+
+  shouldBlockAdminCombatant(target) {
+    if (!this.isAccountAdmin(target)) {
+      return false; // Regular accounts are never blocked
+    }
+    const isLinked = this.isDiscordLinkedToEmail(target);
+    return !isLinked; // Blocked if admin AND not linked to Discord email
+  },
+
+  async shouldBlockAdminCombatantAsync(target) {
+    const isAdmin = await this.isAccountAdminAsync(target);
+    if (!isAdmin) return false;
+    const isLinked = this.isDiscordLinkedToEmail(target);
+    return !isLinked;
+  },
+
+  async linkDiscordIdentity(redirectUrl) {
+    if (!dbClient || !dbClient.auth?.linkIdentity) {
+      return { success: false, error: "Identity linking is not supported by this Supabase client." };
+    }
+    try {
+      const targetRedirect = redirectUrl || (window.location.origin + window.location.pathname);
+      const { data, error } = await dbClient.auth.linkIdentity({
+        provider: "discord",
+        options: {
+          redirectTo: targetRedirect,
+          scopes: "identify email"
+        }
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   },
 
   // ==========================================
@@ -3670,7 +4102,72 @@ window.LeagueDB = {
     const cleanRegion = (region || "").trim() || "NA East";
     const cleanPlatform = (platform || "").trim() || "PC";
     const cleanDiscord = (discordName || "").trim() || cleanGamertag;
-    const cleanAvatar = avatarUrl || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80";
+
+    // Guard: Prevent unlinked admin accounts from registering into combatant tables
+    if (this.shouldBlockAdminCombatant(payload)) {
+      console.log(`[LeagueDB] Admin account (${payload.email || cleanGamertag}) not linked to Discord email. Bypassing public.players and free-agent registration.`);
+
+      // Clean up any stray row previously created for this unlinked admin to keep directories pristine
+      if (dbClient) {
+        try {
+          if (userId) {
+            await dbClient.from("players").delete().eq("user_id", String(userId));
+            await dbClient.from("arena_free_agents").delete().eq("user_id", String(userId));
+          }
+          if (cleanGamertag) {
+            await dbClient.from("players").delete().ilike("gamertag", cleanGamertag);
+            await dbClient.from("arena_free_agents").delete().ilike("gamertag", cleanGamertag);
+          }
+        } catch (delErr) {
+          console.warn("Cleanup of unlinked admin rows notice:", delErr);
+        }
+      }
+
+      // Also ensure local arena free agent cache does not retain this unlinked admin
+      try {
+        const faKey = "frontline_arena_free_agents";
+        const localFAs = JSON.parse(localStorage.getItem(faKey)) || [];
+        const cleaned = localFAs.filter(f =>
+          (!userId || f.user_id !== String(userId)) &&
+          (!cleanGamertag || (f.gamertag || "").toLowerCase().trim() !== cleanGamertag.toLowerCase())
+        );
+        localStorage.setItem(faKey, JSON.stringify(cleaned));
+      } catch (e) {}
+
+      // Keep user's auth metadata display name updated if logged in so profile works, but bypass combatant rosters
+      if (dbClient && typeof dbClient.auth?.updateUser === "function") {
+        try {
+          await dbClient.auth.updateUser({
+            data: {
+              gamertag: cleanGamertag,
+              username: cleanGamertag,
+              name: cleanGamertag,
+              profile_completed: true
+            }
+          });
+        } catch (e) {}
+      }
+
+      return {
+        success: true,
+        adminExcluded: true,
+        message: "Staff admin account bypassed combatant and free-agent rosters."
+      };
+    }
+
+    let cleanAvatar = avatarUrl;
+    if (!cleanAvatar || cleanAvatar.includes("unsplash.com")) {
+      try {
+        const localUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+        if (localUser) {
+          const disc = this.getDiscordIdentity(localUser);
+          if (disc?.avatarUrl) cleanAvatar = disc.avatarUrl;
+        }
+      } catch (e) {}
+    }
+    if (!cleanAvatar) {
+      cleanAvatar = "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80";
+    }
 
     if (!cleanGamertag) return { success: false, error: "Gamertag is required." };
 
@@ -4387,30 +4884,125 @@ window.LeagueDB = {
 
   async autoCheckDiscordOnboarding() {
     if (typeof window === "undefined" || !window.document) return;
-    // Don't trigger if already visible or on admin panel
-    const existingModal = document.getElementById("modal-discord-dossier");
-    if (existingModal && existingModal.style.display !== "none") return;
     if (window.location.pathname.endsWith("admin.html")) return;
 
     const authRes = await this.getAuthUser();
     if (!authRes?.success || !authRes?.user) return;
     const user = authRes.user;
+
+    // Guard: If this is an admin account that is NOT linked to their Discord email, skip onboarding as a player/free agent
+    if (this.shouldBlockAdminCombatant(user)) {
+      console.log(`[LeagueDB] autoCheckDiscordOnboarding: Admin account (${user.email}) not linked to Discord email. Skipping auto-onboarding.`);
+      return;
+    }
+
     const meta = user.user_metadata || {};
     const discordInfo = this.getDiscordIdentity(user);
     const isDiscord = discordInfo && discordInfo.isDiscord;
-    const isPending = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
-    const needsDossier = !meta.activision_id || !meta.profile_completed || !meta.role || !meta.region || !meta.platform;
 
-    if ((isDiscord || isPending) && needsDossier) {
-      this.showDiscordDossierModal({
-        user,
-        onComplete: () => {
-          sessionStorage.removeItem("frontline_discord_oauth_pending");
-        },
-        onCancel: () => {
-          sessionStorage.removeItem("frontline_discord_oauth_pending");
+    // Automatically create website account using Discord info & log as Free Agent
+    if (isDiscord) {
+      try {
+        const cleanGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || (user.email ? user.email.split("@")[0] : "Operative");
+        const cleanDiscord = meta.discord_name || meta.discord_username || discordInfo?.primaryName || cleanGamertag;
+        const cleanDiscordId = discordInfo?.discordId || null;
+        const cleanAvatar = discordInfo?.avatarUrl || meta.avatar_url || "";
+        const cleanRole = meta.role || meta.tactical_role || "Flex";
+        const cleanPlatform = meta.platform || meta.battle_platform || "PC";
+        const cleanRegion = meta.region || meta.operational_region || "NA East";
+        const cleanActivision = meta.activision_id || "";
+
+        // Check existing card or team assignment so we never demote a drafted / signed player
+        let existingCard = null;
+        try {
+          existingCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+        } catch (e) {}
+
+        const currentTeam = (existingCard?.team && existingCard.team !== "Free Agent" && existingCard.team !== "Unassigned")
+          ? existingCard.team
+          : "Free Agent";
+        const isFA = currentTeam === "Free Agent";
+
+        // Mark profile completed in user metadata so the system never prompts for info
+        if (!meta.profile_completed || !meta.gamertag || (cleanAvatar && meta.avatar_url !== cleanAvatar)) {
+          meta.gamertag = cleanGamertag;
+          meta.username = cleanGamertag;
+          meta.name = cleanGamertag;
+          meta.discord_name = cleanDiscord;
+          meta.discord_username = cleanDiscord;
+          if (cleanDiscordId) meta.discord_user_id = cleanDiscordId;
+          meta.role = cleanRole;
+          meta.tactical_role = cleanRole;
+          meta.platform = cleanPlatform;
+          meta.region = cleanRegion;
+          meta.profile_completed = true;
+          if (cleanAvatar) meta.avatar_url = cleanAvatar;
+          user.user_metadata = meta;
+          try {
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(user));
+          } catch (e) {}
+
+          if (dbClient && typeof dbClient.auth?.updateUser === "function") {
+            dbClient.auth.updateUser({ data: meta }).catch(() => {});
+          }
         }
-      });
+
+        // Log to database: sync across public.players, public.league_signups, public.arena_free_agents
+        await this.syncPlayerDossierAcrossTables({
+          userId: user.id,
+          gamertag: cleanGamertag,
+          activisionId: cleanActivision,
+          role: cleanRole,
+          region: cleanRegion,
+          platform: cleanPlatform,
+          discordName: cleanDiscord,
+          avatarUrl: cleanAvatar,
+          email: user.email,
+          status: isFA ? "Free Agent" : "Active",
+          teamName: currentTeam
+        });
+
+        // Update player card in localStorage
+        const cardObj = {
+          gamertag: cleanGamertag,
+          team: currentTeam,
+          tag: isFA ? "AGENT" : currentTeam.slice(0, 5).toUpperCase(),
+          role: cleanRole,
+          division: existingCard?.division || (isFA ? "Free Agent" : "Division 1 · Premier"),
+          activision: cleanActivision || existingCard?.activision || "Unlinked",
+          discord: cleanDiscord,
+          platform: cleanPlatform,
+          region: cleanRegion,
+          input: existingCard?.input || "Controller",
+          avatar: cleanAvatar || existingCard?.avatar || "",
+          contract: isFA ? "UNASSIGNED FREE AGENT" : "SIGNED FRANCHISE STARTER"
+        };
+        try {
+          localStorage.setItem("frontline_league_player_card", JSON.stringify(cardObj));
+        } catch (e) {}
+
+        // Update DOM avatars
+        const leagueAvatarEl = document.getElementById("league-user-avatar");
+        if (leagueAvatarEl && cleanAvatar) leagueAvatarEl.src = cleanAvatar;
+
+        const editAvatarInput = document.getElementById("edit-league-avatar");
+        if (editAvatarInput && cleanAvatar && (!editAvatarInput.value || editAvatarInput.value.includes("unsplash.com"))) {
+          editAvatarInput.value = cleanAvatar;
+        }
+
+        const arenaAvatarEl = document.getElementById("user-avatar-img");
+        if (arenaAvatarEl && cleanAvatar) arenaAvatarEl.src = cleanAvatar;
+
+        // Clear pending OAuth flag
+        sessionStorage.removeItem("frontline_discord_oauth_pending");
+
+        // Update navigation link
+        if (typeof this.updateLeagueNavProfile === "function") {
+          this.updateLeagueNavProfile();
+        }
+      } catch (e) {
+        console.warn("Discord auto-onboarding notice:", e);
+      }
     }
   },
 
@@ -4647,8 +5239,19 @@ window.LeagueDB = {
   async updateLeagueNavProfile() {
     if (typeof document === "undefined") return false;
 
+    // Ensure Edit Profile is never present in the Explore League dropdown menu
+    try {
+      document.querySelectorAll('.links a, nav.links a, .nav-dropdown-col a, .menu-toggle a').forEach((a) => {
+        const href = (a.getAttribute('href') || '').toLowerCase();
+        const text = (a.textContent || '').toLowerCase();
+        if (href.includes('edit=true') || text.includes('edit profile')) {
+          a.remove();
+        }
+      });
+    } catch (e) {}
+
     const profileLinks = document.querySelectorAll(
-      '.nav-league-profile-link, #nav-league-profile-link, a[href="profile.html"], a[href="profile.html?edit=true"]'
+      '.nav-league-profile-link, #nav-league-profile-link, a[href="profile.html"]'
     );
 
     let authUser = null;
@@ -4678,14 +5281,15 @@ window.LeagueDB = {
 
     profileLinks.forEach((link) => {
       const href = link.getAttribute("href") || "";
-      // If it's the separate edit profile link, permanently remove or hide it since View and Edit are merged
-      if (href.includes("profile.html?edit=true") || href.includes("edit=true")) {
-        link.style.display = "none";
-        return;
-      }
 
       // Do not touch platform switcher buttons (e.g. .mode-switch-btn in header)
       if (link.classList.contains("mode-switch-btn")) {
+        return;
+      }
+
+      // If it's an edit profile link, remove it
+      if (href.includes("edit=true") || (link.textContent && link.textContent.toLowerCase().includes("edit profile"))) {
+        link.remove();
         return;
       }
 
@@ -4694,10 +5298,17 @@ window.LeagueDB = {
         link.style.removeProperty("display");
         const meta = authUser.user_metadata || {};
         const gamertag = meta.gamertag || meta.username || meta.name;
+        const discordInfo = typeof this.getDiscordIdentity === "function" ? this.getDiscordIdentity(authUser) : null;
+        let navAvatar = discordInfo?.avatarUrl || meta.avatar_url;
+        if (navAvatar && navAvatar.includes("unsplash.com")) navAvatar = null;
+        const iconHtml = navAvatar
+          ? `<img src="${navAvatar}" alt="" style="width:16px; height:16px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; margin-right:6px; border:1px solid var(--lime);" />`
+          : `<span class="nav-icon">👤</span>`;
+
         if (gamertag && gamertag !== "Operative") {
-          link.innerHTML = `<span class="nav-icon">👤</span> View Profile (${gamertag})`;
+          link.innerHTML = `${iconHtml} View Profile (${gamertag})`;
         } else {
-          link.innerHTML = `<span class="nav-icon">👤</span> View Profile`;
+          link.innerHTML = `${iconHtml} View Profile`;
         }
       } else {
         link.style.display = "none";
@@ -5778,31 +6389,35 @@ window.LadderDB = {
       localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filtered));
     } catch (e) {}
 
-    // Ensure recruit is also recorded in the recruitment queue
-    try {
-      if (window.LeagueDB && typeof window.LeagueDB.submitSignup === "function") {
-        await window.LeagueDB.submitSignup({
-          gamertag: cleanGamertag,
-          activision_id: cleanActivision,
-          discord_username: discord ? discord.trim() : `${cleanGamertag.toLowerCase()}#0001`,
-          role: "Starter",
-          platform: "Crossplay",
-          region: "NA East",
-          registration_type: "Arena Combatant",
-          team_name: `${cleanTag} Squad`,
-          notes: `[Account: ${cleanEmail}] Frontline Arena combatant registration`,
-          status: "Pending"
-        });
+    // Ensure recruit is also recorded in the recruitment queue (unless unlinked admin)
+    const isBlockedAdmin = window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function"
+      ? window.LeagueDB.shouldBlockAdminCombatant(newPlayer)
+      : false;
+
+    if (!isBlockedAdmin) {
+      try {
+        if (window.LeagueDB && typeof window.LeagueDB.submitSignup === "function") {
+          await window.LeagueDB.submitSignup({
+            gamertag: cleanGamertag,
+            activision_id: cleanActivision,
+            discord_username: discord ? discord.trim() : `${cleanGamertag.toLowerCase()}#0001`,
+            role: "Starter",
+            platform: "Crossplay",
+            region: "NA East",
+            registration_type: "Arena Combatant",
+            team_name: `${cleanTag} Squad`,
+            notes: `[Account: ${cleanEmail}] Frontline Arena combatant registration`,
+            status: "Pending"
+          });
+        }
+      } catch (_) {}
+
+      // Auto-sync into Arena Free Agents directory
+      try {
+        await this.registerFreeAgentFromAccount(newPlayer);
+      } catch (faErr) {
+        console.warn("Free agent auto-sync notice:", faErr);
       }
-    } catch (_) {}
-
-    localStorage.setItem("frontline_arena_user", JSON.stringify(newPlayer));
-
-    // Auto-sync into Arena Free Agents directory
-    try {
-      await this.registerFreeAgentFromAccount(newPlayer);
-    } catch (faErr) {
-      console.warn("Free agent auto-sync notice:", faErr);
     }
 
     this.updateArenaNavProfile();
@@ -6159,7 +6774,14 @@ window.LadderDB = {
 
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          list = data.map(row => ({
+          const eligibleData = data.filter(row => {
+            if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+              return !window.LeagueDB.shouldBlockAdminCombatant(row);
+            }
+            return true;
+          });
+
+          list = eligibleData.map(row => ({
             id: row.id,
             gamertag: row.gamertag,
             clan_tag: row.clan_tag || "LFT",
@@ -6197,7 +6819,11 @@ window.LadderDB = {
       try {
         const stored = localStorage.getItem("frontline_arena_free_agents");
         if (stored) {
-          list = JSON.parse(stored);
+          let parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+            parsed = parsed.filter(row => !window.LeagueDB.shouldBlockAdminCombatant(row));
+          }
+          list = parsed;
         }
       } catch (e) {}
     }
@@ -6207,7 +6833,7 @@ window.LadderDB = {
       list = (MOCK_LADDER_DATA.free_agents || []).slice();
     }
 
-    // Auto-discover and merge any registered website user accounts into Free Agents
+    // Auto-discover and merge any registered website user accounts into Free Agents (unless unlinked admin)
     try {
       const registeredAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
       const arenaUser = JSON.parse(localStorage.getItem("frontline_arena_user"));
@@ -6229,6 +6855,13 @@ window.LadderDB = {
 
       candidateUsers.forEach(u => {
         if (!u || !u.gamertag) return;
+        // Skip unlinked admin accounts from Arena Free Agents pool
+        if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+          if (window.LeagueDB.shouldBlockAdminCombatant(u)) {
+            return;
+          }
+        }
+
         const lowerGamer = u.gamertag.toLowerCase().trim();
         const existingIdx = list.findIndex(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() === lowerGamer);
         if (existingIdx === -1) {
@@ -6276,12 +6909,25 @@ window.LadderDB = {
       const q = filters.search.toLowerCase().trim();
       list = list.filter(fa => (fa.gamertag && fa.gamertag.toLowerCase().includes(q)) || (fa.activision_id && fa.activision_id.toLowerCase().includes(q)) || (fa.bio && fa.bio.toLowerCase().includes(q)));
     }
+
+    // Final guard: filter out any unlinked admin accounts
+    if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+      list = list.filter(fa => !window.LeagueDB.shouldBlockAdminCombatant(fa));
+    }
     return list;
   },
 
   async registerFreeAgentFromAccount(userData) {
     if (!userData || !userData.gamertag) return null;
     const cleanGamertag = userData.gamertag.trim();
+
+    // Guard: Prevent unlinked admin accounts from registering as free agents in Arena
+    if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+      if (window.LeagueDB.shouldBlockAdminCombatant(userData)) {
+        console.log(`[LadderDB] registerFreeAgentFromAccount: Skipping unlinked admin account (${userData.email || cleanGamertag}).`);
+        return null;
+      }
+    }
 
     const newAgent = {
       id: "fa-" + (userData.id || Date.now()),
@@ -6355,6 +7001,15 @@ window.LadderDB = {
   },
 
   async postFreeAgent(agentData) {
+    if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+      if (window.LeagueDB.shouldBlockAdminCombatant(agentData)) {
+        return {
+          success: false,
+          error: "Staff administrator accounts cannot register as free agents unless linked to your verified Discord email."
+        };
+      }
+    }
+
     const newAgent = {
       id: "fa-" + Date.now(),
       gamertag: agentData.gamertag || "Operator",
@@ -6687,7 +7342,10 @@ window.LadderDB = {
         const agents = JSON.parse(fa);
         if (Array.isArray(agents)) {
           const dummyFA = ["ghostrider", "nyx", "bulletproof", "valkyrie", "staticpulse", "lonereaper"];
-          const cleanedFA = agents.filter(a => !dummyFA.includes((a.gamertag || "").toLowerCase().trim()));
+          let cleanedFA = agents.filter(a => !dummyFA.includes((a.gamertag || "").toLowerCase().trim()));
+          if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+            cleanedFA = cleanedFA.filter(a => !window.LeagueDB.shouldBlockAdminCombatant(a));
+          }
           localStorage.setItem(faKey, JSON.stringify(cleanedFA));
         }
       } catch(e) {}

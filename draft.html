@@ -2424,10 +2424,17 @@
                     </div>
                   </div>
 
-                  <h3 class="fa-gamertag">${escapeHtml(fa.gamertag)}</h3>
-                  
-                  <div class="fa-meta-row">
-                    ${fa.region ? `<span style="font-size:11.5px; color:#b8baa9; font-weight:600;">📍 ${escapeHtml(fa.region)}</span>` : ''}
+                  <div style="display:flex; align-items:center; gap:12px; margin:10px 0 6px;">
+                    ${fa.avatar_url 
+                      ? `<img src="${escapeHtml(fa.avatar_url)}" alt="${escapeHtml(fa.gamertag)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid ${isDrafted ? '#ffb300' : 'var(--lime)'}; flex-shrink:0;" />`
+                      : `<div style="width:40px; height:40px; border-radius:50%; background:#1c2115; border:2px solid #383f27; display:flex; align-items:center; justify-content:center; font-weight:900; color:var(--lime); flex-shrink:0; font-size:16px;">${escapeHtml((fa.gamertag || 'O').charAt(0).toUpperCase())}</div>`
+                    }
+                    <div style="flex:1; min-width:0;">
+                      <h3 class="fa-gamertag" style="margin:0 0 2px; font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(fa.gamertag)}</h3>
+                      <div class="fa-meta-row" style="margin:0;">
+                        ${fa.region ? `<span style="font-size:11.5px; color:#b8baa9; font-weight:600;">📍 ${escapeHtml(fa.region)}</span>` : ''}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2607,12 +2614,17 @@
                   </div>
 
                   <div class="draft-pick-body">
-                    <div class="draft-player-info">
-                      <span class="pill">${escapeHtml(p.player_role || 'Flex')}</span>
+                    <div class="draft-player-info" style="display:flex; align-items:center; gap:10px;">
+                      ${(p.player_avatar || allFreeAgents.find(x => (x.gamertag || '').toLowerCase() === (p.player_gamertag || '').toLowerCase())?.avatar_url) ? `
+                        <img src="${escapeHtml(p.player_avatar || allFreeAgents.find(x => (x.gamertag || '').toLowerCase() === (p.player_gamertag || '').toLowerCase())?.avatar_url)}" alt="${escapeHtml(p.player_gamertag)}" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid var(--lime); flex-shrink:0;" />
+                      ` : ''}
                       <div>
-                        <span class="draft-player-gt clickable-player" data-player-id="${escapeHtml(p.player_gamertag)}" title="Click to view player match stats">
-                          ${escapeHtml(p.player_gamertag)} ↗
-                        </span>
+                        <span class="pill" style="margin-bottom:2px; display:inline-block;">${escapeHtml(p.player_role || 'Flex')}</span>
+                        <div>
+                          <span class="draft-player-gt clickable-player" data-player-id="${escapeHtml(p.player_gamertag)}" title="Click to view player match stats">
+                            ${escapeHtml(p.player_gamertag)} ↗
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -2727,6 +2739,8 @@
         async function submitPickCore({ round, pick, teamName, playerGamertag, playerRole = "Flex", playerKd = null, notes = "", isAutoDraft = false }) {
           const teamObj = teamsPool.find(t => t.name.toLowerCase() === teamName.toLowerCase()) || {};
           const scheduledTeam = draftState.onTheClock;
+          const faMatch = allFreeAgents.find(x => (x.gamertag || '').toLowerCase() === (playerGamertag || '').toLowerCase());
+          const playerAvatar = faMatch?.avatar_url || null;
 
           try {
             if (window.LeagueDB && typeof window.LeagueDB.recordDraftPick === 'function') {
@@ -2738,6 +2752,7 @@
                 player_gamertag: playerGamertag,
                 player_role: playerRole,
                 player_kdr: playerKd,
+                player_avatar: playerAvatar,
                 notes,
                 is_autodraft: isAutoDraft
               }, currentDivision);

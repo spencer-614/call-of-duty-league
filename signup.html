@@ -1336,6 +1336,26 @@
           displayDiscord.textContent = metaDiscord ? `[Discord: ${metaDiscord}]` : "";
         }
 
+        if (discordInfo?.avatarUrl) {
+          try {
+            let card = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {
+              gamertag: metaGamertag,
+              team: 'Free Agent',
+              tag: 'AGENT',
+              role: metaRole,
+              division: 'Division 1 · Premier',
+              activision: metaActivision || 'Unlinked#0000',
+              discord: metaDiscord,
+              platform: meta.platform || 'PC',
+              region: meta.region || 'NA East',
+              input: 'Controller',
+              contract: 'UNASSIGNED FREE AGENT'
+            };
+            card.avatar = discordInfo.avatarUrl;
+            localStorage.setItem('frontline_league_player_card', JSON.stringify(card));
+          } catch (e) {}
+        }
+
         const btnEditDossier = document.getElementById("btn-edit-discord-dossier");
         if (btnEditDossier) {
           btnEditDossier.style.display = "inline-block";
@@ -1434,31 +1454,7 @@
 
       function handleCombatantAuthSuccess(user) {
         currentCombatantUser = user;
-        const meta = user.user_metadata || {};
-        const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
-          ? window.LeagueDB.getDiscordIdentity(user)
-          : null;
-        const isDiscord = discordInfo && discordInfo.isDiscord;
-        const isPendingOAuth = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
-        const needsDossier = !meta.activision_id || !meta.role || !meta.profile_completed || !meta.region || !meta.platform;
-
-        if ((isDiscord || isPendingOAuth) && (needsDossier || isPendingOAuth)) {
-          if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
-            window.LeagueDB.showDiscordDossierModal({
-              user,
-              onComplete: (dossierResult) => {
-                sessionStorage.removeItem("frontline_discord_oauth_pending");
-                unlockRegistrationTerminal(dossierResult.user);
-                showGateSuccess(`✓ Discord profile confirmed for <strong>${escapeHtml(dossierResult.discordName)}</strong>! Dossier updated with Activision ID <strong>${escapeHtml(dossierResult.activisionId)}</strong> and Role <strong>${escapeHtml(dossierResult.role)}</strong>. Season 1 registration unlocked below.`);
-              },
-              onCancel: () => {
-                sessionStorage.removeItem("frontline_discord_oauth_pending");
-                unlockRegistrationTerminal(user);
-              }
-            });
-            return;
-          }
-        }
+        sessionStorage.removeItem("frontline_discord_oauth_pending");
         unlockRegistrationTerminal(user);
       }
 
@@ -1786,12 +1782,16 @@
 
           const discordSnowflake = currentCombatantUser?.user_metadata?.provider_id || currentCombatantUser?.user_metadata?.sub || currentCombatantUser?.user_metadata?.discord_user_id || null;
 
+          const discordInfo = (window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === 'function') ? window.LeagueDB.getDiscordIdentity(currentCombatantUser) : null;
+          const userAvatar = discordInfo?.avatarUrl || currentCombatantUser?.user_metadata?.avatar_url || currentCombatantUser?.user_metadata?.picture || null;
+
           const signupData = {
             user_id: currentCombatantUser?.id || null,
             discord_user_id: discordSnowflake,
             gamertag: document.getElementById("gamertag").value.trim(),
             discord_username: document.getElementById("discord_username").value.trim(),
             activision_id: document.getElementById("activision_id").value.trim() || null,
+            avatar_url: userAvatar,
             registration_type: "Free Agent",
             team_name: null,
             role: document.getElementById("role").value,

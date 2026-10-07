@@ -560,23 +560,7 @@
           ? window.LeagueDB.getDiscordIdentity(authUser)
           : null;
         const isDiscord = discordInfo && discordInfo.isDiscord;
-        const isPendingOAuth = sessionStorage.getItem("frontline_discord_oauth_pending") === "true";
-        const needsDossier = !meta.activision_id || !meta.role || !meta.profile_completed || !meta.region || !meta.platform;
-
-        if ((isDiscord || isPendingOAuth) && (needsDossier || isPendingOAuth)) {
-          if (window.LeagueDB && typeof window.LeagueDB.showDiscordDossierModal === "function") {
-            window.LeagueDB.showDiscordDossierModal({
-              user: authUser,
-              onComplete: (dRes) => {
-                sessionStorage.removeItem("frontline_discord_oauth_pending");
-                loadLeagueProfile();
-              },
-              onCancel: () => {
-                sessionStorage.removeItem("frontline_discord_oauth_pending");
-              }
-            });
-          }
-        }
+        sessionStorage.removeItem("frontline_discord_oauth_pending");
 
         if (meta.gamertag || meta.username || discordInfo?.globalName) {
           p.gamertag = meta.gamertag || meta.username || discordInfo?.globalName || p.gamertag;
@@ -588,9 +572,44 @@
         if (meta.discord_name || meta.discord_username || discordInfo?.primaryName) {
           p.discord = meta.discord_name || meta.discord_username || discordInfo?.primaryName;
         }
-        if (meta.avatar_url || discordInfo?.avatarUrl) {
-          p.avatar = meta.avatar_url || discordInfo?.avatarUrl;
+        if (isDiscord && discordInfo?.avatarUrl) {
+          p.avatar = discordInfo.avatarUrl;
+          if (authUser.user_metadata) authUser.user_metadata.avatar_url = discordInfo.avatarUrl;
+          try {
+            localStorage.setItem('frontline_league_auth_user', JSON.stringify(authUser));
+          } catch(e) {}
+        } else if (meta.avatar_url && !meta.avatar_url.includes("unsplash.com")) {
+          p.avatar = meta.avatar_url;
+        } else if (discordInfo?.avatarUrl) {
+          p.avatar = discordInfo.avatarUrl;
         }
+
+        // Check if player has been drafted into a franchise in General Draft HQ
+        if (window.LeagueDB && typeof window.LeagueDB.getDraftState === 'function' && p.gamertag && p.gamertag !== 'Operative') {
+          for (const divId of ['div-1', 'div-2', 'div-3']) {
+            try {
+              const dState = await window.LeagueDB.getDraftState(divId);
+              const pick = dState?.picks?.find(pk => pk.player_gamertag && pk.player_gamertag.toLowerCase() === p.gamertag.toLowerCase());
+              if (pick && pick.team_name) {
+                p.team = pick.team_name;
+                p.tag = pick.team_tag || pick.team_name.slice(0, 5).toUpperCase();
+                p.contract = 'SIGNED FRANCHISE DRAFT PICK';
+                break;
+              }
+            } catch(e) {}
+          }
+        }
+
+        // If not assigned to a franchise squad, ensure sanctioned Free Agent status
+        if (!p.team || p.team === 'Unassigned') {
+          p.team = 'Free Agent';
+          p.tag = 'AGENT';
+          p.contract = 'UNASSIGNED FREE AGENT';
+        }
+
+        try {
+          localStorage.setItem('frontline_league_player_card', JSON.stringify(p));
+        } catch(e) {}
 
         renderProfileUI(p);
 

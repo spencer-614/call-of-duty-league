@@ -314,6 +314,12 @@ a {
   text-align: center;
 }
 
+/* Ensure separate edit profile link is never displayed in Explore League dropdown */
+.links a[href*="edit=true"],
+.nav-dropdown-col a[href*="edit=true"] {
+  display: none !important;
+}
+
 /* User-Centered Discord CTA */
 .nav-discord-cta,
 .cta,
@@ -7781,6 +7787,12 @@ body.mode-arena .league-only {
     width: 76px;
     height: 76px;
   }
+}
+
+/* Guarantee Edit Profile is never displayed in Explore League dropdown */
+.links a[href*="edit=true"],
+.nav-dropdown-col a[href*="edit=true"] {
+  display: none !important;
 }
 
 

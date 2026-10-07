@@ -30,7 +30,8 @@
               <span class="modal-kicker">FRONT-LINE OPS // COMBAT DOSSIER</span>
               <span class="modal-status-badge" id="modal-player-status">ACTIVE</span>
             </div>
-            <div class="modal-title-group">
+            <div class="modal-title-group" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <img id="modal-player-avatar" src="" alt="Player Avatar" style="width:44px; height:44px; border-radius:50%; object-fit:cover; border:2px solid var(--lime); display:none;" />
               <h2 id="modal-player-title" class="modal-gamertag">PLAYER</h2>
               <span class="pill" id="modal-player-role">ROLE</span>
               <span class="modal-team-tag" id="modal-player-team">[TAG] TEAM</span>
@@ -127,6 +128,15 @@
 
       titleEl.textContent = gamertag;
       roleEl.textContent = role;
+      const avatarEl = document.getElementById("modal-player-avatar");
+      if (avatarEl) {
+        if (player.avatar_url) {
+          avatarEl.src = player.avatar_url;
+          avatarEl.style.display = "inline-block";
+        } else {
+          avatarEl.style.display = "none";
+        }
+      }
       if (player.teams || (player.team_name && player.team_name !== "Free Agent" && player.team_name !== "Unassigned")) {
         const teamLookup = player.teams?.id || player.teams?.name || player.team_name;
         teamEl.innerHTML = `<span class="clickable-team" data-team-id="${escapeHtml(teamLookup)}" style="cursor:pointer; color:var(--lime); text-decoration:underline; text-underline-offset:3px;" title="Click to view squad dossier">${teamTag ? `${teamTag} ` : ""}${escapeHtml(teamName)} ↗</span>`;
