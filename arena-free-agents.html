@@ -134,8 +134,8 @@
                 <strong id="stat-total-fa" style="color:#ffffff; font-size:16px;">0 Available</strong>
               </div>
               <div>
-                <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Avg K/D</span>
-                <strong id="stat-avg-kd" style="color:#22c55e; font-size:16px;">0.00 K/D</strong>
+                <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Avg Rank</span>
+                <strong id="stat-avg-kd" style="display:inline-block; margin-top:2px;">Specialist</strong>
               </div>
               <div>
                 <span style="color:#94a3b8; font-size:10px; text-transform:uppercase; display:block;">Apex Tier</span>
@@ -236,8 +236,8 @@
           <div>
             <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:4px;">Sort By</label>
             <select id="filter-sort" onchange="handleFilterChange()" style="width:100%; box-sizing:border-box; background:#04060a; border:1px solid #1c2738; border-radius:4px; padding:9px 12px; color:#fff; font-size:12px; outline:none;">
-              <option value="elo_desc">Highest ELO Rating</option>
-              <option value="kd_desc">Highest K/D Ratio</option>
+              <option value="elo_desc">Highest Rank / ELO</option>
+              <option value="elo_asc">Lowest Rank / ELO</option>
               <option value="newest">Recently Registered (Newest)</option>
             </select>
           </div>
@@ -267,7 +267,7 @@
               <tr>
                 <th style="width:320px;">STANDINGS / FREE AGENT</th>
                 <th class="col-stat">ROLE</th>
-                <th class="col-stat">K/D</th>
+                <th class="col-stat">RANK / TIER</th>
                 <th class="col-stat">PLATFORM</th>
                 <th class="col-stat">LADDER PREF</th>
                 <th class="col-points">POINTS (ELO)</th>
@@ -338,8 +338,8 @@
             <div id="modal-fa-elo" style="font:900 20px var(--body); color:#ff1e44; margin-top:2px;">1,200</div>
           </div>
           <div style="background:#090d14; border:1px solid #1a2336; border-radius:4px; padding:10px 14px; text-align:center;">
-            <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">SEASON K/D</span>
-            <div id="modal-fa-kd" style="font:900 20px var(--body); color:#22c55e; margin-top:2px;">1.15</div>
+            <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">COMPETITIVE RANK</span>
+            <div id="modal-fa-kd" style="margin-top:6px;"><span class="tier-badge tier-specialist">🎯 Specialist</span></div>
           </div>
           <div style="background:#090d14; border:1px solid #1a2336; border-radius:4px; padding:10px 14px; text-align:center;">
             <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">HARDWARE</span>
@@ -433,11 +433,13 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
             <div>
               <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Estimated ELO Rating</label>
-              <input type="number" id="lft-elo" min="800" max="3000" value="1500" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
+              <input type="number" id="lft-elo" min="800" max="3000" value="1500" oninput="updateLftTierPreview()" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
             </div>
             <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Season K/D Ratio</label>
-              <input type="number" step="0.01" id="lft-kd" min="0.5" max="3.5" value="1.20" style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;" />
+              <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Rank / Tier Assigned</label>
+              <div id="lft-tier-preview" style="padding-top:7px;">
+                <span class="tier-badge tier-vanguard" style="font-size:11px; padding:5px 12px;">🛡 Vanguard</span>
+              </div>
             </div>
           </div>
 
@@ -687,16 +689,21 @@
         // Telemetry
         const totalEl = document.getElementById("stat-total-fa");
         const apexEl = document.getElementById("stat-apex-fa");
-        const kdEl = document.getElementById("stat-avg-kd");
+        const rankEl = document.getElementById("stat-avg-kd");
 
         if (totalEl) totalEl.textContent = `${countAll} Available`;
         const apexCount = agents.filter(a => (a.elo || 1200) >= 1800).length;
         if (apexEl) apexEl.textContent = `${apexCount} Operators`;
 
         if (countAll > 0) {
-          const totalKd = agents.reduce((acc, a) => acc + (Number(a.kdr) || 1.15), 0);
-          const avg = (totalKd / countAll).toFixed(2);
-          if (kdEl) kdEl.textContent = `${avg} K/D`;
+          const totalElo = agents.reduce((acc, a) => acc + (Number(a.elo) || 1200), 0);
+          const avgElo = Math.round(totalElo / countAll);
+          const avgTier = (window.LadderDB && window.LadderDB.getTier) ? window.LadderDB.getTier(avgElo) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+          if (rankEl) {
+            rankEl.innerHTML = `<span class="tier-badge ${avgTier.badgeClass}" style="font-size:10.5px; padding:2px 7px;">${avgTier.icon} ${avgTier.name}</span>`;
+          }
+        } else {
+          if (rankEl) rankEl.textContent = "Recruit";
         }
       }
 
@@ -775,10 +782,10 @@
 
         // Sort
         const sortVal = document.getElementById("filter-sort")?.value || "elo_desc";
-        if (sortVal === "elo_desc") {
+        if (sortVal === "elo_desc" || sortVal === "kd_desc") {
           filtered.sort((a, b) => (b.elo || 1200) - (a.elo || 1200));
-        } else if (sortVal === "kd_desc") {
-          filtered.sort((a, b) => (b.kdr || 1.0) - (a.kdr || 1.0));
+        } else if (sortVal === "elo_asc") {
+          filtered.sort((a, b) => (a.elo || 1200) - (b.elo || 1200));
         } else if (sortVal === "newest") {
           filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         }
@@ -810,9 +817,10 @@
           const rankNum = idx + 1;
           const rankSuffix = getRankSuffix(rankNum);
           const deltaIcon = `<span class="fl-delta-up">▲</span>`;
-          const hasFlame = (agent.elo >= 1800) || (agent.kdr >= 1.25);
+          const hasFlame = (Number(agent.elo) || 1200) >= 1800;
           const isNew = !!agent.isNewUser;
           const ladderBadge = formatLadderLabel(agent.ladder_pref);
+          const tier = (window.LadderDB && window.LadderDB.getTier) ? window.LadderDB.getTier(agent.elo || 1200) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
 
           return `
             <tr class="team-clickable" onclick="openFaModal('${agent.id}')" title="Click to view ${agent.gamertag}'s recruitment card">
@@ -837,7 +845,11 @@
               <td class="col-stat">
                 <span class="fl-role-badge">${agent.primary_role || agent.role || 'Flex'}</span>
               </td>
-              <td class="stat-win">${Number(agent.kdr || 1.15).toFixed(2)}</td>
+              <td class="col-stat">
+                <span class="tier-badge ${tier.badgeClass}" style="font-size:10px; padding:3px 8px;">
+                  ${tier.icon} ${tier.name}
+                </span>
+              </td>
               <td class="col-stat" style="color:#cbd5e1; font-weight:700;">${agent.platform || 'Crossplay'}</td>
               <td class="col-stat" style="color:#94a3b8; font-size:11.5px;">${ladderBadge}</td>
               <td class="stat-points">${Number(agent.elo || 1200).toLocaleString()}</td>
@@ -872,15 +884,17 @@
         if (avatar) avatar.src = agent.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80";
         if (gt) gt.textContent = agent.gamertag;
         if (tag) tag.textContent = `[${agent.clan_tag || 'LFT'}]`;
-        if (flame) flame.style.display = ((agent.elo >= 1800) || (agent.kdr >= 1.25)) ? "inline" : "none";
+        if (flame) flame.style.display = ((Number(agent.elo) || 1200) >= 1800) ? "inline" : "none";
 
-        const tier = window.LadderDB && window.LadderDB.getTier ? window.LadderDB.getTier(agent.elo || 1200) : { name: "Specialist" };
+        const tier = window.LadderDB && window.LadderDB.getTier ? window.LadderDB.getTier(agent.elo || 1200) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
         if (tierBadge) tierBadge.textContent = tier.name;
 
         if (role) role.textContent = agent.primary_role || agent.role || "Flex";
         if (pref) pref.textContent = formatLadderLabel(agent.ladder_pref);
         if (elo) elo.textContent = Number(agent.elo || 1200).toLocaleString();
-        if (kd) kd.textContent = Number(agent.kdr || 1.15).toFixed(2);
+        if (kd) {
+          kd.innerHTML = `<span class="tier-badge ${tier.badgeClass || 'tier-specialist'}" style="font-size:12px; padding:3px 10px;">${tier.icon || ''} ${tier.name}</span>`;
+        }
         if (platform) platform.textContent = agent.platform || "Crossplay";
         if (bio) bio.textContent = `“${agent.bio || 'Competitive operator looking for team.'}”`;
         if (discord) discord.textContent = agent.discord || `${agent.gamertag.toLowerCase()}#0001`;
@@ -913,10 +927,20 @@
         openRecruitModal(target.id);
       }
 
+      function updateLftTierPreview() {
+        const eloVal = Number(document.getElementById("lft-elo")?.value) || 1200;
+        const tier = (window.LadderDB && window.LadderDB.getTier) ? window.LadderDB.getTier(eloVal) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+        const preview = document.getElementById("lft-tier-preview");
+        if (preview) {
+          preview.innerHTML = `<span class="tier-badge ${tier.badgeClass}" style="font-size:11px; padding:5px 12px;">${tier.icon} ${tier.name}</span>`;
+        }
+      }
+
       function openPostLftModal() {
         const modal = document.getElementById("modal-post-lft");
         if (modal) modal.classList.add("active");
         setupUserContext();
+        updateLftTierPreview();
       }
 
       function closePostLftModal() {
@@ -931,8 +955,7 @@
         const clanTag = document.getElementById("lft-clan-tag")?.value.trim() || "LFT";
         const ladder = document.getElementById("lft-ladder")?.value || "4v4_variant";
         const role = document.getElementById("lft-role")?.value || "Flex";
-        const elo = document.getElementById("lft-elo")?.value || 1500;
-        const kd = document.getElementById("lft-kd")?.value || 1.20;
+        const elo = Number(document.getElementById("lft-elo")?.value) || 1500;
         const platform = document.getElementById("lft-platform")?.value || "PC";
         const region = document.getElementById("lft-region")?.value || "NA East";
         const discord = document.getElementById("lft-discord")?.value.trim();
@@ -952,7 +975,6 @@
           primary_role: role,
           role,
           elo: Number(elo),
-          kdr: Number(kd),
           platform,
           region,
           discord,
@@ -994,8 +1016,14 @@
         if (discordEl) discordEl.textContent = agent.discord || "N/A";
         if (actEl) actEl.textContent = agent.activision_id || "N/A";
 
-        const tier = window.LadderDB ? window.LadderDB.getTier(agent.elo || 1200) : { name: "Specialist" };
-        if (tierEl) tierEl.textContent = tier.name;
+        const tier = (window.LadderDB && window.LadderDB.getTier) ? window.LadderDB.getTier(agent.elo || 1200) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+        if (tierEl) {
+          tierEl.className = `tier-badge ${tier.badgeClass || 'tier-specialist'}`;
+          tierEl.textContent = `${tier.icon} ${tier.name}`;
+          tierEl.style.background = "";
+          tierEl.style.color = "";
+          tierEl.style.borderColor = "";
+        }
 
         // Populate squad selection
         const squadSelect = document.getElementById("recruit-my-squad-select");
