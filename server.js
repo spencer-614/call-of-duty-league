@@ -142,39 +142,84 @@ app.get("/health", async (req, res) => {
 // TABLE DATA API (Bridges frontend calls to Railway Postgres)
 // ------------------------------------------------------------------------------
 
-// Allowed tables for query safety
+// Allowed tables for query safety - Strict whitelist
 const ALLOWED_TABLES = new Set([
   "teams", "players", "vods", "player_map_stats", "team_map_records",
   "league_signups", "org_signups", "league_announcements", "league_settings",
   "scheduled_matches", "tournament_divisions", "tournament_matches",
+  "tournaments", "tournament_registrations",
   "arena_free_agents", "ladder_teams", "ladder_rosters", "ladder_matches",
   "ladder_disputes", "staff_roles"
 ]);
 
-// Helper: Build WHERE clause from query filters
+// Allowed SQL filter operators - Strict whitelist
+const ALLOWED_OPERATORS = new Set([
+  "eq", "neq", "gt", "gte", "lt", "lte", "in", "like", "ilike", "is_null", "not_null"
+]);
+
+// Strict SQL Identifier Validator (Prevents SQL injection via table, column, or identifier manipulation)
+function isValidIdentifier(name) {
+  return typeof name === "string" && /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.test(name);
+}
+
+// Safely format parameters for pg driver (serializes JS objects/arrays to JSON string when needed)
+function formatParamValue(val) {
+  if (val === undefined) return null;
+  if (val !== null && typeof val === "object" && !Array.isArray(val) && !(val instanceof Date)) {
+    return JSON.stringify(val);
+  }
+  return val;
+}
+
+// Helper: Build parameterized WHERE clause from query filters
 function buildWhereClause(filters = [], paramOffset = 1) {
-  if (!filters || filters.length === 0) return { whereStr: "", values: [] };
+  if (!Array.isArray(filters) || filters.length === 0) {
+    return { whereStr: "", values: [] };
+  }
   const clauses = [];
   const values = [];
   let idx = paramOffset;
 
   for (const f of filters) {
-    if (!f.col || !/^[a-zA-Z0-9_]+$/.test(f.col)) continue;
+    if (!f || typeof f !== "object") continue;
+    if (!isValidIdentifier(f.col)) continue;
+    if (!ALLOWED_OPERATORS.has(f.op)) continue;
+
+    const colEscaped = `"${f.col}"`;
+
     if (f.op === "eq") {
-      clauses.push(`"${f.col}" = $${idx++}`);
-      values.push(f.val);
+      clauses.push(`${colEscaped} = $${idx++}`);
+      values.push(formatParamValue(f.val));
     } else if (f.op === "neq") {
-      clauses.push(`"${f.col}" != $${idx++}`);
-      values.push(f.val);
+      clauses.push(`${colEscaped} != $${idx++}`);
+      values.push(formatParamValue(f.val));
     } else if (f.op === "gte") {
-      clauses.push(`"${f.col}" >= $${idx++}`);
-      values.push(f.val);
+      clauses.push(`${colEscaped} >= $${idx++}`);
+      values.push(formatParamValue(f.val));
+    } else if (f.op === "gt") {
+      clauses.push(`${colEscaped} > $${idx++}`);
+      values.push(formatParamValue(f.val));
     } else if (f.op === "lte") {
-      clauses.push(`"${f.col}" <= $${idx++}`);
-      values.push(f.val);
-    } else if (f.op === "in" && Array.isArray(f.val)) {
-      clauses.push(`"${f.col}" = ANY($${idx++})`);
-      values.push(f.val);
+      clauses.push(`${colEscaped} <= $${idx++}`);
+      values.push(formatParamValue(f.val));
+    } else if (f.op === "lt") {
+      clauses.push(`${colEscaped} < $${idx++}`);
+      values.push(formatParamValue(f.val));
+    } else if (f.op === "like") {
+      clauses.push(`${colEscaped} LIKE $${idx++}`);
+      values.push(String(f.val));
+    } else if (f.op === "ilike") {
+      clauses.push(`${colEscaped} ILIKE $${idx++}`);
+      values.push(String(f.val));
+    } else if (f.op === "in") {
+      if (Array.isArray(f.val) && f.val.length > 0) {
+        clauses.push(`${colEscaped} = ANY($${idx++})`);
+        values.push(f.val);
+      }
+    } else if (f.op === "is_null") {
+      clauses.push(`${colEscaped} IS NULL`);
+    } else if (f.op === "not_null") {
+      clauses.push(`${colEscaped} IS NOT NULL`);
     }
   }
 
@@ -184,7 +229,62 @@ function buildWhereClause(filters = [], paramOffset = 1) {
   };
 }
 
-// GET: Retrieve table data (with specialized joins for complex UI queries)
+// Auto-migration: Ensure core and tournament registration tables exist in PostgreSQL
+async function initDatabaseTables() {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    // 1. Tournaments Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.tournaments (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        format TEXT DEFAULT '4v4 CDL Variant',
+        bracket_type TEXT DEFAULT 'Double Elimination',
+        prize_pool TEXT DEFAULT '$500 USD',
+        entry_fee TEXT DEFAULT 'FREE ENTRY',
+        max_teams INT DEFAULT 16,
+        registered_teams INT DEFAULT 0,
+        start_date TEXT,
+        start_time TEXT,
+        status TEXT DEFAULT 'Registration Open',
+        image_url TEXT,
+        registration_url TEXT,
+        bracket_url TEXT,
+        description TEXT,
+        rules_notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 2. Tournament Registrations Table (Logs all squad entries submitted via modal)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.tournament_registrations (
+        id TEXT PRIMARY KEY,
+        tournament_id TEXT NOT NULL,
+        tournament_title TEXT,
+        team_name TEXT NOT NULL,
+        captain_gamertag TEXT NOT NULL,
+        captain_discord TEXT NOT NULL,
+        captain_activision_id TEXT,
+        roster JSONB DEFAULT '[]'::jsonb,
+        roster_text TEXT,
+        status TEXT DEFAULT 'registered',
+        registered_at TIMESTAMPTZ DEFAULT NOW(),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_tourney_reg_tid ON public.tournament_registrations (tournament_id);
+    `);
+    console.log("PostgreSQL database schemas verified & auto-migrated.");
+  } catch (err) {
+    console.warn("Database initialization check notice:", err.message);
+  }
+}
+
+// Trigger schema check
+initDatabaseTables();
+
+// GET: Retrieve table data (Strict parameterized query & validated identifiers)
 app.get("/api/data/:table", async (req, res) => {
   const table = req.params.table;
   if (!ALLOWED_TABLES.has(table)) {
@@ -199,7 +299,7 @@ app.get("/api/data/:table", async (req, res) => {
 
   try {
     // 1. Specialized join: TEAMS (embeds players array)
-    if (table === "teams" && filters.length === 0) {
+    if (table === "teams" && (!filters || filters.length === 0)) {
       const query = `
         SELECT 
           t.*,
@@ -217,7 +317,7 @@ app.get("/api/data/:table", async (req, res) => {
     }
 
     // 2. Specialized join: PLAYERS (embeds team object)
-    if (table === "players" && filters.length === 0) {
+    if (table === "players" && (!filters || filters.length === 0)) {
       const query = `
         SELECT 
           p.*,
@@ -234,7 +334,7 @@ app.get("/api/data/:table", async (req, res) => {
     }
 
     // 3. Specialized join: VODS (embeds team1 and team2 names)
-    if (table === "vods") {
+    if (table === "vods" && (!filters || filters.length === 0)) {
       const query = `
         SELECT 
           v.*,
@@ -250,7 +350,7 @@ app.get("/api/data/:table", async (req, res) => {
     }
 
     // 4. Specialized join: LADDER_MATCHES (embeds team_a and team_b)
-    if (table === "ladder_matches") {
+    if (table === "ladder_matches" && (!filters || filters.length === 0)) {
       const query = `
         SELECT 
           m.*,
@@ -265,27 +365,34 @@ app.get("/api/data/:table", async (req, res) => {
       return res.json({ data: result.rows, error: null });
     }
 
-    // Generic Table Query with filters and ordering
+    // Generic Table Query with parameterized filters and ordering
     const { whereStr, values } = buildWhereClause(filters);
     let orderClause = "";
-    if (orderBy && orderBy.length > 0) {
+    if (Array.isArray(orderBy) && orderBy.length > 0) {
       const parts = orderBy
-        .filter(o => o.col && /^[a-zA-Z0-9_]+$/.test(o.col))
-        .map(o => `"${o.col}" ${o.ascending ? "ASC" : "DESC"}`);
+        .filter(o => o && isValidIdentifier(o.col))
+        .map(o => `"${o.col}" ${o.ascending === false ? "DESC" : "ASC"}`);
       if (parts.length > 0) orderClause = "ORDER BY " + parts.join(", ");
     }
-    const limitClause = limit ? `LIMIT ${parseInt(limit, 10)}` : "";
+    
+    let limitClause = "";
+    if (limit !== undefined && limit !== null) {
+      const parsedLimit = parseInt(limit, 10);
+      if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
+        limitClause = `LIMIT ${Math.min(parsedLimit, 1000)}`;
+      }
+    }
 
     const sql = `SELECT * FROM public."${table}" ${whereStr} ${orderClause} ${limitClause};`;
     const result = await pool.query(sql, values);
     res.json({ data: result.rows, error: null });
   } catch (err) {
-    console.error(`Error querying ${table}:`, err);
-    res.status(500).json({ data: null, error: err.message });
+    console.error(`Error querying ${table}:`, err.message);
+    res.status(500).json({ data: null, error: "Database query failed safely" });
   }
 });
 
-// POST: Insert one or more records into a table
+// POST: Insert one or more records into a table (Strict parameterization & identifier validation)
 app.post("/api/data/:table", async (req, res) => {
   const table = req.params.table;
   if (!ALLOWED_TABLES.has(table)) {
@@ -299,12 +406,13 @@ app.post("/api/data/:table", async (req, res) => {
   try {
     const insertedRows = [];
     for (const record of records) {
-      const keys = Object.keys(record).filter(k => /^[a-zA-Z0-9_]+$/.test(k));
+      if (!record || typeof record !== "object") continue;
+      const keys = Object.keys(record).filter(isValidIdentifier);
       if (keys.length === 0) continue;
 
       const cols = keys.map(k => `"${k}"`).join(", ");
       const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
-      const values = keys.map(k => record[k]);
+      const values = keys.map(k => formatParamValue(record[k]));
 
       const sql = `INSERT INTO public."${table}" (${cols}) VALUES (${placeholders}) RETURNING *;`;
       const result = await pool.query(sql, values);
@@ -313,12 +421,12 @@ app.post("/api/data/:table", async (req, res) => {
 
     res.json({ data: insertedRows, error: null });
   } catch (err) {
-    console.error(`Error inserting into ${table}:`, err);
-    res.status(500).json({ data: null, error: err.message });
+    console.error(`Error inserting into ${table}:`, err.message);
+    res.status(500).json({ data: null, error: "Database insert failed safely" });
   }
 });
 
-// POST: Upsert records (insert or update on conflict)
+// POST: Upsert records (insert or update on conflict with strict parameterization)
 app.post("/api/data/:table/upsert", async (req, res) => {
   const table = req.params.table;
   if (!ALLOWED_TABLES.has(table)) {
@@ -331,13 +439,35 @@ app.post("/api/data/:table/upsert", async (req, res) => {
   }
 
   try {
-    const keys = Object.keys(record).filter(k => /^[a-zA-Z0-9_]+$/.test(k));
-    const conflictCol = record.id !== undefined ? "id" : (record.gamertag ? "gamertag" : keys[0]);
+    const keys = Object.keys(record).filter(isValidIdentifier);
+    if (keys.length === 0) {
+      return res.status(400).json({ error: "No valid columns provided", data: null });
+    }
+
+    // Determine and strictly validate conflict column
+    let conflictCol = "id";
+    const requestedConflict = req.query.onConflict || req.body.onConflict;
+    if (requestedConflict && isValidIdentifier(requestedConflict) && keys.includes(requestedConflict)) {
+      conflictCol = requestedConflict;
+    } else if (keys.includes("id")) {
+      conflictCol = "id";
+    } else if (keys.includes("gamertag")) {
+      conflictCol = "gamertag";
+    } else {
+      conflictCol = keys[0];
+    }
+
+    if (!isValidIdentifier(conflictCol)) {
+      return res.status(400).json({ error: "Invalid conflict column identifier", data: null });
+    }
     
     const cols = keys.map(k => `"${k}"`).join(", ");
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
-    const updateSets = keys.filter(k => k !== conflictCol).map(k => `"${k}" = EXCLUDED."${k}"`).join(", ");
-    const values = keys.map(k => record[k]);
+    const updateSets = keys
+      .filter(k => k !== conflictCol)
+      .map(k => `"${k}" = EXCLUDED."${k}"`)
+      .join(", ");
+    const values = keys.map(k => formatParamValue(record[k]));
 
     const sql = `
       INSERT INTO public."${table}" (${cols}) 
@@ -348,12 +478,12 @@ app.post("/api/data/:table/upsert", async (req, res) => {
     const result = await pool.query(sql, values);
     res.json({ data: result.rows, error: null });
   } catch (err) {
-    console.error(`Error upserting ${table}:`, err);
-    res.status(500).json({ data: null, error: err.message });
+    console.error(`Error upserting ${table}:`, err.message);
+    res.status(500).json({ data: null, error: "Database upsert failed safely" });
   }
 });
 
-// PATCH: Update records matching filters
+// PATCH: Update records matching filters (Guarded against unconstrained whole-table updates)
 app.patch("/api/data/:table", async (req, res) => {
   const table = req.params.table;
   if (!ALLOWED_TABLES.has(table)) {
@@ -366,30 +496,34 @@ app.patch("/api/data/:table", async (req, res) => {
   }
 
   try {
-    const updateKeys = Object.keys(updates).filter(k => /^[a-zA-Z0-9_]+$/.test(k));
+    const updateKeys = Object.keys(updates).filter(isValidIdentifier);
     if (updateKeys.length === 0) return res.json({ data: [], error: null });
 
     const values = [];
     let idx = 1;
 
     const setClauses = updateKeys.map(k => {
-      values.push(updates[k]);
+      values.push(formatParamValue(updates[k]));
       return `"${k}" = $${idx++}`;
     });
 
     const { whereStr, values: whereValues } = buildWhereClause(filters, idx);
+    // Security check: Never permit unconstrained table updates
+    if (!whereStr) {
+      return res.status(400).json({ error: "Bulk updates without filter conditions are not permitted for security.", data: null });
+    }
     values.push(...whereValues);
 
     const sql = `UPDATE public."${table}" SET ${setClauses.join(", ")} ${whereStr} RETURNING *;`;
     const result = await pool.query(sql, values);
     res.json({ data: result.rows, error: null });
   } catch (err) {
-    console.error(`Error updating ${table}:`, err);
-    res.status(500).json({ data: null, error: err.message });
+    console.error(`Error updating ${table}:`, err.message);
+    res.status(500).json({ data: null, error: "Database update failed safely" });
   }
 });
 
-// DELETE: Delete records matching filters
+// DELETE: Delete records matching filters (Guarded against unconstrained table wipe)
 app.delete("/api/data/:table", async (req, res) => {
   const table = req.params.table;
   if (!ALLOWED_TABLES.has(table)) {
@@ -399,24 +533,35 @@ app.delete("/api/data/:table", async (req, res) => {
   const { filters = [] } = req.body;
   try {
     const { whereStr, values } = buildWhereClause(filters);
+    // Security check: Never permit unconstrained table deletions
+    if (!whereStr) {
+      return res.status(400).json({ error: "Bulk deletion without filter conditions is not permitted for security.", data: null });
+    }
     const sql = `DELETE FROM public."${table}" ${whereStr} RETURNING *;`;
     const result = await pool.query(sql, values);
     res.json({ data: result.rows, error: null });
   } catch (err) {
-    console.error(`Error deleting from ${table}:`, err);
-    res.status(500).json({ data: null, error: err.message });
+    console.error(`Error deleting from ${table}:`, err.message);
+    res.status(500).json({ data: null, error: "Database delete failed safely" });
   }
 });
 
-// Auth Login endpoint (Checks staff_roles table for staff login)
+// Auth Login endpoint (Parameterized staff login check)
 app.post("/api/auth/login", async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email is required" });
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  if (cleanEmail.length > 255) {
+    return res.status(400).json({ error: "Email length exceeds allowed limit" });
+  }
 
   try {
     const result = await pool.query(
       "SELECT * FROM public.staff_roles WHERE LOWER(email) = LOWER($1) LIMIT 1",
-      [email.trim()]
+      [cleanEmail]
     );
 
     if (result.rows.length > 0) {

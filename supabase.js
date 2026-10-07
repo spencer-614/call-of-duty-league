@@ -2823,24 +2823,157 @@ window.LeagueDB = {
     const item = list.find(t => String(t.id) === String(tournamentId));
     if (!item) return { success: false, error: "Tournament not found" };
 
+    // Increment registered teams count on tournament
     item.registered_teams = (Number(item.registered_teams) || 0) + 1;
     await this.saveTournament(item);
 
-    // Persist registration record
+    const regId = "reg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+    const regRecord = {
+      id: regId,
+      tournament_id: String(tournamentId),
+      tournament_title: item.title || "Frontline Tournament",
+      team_name: String(squadData.team_name || "Squad").trim(),
+      captain_gamertag: String(squadData.captain_gamertag || "Captain").trim(),
+      captain_discord: String(squadData.captain_discord || "").trim(),
+      captain_activision_id: String(squadData.captain_activision_id || "").trim(),
+      roster: Array.isArray(squadData.roster) ? squadData.roster : [squadData.roster].filter(Boolean),
+      roster_text: squadData.roster_text || (Array.isArray(squadData.roster) ? squadData.roster.join(", ") : String(squadData.roster || "")),
+      status: "registered",
+      registered_at: squadData.registered_at || new Date().toISOString()
+    };
+
+    let savedToDatabase = false;
+
+    // 1. Persist directly to Supabase / Database Client if configured
+    if (dbClient) {
+      try {
+        const { error } = await dbClient
+          .from("tournament_registrations")
+          .insert([regRecord]);
+        if (!error) {
+          savedToDatabase = true;
+        } else {
+          console.warn("Notice inserting to tournament_registrations:", error.message || error);
+        }
+      } catch (err) {
+        console.warn("Database client insert notice:", err.message || err);
+      }
+    }
+
+    // 2. Direct Railway REST fallback if running on Node backend
+    if (!savedToDatabase && typeof fetch !== "undefined") {
+      try {
+        const res = await fetch("/api/data/tournament_registrations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(regRecord)
+        });
+        if (res.ok) {
+          savedToDatabase = true;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Persist registration record to localStorage as backup/cache
     try {
       const regKey = "frontline_tournament_registrations";
       const regs = JSON.parse(localStorage.getItem(regKey)) || [];
-      regs.unshift({
-        id: "reg_" + Date.now(),
-        tournament_id: tournamentId,
-        tournament_title: item.title,
-        ...squadData,
-        registered_at: new Date().toISOString()
-      });
+      regs.unshift(regRecord);
       localStorage.setItem(regKey, JSON.stringify(regs));
     } catch (e) {}
 
-    return { success: true, tournament: item };
+    window.dispatchEvent(new CustomEvent("frontline_tournament_registered", { 
+      detail: { tournamentId, registration: regRecord, savedToDatabase } 
+    }));
+
+    return { success: true, tournament: item, registration: regRecord, savedToDatabase };
+  },
+
+  async getTournamentRegistrations(tournamentId = null) {
+    let list = [];
+
+    // 1. Try Database Client first
+    if (dbClient) {
+      try {
+        let query = dbClient
+          .from("tournament_registrations")
+          .select("*")
+          .order("registered_at", { ascending: false });
+        if (tournamentId) {
+          query = query.eq("tournament_id", String(tournamentId));
+        }
+        const { data, error } = await query;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          list = data;
+        }
+      } catch (err) {}
+    }
+
+    // 2. Try Railway API if available
+    if ((!list || list.length === 0) && typeof fetch !== "undefined") {
+      try {
+        const filters = tournamentId ? [{ col: "tournament_id", op: "eq", val: String(tournamentId) }] : [];
+        const res = await fetch("/api/data/tournament_registrations?q=" + encodeURIComponent(
+          JSON.stringify({ filters, orderBy: [{ col: "registered_at", ascending: false }] })
+        ));
+        if (res.ok) {
+          const json = await res.json();
+          if (json && Array.isArray(json.data) && json.data.length > 0) {
+            list = json.data;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback to localStorage
+    if (!list || list.length === 0) {
+      try {
+        const local = JSON.parse(localStorage.getItem("frontline_tournament_registrations")) || [];
+        list = tournamentId ? local.filter(r => String(r.tournament_id) === String(tournamentId)) : local;
+      } catch (e) {}
+    }
+
+    return list;
+  },
+
+  async deleteTournamentRegistration(registrationId, tournamentId = null) {
+    if (!registrationId) return { success: false, error: "Registration ID required" };
+
+    // 1. Delete from database
+    if (dbClient) {
+      try {
+        await dbClient.from("tournament_registrations").delete().eq("id", registrationId);
+      } catch (e) {}
+    }
+    if (typeof fetch !== "undefined") {
+      try {
+        await fetch("/api/data/tournament_registrations", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filters: [{ col: "id", op: "eq", val: registrationId }] })
+        });
+      } catch (e) {}
+    }
+
+    // 2. Update localStorage
+    try {
+      const regKey = "frontline_tournament_registrations";
+      const regs = JSON.parse(localStorage.getItem(regKey)) || [];
+      const filtered = regs.filter(r => String(r.id) !== String(registrationId));
+      localStorage.setItem(regKey, JSON.stringify(filtered));
+    } catch (e) {}
+
+    // 3. Decrement tournament registered_teams count if tournamentId provided
+    if (tournamentId) {
+      const tourneys = await this.getTournaments();
+      const t = tourneys.find(item => String(item.id) === String(tournamentId));
+      if (t && Number(t.registered_teams) > 0) {
+        t.registered_teams = Number(t.registered_teams) - 1;
+        await this.saveTournament(t);
+      }
+    }
+
+    return { success: true };
   },
 
   // ==============================================================================

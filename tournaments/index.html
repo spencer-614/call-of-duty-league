@@ -699,6 +699,11 @@
             </div>
 
             <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Captain Activision ID (Optional / Recommended)</label>
+              <input type="text" id="reg-captain-actid" placeholder="e.g. Captain#1234567" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
+            </div>
+
+            <div>
               <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Player Roster (Gamertags separated by commas) *</label>
               <input type="text" id="reg-roster" required placeholder="Player 1, Player 2, Player 3, Player 4" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
             </div>
@@ -952,15 +957,11 @@
                     <button type="button" class="btn-tourney-outline" disabled style="opacity:0.5; cursor:not-allowed;">
                       Bracket Concluded
                     </button>
-                  ` : (t.registration_url ? `
-                    <a href="${escapeHtml(t.registration_url)}" target="_blank" rel="noopener" class="btn-tourney-primary">
-                      <span>Register ↗</span>
-                    </a>
                   ` : `
                     <button type="button" class="btn-tourney-primary" onclick="openTourneyRegister('${escapeHtml(t.id)}')">
                       <span>Register Squad ↗</span>
                     </button>
-                  `)}
+                  `}
                 </div>
               </div>
             </article>
@@ -1016,13 +1017,10 @@
       }
 
       function openRegistrationFromDetails() {
+        const tid = currentSelectedTourney?.id;
         closeTourneyDetailsModal();
-        if (currentSelectedTourney) {
-          if (currentSelectedTourney.registration_url) {
-            window.open(currentSelectedTourney.registration_url, '_blank');
-          } else {
-            openTourneyRegister(currentSelectedTourney.id);
-          }
+        if (tid) {
+          openTourneyRegister(tid);
         }
       }
 
@@ -1047,6 +1045,9 @@
             if (card.discord) {
               document.getElementById('reg-captain-discord').value = card.discord;
             }
+            if (card.activision_id) {
+              document.getElementById('reg-captain-actid').value = card.activision_id;
+            }
           }
         } catch(e) {}
 
@@ -1063,6 +1064,7 @@
         const teamName = document.getElementById('reg-team-name').value.trim();
         const captainTag = document.getElementById('reg-captain-tag').value.trim();
         const captainDiscord = document.getElementById('reg-captain-discord').value.trim();
+        const captainActId = (document.getElementById('reg-captain-actid')?.value || '').trim();
         const rosterStr = document.getElementById('reg-roster').value.trim();
 
         if (!teamName || !captainTag || !captainDiscord || !rosterStr) {
@@ -1081,7 +1083,9 @@
             team_name: teamName,
             captain_gamertag: captainTag,
             captain_discord: captainDiscord,
+            captain_activision_id: captainActId,
             roster: rosterStr.split(',').map(s => s.trim()).filter(Boolean),
+            roster_text: rosterStr,
             registered_at: new Date().toISOString()
           };
 
@@ -1090,7 +1094,7 @@
           }
 
           closeTourneyRegisterModal();
-          showToast(`Squad "${teamName}" successfully enlisted! See you in the bracket.`);
+          showToast(`Squad "${teamName}" successfully enlisted and logged to database! See you in the bracket.`);
 
           // Re-fetch and update UI
           if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {

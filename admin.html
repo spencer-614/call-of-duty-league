@@ -2992,6 +2992,26 @@
       </form>
     </dialog>
 
+    <!-- MODAL: VIEW TOURNAMENT SQUAD REGISTRATIONS -->
+    <dialog id="modal-view-tourney-registrations" class="admin-modal" closedby="any" style="max-width:850px; width:95%;">
+      <div class="admin-modal-header" style="border-bottom:1px solid #2a311e; padding-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">ENLISTED ROSTERS &amp; SQUADS (DATABASE LOGGED)</div>
+          <h3 class="admin-modal-title" id="tourney-reg-modal-title" style="margin:0; font:800 20px var(--display);">Tournament Registrations</h3>
+        </div>
+        <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-view-tourney-registrations').close()">✕ Close</button>
+      </div>
+      <div class="admin-modal-body" style="max-height:65vh; overflow-y:auto; padding-top:16px;">
+        <div id="tourney-registrations-container">
+          <!-- Loaded dynamically from database -->
+        </div>
+      </div>
+      <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
+        <span id="tourney-reg-count-display" style="font-size:12px; color:var(--muted); font-weight:700;">0 Squads Registered</span>
+        <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-view-tourney-registrations').close()">Done</button>
+      </div>
+    </dialog>
+
     <!-- Notification Toast -->
     <div id="admin-toast" class="toast-banner">
       <span style="color:var(--lime); font-size:18px;">✓</span>
@@ -6790,7 +6810,7 @@
             }
 
             tbody.innerHTML = cachedAdminTournaments.map(t => {
-              const enlisted = t.teams_registered_count || (t.registered_teams?.length) || 0;
+              const enlisted = Number(t.registered_teams) || (Array.isArray(t.registered_teams) ? t.registered_teams.length : 0) || t.teams_registered_count || 0;
               const max = t.max_teams || 32;
               const curStatus = t.status || 'Registration Open';
               return `
@@ -6823,8 +6843,9 @@
                       <option value="Completed" ${curStatus === 'Completed' ? 'selected' : ''}>Completed</option>
                     </select>
                   </td>
-                  <td>
-                    <div style="display:flex; gap:6px;">
+                                    <td>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="window.adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
                       <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
                       <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="window.adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
                     </div>

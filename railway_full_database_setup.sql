@@ -304,6 +304,51 @@ CREATE TABLE public.tournament_matches (
 CREATE INDEX idx_tournament_matches_division ON public.tournament_matches(division_id);
 
 -- ------------------------------------------------------------------------------
+-- 13b. TOURNAMENTS (OFFICIAL COMMISSIONER EVENTS & CASH CUPS)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.tournaments (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    format TEXT DEFAULT '4v4 CDL Variant',
+    bracket_type TEXT DEFAULT 'Double Elimination',
+    prize_pool TEXT DEFAULT '$500 USD',
+    entry_fee TEXT DEFAULT 'FREE ENTRY',
+    max_teams INT DEFAULT 16,
+    registered_teams INT DEFAULT 0,
+    start_date TEXT,
+    start_time TEXT,
+    status TEXT DEFAULT 'Registration Open',
+    image_url TEXT,
+    registration_url TEXT,
+    bracket_url TEXT,
+    description TEXT,
+    rules_notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ------------------------------------------------------------------------------
+-- 13c. TOURNAMENT REGISTRATIONS (LOGGED SQUAD ENTRIES & ROSTERS)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.tournament_registrations (
+    id TEXT PRIMARY KEY,
+    tournament_id TEXT NOT NULL,
+    tournament_title TEXT,
+    team_name TEXT NOT NULL,
+    captain_gamertag TEXT NOT NULL,
+    captain_discord TEXT NOT NULL,
+    captain_activision_id TEXT,
+    roster JSONB DEFAULT '[]'::jsonb,
+    roster_text TEXT,
+    status TEXT DEFAULT 'registered',
+    registered_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournament_registrations_tid ON public.tournament_registrations(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_registrations_captain ON public.tournament_registrations(captain_gamertag);
+
+-- ------------------------------------------------------------------------------
 -- 14. ARENA FREE AGENTS (LFT LADDER MARKETPLACE)
 -- ------------------------------------------------------------------------------
 CREATE TABLE public.arena_free_agents (
