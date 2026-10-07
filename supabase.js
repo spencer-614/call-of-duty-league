@@ -5454,7 +5454,7 @@ window.LeagueDB = {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-tournaments-hub"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub"]
     },
     referee: {
       key: "referee",
