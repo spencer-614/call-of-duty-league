@@ -154,7 +154,7 @@ const ALLOWED_TABLES = new Set([
 
 // Allowed SQL filter operators - Strict whitelist
 const ALLOWED_OPERATORS = new Set([
-  "eq", "neq", "gt", "gte", "lt", "lte", "in", "like", "ilike", "is_null", "not_null"
+  "eq", "ieq", "neq", "gt", "gte", "lt", "lte", "in", "like", "ilike", "is_null", "not_null"
 ]);
 
 // Strict SQL Identifier Validator (Prevents SQL injection via table, column, or identifier manipulation)
@@ -171,8 +171,13 @@ function formatParamValue(val) {
   return val;
 }
 
+// ==============================================================================
+// SQL INJECTION PROTECTION ENGINE (PARAMETERIZED QUERIES ENFORCEMENT)
+// ==============================================================================
 // Helper: Build parameterized WHERE clause from query filters
-function buildWhereClause(filters = [], paramOffset = 1) {
+// Every input value is passed via the values array and bound as $1, $2, ...
+// Inputs are treated strictly as data values, NEVER concatenated into SQL strings
+function buildWhereClause(filters = [], paramOffset = 1, tableAlias = "") {
   if (!Array.isArray(filters) || filters.length === 0) {
     return { whereStr: "", values: [] };
   }
@@ -185,11 +190,15 @@ function buildWhereClause(filters = [], paramOffset = 1) {
     if (!isValidIdentifier(f.col)) continue;
     if (!ALLOWED_OPERATORS.has(f.op)) continue;
 
-    const colEscaped = `"${f.col}"`;
+    const prefix = (tableAlias && isValidIdentifier(tableAlias)) ? `"${tableAlias}".` : "";
+    const colEscaped = `${prefix}"${f.col}"`;
 
     if (f.op === "eq") {
       clauses.push(`${colEscaped} = $${idx++}`);
       values.push(formatParamValue(f.val));
+    } else if (f.op === "ieq") {
+      clauses.push(`LOWER(${colEscaped}) = LOWER($${idx++})`);
+      values.push(String(f.val));
     } else if (f.op === "neq") {
       clauses.push(`${colEscaped} != $${idx++}`);
       values.push(formatParamValue(f.val));
@@ -299,7 +308,23 @@ app.get("/api/data/:table", async (req, res) => {
 
   try {
     // 1. Specialized join: TEAMS (embeds players array)
-    if (table === "teams" && (!filters || filters.length === 0)) {
+    if (table === "teams") {
+      const { whereStr, values: teamValues } = buildWhereClause(filters, 1, "t");
+      let orderPart = "ORDER BY t.points DESC, t.wins DESC";
+      if (Array.isArray(orderBy) && orderBy.length > 0) {
+        const parts = orderBy
+          .filter(o => o && isValidIdentifier(o.col))
+          .map(o => `t."${o.col}" ${o.ascending === false ? "DESC" : "ASC"}`);
+        if (parts.length > 0) orderPart = "ORDER BY " + parts.join(", ");
+      }
+      let limitPart = "";
+      if (limit !== undefined && limit !== null) {
+        const parsedLimit = parseInt(limit, 10);
+        if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
+          teamValues.push(Math.min(parsedLimit, 1000));
+          limitPart = `LIMIT $${teamValues.length}`;
+        }
+      }
       const query = `
         SELECT 
           t.*,
@@ -309,15 +334,34 @@ app.get("/api/data/:table", async (req, res) => {
           ) AS players
         FROM public.teams t
         LEFT JOIN public.players p ON p.team_id = t.id
+        ${whereStr}
         GROUP BY t.id
-        ORDER BY t.points DESC, t.wins DESC;
+        ${orderPart}
+        ${limitPart};
       `;
-      const result = await pool.query(query);
+      const result = await pool.query(query, teamValues);
       return res.json({ data: result.rows, error: null });
     }
 
     // 2. Specialized join: PLAYERS (embeds team object)
-    if (table === "players" && (!filters || filters.length === 0)) {
+    // Parameterized: input is treated as a value ($1, $2, etc.)
+    if (table === "players") {
+      const { whereStr, values: playerValues } = buildWhereClause(filters, 1, "p");
+      let orderPart = "ORDER BY p.kdr DESC";
+      if (Array.isArray(orderBy) && orderBy.length > 0) {
+        const parts = orderBy
+          .filter(o => o && isValidIdentifier(o.col))
+          .map(o => `p."${o.col}" ${o.ascending === false ? "DESC" : "ASC"}`);
+        if (parts.length > 0) orderPart = "ORDER BY " + parts.join(", ");
+      }
+      let limitPart = "";
+      if (limit !== undefined && limit !== null) {
+        const parsedLimit = parseInt(limit, 10);
+        if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
+          playerValues.push(Math.min(parsedLimit, 1000));
+          limitPart = `LIMIT $${playerValues.length}`;
+        }
+      }
       const query = `
         SELECT 
           p.*,
@@ -327,14 +371,32 @@ app.get("/api/data/:table", async (req, res) => {
           END AS teams
         FROM public.players p
         LEFT JOIN public.teams t ON p.team_id = t.id
-        ORDER BY p.kdr DESC;
+        ${whereStr}
+        ${orderPart}
+        ${limitPart};
       `;
-      const result = await pool.query(query);
+      const result = await pool.query(query, playerValues);
       return res.json({ data: result.rows, error: null });
     }
 
     // 3. Specialized join: VODS (embeds team1 and team2 names)
-    if (table === "vods" && (!filters || filters.length === 0)) {
+    if (table === "vods") {
+      const { whereStr, values: vodValues } = buildWhereClause(filters, 1, "v");
+      let orderPart = "ORDER BY v.created_at DESC";
+      if (Array.isArray(orderBy) && orderBy.length > 0) {
+        const parts = orderBy
+          .filter(o => o && isValidIdentifier(o.col))
+          .map(o => `v."${o.col}" ${o.ascending === false ? "DESC" : "ASC"}`);
+        if (parts.length > 0) orderPart = "ORDER BY " + parts.join(", ");
+      }
+      let limitPart = "";
+      if (limit !== undefined && limit !== null) {
+        const parsedLimit = parseInt(limit, 10);
+        if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
+          vodValues.push(Math.min(parsedLimit, 1000));
+          limitPart = `LIMIT $${vodValues.length}`;
+        }
+      }
       const query = `
         SELECT 
           v.*,
@@ -343,14 +405,32 @@ app.get("/api/data/:table", async (req, res) => {
         FROM public.vods v
         LEFT JOIN public.teams t1 ON v.team1_id = t1.id
         LEFT JOIN public.teams t2 ON v.team2_id = t2.id
-        ORDER BY v.created_at DESC;
+        ${whereStr}
+        ${orderPart}
+        ${limitPart};
       `;
-      const result = await pool.query(query);
+      const result = await pool.query(query, vodValues);
       return res.json({ data: result.rows, error: null });
     }
 
     // 4. Specialized join: LADDER_MATCHES (embeds team_a and team_b)
-    if (table === "ladder_matches" && (!filters || filters.length === 0)) {
+    if (table === "ladder_matches") {
+      const { whereStr, values: lmValues } = buildWhereClause(filters, 1, "m");
+      let orderPart = "ORDER BY m.created_at DESC";
+      if (Array.isArray(orderBy) && orderBy.length > 0) {
+        const parts = orderBy
+          .filter(o => o && isValidIdentifier(o.col))
+          .map(o => `m."${o.col}" ${o.ascending === false ? "DESC" : "ASC"}`);
+        if (parts.length > 0) orderPart = "ORDER BY " + parts.join(", ");
+      }
+      let limitPart = "";
+      if (limit !== undefined && limit !== null) {
+        const parsedLimit = parseInt(limit, 10);
+        if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
+          lmValues.push(Math.min(parsedLimit, 1000));
+          limitPart = `LIMIT $${lmValues.length}`;
+        }
+      }
       const query = `
         SELECT 
           m.*,
@@ -359,9 +439,11 @@ app.get("/api/data/:table", async (req, res) => {
         FROM public.ladder_matches m
         LEFT JOIN public.ladder_teams ta ON m.team_a_id = ta.id
         LEFT JOIN public.ladder_teams tb ON m.team_b_id = tb.id
-        ORDER BY m.created_at DESC;
+        ${whereStr}
+        ${orderPart}
+        ${limitPart};
       `;
-      const result = await pool.query(query);
+      const result = await pool.query(query, lmValues);
       return res.json({ data: result.rows, error: null });
     }
 
@@ -379,11 +461,21 @@ app.get("/api/data/:table", async (req, res) => {
     if (limit !== undefined && limit !== null) {
       const parsedLimit = parseInt(limit, 10);
       if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
-        limitClause = `LIMIT ${Math.min(parsedLimit, 1000)}`;
+        values.push(Math.min(parsedLimit, 1000));
+        limitClause = `LIMIT $${values.length}`;
       }
     }
 
-    const sql = `SELECT * FROM public."${table}" ${whereStr} ${orderClause} ${limitClause};`;
+    let offsetClause = "";
+    if (q.offset !== undefined && q.offset !== null) {
+      const parsedOffset = parseInt(q.offset, 10);
+      if (Number.isInteger(parsedOffset) && parsedOffset >= 0) {
+        values.push(parsedOffset);
+        offsetClause = `OFFSET $${values.length}`;
+      }
+    }
+
+    const sql = `SELECT * FROM public."${table}" ${whereStr} ${orderClause} ${limitClause} ${offsetClause};`;
     const result = await pool.query(sql, values);
     res.json({ data: result.rows, error: null });
   } catch (err) {
@@ -586,6 +678,114 @@ app.post("/api/auth/login", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ------------------------------------------------------------------------------
+// PARAMETERIZED ROUTES: PLAYERS & TOURNAMENT REGISTRATIONS
+// ------------------------------------------------------------------------------
+// Demonstrating strict SQL injection protection: input is treated strictly as a value ($1, $2, etc.)
+// Safer: pool.query('SELECT * FROM public.players WHERE LOWER(gamertag) = LOWER($1)', [gamertag])
+app.get("/api/players/:gamertag", async (req, res) => {
+  const { gamertag } = req.params;
+  if (!gamertag || typeof gamertag !== "string") {
+    return res.status(400).json({ error: "Gamertag is required", data: null });
+  }
+  try {
+    const result = await pool.query(
+      `SELECT 
+         p.*,
+         CASE 
+           WHEN t.id IS NOT NULL THEN json_build_object('id', t.id, 'name', t.name, 'tag', t.tag, 'logo_url', t.logo_url)
+           ELSE NULL 
+         END AS teams
+       FROM public.players p
+       LEFT JOIN public.teams t ON p.team_id = t.id
+       WHERE LOWER(p.gamertag) = LOWER($1)
+       LIMIT 1;`,
+      [gamertag.trim()]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Player not found", data: null });
+    }
+    res.json({ data: result.rows[0], error: null });
+  } catch (err) {
+    console.error("Error fetching player:", err.message);
+    res.status(500).json({ error: "Database query failed safely", data: null });
+  }
+});
+
+// Tournament Registrations Lookup (Parameterized Query)
+// Input tournamentId is treated strictly as value $1
+app.get("/api/tournaments/:tournamentId/registrations", async (req, res) => {
+  const { tournamentId } = req.params;
+  if (!tournamentId) {
+    return res.status(400).json({ error: "Tournament ID is required", data: null });
+  }
+  try {
+    const result = await pool.query(
+      `SELECT * FROM public.tournament_registrations 
+       WHERE tournament_id = $1 
+       ORDER BY registered_at DESC;`,
+      [String(tournamentId)]
+    );
+    res.json({ data: result.rows, error: null });
+  } catch (err) {
+    console.error("Error fetching tournament registrations:", err.message);
+    res.status(500).json({ error: "Database query failed safely", data: null });
+  }
+});
+
+// Tournament Registration Submission (Parameterized Insert)
+// All registration fields are parameterized as $1..$10
+app.post("/api/tournaments/:tournamentId/registrations", async (req, res) => {
+  const { tournamentId } = req.params;
+  const {
+    id,
+    tournament_title,
+    team_name,
+    captain_gamertag,
+    captain_discord,
+    captain_activision_id,
+    roster,
+    roster_text,
+    status
+  } = req.body || {};
+
+  if (!tournamentId || !team_name || !captain_gamertag || !captain_discord) {
+    return res.status(400).json({ 
+      error: "Missing required fields: team_name, captain_gamertag, and captain_discord are required." 
+    });
+  }
+
+  const regId = id || "treg_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+  const sql = `
+    INSERT INTO public.tournament_registrations (
+      id, tournament_id, tournament_title, team_name,
+      captain_gamertag, captain_discord, captain_activision_id,
+      roster, roster_text, status
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING *;
+  `;
+  const values = [
+    regId,
+    String(tournamentId),
+    tournament_title || null,
+    String(team_name).trim(),
+    String(captain_gamertag).trim(),
+    String(captain_discord).trim(),
+    captain_activision_id ? String(captain_activision_id).trim() : null,
+    JSON.stringify(Array.isArray(roster) ? roster : []),
+    roster_text ? String(roster_text) : null,
+    status || "registered"
+  ];
+
+  try {
+    const result = await pool.query(sql, values);
+    res.json({ data: result.rows[0], error: null });
+  } catch (err) {
+    console.error("Error creating registration:", err.message);
+    res.status(500).json({ error: "Database insert failed safely", data: null });
   }
 });
 
