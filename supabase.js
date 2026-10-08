@@ -7089,7 +7089,17 @@ window.LadderDB = {
     try {
       const explicit = localStorage.getItem("frontline_arena_user");
       if (explicit) {
-        return JSON.parse(explicit);
+        const obj = JSON.parse(explicit);
+        const cleanEmail = (obj?.email || "").toLowerCase().trim();
+        const isStaff = this.isAccountAdmin(obj) || (cleanEmail && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com")) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
+        if (isStaff) {
+          obj.tag = obj.tag === "ARENA" ? "COMM" : (obj.tag || "COMM");
+          obj.team_name = "Frontline League HQ";
+          obj.tier = "Commissioner";
+          obj.is_staff = true;
+          obj.is_commissioner = true;
+        }
+        return obj;
       }
     } catch (e) {}
 
@@ -7103,7 +7113,25 @@ window.LadderDB = {
             const parsed = JSON.parse(raw);
             const user = parsed?.user;
             if (user) {
-              const gamertag = user.user_metadata?.gamertag || user.email?.split("@")[0] || "Combatant";
+              const cleanEmail = (user.email || "").toLowerCase().trim();
+              const isStaff = this.isAccountAdmin(user) || (cleanEmail && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com")) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
+              const gamertag = user.user_metadata?.gamertag || user.email?.split("@")[0] || (isStaff ? "Commissioner Spencer" : "Combatant");
+              if (isStaff) {
+                return {
+                  id: user.id,
+                  gamertag: gamertag,
+                  email: user.email,
+                  tag: "COMM",
+                  team_name: "Frontline League HQ",
+                  elo: 1200,
+                  tier: "Commissioner",
+                  avatar_url: user.user_metadata?.avatar_url || "/images/leaguelogo_1.png",
+                  discord: user.user_metadata?.discord_name || gamertag.toLowerCase(),
+                  activision_id: user.user_metadata?.activision_id || "Spencer#0001",
+                  is_staff: true,
+                  is_commissioner: true
+                };
+              }
               return {
                 id: user.id,
                 gamertag: gamertag,
@@ -7711,12 +7739,20 @@ window.LadderDB = {
     const squadHeaderEl = document.getElementById("arena-header-squad-container");
     if (squadHeaderEl) {
       if (player && player.gamertag) {
+        const cleanPUserEmail = (player.email || "").toLowerCase().trim();
+        const isStaff = player.is_staff || player.is_commissioner || (cleanPUserEmail && (cleanPUserEmail === "todd061496@gmail.com" || cleanPUserEmail === "admin@frontlineleague.com")) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
+        const tag = isStaff ? (player.tag || "COMM") : (player.tag || "TAG");
+        const badgeColor = isStaff ? "var(--lime, #d5f45b)" : "#ff1e44";
+        const badgeText = isStaff ? "COMMISSIONER" : `${player.elo || 1200} ELO`;
+        const linkTarget = isStaff ? "/profile/" : "/arena/profile/#my-teams";
+        const linkTitle = isStaff ? "Signed in as League Commissioner — Open League Profile" : "View Active Teams";
+
         squadHeaderEl.innerHTML = `
-          <a href="/arena/profile/#my-teams" class="gb-my-squad-pill" title="View Active Teams" style="text-decoration:none;">
+          <a href="${linkTarget}" class="gb-my-squad-pill" title="${linkTitle}" style="text-decoration:none;">
             <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="gb-my-squad-avatar" />
             <div>
-              <strong style="color:#ffffff;">[${player.tag || 'TAG'}] ${player.gamertag}</strong>
-              <span style="color:#ff1e44; font-size:11px; margin-left:4px;">${player.elo || 1200} ELO</span>
+              <strong style="color:#ffffff;">[${tag}] ${player.gamertag}</strong>
+              <span style="color:${badgeColor}; font-size:11px; margin-left:4px; font-weight:800;">${badgeText}</span>
             </div>
           </a>
         `;

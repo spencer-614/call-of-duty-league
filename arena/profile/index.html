@@ -44,6 +44,12 @@
       .btn-profile-signout:hover svg {
         transform: translateX(2px);
       }
+      .tier-commissioner {
+        background: rgba(213, 244, 91, 0.12) !important;
+        color: #d5f45b !important;
+        border: 1px solid #d5f45b !important;
+        box-shadow: 0 0 10px rgba(213, 244, 91, 0.25) !important;
+      }
     </style>
     <title>Frontline Arena — Combatant Profile &amp; Match History</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -125,6 +131,25 @@
            VIEW 1: LOGGED IN PLAYER PROFILE VIEW
            ======================================================================= -->
       <div id="profile-logged-in-view" style="display:none;">
+        <!-- Executive Directive Commissioner Notice Banner -->
+        <div id="arena-commissioner-banner" style="display:none; background:linear-gradient(90deg, rgba(213,244,91,0.15) 0%, rgba(213,244,91,0.05) 100%); border:1px solid #d5f45b; padding:14px 20px; margin-bottom:18px; border-radius:4px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:22px;">⚡</span>
+            <div>
+              <strong style="color:#d5f45b; font-family:var(--display); font-size:15px; letter-spacing:0.5px; display:block;">LEAGUE COMMISSIONER DIRECTIVE ACTIVE</strong>
+              <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">You are authenticated as official Frontline League HQ Staff. Full executive authority granted.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <a href="/profile/" class="btn-crimson" style="background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; font-size:11px; padding:8px 16px; text-decoration:none; box-shadow:0 0 12px rgba(213,244,91,0.25);">
+              <span>🛡</span> <span>League Commissioner Profile ↗</span>
+            </a>
+            <a href="/admin" class="btn-crimson-outline" style="border-color:#d5f45b; color:#d5f45b; font-size:11px; padding:8px 16px; text-decoration:none;">
+              <span>⚙</span> <span>Admin Console ↗</span>
+            </a>
+          </div>
+        </div>
+
         <!-- Top Profile Hero Banner -->
         <div class="profile-hero-card">
           <div class="profile-hero-inner">
@@ -152,6 +177,12 @@
             </div>
 
             <div class="profile-actions-right">
+              <a href="/profile/" id="btn-arena-league-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; border-color:#d5f45b; color:#d5f45b; font-weight:800;">
+                <span>🛡</span> <span>League Profile ↗</span>
+              </a>
+              <a href="/admin" id="btn-arena-admin-console" class="btn-crimson" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; box-shadow:0 0 12px rgba(213,244,91,0.25);">
+                <span>⚙</span> <span>Admin Console ↗</span>
+              </a>
               <a href="https://discord.gg/frontlinecodleague" target="_blank" rel="noopener" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none; background:#5865F2; border-color:#5865F2;">
                 <span>💬</span> <span>Join Discord ↗</span>
               </a>
@@ -705,6 +736,39 @@
             statusPill.textContent = isOwner ? "● ACTIVE COMBATANT" : "● VERIFIED OPERATIVE";
           }
 
+          // Staff / Commissioner Recognition in Arena Profile
+          const cleanEmail = (player.email || "").toLowerCase().trim();
+          let isStaff = player.is_staff || player.tier === "Commissioner" || player.tag === "COMM" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || (sessionStorage.getItem("frontline_admin_session") === "authorized");
+          if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
+            isStaff = window.LeagueDB.isAccountAdmin(player);
+          }
+
+          const commBanner = document.getElementById("arena-commissioner-banner");
+          const arenaLeagueBtn = document.getElementById("btn-arena-league-profile");
+          const arenaAdminBtn = document.getElementById("btn-arena-admin-console");
+
+          if (isStaff && isOwner) {
+            if (commBanner) commBanner.style.display = "flex";
+            if (arenaLeagueBtn) arenaLeagueBtn.style.display = "inline-flex";
+            if (arenaAdminBtn) arenaAdminBtn.style.display = "inline-flex";
+            document.getElementById("user-clan-tag").textContent = "[COMM]";
+            document.getElementById("user-team-name").textContent = "Frontline League HQ";
+            document.getElementById("user-tier-name").textContent = "★ COMMISSIONER";
+            if (tierBadgeEl) {
+              tierBadgeEl.className = "profile-tier-badge tier-commissioner";
+            }
+            if (statusPill) {
+              statusPill.textContent = "● EXECUTIVE DIRECTIVE ACTIVE";
+              statusPill.style.color = "var(--lime, #d5f45b)";
+              statusPill.style.borderColor = "var(--lime, #d5f45b)";
+              statusPill.style.background = "rgba(213, 244, 91, 0.12)";
+            }
+          } else {
+            if (commBanner) commBanner.style.display = "none";
+            if (arenaLeagueBtn) arenaLeagueBtn.style.display = "none";
+            if (arenaAdminBtn) arenaAdminBtn.style.display = "none";
+          }
+
           // Header action buttons visibility
           const editBtn = document.getElementById("btn-edit-profile");
           const signOutBtn = document.getElementById("btn-sign-out");
@@ -960,6 +1024,20 @@
         if (!window.LadderDB) return;
         const res = await window.LadderDB.loginArenaPlayer(idInput, pwdInput);
         if (res.success) {
+          const cur = window.LadderDB.getCurrentPlayer ? window.LadderDB.getCurrentPlayer() : null;
+          const cleanEmail = (cur?.email || "").toLowerCase().trim();
+          let isStaffAccount = cur?.is_staff || cur?.tag === "COMM" || (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com");
+          if (!isStaffAccount && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === "function") {
+            try {
+              isStaffAccount = await window.LeagueDB.isAccountAdminAsync(cur);
+            } catch (err) {}
+          }
+          if (isStaffAccount) {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            sessionStorage.setItem("frontline_admin_email", cleanEmail);
+            window.location.href = "/profile/";
+            return;
+          }
           renderProfilePage();
         } else {
           alert("Sign in failed: " + (res.error || "Unknown error"));
