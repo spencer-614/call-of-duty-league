@@ -7,6 +7,84 @@
         <link rel="icon" type="image/png" href="/images/leaguelogo_1.png" />
     <link rel="apple-touch-icon" href="/images/leaguelogo_1.png" />
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #171912;
+        border: 1px solid #3d4522;
+        color: #ffffff;
+        font-family: var(--body);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 10px 18px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        box-sizing: border-box;
+      }
+      .btn:hover {
+        background: #232818;
+        border-color: var(--lime);
+        color: var(--lime);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(213, 244, 91, 0.2);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid #3d4522;
+        color: #d1d5db;
+      }
+      .btn-outline:hover {
+        background: rgba(213, 244, 91, 0.08);
+        border-color: var(--lime);
+        color: var(--lime);
+        box-shadow: 0 0 12px rgba(213, 244, 91, 0.2);
+      }
+      .btn-profile-signout {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(220, 38, 38, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.35);
+        color: #f87171;
+        font-family: var(--body);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        padding: 10px 16px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-sizing: border-box;
+      }
+      .btn-profile-signout:hover {
+        background: rgba(239, 68, 68, 0.22);
+        border-color: #ef4444;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+      }
+      .btn-profile-signout:active {
+        transform: translateY(0);
+      }
+      .btn-profile-signout svg {
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+      }
+      .btn-profile-signout:hover svg {
+        transform: translateX(2px);
+      }
+    </style>
     <title>Frontline League — Franchise Player Profile &amp; CDL Scouting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/supabase.js"></script>
@@ -213,8 +291,13 @@
               <a href="/arena/profile/" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none; border-color:#ff1e44; color:#ff1e44;">
                 <span>⚔</span> <span>Go to Arena Profile ↗</span>
               </a>
-              <button type="button" onclick="signOutLeagueProfile()" class="btn btn-outline" style="font-size:12px; padding:10px 16px; border-color:#5a2323; color:#f87171; cursor:pointer;" title="Sign out of your account">
-                <span>🚪</span> <span>Sign Out</span>
+              <button type="button" onclick="signOutLeagueProfile()" class="btn-profile-signout" title="Sign out of your account">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Sign Out</span>
               </button>
             </div>
           </div>

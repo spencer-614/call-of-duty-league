@@ -350,6 +350,87 @@ a {
 .button:active {
   transform: translateY(0);
 }
+
+/* Universal CDL Action Buttons (.btn & .btn-outline) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #171912;
+  border: 1px solid #3d4522;
+  color: #ffffff;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  box-sizing: border-box;
+}
+.btn:hover {
+  background: #232818;
+  border-color: var(--lime);
+  color: var(--lime);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(213, 244, 91, 0.2);
+}
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #3d4522;
+  color: #d1d5db;
+}
+.btn-outline:hover {
+  background: rgba(213, 244, 91, 0.08);
+  border-color: var(--lime);
+  color: var(--lime);
+  box-shadow: 0 0 12px rgba(213, 244, 91, 0.2);
+}
+
+/* Tactical Profile Sign Out Button */
+.btn-profile-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #f87171;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-sizing: border-box;
+}
+.btn-profile-signout:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+.btn-profile-signout:active {
+  transform: translateY(0);
+}
+.btn-profile-signout svg {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.btn-profile-signout:hover svg {
+  transform: translateX(2px);
+}
 .discord-svg-icon {
   display: inline-block;
   vertical-align: middle;
