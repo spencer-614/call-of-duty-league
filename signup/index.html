@@ -1441,7 +1441,6 @@
         if (gateContainer) gateContainer.style.display = "none";
         if (regTerminal) {
           regTerminal.style.display = "block";
-          regTerminal.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }
 
@@ -1459,11 +1458,15 @@
       }
 
       function handleCombatantAuthSuccess(user) {
+        if (!user) return;
+        const alreadyActive = currentCombatantUser && currentCombatantUser.id === user.id && regTerminal && regTerminal.style.display === "block";
         currentCombatantUser = user;
         sessionStorage.removeItem("frontline_discord_oauth_pending");
-        unlockRegistrationTerminal(user);
-        if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
-          window.LeagueDB.autoCheckDiscordOnboarding();
+        if (!alreadyActive) {
+          unlockRegistrationTerminal(user);
+          if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+            window.LeagueDB.autoCheckDiscordOnboarding();
+          }
         }
       }
 
@@ -1842,17 +1845,8 @@
                   <a href="https://discord.gg/frontlinecodleague" target="_blank" rel="noopener" class="btn-alert-action">
                     Join Official Discord ↗
                   </a>
-                  <button type="button" id="btn-register-another" class="btn-alert-action btn-alert-secondary">
-                    Register Another Player
-                  </button>
                 </div>
               `;
-
-              document.getElementById("btn-register-another")?.addEventListener("click", () => {
-                signupForm.reset();
-                signupForm.style.display = "flex";
-                alertBox.style.display = "none";
-              });
 
               alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
             } else {

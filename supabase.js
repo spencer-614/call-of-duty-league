@@ -5436,9 +5436,13 @@ window.LeagueDB = {
     }
   },
 
+  _discordOnboardedMap: {},
+  _checkingDiscordOnboarding: false,
+
   async autoCheckDiscordOnboarding() {
     if (typeof window === "undefined" || !window.document) return;
     if (window.location.pathname.includes("/admin")) return;
+    if (this._checkingDiscordOnboarding) return;
 
     let user = null;
     const authRes = await this.getAuthUser();
@@ -5450,7 +5454,9 @@ window.LeagueDB = {
       } catch (e) {}
     }
 
-    if (!user) return;
+    if (!user || !user.id) return;
+    if (this._discordOnboardedMap && this._discordOnboardedMap[user.id]) return;
+    this._checkingDiscordOnboarding = true;
 
     const meta = user.user_metadata || {};
     const discordInfo = this.getDiscordIdentity(user);
@@ -5559,7 +5565,13 @@ window.LeagueDB = {
         window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user } }));
       } catch (e) {
         console.warn("Discord auto-onboarding notice:", e);
+      } finally {
+        if (!this._discordOnboardedMap) this._discordOnboardedMap = {};
+        if (user?.id) this._discordOnboardedMap[user.id] = true;
+        this._checkingDiscordOnboarding = false;
       }
+    } else {
+      this._checkingDiscordOnboarding = false;
     }
   },
 
@@ -7946,7 +7958,7 @@ window.LadderDB = {
   if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
     try {
       dbClient.auth.onAuthStateChange((event, session) => {
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        if (event === "SIGNED_IN") {
           if (session?.user) {
             try {
               localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
@@ -7956,6 +7968,13 @@ window.LadderDB = {
             } catch(e) {}
           }
           setTimeout(checkOnboarding, 400);
+        } else if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+          if (session?.user) {
+            try {
+              localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
+              localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
+            } catch(e) {}
+          }
         } else if (event === "SIGNED_OUT") {
           try {
             localStorage.removeItem("frontline_league_auth_user");
