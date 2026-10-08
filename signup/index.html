@@ -1514,18 +1514,12 @@
           const redirectUrl = window.location.origin + window.location.pathname;
           if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
             const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
-            if (res && res.url) {
-              window.location.href = res.url;
-              return;
-            }
             if (!res || !res.success) {
               sessionStorage.removeItem("frontline_discord_oauth_pending");
               showGateError(res?.error || "Failed to initiate Discord authentication.");
               btnDiscordAuth.disabled = false;
               btnDiscordAuth.innerHTML = originalHtml;
             }
-          } else {
-            window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
           }
         } catch (err) {
           sessionStorage.removeItem("frontline_discord_oauth_pending");
