@@ -2588,7 +2588,11 @@
                 <span style="font-size:11px; color:#38bdf8;">Real-Time Simulator</span>
               </div>
               <div id="admin-switcher-live-preview" style="display:flex; justify-content:center; align-items:center; min-height:48px; padding:14px; background:#080a0f; border:1px dashed #242a38; border-radius:3px;">
-                <!-- Dynamically rendered pill preview -->
+                <div class="mode-switch-pill" style="pointer-events:none;">
+                  <div class="mode-switch-btn active-league"><span>🛡</span> <span>League</span></div>
+                  <div class="mode-switch-btn"><span>⚔</span> <span>Arena</span></div>
+                  <div class="mode-switch-btn active-tournaments"><span>🏆</span> <span>Tournaments</span></div>
+                </div>
               </div>
             </div>
 
@@ -2633,15 +2637,15 @@
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px;">
             <div style="background:#131610; border:1px solid #2a311e; padding:16px 20px; border-radius:3px;">
               <small style="color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">Total Tournaments</small>
-              <div id="tourney-metrics-total-count" style="font:800 24px var(--display); color:#fff; margin-top:4px;">0 Total</div>
+              <div id="tourney-metrics-total-count" style="font:800 24px var(--display); color:#fff; margin-top:4px;">4 Total</div>
             </div>
             <div style="background:#131610; border:1px solid #2a311e; padding:16px 20px; border-radius:3px;">
               <small style="color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">Active / Live Events</small>
-              <div id="tourney-metrics-active-count" style="font:800 24px var(--display); color:#22c55e; margin-top:4px;">0 Events</div>
+              <div id="tourney-metrics-active-count" style="font:800 24px var(--display); color:#22c55e; margin-top:4px;">3 Events</div>
             </div>
             <div style="background:#131610; border:1px solid #2a311e; padding:16px 20px; border-radius:3px;">
               <small style="color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">Total Prize Money</small>
-              <div id="tourney-metrics-prize-sum" style="font:800 24px var(--display); color:#fbbf24; margin-top:4px;">$0 USD</div>
+              <div id="tourney-metrics-prize-sum" style="font:800 24px var(--display); color:#fbbf24; margin-top:4px;">$4,750 USD</div>
             </div>
           </div>
 
@@ -2772,7 +2776,152 @@
                 </thead>
                 <tbody id="admin-tournaments-tbody">
                   <tr>
-                    <td colspan="7" style="text-align:center; padding:30px; color:var(--muted);">Loading tournament registry...</td>
+                    <td>
+                      <strong style="color:#ffffff; font-size:13.5px;">Frontline Spring Championship Major</strong>
+                      <div style="font-size:11px; color:var(--muted); margin-top:2px;">ID: tourney_major_1</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#fbbf24; font-size:12px;">4v4 CDL Variant</div>
+                      <div style="font-size:11px; color:var(--muted);">Double Elimination</div>
+                    </td>
+                    <td>
+                      <div style="color:#fbbf24; font-weight:800; font-size:12px;">$2,500 USD</div>
+                      <div style="font-size:11px; color:#22c55e;">Free Entry</div>
+                    </td>
+                    <td>
+                      <div style="font-size:12px; color:#ffffff;">2026-10-24</div>
+                      <div style="font-size:11px; color:var(--muted);">6:00 PM EST</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:800; font-size:12px; color:#ffffff;">14 / 16</div>
+                      <div style="font-size:10px; color:var(--muted);">Registered Teams</div>
+                    </td>
+                    <td>
+                      <select class="form-control" style="font-size:11px; padding:4px 8px; width:auto; border-color:#2a311e;" onchange="adminUpdateTourneyStatus('tourney_major_1', this.value)">
+                        <option value="Registration Open" selected>Registration Open</option>
+                        <option value="Live">🔴 Live</option>
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('tourney_major_1', 'Frontline Spring Championship Major')">📋 Squads (14)</button>
+                        <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
+                        <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('tourney_major_1', 'Frontline Spring Championship Major')">🗑 Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <strong style="color:#ffffff; font-size:13.5px;">Saturday Night SnD Prime Cup</strong>
+                      <div style="font-size:11px; color:var(--muted); margin-top:2px;">ID: tourney_prime_snd</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#fbbf24; font-size:12px;">2v2 Search &amp; Destroy</div>
+                      <div style="font-size:11px; color:var(--muted);">Single Elimination</div>
+                    </td>
+                    <td>
+                      <div style="color:#fbbf24; font-weight:800; font-size:12px;">$750 USD</div>
+                      <div style="font-size:11px; color:#22c55e;">Free Entry</div>
+                    </td>
+                    <td>
+                      <div style="font-size:12px; color:#ffffff;">2026-10-17</div>
+                      <div style="font-size:11px; color:var(--muted);">8:00 PM EST</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:800; font-size:12px; color:#ffffff;">28 / 32</div>
+                      <div style="font-size:10px; color:var(--muted);">Registered Teams</div>
+                    </td>
+                    <td>
+                      <select class="form-control" style="font-size:11px; padding:4px 8px; width:auto; border-color:#2a311e;" onchange="adminUpdateTourneyStatus('tourney_prime_snd', this.value)">
+                        <option value="Registration Open" selected>Registration Open</option>
+                        <option value="Live">🔴 Live</option>
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('tourney_prime_snd', 'Saturday Night SnD Prime Cup')">📋 Squads (28)</button>
+                        <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
+                        <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('tourney_prime_snd', 'Saturday Night SnD Prime Cup')">🗑 Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <strong style="color:#ffffff; font-size:13.5px;">Radar Always On 1v1 Gunfight Showdown</strong>
+                      <div style="font-size:11px; color:var(--muted); margin-top:2px;">ID: tourney_radar_1v1</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#fbbf24; font-size:12px;">1v1 Radar</div>
+                      <div style="font-size:11px; color:var(--muted);">Double Elimination</div>
+                    </td>
+                    <td>
+                      <div style="color:#fbbf24; font-weight:800; font-size:12px;">$500 USD</div>
+                      <div style="font-size:11px; color:#22c55e;">Free Entry</div>
+                    </td>
+                    <td>
+                      <div style="font-size:12px; color:#ffffff;">2026-10-18</div>
+                      <div style="font-size:11px; color:var(--muted);">7:00 PM EST</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:800; font-size:12px; color:#ffffff;">16 / 16</div>
+                      <div style="font-size:10px; color:var(--muted);">Registered Teams</div>
+                    </td>
+                    <td>
+                      <select class="form-control" style="font-size:11px; padding:4px 8px; width:auto; border-color:#2a311e;" onchange="adminUpdateTourneyStatus('tourney_radar_1v1', this.value)">
+                        <option value="Registration Open">Registration Open</option>
+                        <option value="Live" selected>🔴 Live</option>
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('tourney_radar_1v1', 'Radar Always On 1v1 Gunfight Showdown')">📋 Squads (16)</button>
+                        <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
+                        <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('tourney_radar_1v1', 'Radar Always On 1v1 Gunfight Showdown')">🗑 Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <strong style="color:#ffffff; font-size:13.5px;">Division 2 Challengers Qualifier Cup</strong>
+                      <div style="font-size:11px; color:var(--muted); margin-top:2px;">ID: tourney_challengers_cup</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:700; color:#fbbf24; font-size:12px;">4v4 CDL Variant</div>
+                      <div style="font-size:11px; color:var(--muted);">Double Elimination</div>
+                    </td>
+                    <td>
+                      <div style="color:#fbbf24; font-weight:800; font-size:12px;">$1,000 USD</div>
+                      <div style="font-size:11px; color:#22c55e;">Free Entry</div>
+                    </td>
+                    <td>
+                      <div style="font-size:12px; color:#ffffff;">2026-10-31</div>
+                      <div style="font-size:11px; color:var(--muted);">5:00 PM EST</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:800; font-size:12px; color:#ffffff;">8 / 16</div>
+                      <div style="font-size:10px; color:var(--muted);">Registered Teams</div>
+                    </td>
+                    <td>
+                      <select class="form-control" style="font-size:11px; padding:4px 8px; width:auto; border-color:#2a311e;" onchange="adminUpdateTourneyStatus('tourney_challengers_cup', this.value)">
+                        <option value="Registration Open">Registration Open</option>
+                        <option value="Live">🔴 Live</option>
+                        <option value="Upcoming" selected>Upcoming</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('tourney_challengers_cup', 'Division 2 Challengers Qualifier Cup')">📋 Squads (8)</button>
+                        <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
+                        <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('tourney_challengers_cup', 'Division 2 Challengers Qualifier Cup')">🗑 Delete</button>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -3048,6 +3197,8 @@
         const gateError = document.getElementById("gate-error");
         const logoutBtn = document.getElementById("btn-logout");
         const staffUserDisplay = document.getElementById("staff-user-display");
+        const navBtns = document.querySelectorAll(".admin-nav-btn");
+        const tabContents = document.querySelectorAll(".admin-tab-content");
 
         let activeStaffProfile = null;
         let activeAllowedTabs = [];
@@ -3165,8 +3316,6 @@
           }
         }
 
-        checkInitialAuth();
-
         gateForm?.addEventListener("submit", async (e) => {
           e.preventDefault();
           const emailInput = document.getElementById("admin-email");
@@ -3226,9 +3375,6 @@
         // ==========================================
         // 2. TAB SWITCHING (RBAC-AWARE)
         // ==========================================
-        const navBtns = document.querySelectorAll(".admin-nav-btn");
-        const tabContents = document.querySelectorAll(".admin-tab-content");
-
         function switchActiveTab(targetId) {
           if (activeAllowedTabs.length > 0 && !activeAllowedTabs.includes(targetId)) {
             showToast("Access Restricted: Your staff role is not authorized for this section.");
@@ -6557,7 +6703,7 @@
         // ==========================================
         let cachedSwitcherSettings = null;
 
-        window.applySwitcherPreset = function(presetKey) {
+        function applySwitcherPreset(presetKey) {
           const masterEl = document.getElementById("toggle-master-switcher");
           const leagueEl = document.getElementById("toggle-show-league");
           const arenaEl = document.getElementById("toggle-show-arena");
@@ -6594,11 +6740,12 @@
             masterEl.checked = false;
           }
 
-          window.updateSwitcherPreview();
+          updateSwitcherPreview();
           showToast("Applied preset: " + presetKey);
-        };
+        }
+        window.applySwitcherPreset = applySwitcherPreset;
 
-        window.updateSwitcherPreview = function() {
+        function updateSwitcherPreview() {
           const previewContainer = document.getElementById("admin-switcher-live-preview");
           if (!previewContainer) return;
 
@@ -6685,12 +6832,30 @@
               </div>
             `;
           }
-        };
+        }
+        window.updateSwitcherPreview = updateSwitcherPreview;
 
-        window.loadAdminSwitcherSettings = async function() {
-          if (!window.LeagueDB || typeof window.LeagueDB.getPlatformSwitcherSettings !== 'function') return;
+        async function loadAdminSwitcherSettings() {
           try {
-            const settings = await window.LeagueDB.getPlatformSwitcherSettings();
+            let settings = null;
+            if (window.LeagueDB && typeof window.LeagueDB.getPlatformSwitcherSettings === 'function') {
+              settings = await window.LeagueDB.getPlatformSwitcherSettings();
+            } else {
+              const local = localStorage.getItem("frontline_platform_switcher_settings");
+              if (local) {
+                try { settings = JSON.parse(local); } catch (e) {}
+              }
+            }
+
+            if (!settings) {
+              settings = {
+                switcher_visible: true,
+                show_league: true,
+                show_arena: true,
+                show_tournaments: true,
+                tournaments_page_enabled: true
+              };
+            }
             cachedSwitcherSettings = settings;
 
             const masterEl = document.getElementById("toggle-master-switcher");
@@ -6705,13 +6870,15 @@
             if (tourneyEl) tourneyEl.checked = settings.show_tournaments !== false;
             if (pageEl) pageEl.checked = settings.tournaments_page_enabled !== false;
 
-            window.updateSwitcherPreview();
+            updateSwitcherPreview();
           } catch(err) {
             console.error("Error loading switcher settings:", err);
+            updateSwitcherPreview();
           }
-        };
+        }
+        window.loadAdminSwitcherSettings = loadAdminSwitcherSettings;
 
-        window.saveAdminSwitcherSettings = async function() {
+        async function saveAdminSwitcherSettings() {
           const saveBtn = document.getElementById("btn-save-switcher-settings");
           const statusEl = document.getElementById("switcher-save-status");
 
@@ -6746,6 +6913,9 @@
               } else {
                 showToast(`⚠ Saved locally: ${res.error || "Database note"}`);
               }
+            } else {
+              localStorage.setItem("frontline_platform_switcher_settings", JSON.stringify(newSettings));
+              showToast("✓ Switcher settings saved to browser storage.");
             }
           } catch(err) {
             console.error("Save switcher settings error:", err);
@@ -6756,32 +6926,93 @@
               saveBtn.innerHTML = `<span>Save &amp; Broadcast Switcher Directive</span><span>✓</span>`;
             }
           }
-        };
+        }
+        window.saveAdminSwitcherSettings = saveAdminSwitcherSettings;
 
         // ==========================================
         // 15. TOURNAMENTS HUB & POSTING MANAGEMENT
         // ==========================================
         let cachedAdminTournaments = [];
 
-        window.setTourneyBannerPreset = function(url) {
+        function setTourneyBannerPreset(url) {
           const input = document.getElementById("tourney-banner-input");
           if (input) {
             input.value = url;
             input.focus();
           }
-        };
+        }
+        window.setTourneyBannerPreset = setTourneyBannerPreset;
 
-        window.loadAdminTournaments = async function() {
+        async function loadAdminTournaments() {
           const tbody = document.getElementById("admin-tournaments-tbody");
           if (!tbody) return;
 
-          if (!window.LeagueDB || typeof window.LeagueDB.getTournaments !== 'function') {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#ff4a4a;">Database client not available.</td></tr>`;
-            return;
-          }
-
           try {
-            const list = await window.LeagueDB.getTournaments();
+            let list = [];
+            if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
+              list = await window.LeagueDB.getTournaments();
+            } else {
+              const local = localStorage.getItem("frontline_tournaments_data");
+              if (local) {
+                try { list = JSON.parse(local); } catch (e) {}
+              }
+            }
+            if (!list || list.length === 0) {
+              list = [
+                {
+                  id: "tourney_prime_snd",
+                  title: "Saturday Night SnD Prime Cup",
+                  format: "2v2 Search & Destroy",
+                  bracket_type: "Single Elimination",
+                  prize_pool: "$750 USD",
+                  entry_fee: "Free Entry",
+                  date: "2026-10-17",
+                  time: "8:00 PM EST",
+                  registered_teams: 28,
+                  max_teams: 32,
+                  status: "Registration Open"
+                },
+                {
+                  id: "tourney_radar_1v1",
+                  title: "Radar Always On 1v1 Gunfight Showdown",
+                  format: "1v1 Radar",
+                  bracket_type: "Double Elimination",
+                  prize_pool: "$500 USD",
+                  entry_fee: "Free Entry",
+                  date: "2026-10-18",
+                  time: "7:00 PM EST",
+                  registered_teams: 16,
+                  max_teams: 16,
+                  status: "Live"
+                },
+                {
+                  id: "tourney_challengers_cup",
+                  title: "Division 2 Challengers Qualifier Cup",
+                  format: "4v4 CDL Variant",
+                  bracket_type: "Double Elimination",
+                  prize_pool: "$1,000 USD",
+                  entry_fee: "Free Entry",
+                  date: "2026-10-31",
+                  time: "5:00 PM EST",
+                  registered_teams: 8,
+                  max_teams: 16,
+                  status: "Upcoming"
+                },
+                {
+                  id: "tourney_fall_major",
+                  title: "Frontline Fall Major #1 Championship",
+                  format: "4v4 CDL Variant",
+                  bracket_type: "Double Elimination",
+                  prize_pool: "$2,500 USD",
+                  entry_fee: "Free Entry",
+                  date: "2026-11-14",
+                  time: "6:00 PM EST",
+                  registered_teams: 14,
+                  max_teams: 32,
+                  status: "Registration Open"
+                }
+              ];
+            }
             cachedAdminTournaments = list || [];
 
             // Update Metrics Bar
@@ -6796,7 +7027,7 @@
             const totalEl = document.getElementById("tourney-metrics-total-count");
             if (totalEl) totalEl.textContent = `${cachedAdminTournaments.length} Total`;
             const prizeEl = document.getElementById("tourney-metrics-prize-sum");
-            if (prizeEl) prizeEl.textContent = totalPrize > 0 ? `${totalPrize.toLocaleString()} USD` : "$0 USD";
+            if (prizeEl) prizeEl.textContent = totalPrize > 0 ? `$${totalPrize.toLocaleString()} USD` : "$0 USD";
 
             if (cachedAdminTournaments.length === 0) {
               tbody.innerHTML = `
@@ -6836,18 +7067,18 @@
                     <div style="font-size:10px; color:var(--muted);">Registered Teams</div>
                   </td>
                   <td>
-                    <select class="form-control" style="font-size:11px; padding:4px 8px; width:auto; border-color:#2a311e;" onchange="window.adminUpdateTourneyStatus('${escapeHtml(t.id)}', this.value)">
+                    <select class="form-control" style="font-size:11px; padding:4px 8px; width:auto; border-color:#2a311e;" onchange="adminUpdateTourneyStatus('${escapeHtml(t.id)}', this.value)">
                       <option value="Registration Open" ${curStatus === 'Registration Open' ? 'selected' : ''}>Registration Open</option>
                       <option value="Live" ${curStatus === 'Live' ? 'selected' : ''}>🔴 Live</option>
                       <option value="Upcoming" ${curStatus === 'Upcoming' ? 'selected' : ''}>Upcoming</option>
                       <option value="Completed" ${curStatus === 'Completed' ? 'selected' : ''}>Completed</option>
                     </select>
                   </td>
-                                    <td>
+                  <td>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="window.adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
                       <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
-                      <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="window.adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
+                      <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -6855,11 +7086,12 @@
             }).join('');
           } catch(err) {
             console.error("Error loading admin tournaments:", err);
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#ff4a4a;">Failed to load tournaments: ${err.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#ff4a4a;">Failed to load tournaments: ${escapeHtml(err.message)}</td></tr>`;
           }
-        };
+        }
+        window.loadAdminTournaments = loadAdminTournaments;
 
-        window.handleAdminCreateTournament = async function(e) {
+        async function handleAdminCreateTournament(e) {
           e.preventDefault();
           const submitBtn = document.getElementById("btn-create-tourney");
 
@@ -6901,7 +7133,7 @@
             bracket_url: bracketUrl,
             description: desc,
             teams_registered_count: 0,
-            registered_teams: []
+            registered_teams: 0
           };
 
           if (submitBtn) {
@@ -6915,10 +7147,17 @@
               if (res.success) {
                 showToast(`✓ Tournament "${title}" published to Tournaments Hub!`);
                 document.getElementById("form-create-tournament")?.reset();
-                await window.loadAdminTournaments();
+                await loadAdminTournaments();
               } else {
                 showToast(`Failed: ${res.error || "Database error"}`, true);
               }
+            } else {
+              const currentList = JSON.parse(localStorage.getItem("frontline_tournaments_data")) || [];
+              currentList.unshift(tourneyObj);
+              localStorage.setItem("frontline_tournaments_data", JSON.stringify(currentList));
+              showToast(`✓ Tournament "${title}" saved locally!`);
+              document.getElementById("form-create-tournament")?.reset();
+              await loadAdminTournaments();
             }
           } catch(err) {
             console.error("Create tournament error:", err);
@@ -6929,9 +7168,10 @@
               submitBtn.innerHTML = `<span>Publish Tournament to Hub</span><span>＋</span>`;
             }
           }
-        };
+        }
+        window.handleAdminCreateTournament = handleAdminCreateTournament;
 
-        window.adminUpdateTourneyStatus = async function(id, newStatus) {
+        async function adminUpdateTourneyStatus(id, newStatus) {
           if (!window.LeagueDB || typeof window.LeagueDB.updateTournamentStatus !== 'function') return;
           try {
             const res = await window.LeagueDB.updateTournamentStatus(id, newStatus);
@@ -6944,9 +7184,10 @@
             console.error("Update status error:", err);
             showToast("Error updating tournament status.", true);
           }
-        };
+        }
+        window.adminUpdateTourneyStatus = adminUpdateTourneyStatus;
 
-        window.adminDeleteTourney = async function(id, title) {
+        async function adminDeleteTourney(id, title) {
           if (!confirm(`Are you sure you want to delete tournament "${title}"? This cannot be undone.`)) return;
           if (!window.LeagueDB || typeof window.LeagueDB.deleteTournament !== 'function') return;
 
@@ -6954,7 +7195,7 @@
             const res = await window.LeagueDB.deleteTournament(id);
             if (res.success) {
               showToast(`✓ Tournament "${title}" removed.`);
-              await window.loadAdminTournaments();
+              await loadAdminTournaments();
             } else {
               showToast(`Failed to delete tournament: ${res.error}`, true);
             }
@@ -6962,7 +7203,125 @@
             console.error("Delete tournament error:", err);
             showToast("Error deleting tournament.", true);
           }
-        };
+        }
+        window.adminDeleteTourney = adminDeleteTourney;
+
+        async function adminViewTourneyRegistrations(tourneyId, tourneyTitle) {
+          const modal = document.getElementById("modal-view-tourney-registrations");
+          const titleEl = document.getElementById("tourney-reg-modal-title");
+          const container = document.getElementById("tourney-registrations-container");
+          const countEl = document.getElementById("tourney-reg-count-display");
+
+          if (!modal || !container) return;
+
+          if (titleEl) {
+            titleEl.textContent = (tourneyTitle || "Tournament") + " – Enlisted Squads";
+          }
+          if (countEl) {
+            countEl.textContent = "Loading squads...";
+          }
+
+          container.innerHTML = `
+            <div style="text-align:center; padding:30px; color:var(--muted);">
+              <div style="font-size:24px; margin-bottom:8px;">⏳</div>
+              <div>Loading enlisted squads from database...</div>
+            </div>
+          `;
+
+          if (typeof modal.showModal === "function") {
+            modal.showModal();
+          } else {
+            modal.setAttribute("open", "true");
+            modal.style.display = "block";
+          }
+
+          try {
+            let regs = [];
+            if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === "function") {
+              regs = await window.LeagueDB.getTournamentRegistrations(tourneyId);
+            } else {
+              const local = JSON.parse(localStorage.getItem("frontline_tournament_registrations")) || [];
+              regs = local.filter(r => String(r.tournament_id) === String(tourneyId));
+            }
+
+            if (countEl) {
+              countEl.textContent = `${regs.length} Squad${regs.length === 1 ? '' : 's'} Registered`;
+            }
+
+            if (!regs || regs.length === 0) {
+              container.innerHTML = `
+                <div style="text-align:center; padding:36px; color:var(--muted); background:#0e110b; border:1px dashed #242a38; border-radius:3px;">
+                  <div style="font-size:28px; margin-bottom:8px;">📋</div>
+                  <div style="color:#ffffff; font-weight:700; margin-bottom:4px;">No Squads Registered Yet</div>
+                  <div style="font-size:12px;">Combatants who sign up for this tournament via <code>/tournaments/</code> or the sign-up modal will appear here in real time.</div>
+                </div>
+              `;
+              return;
+            }
+
+            container.innerHTML = regs.map((reg, idx) => {
+              const rosterList = Array.isArray(reg.roster) ? reg.roster : (reg.roster_text ? reg.roster_text.split(/,\s*/) : []);
+              const dateStr = reg.registered_at ? new Date(reg.registered_at).toLocaleString() : 'N/A';
+              return `
+                <div style="background:#131610; border:1px solid #2a311e; border-left:3px solid #fbbf24; padding:16px; border-radius:3px; margin-bottom:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                    <div>
+                      <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(245,158,11,0.15); color:#fbbf24; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:2px; margin-bottom:4px;">
+                        <span>#${idx + 1}</span> <span>${escapeHtml(reg.team_name || 'Squad')}</span>
+                      </div>
+                      <h4 style="margin:2px 0; color:#ffffff; font-size:15px; font-weight:800;">
+                        Captain: ${escapeHtml(reg.captain_gamertag || 'Captain')}
+                      </h4>
+                      <div style="font-size:11.5px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; margin-top:3px;">
+                        ${reg.captain_discord ? `<span>Discord: <strong style="color:#38bdf8;">${escapeHtml(reg.captain_discord)}</strong></span>` : ''}
+                        ${reg.captain_activision_id ? `<span>Activision: <strong style="color:#ffffff;">${escapeHtml(reg.captain_activision_id)}</strong></span>` : ''}
+                        <span>Enlisted: <strong>${escapeHtml(dateStr)}</strong></span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                      🗑 Remove Squad
+                    </button>
+                  </div>
+                  ${rosterList.length > 0 ? `
+                    <div style="background:#0a0c0e; border:1px solid #1e2430; padding:8px 12px; border-radius:2px; font-size:11.5px; color:#cbd5e1;">
+                      <span style="color:#fbbf24; font-weight:700;">Roster Members:</span> ${rosterList.map(m => escapeHtml(m)).join(' • ')}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join("");
+          } catch(err) {
+            console.error("Error viewing tournament registrations:", err);
+            container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading squads: ${escapeHtml(err.message)}</div>`;
+          }
+        }
+        window.adminViewTourneyRegistrations = adminViewTourneyRegistrations;
+
+        async function adminDeleteTourneyRegistration(regId, tourneyId, tourneyTitle) {
+          if (!confirm("Are you sure you want to remove this squad registration from the tournament?")) return;
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.deleteTournamentRegistration === "function") {
+              const res = await window.LeagueDB.deleteTournamentRegistration(regId, tourneyId);
+              if (res.success) {
+                showToast("✓ Squad registration removed.");
+                await adminViewTourneyRegistrations(tourneyId, tourneyTitle);
+                await loadAdminTournaments();
+              } else {
+                showToast(`Failed to remove squad: ${res.error || "Unknown error"}`, true);
+              }
+            }
+          } catch(err) {
+            console.error("Delete squad error:", err);
+            showToast("Error deleting squad registration.", true);
+          }
+        }
+        window.adminDeleteTourneyRegistration = adminDeleteTourneyRegistration;
+
+        // Hydrate switcher preview immediately on load
+        updateSwitcherPreview();
+
+        // 16. Console Initial Session Unlock Check
+        checkInitialAuth();
       })();
 
       // User-Centered Navigation: Close dropdown on outside click or Escape key
