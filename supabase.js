@@ -7086,24 +7086,8 @@ window.LadderDB = {
   // ARENA PLAYER IDENTITY, PROFILE & MATCH HISTORY
   // ==============================================================================
   getCurrentPlayer() {
-    try {
-      const explicit = localStorage.getItem("frontline_arena_user");
-      if (explicit) {
-        const obj = JSON.parse(explicit);
-        const cleanEmail = (obj?.email || "").toLowerCase().trim();
-        const isStaff = this.isAccountAdmin(obj) || (cleanEmail && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com")) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
-        if (isStaff) {
-          obj.tag = obj.tag === "ARENA" ? "COMM" : (obj.tag || "COMM");
-          obj.team_name = "Frontline League HQ";
-          obj.tier = "Commissioner";
-          obj.is_staff = true;
-          obj.is_commissioner = true;
-        }
-        return obj;
-      }
-    } catch (e) {}
-
-    // Check Supabase session
+    // 1. Check active Supabase Auth Session to see who is authenticated
+    let authUser = null;
     if (dbClient) {
       try {
         const sessionKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
@@ -7111,43 +7095,80 @@ window.LadderDB = {
           const raw = localStorage.getItem(k);
           if (raw) {
             const parsed = JSON.parse(raw);
-            const user = parsed?.user;
-            if (user) {
-              const cleanEmail = (user.email || "").toLowerCase().trim();
-              const isStaff = this.isAccountAdmin(user) || (cleanEmail && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com")) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
-              const gamertag = user.user_metadata?.gamertag || user.email?.split("@")[0] || (isStaff ? "Commissioner Spencer" : "Combatant");
-              if (isStaff) {
-                return {
-                  id: user.id,
-                  gamertag: gamertag,
-                  email: user.email,
-                  tag: "COMM",
-                  team_name: "Frontline League HQ",
-                  elo: 1200,
-                  tier: "Commissioner",
-                  avatar_url: user.user_metadata?.avatar_url || "/images/leaguelogo_1.png",
-                  discord: user.user_metadata?.discord_name || gamertag.toLowerCase(),
-                  activision_id: user.user_metadata?.activision_id || "Spencer#0001",
-                  is_staff: true,
-                  is_commissioner: true
-                };
-              }
-              return {
-                id: user.id,
-                gamertag: gamertag,
-                email: user.email,
-                tag: "ARENA",
-                team_name: "Frontline Arena",
-                elo: 1200,
-                tier: "Specialist",
-                avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-                discord: gamertag.toLowerCase(),
-                activision_id: `${gamertag}#1234567`
-              };
+            if (parsed?.user) {
+              authUser = parsed.user;
+              break;
             }
           }
         }
       } catch (e) {}
+    }
+
+    const cleanAuthEmail = (authUser?.email || "").toLowerCase().trim();
+    const adminSessionEmail = (typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("frontline_admin_email") || "") : "").toLowerCase().trim();
+    const isAdminSession = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
+
+    const isStaff = (authUser && this.isAccountAdmin(authUser)) || 
+                    cleanAuthEmail === "todd061496@gmail.com" || 
+                    cleanAuthEmail === "admin@frontlineleague.com" || 
+                    adminSessionEmail === "todd061496@gmail.com" || 
+                    adminSessionEmail === "admin@frontlineleague.com" || 
+                    (isAdminSession && !authUser?.app_metadata?.provider?.includes("discord"));
+
+    // If active session is Admin / Commissioner, build the official Commissioner Dossier
+    // NEVER allow a combatant Discord profile to bleed into an Admin Email session!
+    if (isStaff) {
+      const isSpencer = (cleanAuthEmail === "todd061496@gmail.com" || adminSessionEmail === "todd061496@gmail.com" || !cleanAuthEmail);
+      const staffGamertag = isSpencer ? "Commissioner Spencer" : (authUser?.user_metadata?.gamertag || "League Commissioner");
+
+      return {
+        id: authUser?.id || "admin_commissioner",
+        gamertag: staffGamertag,
+        username: staffGamertag,
+        email: cleanAuthEmail || adminSessionEmail || "todd061496@gmail.com",
+        tag: "COMM",
+        team_name: "Frontline League HQ",
+        elo: 1200,
+        tier: "Commissioner",
+        role: "League Commissioner",
+        avatar_url: "/images/leaguelogo_1.png",
+        discord: "—",
+        activision_id: isSpencer ? "Spencer#0001" : "Official#0001",
+        is_staff: true,
+        is_commissioner: true
+      };
+    }
+
+    // 2. Otherwise check explicit local storage for combatants
+    try {
+      const explicit = localStorage.getItem("frontline_arena_user");
+      if (explicit) {
+        const obj = JSON.parse(explicit);
+        // Only use explicit if no conflicting authUser or if it matches authUser
+        if (!authUser || (obj.id && obj.id === authUser.id) || (obj.email && cleanAuthEmail && obj.email.toLowerCase() === cleanAuthEmail)) {
+          return obj;
+        }
+      }
+    } catch (e) {}
+
+    // 3. Fallback to Supabase player session
+    if (authUser) {
+      const meta = authUser.user_metadata || {};
+      const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.extractDiscordIdentity(authUser) : null;
+      const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
+      return {
+        id: authUser.id,
+        gamertag: gamertag,
+        username: gamertag,
+        email: authUser.email,
+        tag: "ARENA",
+        team_name: "Frontline Arena",
+        elo: 1200,
+        tier: "Specialist",
+        avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+        discord: discordInfo?.primaryName || meta.discord_name || `${gamertag.toLowerCase()}#0001`,
+        activision_id: meta.activision_id || `${gamertag}#1234567`
+      };
     }
 
     return null;
@@ -7247,20 +7268,50 @@ window.LadderDB = {
       try {
         const res = await window.LeagueDB.signInPlayer(cleanId, password);
         if (res.success && res.user) {
-          const gamertag = res.user.user_metadata?.gamertag || cleanId.split("@")[0];
-          const playerObj = {
-            id: res.user.id,
-            gamertag: gamertag,
-            email: res.user.email,
-            tag: "ARENA",
-            team_name: "Frontline Arena",
-            elo: 1200,
-            tier: "Specialist",
-            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-            discord: `${gamertag.toLowerCase()}#0001`,
-            activision_id: `${gamertag}#1234567`
-          };
+          const cleanEmail = (res.user.email || cleanId).toLowerCase().trim();
+          const isStaff = (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(res.user)) || 
+                          cleanEmail === "todd061496@gmail.com" || 
+                          cleanEmail === "admin@frontlineleague.com";
+          
+          let playerObj;
+          if (isStaff) {
+            const staffName = res.user.user_metadata?.gamertag || (cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "League Commissioner");
+            playerObj = {
+              id: res.user.id,
+              gamertag: staffName,
+              username: staffName,
+              email: res.user.email,
+              tag: "COMM",
+              team_name: "Frontline League HQ",
+              elo: 1200,
+              tier: "Commissioner",
+              role: "League Commissioner",
+              avatar_url: res.user.user_metadata?.avatar_url || "/images/leaguelogo_1.png",
+              discord: "—",
+              activision_id: cleanEmail === "todd061496@gmail.com" ? "Spencer#0001" : "Official#0001",
+              is_staff: true,
+              is_commissioner: true
+            };
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            sessionStorage.setItem("frontline_admin_email", cleanEmail);
+          } else {
+            const gamertag = res.user.user_metadata?.gamertag || cleanId.split("@")[0];
+            playerObj = {
+              id: res.user.id,
+              gamertag: gamertag,
+              username: gamertag,
+              email: res.user.email,
+              tag: "ARENA",
+              team_name: "Frontline Arena",
+              elo: 1200,
+              tier: "Specialist",
+              avatar_url: res.user.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+              discord: `${gamertag.toLowerCase()}#0001`,
+              activision_id: `${gamertag}#1234567`
+            };
+          }
           localStorage.setItem("frontline_arena_user", JSON.stringify(playerObj));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(playerObj));
           this.updateArenaNavProfile();
           window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: playerObj } }));
           return { success: true, player: playerObj };

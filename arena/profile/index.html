@@ -654,31 +654,62 @@
               const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
                 ? window.LeagueDB.getDiscordIdentity(u)
                 : null;
-              const isDiscord = discordInfo && discordInfo.isDiscord;
               sessionStorage.removeItem("frontline_discord_oauth_pending");
 
-              const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || meta.custom_claims?.global_name || meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "Operative");
-              const discordName = meta.discord_name || meta.discord_username || discordInfo?.primaryName || gamertag;
-              const userObj = {
-                id: u.id,
-                email: u.email,
-                gamertag: gamertag,
-                username: gamertag,
-                tag: "ARENA",
-                activision_id: meta.activision_id || `${gamertag}#1234567`,
-                discord: discordName,
-                avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-                elo: 1200,
-                tier: "Specialist",
-                role: meta.role || "Flex",
-                region: meta.region || "NA East",
-                platform: meta.platform || "PC"
-              };
+              const cleanEmail = (u.email || "").toLowerCase().trim();
+              const isStaff = (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(u)) || 
+                              cleanEmail === "todd061496@gmail.com" || 
+                              cleanEmail === "admin@frontlineleague.com" || 
+                              (sessionStorage.getItem("frontline_admin_session") === "authorized" && !discordInfo?.isDiscord);
+
+              let userObj;
+              if (isStaff) {
+                const staffName = meta.gamertag || (cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "League Commissioner");
+                userObj = {
+                  id: u.id,
+                  email: u.email,
+                  gamertag: staffName,
+                  username: staffName,
+                  tag: "COMM",
+                  team_name: "Frontline League HQ",
+                  activision_id: cleanEmail === "todd061496@gmail.com" ? "Spencer#0001" : "Official#0001",
+                  discord: "—",
+                  avatar_url: "/images/leaguelogo_1.png",
+                  elo: 1200,
+                  tier: "Commissioner",
+                  role: "League Commissioner",
+                  region: "NA East",
+                  platform: "PC / Broadcast",
+                  is_staff: true,
+                  is_commissioner: true
+                };
+                sessionStorage.setItem("frontline_admin_session", "authorized");
+                sessionStorage.setItem("frontline_admin_email", cleanEmail);
+              } else {
+                const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || meta.custom_claims?.global_name || meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "Operative");
+                const discordName = meta.discord_name || meta.discord_username || discordInfo?.primaryName || gamertag;
+                userObj = {
+                  id: u.id,
+                  email: u.email,
+                  gamertag: gamertag,
+                  username: gamertag,
+                  tag: "ARENA",
+                  activision_id: meta.activision_id || `${gamertag}#1234567`,
+                  discord: discordName,
+                  avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                  elo: 1200,
+                  tier: "Specialist",
+                  role: meta.role || "Flex",
+                  region: meta.region || "NA East",
+                  platform: meta.platform || "PC"
+                };
+              }
               try {
+                localStorage.setItem("frontline_arena_user", JSON.stringify(userObj));
                 localStorage.setItem("frontline_arena_auth_user", JSON.stringify(userObj));
                 localStorage.setItem("frontline_league_auth_user", JSON.stringify(u));
               } catch(e) {}
-              if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+              if (!isStaff && window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
                 window.LeagueDB.autoCheckDiscordOnboarding();
               }
               renderProfilePage();
@@ -1035,8 +1066,6 @@
           if (isStaffAccount) {
             sessionStorage.setItem("frontline_admin_session", "authorized");
             sessionStorage.setItem("frontline_admin_email", cleanEmail);
-            window.location.href = "/profile/";
-            return;
           }
           renderProfilePage();
         } else {
