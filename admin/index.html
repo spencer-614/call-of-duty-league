@@ -2285,110 +2285,104 @@
             </div>
           </div>
 
-          <!-- Card 2: Enlist / Assign Staff Role -->
+          <!-- Card 2: Community & League User List with Role Selector Dropdown -->
           <div class="admin-panel-card">
-            <h3 class="admin-card-title">＋ Assign or Update Staff Role</h3>
-            <form id="form-manage-staff">
-              <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-                <!-- User Selection Dropdown -->
-                <div class="form-group" style="grid-column: 1 / -1;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:8px;">
-                    <label class="form-label" for="staff-select-user" style="margin-bottom:0; font-size:13px; font-weight:700; color:#ffffff;">
-                      👤 Select User / Combatant to Assign Staff Role &amp; Perms *
-                    </label>
-                    <button type="button" id="btn-refresh-staff-users" class="btn-action-sm" style="font-size:11px; padding:3px 9px;">
-                      ↻ Refresh User List
-                    </button>
-                  </div>
-                  <select id="staff-select-user" class="form-control" style="background:#13150f; border:1.5px solid var(--lime); color:#ffffff; font-weight:600;">
-                    <option value="">-- Click to select a registered user, combatant, or recruit --</option>
-                  </select>
-                  <small style="color:#b5b8a8; font-size:11.5px; margin-top:4px; display:block;">
-                    Selecting a registered player, recruit, or member auto-fills their email, gamertag, and role settings. You can also pick "✍ Enter Custom / External Email Manually".
-                  </small>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="staff-input-email">Staff Account Email *</label>
-                  <input type="email" id="staff-input-email" class="form-control" placeholder="e.g. referee@frontlineleague.com" required />
-                  <small style="color:#b5b8a8; font-size:11.5px; margin-top:4px; display:block;">Must match the email used for Supabase Auth login</small>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="staff-input-name">Display Name / Gamertag</label>
-                  <input type="text" id="staff-input-name" class="form-control" placeholder="e.g. Ref Spartan" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="staff-input-role">Assigned Staff Role *</label>
-                  <select id="staff-input-role" class="form-control" required>
-                    <option value="referee">⚔ Match Referee (Scores, Stats, Schedule)</option>
-                    <option value="stats_official">📊 Stats &amp; Scoring Official (AI Scoreboard Scanner, Map Stats)</option>
-                    <option value="roster_manager">🎯 Roster Admin (Teams, Rosters, Enlistment)</option>
-                    <option value="recruiter">📋 Recruitment Officer (Review Signups, Free Agents)</option>
-                    <option value="broadcaster">🔴 Broadcast Media Lead (Livestreams, VODs, Announcements)</option>
-                    <option value="rulebook_admin">📜 Rules Officer (CDL Rulebook, Lobby Settings)</option>
-                    <option value="commissioner">🛡 League Commissioner (Full Access to Everything)</option>
-                  </select>
-                </div>
-
-                <div class="form-group" style="grid-column: 1 / -1;">
-                  <label class="form-label" for="staff-input-notes">Operational Notes / Responsibilities</label>
-                  <input type="text" id="staff-input-notes" class="form-control" placeholder="e.g. North America East weekend referee" />
-                </div>
-
-                <!-- Granular Module Permissions Toggles -->
-                <div class="form-group" style="grid-column: 1 / -1;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
-                    <label class="form-label" style="margin:0; font-size:12.5px; font-weight:700; color:#d5f45b;">
-                      🔐 Granted Module Permissions
-                    </label>
-                    <button type="button" id="btn-reset-role-perms" class="btn-action-sm" style="font-size:10.5px; padding:2px 8px;">
-                      ↺ Reset to Role Defaults
-                    </button>
-                  </div>
-                  <div id="staff-perms-checkboxes" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:8px; background:#10120d; border:1px solid #282c1e; padding:12px; border-radius:4px;">
-                    <!-- Populated dynamically via JS -->
-                  </div>
-                  <small style="color:#b5b8a8; font-size:11.5px; margin-top:4px; display:block;">
-                    Checked modules will be accessible in the Admin Console for this staff account. Unchecked modules will remain hidden and locked.
-                  </small>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px; margin-bottom:16px;">
+              <div>
+                <h3 class="admin-card-title" style="margin:0 0 6px;">👥 Community &amp; League Users (Assign Staff Roles)</h3>
+                <p style="color:var(--muted); font-size:13px; margin:0; line-height:1.5;">
+                  Browse all registered community accounts, Discord users, recruits, and players. Use the <strong>Role Dropdown</strong> on any user row to select and assign their staff role.
+                </p>
               </div>
-
-              <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:16px;">
-                <button type="submit" id="btn-save-staff-role" class="btn-paypal-submit">
-                  <span>Save Staff Role &amp; Permissions</span>
-                  <span>✓</span>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" id="btn-toggle-add-external-staff" class="btn-action-sm" style="border-color:var(--lime); color:var(--lime);">
+                  ＋ Add External Staff by Email
+                </button>
+                <button type="button" id="btn-refresh-staff-users-table" class="btn-action-sm">
+                  ↻ Refresh User List
                 </button>
               </div>
-            </form>
-          </div>
-
-          <!-- Card 3: Active Staff Directory Table -->
-          <div class="admin-panel-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-              <h3 class="admin-card-title" style="margin:0;">👥 Active League Staff Directory</h3>
-              <button type="button" id="btn-refresh-staff-list" class="btn-action-sm">
-                ↻ Refresh Directory
-              </button>
             </div>
 
+            <!-- Collapsible: Add External / Custom Staff Member -->
+            <div id="panel-add-external-staff" style="display:none; background:#141610; border:1px solid #323725; padding:16px 18px; border-radius:4px; margin-bottom:20px;">
+              <h4 style="margin:0 0 10px; font-size:13px; color:var(--lime); font-family:var(--admin-font); text-transform:uppercase; letter-spacing:0.5px;">
+                ＋ Add New / External Staff Member
+              </h4>
+              <form id="form-add-external-staff" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:flex-end;">
+                <div>
+                  <label class="form-label" for="ext-staff-email" style="font-size:11px;">Staff Account Email *</label>
+                  <input type="email" id="ext-staff-email" class="form-control" placeholder="staff@example.com" required />
+                </div>
+                <div>
+                  <label class="form-label" for="ext-staff-name" style="font-size:11px;">Display Name / Gamertag</label>
+                  <input type="text" id="ext-staff-name" class="form-control" placeholder="e.g. Spartan" />
+                </div>
+                <div>
+                  <label class="form-label" for="ext-staff-role" style="font-size:11px;">Staff Role *</label>
+                  <select id="ext-staff-role" class="form-control" required>
+                    <option value="referee">⚔ Match Referee (Scores, Stats, Schedule)</option>
+                    <option value="stats_official">📊 Stats &amp; Scoring Official (AI Scanner, Map Stats)</option>
+                    <option value="roster_manager">🎯 Roster Admin (Teams, Rosters)</option>
+                    <option value="recruiter">📋 Recruitment Officer (Signups Queue)</option>
+                    <option value="broadcaster">🔴 Broadcast Media Lead (Livestreams, News)</option>
+                    <option value="rulebook_admin">📜 Rules Officer (CDL Rulebook, GA)</option>
+                    <option value="commissioner">🛡 League Commissioner (Full Access)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" for="ext-staff-notes" style="font-size:11px;">Notes / Assignment</label>
+                  <input type="text" id="ext-staff-notes" class="form-control" placeholder="e.g. Weekend caster" />
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button type="submit" class="btn-paypal-submit" style="padding:10px 18px; font-size:12px;">
+                    <span>Assign Role</span><span>✓</span>
+                  </button>
+                  <button type="button" id="btn-cancel-add-external" class="btn-action-sm">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Filter Tabs & Search Bar -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div style="display:flex; gap:6px; flex-wrap:wrap;" id="staff-filter-tabs">
+                <button type="button" class="btn-action-sm btn-filter-users active" data-filter="all" style="background:var(--lime); color:#000; border-color:var(--lime); font-weight:700;">
+                  All Users (<span id="count-all-users">0</span>)
+                </button>
+                <button type="button" class="btn-action-sm btn-filter-users" data-filter="staff">
+                  🛡 Active Staff (<span id="count-staff-users">0</span>)
+                </button>
+                <button type="button" class="btn-action-sm btn-filter-users" data-filter="discord">
+                  🎮 Discord Accounts (<span id="count-discord-users">0</span>)
+                </button>
+                <button type="button" class="btn-action-sm btn-filter-users" data-filter="recruits">
+                  📋 Recruits &amp; Players (<span id="count-recruit-users">0</span>)
+                </button>
+              </div>
+
+              <div style="position:relative; width:min(320px, 100%);">
+                <input type="text" id="input-search-users" class="form-control" placeholder="🔍 Search gamertag, email, discord..." style="padding-left:12px; font-size:12.5px;" />
+              </div>
+            </div>
+
+            <!-- User List Table with Role Dropdown on Each Row -->
             <div style="overflow-x:auto;">
-              <table class="admin-table" id="table-staff-directory">
+              <table class="admin-table" id="table-staff-users">
                 <thead>
                   <tr>
-                    <th>Staff Member</th>
-                    <th>Role Badge</th>
-                    <th>Authorized Modules</th>
-                    <th>Notes</th>
-                    <th>Actions</th>
+                    <th style="min-width:220px;">User / Combatant</th>
+                    <th style="min-width:140px;">Account Type</th>
+                    <th style="min-width:160px;">Current Status</th>
+                    <th style="min-width:260px;">Select Staff Role (Dropdown)</th>
+                    <th style="min-width:160px; text-align:right;">Actions</th>
                   </tr>
                 </thead>
-                <tbody id="staff-directory-tbody">
+                <tbody id="staff-users-tbody">
                   <tr>
-                    <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">
-                      Loading staff directory...
+                    <td colspan="5" style="text-align:center; padding:36px; color:var(--muted);">
+                      Loading user roster &amp; database records...
                     </td>
                   </tr>
                 </tbody>
@@ -2396,12 +2390,12 @@
             </div>
 
             <div style="margin-top:20px; padding:14px 18px; background:rgba(213,244,91,0.05); border:1px solid rgba(213,244,91,0.2); font-size:12.5px; line-height:1.6; color:#dce0cf;">
-              💡 <strong>How to grant a staff member login access:</strong>
-              <ol style="margin:8px 0 0 18px; padding:0;">
-                <li>Assign their role in the form above using their email address.</li>
-                <li>In your <a href="https://supabase.com/dashboard/project/sllilxkbmxheclhgstcq/auth/users" target="_blank" rel="noopener" style="color:var(--lime);">Supabase Dashboard ➔ Authentication ➔ Users</a>, click <strong>"Add user" ➔ "Create user"</strong> with that same email and a password of your choice.</li>
-                <li>When that staff member logs in on <code>/admin</code>, the system recognizes their role and automatically restricts the console to only their assigned modules!</li>
-              </ol>
+              💡 <strong>Staff Login Access:</strong>
+              <ul style="margin:8px 0 0 18px; padding:0;">
+                <li><strong>Discord Users:</strong> As soon as you select a role in the dropdown and click <em>Save Role</em>, they can immediately sign into the Admin Console by clicking <strong>Sign in with Discord</strong>!</li>
+                <li><strong>Email / Password Users:</strong> If they log in via email and password, create or verify their account in your <a href="https://supabase.com/dashboard/project/sllilxkbmxheclhgstcq/auth/users" target="_blank" rel="noopener" style="color:var(--lime);">Supabase Auth Dashboard</a>.</li>
+                <li><strong>Role Permissions:</strong> Each role automatically restricts access to their designated modules. Click <strong>⚙ Perms</strong> to customize individual module access for any staff member.</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -3156,6 +3150,41 @@
       </div>
     </dialog>
 
+    <!-- Modal: Staff Custom Permissions -->
+    <dialog id="modal-staff-custom-perms" class="admin-modal" closedby="any" style="max-width:680px; width:95%;">
+      <div class="admin-modal-header" style="border-bottom:1px solid #2a311e; padding-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">ROLE-BASED ACCESS CONTROL (RBAC)</div>
+          <h3 class="admin-modal-title" style="margin:0; font:800 20px var(--display);">Customize Staff Permissions</h3>
+        </div>
+        <button type="button" class="btn-action-sm" id="btn-close-modal-perms">✕ Close</button>
+      </div>
+      <div class="admin-modal-body" style="max-height:65vh; overflow-y:auto; padding-top:16px;">
+        <div style="margin-bottom:16px; padding:12px 16px; background:#181a13; border:1px solid #2d3122; border-radius:3px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-weight:700; color:#ffffff; font-size:15px;" id="modal-perms-username">Operative</div>
+            <div style="font-size:12px; color:var(--muted);" id="modal-perms-useremail">email@example.com</div>
+          </div>
+          <span class="role-badge role-badge-commissioner" id="modal-perms-rolebadge">Match Referee</span>
+        </div>
+        <p style="font-size:12.5px; color:#b5b8a8; margin:0 0 14px; line-height:1.5;">
+          Check the modules this staff member is authorized to view and manage in the Admin Console. Unchecked modules will remain hidden and locked in their navigation.
+        </p>
+        <div id="modal-perms-checkboxes" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:8px; margin-bottom:16px;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+      <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" id="btn-modal-reset-perms" class="btn-action-sm">↺ Reset to Role Defaults</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-action-sm" id="btn-cancel-modal-perms">Cancel</button>
+          <button type="button" id="btn-modal-save-perms" class="btn-paypal-submit" style="padding:8px 18px; font-size:12px;">
+            <span>Save Permissions</span><span>✓</span>
+          </button>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Notification Toast -->
     <div id="admin-toast" class="toast-banner">
       <span style="color:var(--lime); font-size:18px;">✓</span>
@@ -3570,48 +3599,16 @@
           { id: "tab-tournaments-hub", label: "Tournaments Hub" }
         ];
 
-        let staffUserDirectoryMap = new Map();
+        let staffUsersMap = new Map();
+        let currentStaffFilter = "all";
+        let currentStaffSearch = "";
+        let activeModalUserKey = null;
 
-        function renderStaffPermCheckboxes() {
-          const container = document.getElementById("staff-perms-checkboxes");
-          if (!container) return;
-          container.innerHTML = ADMIN_MODULE_TABS.map(tab => `
-            <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:#e0e4d4; cursor:pointer; user-select:none; padding:5px 8px; background:#161912; border:1px solid #23271a; border-radius:3px;">
-              <input type="checkbox" class="staff-perm-checkbox" value="${tab.id}" style="accent-color:var(--lime); width:15px; height:15px; cursor:pointer;" />
-              <span>${tab.label}</span>
-            </label>
-          `).join("");
-        }
+        async function loadStaffDirectory() {
+          const tbody = document.getElementById("staff-users-tbody");
+          if (!tbody) return;
 
-        function setPermCheckboxes(tabList) {
-          const list = Array.isArray(tabList) ? tabList : [];
-          document.querySelectorAll(".staff-perm-checkbox").forEach(cb => {
-            cb.checked = list.includes(cb.value);
-          });
-        }
-
-        function getSelectedPermCheckboxes() {
-          const checked = [];
-          document.querySelectorAll(".staff-perm-checkbox:checked").forEach(cb => {
-            checked.push(cb.value);
-          });
-          return checked;
-        }
-
-        function syncPermCheckboxesWithRole(roleKey) {
-          if (!window.LeagueDB || !window.LeagueDB.getRoleTabs) {
-            setPermCheckboxes(ADMIN_MODULE_TABS.map(t => t.id));
-            return;
-          }
-          const defaultTabs = window.LeagueDB.getRoleTabs(roleKey || "referee");
-          setPermCheckboxes(defaultTabs);
-        }
-
-        async function populateStaffUserDropdown() {
-          const select = document.getElementById("staff-select-user");
-          if (!select) return;
-
-          const previousSelectedValue = select.value;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:36px; color:var(--muted);">Loading user roster &amp; database records...</td></tr>`;
 
           let staffList = [];
           let playersList = [];
@@ -3627,7 +3624,7 @@
             playersList = playersRes || [];
             signupsList = signupsRes || [];
           } catch(e) {
-            console.warn("Error gathering user dropdown data:", e);
+            console.warn("Error gathering user roster data:", e);
           }
 
           let registeredAccounts = [];
@@ -3645,396 +3642,601 @@
             leagueAuthUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
           } catch(e) {}
 
-          staffUserDirectoryMap = new Map();
+          staffUsersMap = new Map();
 
-          function registerCandidate(user) {
-            if (!user) return;
-            const email = (user.email || user.user_email || "").toLowerCase().trim();
-            const gamertag = (user.gamertag || user.username || user.display_name || "").trim();
-            const discord = (user.discord || user.discord_username || user.discord_name || "").trim();
+          function mergeCandidateUser(candidate) {
+            if (!candidate) return;
+            const rawEmail = (candidate.email || candidate.user_email || candidate._owner_email || "").toLowerCase().trim();
+            const gamertag = (candidate.gamertag || candidate.username || candidate.display_name || candidate.discord_name || "").trim();
+            const discord = (candidate.discord || candidate.discord_username || candidate.discord_name || "").trim();
+            const discordId = candidate.discord_id || candidate.discord_user_id || null;
+            const userId = candidate.user_id || candidate.id || null;
 
-            if (!email && !gamertag) return;
+            if (!rawEmail && !gamertag && !discord) return;
 
-            const key = email || `gt_${gamertag.toLowerCase()}`;
-            const existing = staffUserDirectoryMap.get(key);
+            // Find existing record by email, user_id, discord_id, gamertag, or discord handle
+            let existing = null;
+            for (const item of staffUsersMap.values()) {
+              if (rawEmail && item.email && item.email.toLowerCase() === rawEmail) {
+                existing = item;
+                break;
+              }
+              if (userId && item.user_id && item.user_id === userId) {
+                existing = item;
+                break;
+              }
+              if (discordId && item.discord_id && item.discord_id === discordId) {
+                existing = item;
+                break;
+              }
+              if (gamertag && item.gamertag && item.gamertag.toLowerCase() === gamertag.toLowerCase()) {
+                existing = item;
+                break;
+              }
+              if (discord && item.discord && item.discord.toLowerCase() === discord.toLowerCase()) {
+                existing = item;
+                break;
+              }
+            }
 
-            const merged = {
-              key: key,
-              email: email || existing?.email || (gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : ""),
-              hasRealEmail: !!email || !!existing?.hasRealEmail,
-              gamertag: gamertag || existing?.gamertag || (email ? email.split("@")[0] : "Operative"),
-              discord: discord || existing?.discord || "",
-              discord_id: user.discord_id || user.discord_user_id || existing?.discord_id || null,
-              user_id: user.user_id || user.id || existing?.user_id || null,
-              role: user.role || existing?.role || null,
-              custom_permissions: user.custom_permissions || existing?.custom_permissions || null,
-              notes: user.notes || existing?.notes || "",
-              category: user.category || existing?.category || "Registered Member",
-              team: user.team || user.team_name || existing?.team || null
-            };
+            const primaryKey = rawEmail || (gamertag ? `gt_${gamertag.toLowerCase()}` : `usr_${Date.now()}_${Math.random()}`);
 
-            staffUserDirectoryMap.set(key, merged);
+            if (existing) {
+              if (!existing.email && rawEmail) existing.email = rawEmail;
+              if (!existing.gamertag && gamertag) existing.gamertag = gamertag;
+              if (!existing.discord && discord) existing.discord = discord;
+              if (!existing.discord_id && discordId) existing.discord_id = discordId;
+              if (!existing.user_id && userId) existing.user_id = userId;
+              if (candidate.role && !existing.role) existing.role = candidate.role;
+              if (candidate.custom_permissions && !existing.custom_permissions) existing.custom_permissions = candidate.custom_permissions;
+              if (candidate.staff_id && !existing.staff_id) existing.staff_id = candidate.staff_id;
+              if (candidate.notes && !existing.notes) existing.notes = candidate.notes;
+              if (candidate.team && !existing.team) existing.team = candidate.team;
+              if (candidate.category === "Current Staff") existing.category = "Current Staff";
+              if (rawEmail) existing.hasRealEmail = true;
+            } else {
+              staffUsersMap.set(primaryKey, {
+                key: primaryKey,
+                email: rawEmail || (gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : ""),
+                hasRealEmail: !!rawEmail,
+                gamertag: gamertag || (rawEmail ? rawEmail.split("@")[0] : (discord || "Combatant")),
+                discord: discord,
+                discord_id: discordId,
+                user_id: userId,
+                role: candidate.role || null,
+                custom_permissions: candidate.custom_permissions || null,
+                staff_id: candidate.staff_id || null,
+                notes: candidate.notes || "",
+                category: candidate.category || "Registered Member",
+                team: candidate.team || candidate.team_name || null
+              });
+            }
           }
 
-          // 1. Staff Members
+          // 1. Staff Members (from staff_roles table in Supabase)
           staffList.forEach(s => {
-            registerCandidate({
+            mergeCandidateUser({
               ...s,
-              category: "Current Staff",
+              staff_id: s.id,
               role: s.role || "referee",
-              notes: s.notes || ""
+              category: "Current Staff",
+              display_name: s.display_name
             });
           });
 
-          // 2. Registered Website & Discord Accounts
+          // 2. Registered accounts (Discord and site)
           registeredAccounts.forEach(a => {
-            registerCandidate({
+            mergeCandidateUser({
               ...a,
-              category: "Registered Member"
+              category: (a.discord || a.discord_id) ? "Discord Account" : "Registered Member",
+              role: a.staff_role || (a.is_staff ? "referee" : null)
             });
           });
 
+          // 3. Active Auth Users
           if (arenaAuthUser) {
-            registerCandidate({
+            mergeCandidateUser({
               ...arenaAuthUser,
-              category: "Registered Member"
+              category: (arenaAuthUser.discord || arenaAuthUser.discord_id) ? "Discord Account" : "Registered Member"
             });
           }
-
           if (leagueAuthUser) {
-            registerCandidate({
+            mergeCandidateUser({
               email: leagueAuthUser.email,
               gamertag: leagueAuthUser.user_metadata?.gamertag || leagueAuthUser.displayName,
+              discord: leagueAuthUser.user_metadata?.custom_claims?.global_name || leagueAuthUser.user_metadata?.full_name,
               category: "Registered Member"
             });
           }
 
-          // 3. League Signups & Recruits
+          // 4. League Signups / Recruits
           signupsList.forEach(s => {
             let extractedEmail = s.email || s.user_email || "";
             if (!extractedEmail && s.notes) {
               const match = String(s.notes).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
               if (match) extractedEmail = match[0];
             }
-            registerCandidate({
+            mergeCandidateUser({
               ...s,
               email: extractedEmail,
-              category: "Recruit / Signup"
+              category: "League Recruit"
             });
           });
 
-          // 4. Players
+          // 5. League Roster Players
           playersList.forEach(p => {
-            let extractedEmail = p.email || p._owner_email || "";
-            registerCandidate({
+            mergeCandidateUser({
               ...p,
-              email: extractedEmail,
-              category: "Roster Combatant"
+              email: p.email || p._owner_email || "",
+              category: "Roster Player"
             });
           });
 
-          const staffGroup = [];
-          const registeredGroup = [];
-          const signupsGroup = [];
-          const playersGroup = [];
+          renderStaffUsersTable();
+        }
 
-          staffUserDirectoryMap.forEach(item => {
-            if (item.category === "Current Staff" || item.role) {
-              staffGroup.push(item);
-            } else if (item.category === "Registered Member") {
-              registeredGroup.push(item);
-            } else if (item.category === "Recruit / Signup") {
-              signupsGroup.push(item);
-            } else {
-              playersGroup.push(item);
+        async function populateStaffUserDropdown() {
+          await loadStaffDirectory();
+        }
+
+        function renderStaffUsersTable() {
+          const tbody = document.getElementById("staff-users-tbody");
+          if (!tbody) return;
+
+          const users = Array.from(staffUsersMap.values());
+
+          // Counts for header filter tabs
+          const staffCount = users.filter(u => !!u.role).length;
+          const discordCount = users.filter(u => u.category === "Discord Account" || !!u.discord || !!u.discord_id).length;
+          const recruitCount = users.filter(u => u.category === "League Recruit" || u.category === "Roster Player").length;
+
+          const elAll = document.getElementById("count-all-users");
+          const elStaff = document.getElementById("count-staff-users");
+          const elDiscord = document.getElementById("count-discord-users");
+          const elRecruits = document.getElementById("count-recruit-users");
+
+          if (elAll) elAll.textContent = users.length;
+          if (elStaff) elStaff.textContent = staffCount;
+          if (elDiscord) elDiscord.textContent = discordCount;
+          if (elRecruits) elRecruits.textContent = recruitCount;
+
+          // Filtering
+          let filtered = users.filter(u => {
+            if (currentStaffFilter === "staff" && !u.role) return false;
+            if (currentStaffFilter === "discord" && !(u.category === "Discord Account" || u.discord || u.discord_id)) return false;
+            if (currentStaffFilter === "recruits" && !(u.category === "League Recruit" || u.category === "Roster Player")) return false;
+
+            if (currentStaffSearch) {
+              const q = currentStaffSearch.toLowerCase();
+              const mTag = (u.gamertag || "").toLowerCase().includes(q);
+              const mEmail = (u.email || "").toLowerCase().includes(q);
+              const mDiscord = (u.discord || "").toLowerCase().includes(q);
+              const mRole = (u.role || "").toLowerCase().includes(q);
+              const mCat = (u.category || "").toLowerCase().includes(q);
+              if (!mTag && !mEmail && !mDiscord && !mRole && !mCat) return false;
             }
+            return true;
           });
 
-          const sortFn = (a, b) => (a.gamertag || a.email).localeCompare(b.gamertag || b.email);
-          staffGroup.sort(sortFn);
-          registeredGroup.sort(sortFn);
-          signupsGroup.sort(sortFn);
-          playersGroup.sort(sortFn);
+          // Sort: Active Staff at the top, then alphabetical
+          filtered.sort((a, b) => {
+            const aStaff = a.role ? 1 : 0;
+            const bStaff = b.role ? 1 : 0;
+            if (aStaff !== bStaff) return bStaff - aStaff;
+            return (a.gamertag || "").localeCompare(b.gamertag || "");
+          });
 
-          let html = `<option value="">-- Choose User from Database, Signups, or Roster --</option>`;
-
-          function renderOptions(list) {
-            return list.map(item => {
-              const emailDisplay = item.email ? item.email : 'No email logged';
-              const discordDisplay = item.discord ? ` · Discord: ${item.discord}` : '';
-              const roleDisplay = item.role ? ` · [Current Role: ${item.role}]` : '';
-              const teamDisplay = item.team ? ` · [${item.team}]` : '';
-              return `<option value="${escapeHtml(item.key)}">${escapeHtml(item.gamertag)} (${escapeHtml(emailDisplay)}${discordDisplay}${roleDisplay}${teamDisplay})</option>`;
-            }).join("");
+          if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:36px; color:var(--muted);">No users found matching query or filter.</td></tr>`;
+            return;
           }
 
-          if (registeredGroup.length > 0) {
-            html += `<optgroup label="🌟 Registered Community & Discord Members (${registeredGroup.length})">
-              ${renderOptions(registeredGroup)}
-            </optgroup>`;
-          }
+          tbody.innerHTML = filtered.map(item => {
+            const roleKey = item.role || "";
+            const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey])
+              ? window.LeagueDB.STAFF_ROLES[roleKey]
+              : (roleKey ? { title: roleKey, badgeClass: "role-badge-commissioner" } : null);
 
-          if (signupsGroup.length > 0) {
-            html += `<optgroup label="📋 League Signups & Recruits (${signupsGroup.length})">
-              ${renderOptions(signupsGroup)}
-            </optgroup>`;
-          }
+            const isSelf = activeStaffProfile && activeStaffProfile.email && item.email &&
+              activeStaffProfile.email.toLowerCase() === item.email.toLowerCase();
 
-          if (staffGroup.length > 0) {
-            html += `<optgroup label="🛡 Current Staff Members (${staffGroup.length})">
-              ${renderOptions(staffGroup)}
-            </optgroup>`;
-          }
+            // Account badge
+            let accountBadgeHtml = "";
+            if (item.discord || item.category === "Discord Account") {
+              accountBadgeHtml = `<span class="pill" style="background:rgba(88,101,242,0.15); border-color:#5865f2; color:#7983f5; font-size:10px;">🎮 Discord</span>`;
+            } else if (item.category === "League Recruit") {
+              accountBadgeHtml = `<span class="pill" style="background:rgba(251,191,36,0.12); border-color:#fbbf24; color:#fbbf24; font-size:10px;">📋 Recruit</span>`;
+            } else if (item.category === "Roster Player") {
+              accountBadgeHtml = `<span class="pill" style="background:rgba(56,189,248,0.12); border-color:#38bdf8; color:#38bdf8; font-size:10px;">🎯 Player</span>`;
+            } else {
+              accountBadgeHtml = `<span class="pill" style="background:rgba(213,244,91,0.1); border-color:var(--lime); color:var(--lime); font-size:10px;">🌟 Member</span>`;
+            }
 
-          if (playersGroup.length > 0) {
-            html += `<optgroup label="🎮 League Roster Players (${playersGroup.length})">
-              ${renderOptions(playersGroup)}
-            </optgroup>`;
-          }
+            // Current status badge
+            let statusBadgeHtml = "";
+            if (roleDef) {
+              statusBadgeHtml = `<span class="role-badge ${roleDef.badgeClass || 'role-badge-commissioner'}" id="badge-${escapeHtml(item.key)}">${escapeHtml(roleDef.title)}</span>`;
+            } else {
+              statusBadgeHtml = `<span class="role-badge" id="badge-${escapeHtml(item.key)}" style="background:#181a13; border:1px solid #363b2a; color:#8e9282;">Standard Member</span>`;
+            }
 
-          html += `<optgroup label="✍ Custom Manual Entry">
-            <option value="__custom__">✍ Enter Custom / External Email Manually...</option>
-          </optgroup>`;
+            return `
+              <tr data-user-key="${escapeHtml(item.key)}" class="staff-user-row ${item.role ? 'is-staff-member' : ''}">
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:34px; height:34px; border-radius:50%; background:#1e2017; border:1px solid ${item.role ? 'var(--lime)' : '#363b2a'}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:${item.role ? 'var(--lime)' : '#b5b8a8'}; flex-shrink:0;">
+                      ${escapeHtml((item.gamertag || 'U').charAt(0).toUpperCase())}
+                    </div>
+                    <div>
+                      <div style="display:flex; align-items:center; gap:6px;">
+                        <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(item.gamertag)}</strong>
+                        ${isSelf ? `<span style="font-size:10.5px; color:var(--lime); font-weight:bold;">(You)</span>` : ''}
+                      </div>
+                      <div style="font-size:11.5px; color:var(--muted); margin-top:1px;">
+                        ${escapeHtml(item.hasRealEmail ? item.email : (item.email || 'No email registered'))}
+                        ${item.discord ? ` · <span style="color:#7983f5;">Discord: ${escapeHtml(item.discord)}</span>` : ''}
+                        ${item.team ? ` · <span style="color:#38bdf8;">[${escapeHtml(item.team)}]</span>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  ${accountBadgeHtml}
+                </td>
+                <td>
+                  ${statusBadgeHtml}
+                </td>
+                <td>
+                  <select class="form-control select-user-role" data-user-key="${escapeHtml(item.key)}" style="font-size:12px; padding:6px 10px; background:#141610; border:1.5px solid #363b2a; color:#ffffff; font-weight:600; border-radius:3px; max-width:280px; width:100%;">
+                    <option value="" ${!roleKey ? 'selected' : ''}>— None (Member / No Staff) —</option>
+                    <option value="referee" ${roleKey === 'referee' ? 'selected' : ''}>⚔ Match Referee (Scores, Stats, Schedule)</option>
+                    <option value="stats_official" ${roleKey === 'stats_official' ? 'selected' : ''}>📊 Stats & Scoring Official (Scanner, Stats)</option>
+                    <option value="roster_manager" ${roleKey === 'roster_manager' ? 'selected' : ''}>🎯 Roster Admin (Teams, Rosters)</option>
+                    <option value="recruiter" ${roleKey === 'recruiter' ? 'selected' : ''}>📋 Recruitment Officer (Signups Queue)</option>
+                    <option value="broadcaster" ${roleKey === 'broadcaster' ? 'selected' : ''}>🔴 Broadcast Media Lead (Media, News)</option>
+                    <option value="rulebook_admin" ${roleKey === 'rulebook_admin' ? 'selected' : ''}>📜 Rules Officer (CDL Rulebook, GA)</option>
+                    <option value="commissioner" ${roleKey === 'commissioner' ? 'selected' : ''}>🛡 League Commissioner (Full Access)</option>
+                  </select>
+                </td>
+                <td>
+                  <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                    <button type="button" class="btn-action-sm btn-save-user-role" data-user-key="${escapeHtml(item.key)}" style="border-color:#3e4430; color:#b5b8a8; font-size:11px; padding:4px 9px;">
+                      Save Role
+                    </button>
+                    <button type="button" class="btn-action-sm btn-config-perms" data-user-key="${escapeHtml(item.key)}" title="Configure custom tab permissions" style="font-size:11px; padding:4px 8px;">
+                      ⚙ Perms
+                    </button>
+                    ${item.role && !isSelf ? `
+                      <button type="button" class="btn-action-sm btn-action-danger btn-remove-staff-role" data-user-key="${escapeHtml(item.key)}" title="Revoke staff privileges" style="font-size:11px; padding:4px 8px;">
+                        ✕
+                      </button>
+                    ` : ''}
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join("");
 
-          select.innerHTML = html;
-
-          if (previousSelectedValue) {
-            const hasPrev = Array.from(select.options).some(o => o.value === previousSelectedValue);
-            if (hasPrev) select.value = previousSelectedValue;
-          }
+          attachStaffTableListeners();
         }
 
-        async function loadStaffDirectory() {
-          const tbody = document.getElementById("staff-directory-tbody");
+        function attachStaffTableListeners() {
+          const tbody = document.getElementById("staff-users-tbody");
           if (!tbody) return;
-          try {
-            const list = await window.LeagueDB.getAllStaffMembers();
-            if (!list || list.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">No staff accounts listed yet. Assign a role above to get started.</td></tr>`;
-            } else {
-              tbody.innerHTML = list.map(s => {
-                const roleKey = s.role || "referee";
-                const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
-                  ? window.LeagueDB.STAFF_ROLES[roleKey] 
-                  : { title: roleKey, badgeClass: "role-badge-commissioner" };
-                const allowedTabs = window.LeagueDB.getRoleTabs(roleKey, s.custom_permissions);
-                const isCurrentUser = activeStaffProfile && activeStaffProfile.email && activeStaffProfile.email.toLowerCase() === (s.email || "").toLowerCase();
 
-                const modulesHtml = allowedTabs.map(t => {
-                  const cleanName = t.replace("tab-", "").replace("-", " ");
-                  return `<span class="module-chip">${cleanName.toUpperCase()}</span>`;
-                }).join("");
+          // 1. Role dropdown change
+          tbody.querySelectorAll(".select-user-role").forEach(select => {
+            select.addEventListener("change", (e) => {
+              const userKey = e.target.getAttribute("data-user-key");
+              const user = staffUsersMap.get(userKey);
+              const newRole = e.target.value;
+              const saveBtn = tbody.querySelector(`.btn-save-user-role[data-user-key="${userKey}"]`);
 
-                return `
-                  <tr>
-                    <td>
-                      <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(s.display_name || s.email.split('@')[0])}</strong>
-                      <div style="font-size:12px; color:var(--muted);">${escapeHtml(s.email)}</div>
-                    </td>
-                    <td>
-                      <span class="role-badge ${roleDef.badgeClass}">${escapeHtml(roleDef.title)}</span>
-                    </td>
-                    <td>
-                      <div style="max-width:340px; line-height:1.4;">${modulesHtml}</div>
-                    </td>
-                    <td style="color:#b5b8a8; font-size:12px;">
-                      ${escapeHtml(s.notes || '—')}
-                    </td>
-                    <td>
-                      <button type="button" class="btn-action-sm btn-edit-staff" data-email="${escapeHtml(s.email)}" data-name="${escapeHtml(s.display_name || '')}" data-role="${escapeHtml(s.role)}" data-notes="${escapeHtml(s.notes || '')}" data-perms="${escapeHtml(JSON.stringify(s.custom_permissions || []))}">Edit</button>
-                      ${!isCurrentUser ? `<button type="button" class="btn-action-sm btn-action-danger btn-delete-staff" data-id="${s.id}" data-email="${escapeHtml(s.email)}">Remove</button>` : `<span style="font-size:11px; color:var(--lime); margin-left:6px; font-weight:bold;">(You)</span>`}
-                    </td>
-                  </tr>
-                `;
-              }).join("");
+              if (saveBtn) {
+                const hasChanged = (user?.role || "") !== newRole;
+                if (hasChanged) {
+                  saveBtn.style.borderColor = "var(--lime)";
+                  saveBtn.style.color = "#000000";
+                  saveBtn.style.background = "var(--lime)";
+                  saveBtn.style.fontWeight = "800";
+                  saveBtn.textContent = newRole ? "Save Role ✓" : "Revoke Role ✕";
+                } else {
+                  saveBtn.style.borderColor = "#3e4430";
+                  saveBtn.style.color = "#b5b8a8";
+                  saveBtn.style.background = "transparent";
+                  saveBtn.style.fontWeight = "600";
+                  saveBtn.textContent = "Save Role";
+                }
+              }
+            });
+          });
 
-              // Edit button handler
-              tbody.querySelectorAll(".btn-edit-staff").forEach(btn => {
-                btn.addEventListener("click", () => {
-                  const staffEmail = btn.getAttribute("data-email");
-                  document.getElementById("staff-input-email").value = staffEmail;
-                  document.getElementById("staff-input-name").value = btn.getAttribute("data-name");
-                  document.getElementById("staff-input-role").value = btn.getAttribute("data-role");
-                  document.getElementById("staff-input-notes").value = btn.getAttribute("data-notes");
+          // 2. Save Role button click
+          tbody.querySelectorAll(".btn-save-user-role").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const userKey = btn.getAttribute("data-user-key");
+              const user = staffUsersMap.get(userKey);
+              if (!user) return;
 
-                  const select = document.getElementById("staff-select-user");
-                  if (select) {
-                    const match = Array.from(select.options).find(o => o.value && o.value.toLowerCase() === (staffEmail || "").toLowerCase());
-                    if (match) {
-                      select.value = match.value;
-                    } else {
-                      select.value = "__custom__";
-                    }
-                  }
+              const select = tbody.querySelector(`.select-user-role[data-user-key="${userKey}"]`);
+              const selectedRole = select ? select.value : user.role;
 
-                  const rawPerms = btn.getAttribute("data-perms");
-                  let parsedPerms = null;
-                  try {
-                    if (rawPerms && rawPerms !== "null") parsedPerms = JSON.parse(rawPerms);
-                  } catch(e) {}
+              // If None selected, revoke privileges
+              if (!selectedRole) {
+                if (!user.role) {
+                  showToast("User is already a standard member.");
+                  return;
+                }
+                if (!confirm(`Revoke all staff privileges for ${user.gamertag}?`)) return;
 
-                  if (Array.isArray(parsedPerms) && parsedPerms.length > 0) {
-                    setPermCheckboxes(parsedPerms);
-                  } else {
-                    syncPermCheckboxesWithRole(btn.getAttribute("data-role"));
-                  }
+                btn.disabled = true;
+                btn.textContent = "Revoking...";
+                const res = await window.LeagueDB.deleteStaffRole(user.staff_id || user.email);
+                btn.disabled = false;
 
-                  document.getElementById("form-manage-staff").scrollIntoView({ behavior: "smooth", block: "center" });
+                if (res.success) {
+                  user.role = null;
+                  user.custom_permissions = null;
+                  showToast(`✓ Revoked staff privileges for ${user.gamertag}`);
+                  renderStaffUsersTable();
+                } else {
+                  alert("Failed to revoke staff role: " + (res.error || "Unknown error"));
+                  btn.textContent = "Save Role";
+                }
+                return;
+              }
+
+              // Saving / Assigning role
+              btn.disabled = true;
+              btn.textContent = "Saving... ⏳";
+
+              try {
+                const res = await window.LeagueDB.saveStaffRole({
+                  email: user.email,
+                  user_id: user.user_id || null,
+                  discord: user.discord || null,
+                  discord_id: user.discord_id || null,
+                  display_name: user.gamertag,
+                  role: selectedRole,
+                  custom_permissions: user.custom_permissions || null,
+                  notes: user.notes || (user.discord ? `Discord: ${user.discord}` : "")
                 });
-              });
 
-              // Delete button handler
-              tbody.querySelectorAll(".btn-delete-staff").forEach(btn => {
-                btn.addEventListener("click", async () => {
-                  const email = btn.getAttribute("data-email");
-                  const id = btn.getAttribute("data-id");
-                  if (!confirm(`Are you sure you want to remove staff privileges for ${email}?`)) return;
-                  const res = await window.LeagueDB.deleteStaffRole(id || email);
-                  if (res.success) {
-                    showToast(`✓ Removed staff privileges for ${email}`);
-                    loadStaffDirectory();
-                  } else {
-                    alert("Failed to remove staff member: " + (res.error || "Unknown error"));
-                  }
-                });
-              });
-            }
+                if (res.success) {
+                  user.role = selectedRole;
+                  user.category = "Current Staff";
+                  const roleDef = window.LeagueDB?.STAFF_ROLES?.[selectedRole] || { title: selectedRole };
+                  showToast(`✓ Assigned ${user.gamertag} as ${roleDef.title}!`);
+                  renderStaffUsersTable();
+                } else {
+                  alert("Failed to save staff role: " + (res.error || "Unknown error"));
+                  btn.disabled = false;
+                  btn.textContent = "Save Role";
+                }
+              } catch(err) {
+                alert("Error saving staff role: " + (err.message || err));
+                btn.disabled = false;
+                btn.textContent = "Save Role";
+              }
+            });
+          });
 
-            // Also keep user selection dropdown updated with fresh staff directory data
-            await populateStaffUserDropdown();
+          // 3. Remove / Revoke button click
+          tbody.querySelectorAll(".btn-remove-staff-role").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const userKey = btn.getAttribute("data-user-key");
+              const user = staffUsersMap.get(userKey);
+              if (!user) return;
 
-          } catch(err) {
-            console.error("loadStaffDirectory error:", err);
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#ff4a4a;">Failed to load staff directory. Check console.</td></tr>`;
+              if (!confirm(`Revoke staff privileges for ${user.gamertag} (${user.email})?`)) return;
+
+              btn.disabled = true;
+              const res = await window.LeagueDB.deleteStaffRole(user.staff_id || user.email);
+              if (res.success) {
+                user.role = null;
+                user.custom_permissions = null;
+                showToast(`✓ Revoked staff privileges for ${user.gamertag}`);
+                renderStaffUsersTable();
+              } else {
+                alert("Failed to revoke: " + (res.error || "Unknown error"));
+                btn.disabled = false;
+              }
+            });
+          });
+
+          // 4. Custom Permissions (⚙ Perms) click
+          tbody.querySelectorAll(".btn-config-perms").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const userKey = btn.getAttribute("data-user-key");
+              openStaffPermsModal(userKey);
+            });
+          });
+        }
+
+        function openStaffPermsModal(userKey) {
+          const user = staffUsersMap.get(userKey);
+          if (!user) return;
+          activeModalUserKey = userKey;
+
+          const modal = document.getElementById("modal-staff-custom-perms");
+          if (!modal) return;
+
+          const select = document.querySelector(`.select-user-role[data-user-key="${userKey}"]`);
+          const effectiveRole = select ? select.value : (user.role || "referee");
+          const roleDef = window.LeagueDB?.STAFF_ROLES?.[effectiveRole] || { title: effectiveRole || "Member" };
+
+          document.getElementById("modal-perms-username").textContent = user.gamertag;
+          document.getElementById("modal-perms-useremail").textContent = user.email || (user.discord ? `Discord: ${user.discord}` : "No email logged");
+          document.getElementById("modal-perms-rolebadge").textContent = `Role: ${roleDef.title}`;
+
+          const container = document.getElementById("modal-perms-checkboxes");
+          if (container) {
+            const activePerms = (user.custom_permissions && Array.isArray(user.custom_permissions) && user.custom_permissions.length > 0)
+              ? user.custom_permissions
+              : (window.LeagueDB?.getRoleTabs ? window.LeagueDB.getRoleTabs(effectiveRole || "referee") : ADMIN_MODULE_TABS.map(t => t.id));
+
+            container.innerHTML = ADMIN_MODULE_TABS.map(tab => `
+              <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:#e0e4d4; cursor:pointer; user-select:none; padding:6px 10px; background:#161912; border:1px solid #282c1e; border-radius:3px;">
+                <input type="checkbox" class="modal-perm-cb" value="${tab.id}" ${activePerms.includes(tab.id) ? 'checked' : ''} style="accent-color:var(--lime); width:15px; height:15px; cursor:pointer;" />
+                <span>${tab.label}</span>
+              </label>
+            `).join("");
+          }
+
+          if (typeof modal.showModal === "function") {
+            modal.showModal();
+          } else {
+            modal.setAttribute("open", "");
           }
         }
 
-        // Initialize permission checkboxes UI
-        renderStaffPermCheckboxes();
-        syncPermCheckboxesWithRole("referee");
+        // Modal Permissions Event Listeners
+        document.getElementById("btn-modal-save-perms")?.addEventListener("click", async () => {
+          if (!activeModalUserKey) return;
+          const user = staffUsersMap.get(activeModalUserKey);
+          if (!user) return;
 
-        // Event listener for user dropdown
-        document.getElementById("staff-select-user")?.addEventListener("change", (e) => {
-          const val = e.target.value;
-          if (!val) {
-            document.getElementById("staff-input-email").value = "";
-            document.getElementById("staff-input-name").value = "";
-            document.getElementById("staff-input-notes").value = "";
-            syncPermCheckboxesWithRole(document.getElementById("staff-input-role")?.value || "referee");
-            return;
+          const checked = [];
+          document.querySelectorAll(".modal-perm-cb:checked").forEach(cb => checked.push(cb.value));
+
+          const select = document.querySelector(`.select-user-role[data-user-key="${activeModalUserKey}"]`);
+          const effectiveRole = select ? (select.value || user.role || "referee") : (user.role || "referee");
+
+          const defaultTabs = window.LeagueDB?.getRoleTabs ? window.LeagueDB.getRoleTabs(effectiveRole) : [];
+          const isIdentical = checked.length === defaultTabs.length && checked.every(p => defaultTabs.includes(p));
+
+          user.custom_permissions = isIdentical ? null : checked;
+          user.role = effectiveRole;
+
+          const res = await window.LeagueDB.saveStaffRole({
+            email: user.email,
+            user_id: user.user_id || null,
+            discord: user.discord || null,
+            discord_id: user.discord_id || null,
+            display_name: user.gamertag,
+            role: effectiveRole,
+            custom_permissions: user.custom_permissions,
+            notes: user.notes
+          });
+
+          const modal = document.getElementById("modal-staff-custom-perms");
+          if (modal) {
+            if (typeof modal.close === "function") modal.close();
+            else modal.removeAttribute("open");
           }
 
-          if (val === "__custom__") {
-            document.getElementById("staff-input-email").value = "";
-            document.getElementById("staff-input-name").value = "";
-            document.getElementById("staff-input-notes").value = "";
-            document.getElementById("staff-input-email").focus();
-            syncPermCheckboxesWithRole(document.getElementById("staff-input-role")?.value || "referee");
-            return;
-          }
-
-          const user = staffUserDirectoryMap.get(val);
-          if (user) {
-            document.getElementById("staff-input-email").value = user.email || "";
-            document.getElementById("staff-input-name").value = user.gamertag || "";
-
-            if (user.role) {
-              const roleSelect = document.getElementById("staff-input-role");
-              if (roleSelect) roleSelect.value = user.role;
-            }
-
-            if (user.notes) {
-              document.getElementById("staff-input-notes").value = user.notes;
-            } else {
-              document.getElementById("staff-input-notes").value = `Assigned staff responsibilities for ${user.gamertag}`;
-            }
-
-            if (user.custom_permissions && Array.isArray(user.custom_permissions) && user.custom_permissions.length > 0) {
-              setPermCheckboxes(user.custom_permissions);
-            } else {
-              syncPermCheckboxesWithRole(user.role || document.getElementById("staff-input-role")?.value || "referee");
-            }
+          if (res.success) {
+            showToast(`✓ Updated module permissions for ${user.gamertag}!`);
+            renderStaffUsersTable();
+          } else {
+            alert("Failed to save permissions: " + (res.error || "Unknown error"));
           }
         });
 
-        // Event listener for role select change
-        document.getElementById("staff-input-role")?.addEventListener("change", (e) => {
-          syncPermCheckboxesWithRole(e.target.value);
+        document.getElementById("btn-modal-reset-perms")?.addEventListener("click", () => {
+          if (!activeModalUserKey) return;
+          const user = staffUsersMap.get(activeModalUserKey);
+          const select = document.querySelector(`.select-user-role[data-user-key="${activeModalUserKey}"]`);
+          const effectiveRole = select ? (select.value || user?.role || "referee") : (user?.role || "referee");
+          const defaultTabs = window.LeagueDB?.getRoleTabs ? window.LeagueDB.getRoleTabs(effectiveRole) : ADMIN_MODULE_TABS.map(t => t.id);
+
+          document.querySelectorAll(".modal-perm-cb").forEach(cb => {
+            cb.checked = defaultTabs.includes(cb.value);
+          });
+          showToast("↺ Reset checkboxes to role standard defaults");
         });
 
-        // Reset perms button
-        document.getElementById("btn-reset-role-perms")?.addEventListener("click", () => {
-          const currentRole = document.getElementById("staff-input-role")?.value || "referee";
-          syncPermCheckboxesWithRole(currentRole);
-          showToast("↺ Permissions reset to role standard defaults");
+        document.getElementById("btn-close-modal-perms")?.addEventListener("click", () => {
+          const modal = document.getElementById("modal-staff-custom-perms");
+          if (modal) {
+            if (typeof modal.close === "function") modal.close();
+            else modal.removeAttribute("open");
+          }
         });
 
-        // Refresh users button
-        document.getElementById("btn-refresh-staff-users")?.addEventListener("click", async () => {
-          await populateStaffUserDropdown();
-          showToast("↻ Staff candidate user list refreshed");
+        document.getElementById("btn-cancel-modal-perms")?.addEventListener("click", () => {
+          const modal = document.getElementById("modal-staff-custom-perms");
+          if (modal) {
+            if (typeof modal.close === "function") modal.close();
+            else modal.removeAttribute("open");
+          }
         });
 
-        // Staff form submit listener
-        document.getElementById("form-manage-staff")?.addEventListener("submit", async (e) => {
+        // Search & Filter listeners
+        document.getElementById("input-search-users")?.addEventListener("input", (e) => {
+          currentStaffSearch = e.target.value.trim();
+          renderStaffUsersTable();
+        });
+
+        document.querySelectorAll(".btn-filter-users").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".btn-filter-users").forEach(b => {
+              b.classList.remove("active");
+              b.style.background = "transparent";
+              b.style.color = "#b5b8a8";
+              b.style.borderColor = "#363b2a";
+              b.style.fontWeight = "600";
+            });
+            btn.classList.add("active");
+            btn.style.background = "var(--lime)";
+            btn.style.color = "#000000";
+            btn.style.borderColor = "var(--lime)";
+            btn.style.fontWeight = "700";
+
+            currentStaffFilter = btn.getAttribute("data-filter") || "all";
+            renderStaffUsersTable();
+          });
+        });
+
+        document.getElementById("btn-refresh-staff-users-table")?.addEventListener("click", async () => {
+          await loadStaffDirectory();
+          showToast("↻ User list refreshed from database");
+        });
+
+        // External Staff Form listeners
+        document.getElementById("btn-toggle-add-external-staff")?.addEventListener("click", () => {
+          const panel = document.getElementById("panel-add-external-staff");
+          if (!panel) return;
+          const isHidden = panel.style.display === "none";
+          panel.style.display = isHidden ? "block" : "none";
+          if (isHidden) {
+            document.getElementById("ext-staff-email")?.focus();
+          }
+        });
+
+        document.getElementById("btn-cancel-add-external")?.addEventListener("click", () => {
+          const panel = document.getElementById("panel-add-external-staff");
+          if (panel) panel.style.display = "none";
+        });
+
+        document.getElementById("form-add-external-staff")?.addEventListener("submit", async (e) => {
           e.preventDefault();
-          const email = document.getElementById("staff-input-email")?.value.trim();
-          const name = document.getElementById("staff-input-name")?.value.trim();
-          const role = document.getElementById("staff-input-role")?.value;
-          const notes = document.getElementById("staff-input-notes")?.value.trim();
-          const submitBtn = document.getElementById("btn-save-staff-role");
+          const email = document.getElementById("ext-staff-email")?.value.trim();
+          const name = document.getElementById("ext-staff-name")?.value.trim();
+          const role = document.getElementById("ext-staff-role")?.value;
+          const notes = document.getElementById("ext-staff-notes")?.value.trim();
 
           if (!email) {
-            alert("Please enter or select a valid email for the staff account.");
+            alert("Please enter a valid email address.");
             return;
           }
 
-          const selectedPerms = getSelectedPermCheckboxes();
-          const defaultPerms = window.LeagueDB?.getRoleTabs ? window.LeagueDB.getRoleTabs(role) : [];
-          const isIdentical = selectedPerms.length === defaultPerms.length && selectedPerms.every(p => defaultPerms.includes(p));
-          const customPermissionsToSave = isIdentical ? null : selectedPerms;
+          const res = await window.LeagueDB.saveStaffRole({
+            email: email,
+            display_name: name || email.split("@")[0],
+            role: role,
+            notes: notes
+          });
 
-          const selectedVal = document.getElementById("staff-select-user")?.value;
-          const selectedUser = selectedVal ? staffUserDirectoryMap.get(selectedVal) : null;
-
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span>Saving Role &amp; Permissions...</span><span>⏳</span>`;
-          }
-
-          try {
-            const res = await window.LeagueDB.saveStaffRole({
-              email: email,
-              user_id: selectedUser?.user_id || null,
-              discord: selectedUser?.discord || null,
-              discord_id: selectedUser?.discord_id || null,
-              display_name: name,
-              role: role,
-              custom_permissions: customPermissionsToSave,
-              notes: notes
-            });
-
-            if (res.success) {
-              showToast(`✓ Staff role & permissions configured for ${email}!`);
-              document.getElementById("form-manage-staff").reset();
-              const userSelect = document.getElementById("staff-select-user");
-              if (userSelect) userSelect.value = "";
-              syncPermCheckboxesWithRole("referee");
-              await loadStaffDirectory();
-            } else {
-              alert("Failed to save staff role: " + (res.error || "Unknown error"));
-            }
-          } catch(err) {
-            alert("Error saving staff role: " + (err.message || err));
-          } finally {
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = `<span>Save Staff Role &amp; Permissions</span><span>✓</span>`;
-            }
+          if (res.success) {
+            showToast(`✓ Assigned ${email} as ${role}!`);
+            document.getElementById("form-add-external-staff")?.reset();
+            document.getElementById("panel-add-external-staff").style.display = "none";
+            await loadStaffDirectory();
+          } else {
+            alert("Failed to add staff member: " + (res.error || "Unknown error"));
           }
         });
-
-        document.getElementById("btn-refresh-staff-list")?.addEventListener("click", loadStaffDirectory);
 
         // ==========================================
         // 3. LOAD DATA & POPULATE UI

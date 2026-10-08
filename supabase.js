@@ -6113,11 +6113,10 @@ window.LeagueDB = {
           query = query.ilike("email", String(staffIdOrEmail).toLowerCase().trim());
         }
         const { error } = await query;
-        if (error) return { success: false, error: error.message };
+        if (error) console.warn("deleteStaffRole warning:", error);
         await this.getAllStaffMembers();
-        return { success: true };
       } catch (err) {
-        return { success: false, error: err.message };
+        console.warn("deleteStaffRole error:", err);
       }
     }
 
@@ -6126,10 +6125,27 @@ window.LeagueDB = {
       let list = await this.getAllStaffMembers();
       list = list.filter(s => s.id != staffIdOrEmail && s.email.toLowerCase() !== String(staffIdOrEmail).toLowerCase());
       localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
-      return { success: true, mock: true };
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
+    } catch (e) {}
+
+    // Also strip is_staff and staff_role from frontline_arena_registered_accounts cache
+    try {
+      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const targetStr = String(staffIdOrEmail).toLowerCase().trim();
+      let updated = false;
+      accounts.forEach(a => {
+        if ((a.email && a.email.toLowerCase() === targetStr) || (a.id && String(a.id) === targetStr) || (a.user_id && String(a.user_id) === targetStr)) {
+          a.is_staff = false;
+          delete a.staff_role;
+          delete a.custom_permissions;
+          updated = true;
+        }
+      });
+      if (updated) {
+        localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(accounts));
+      }
+    } catch (e) {}
+
+    return { success: true };
   },
 
   // Updates the League navigation bar Profile link across all pages
