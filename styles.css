@@ -4691,7 +4691,12 @@ body.mode-arena .league-only {
 
 /* Platform Switcher Commissioner Hide Rules */
 html.hide-platform-switcher .mode-switch-pill,
-.hide-platform-switcher .mode-switch-pill {
+.hide-platform-switcher .mode-switch-pill,
+html.hide-platform-switcher .btn-arena-toggle-target,
+.hide-platform-switcher .btn-arena-toggle-target,
+html.hide-platform-switcher #btn-goto-arena-profile,
+html.hide-platform-switcher #section-league-arena-banner,
+html.hide-platform-switcher #btn-signup-arena-profile {
   display: none !important;
 }
 html.hide-mode-league .mode-switch-btn[data-mode="league"],
@@ -4699,7 +4704,12 @@ html.hide-mode-league .mode-switch-btn[data-mode="league"],
   display: none !important;
 }
 html.hide-mode-arena .mode-switch-btn[data-mode="arena"],
-.hide-mode-arena .mode-switch-btn[data-mode="arena"] {
+.hide-mode-arena .mode-switch-btn[data-mode="arena"],
+html.hide-mode-arena .btn-arena-toggle-target,
+.hide-mode-arena .btn-arena-toggle-target,
+html.hide-mode-arena #btn-goto-arena-profile,
+html.hide-mode-arena #section-league-arena-banner,
+html.hide-mode-arena #btn-signup-arena-profile {
   display: none !important;
 }
 html.hide-mode-tournaments .mode-switch-btn[data-mode="tournaments"],

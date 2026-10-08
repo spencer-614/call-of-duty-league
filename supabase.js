@@ -2721,11 +2721,13 @@ window.LeagueDB = {
     if (!settings || typeof document === "undefined") return;
     const s = { ...this.DEFAULT_SWITCHER_SETTINGS, ...settings };
 
+    const isArenaVisible = s.switcher_visible !== false && s.show_arena !== false;
+
     const docEl = document.documentElement;
     if (docEl) {
       docEl.classList.toggle("hide-platform-switcher", !s.switcher_visible);
       docEl.classList.toggle("hide-mode-league", s.show_league === false);
-      docEl.classList.toggle("hide-mode-arena", s.show_arena === false);
+      docEl.classList.toggle("hide-mode-arena", !isArenaVisible);
       docEl.classList.toggle("hide-mode-tournaments", s.show_tournaments === false);
     }
 
@@ -2752,7 +2754,7 @@ window.LeagueDB = {
       const arenaBtn = pill.querySelector('[data-mode="arena"]') || pill.querySelector('a[href*="/arena"], a[href*="arena.html"], a[href*="ladders"]');
       if (arenaBtn) {
         arenaBtn.setAttribute("data-mode", "arena");
-        arenaBtn.style.display = (s.show_arena !== false) ? "" : "none";
+        arenaBtn.style.display = isArenaVisible ? "" : "none";
       }
 
       // Check for tournaments button (or inject if missing)
@@ -2769,6 +2771,16 @@ window.LeagueDB = {
         tournBtn.setAttribute("data-mode", "tournaments");
       }
       tournBtn.style.display = (s.show_tournaments !== false) ? "" : "none";
+    });
+
+    // Toggle arena profile links & banner sections across profile, signup, etc.
+    const arenaTargets = document.querySelectorAll(
+      '#btn-goto-arena-profile, #section-league-arena-banner, #btn-signup-arena-profile, .btn-arena-toggle-target, [data-arena-target]'
+    );
+    arenaTargets.forEach(el => {
+      if (el) {
+        el.style.display = isArenaVisible ? "" : "none";
+      }
     });
   },
 
