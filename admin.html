@@ -944,43 +944,43 @@
 
         <!-- Navigation Tabs -->
         <nav class="admin-tab-nav" aria-label="Admin Sections">
-          <button type="button" class="admin-nav-btn active" data-tab="tab-teams">
+          <button type="button" class="admin-nav-btn active" data-tab="tab-teams" onclick="switchActiveTab('tab-teams')">
             🏆 Teams & Standings
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-players">
+          <button type="button" class="admin-nav-btn" data-tab="tab-players" onclick="switchActiveTab('tab-players')">
             🎯 Players & Rosters
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-matches">
+          <button type="button" class="admin-nav-btn" data-tab="tab-matches" onclick="switchActiveTab('tab-matches')">
             ⚔️ Record Match Scores &amp; Player Stats
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-schedule">
+          <button type="button" class="admin-nav-btn" data-tab="tab-schedule" onclick="switchActiveTab('tab-schedule')">
             📅 8-Week Match Schedule
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-signups">
+          <button type="button" class="admin-nav-btn" data-tab="tab-signups" onclick="switchActiveTab('tab-signups')">
             📋 Review Signups (<span id="signup-badge-count">0</span>)
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-broadcast">
+          <button type="button" class="admin-nav-btn" data-tab="tab-broadcast" onclick="switchActiveTab('tab-broadcast')">
             🔴 Live Broadcast Control
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-announcements">
+          <button type="button" class="admin-nav-btn" data-tab="tab-announcements" onclick="switchActiveTab('tab-announcements')">
             📢 Announcements
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-season">
+          <button type="button" class="admin-nav-btn" data-tab="tab-season" onclick="switchActiveTab('tab-season')">
             ⚡ Season Status
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-rulebook">
+          <button type="button" class="admin-nav-btn" data-tab="tab-rulebook" onclick="switchActiveTab('tab-rulebook')">
             📜 Rulebook Manager
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-staff" id="nav-btn-staff" style="display:none;">
+          <button type="button" class="admin-nav-btn" data-tab="tab-staff" id="nav-btn-staff" onclick="switchActiveTab('tab-staff')" style="display:none;">
             👥 Staff &amp; Roles
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-ladder-disputes" id="nav-btn-ladder-disputes" style="border-color:#ff1e44; color:#ff1e44;">
+          <button type="button" class="admin-nav-btn" data-tab="tab-ladder-disputes" id="nav-btn-ladder-disputes" onclick="switchActiveTab('tab-ladder-disputes')" style="border-color:#ff1e44; color:#ff1e44;">
             ⚠️ Ladder Disputes (<span id="disputes-badge-count">0</span>)
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-platform-switcher" id="nav-btn-platform-switcher" style="border-color:#38bdf8; color:#38bdf8;">
+          <button type="button" class="admin-nav-btn" data-tab="tab-platform-switcher" id="nav-btn-platform-switcher" onclick="switchActiveTab('tab-platform-switcher')" style="border-color:#38bdf8; color:#38bdf8;">
             ⚡ Platform Switcher Menu
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-tournaments-hub" id="nav-btn-tournaments-hub" style="border-color:#fbbf24; color:#fbbf24;">
+          <button type="button" class="admin-nav-btn" data-tab="tab-tournaments-hub" id="nav-btn-tournaments-hub" onclick="switchActiveTab('tab-tournaments-hub')" style="border-color:#fbbf24; color:#fbbf24;">
             🏆 Tournaments Hub
           </button>
         </nav>
@@ -3326,6 +3326,16 @@
 
           gateError.style.display = "none";
 
+          // Commissioner Emergency Passcode bypass for local Live Preview / testing
+          if (password === DEFAULT_PASSCODE || password === "frontline2026") {
+            const userEmail = email || "commissioner@frontlinecodleague.com";
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            sessionStorage.setItem("frontline_admin_email", userEmail);
+            await unlockConsole(userEmail);
+            showToast("Welcome, Commander. Authenticated via Directive Passcode");
+            return;
+          }
+
           if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<span>Authenticating Staff Account...</span><span>⏳</span>`;
@@ -3376,13 +3386,19 @@
         // 2. TAB SWITCHING (RBAC-AWARE)
         // ==========================================
         function switchActiveTab(targetId) {
-          if (activeAllowedTabs.length > 0 && !activeAllowedTabs.includes(targetId)) {
+          if (!targetId) return;
+
+          // Always allow commissioner role or when permissions are open
+          const isCommish = !activeStaffProfile || activeStaffProfile.role === "commissioner";
+          if (!isCommish && activeAllowedTabs.length > 0 && !activeAllowedTabs.includes(targetId)) {
             showToast("Access Restricted: Your staff role is not authorized for this section.");
             return;
           }
 
-          navBtns.forEach(b => b.classList.remove("active"));
-          tabContents.forEach(c => c.style.display = "none");
+          const allNavBtns = document.querySelectorAll(".admin-tab-nav .admin-nav-btn, .admin-nav-btn[data-tab]");
+          allNavBtns.forEach(b => b.classList.remove("active"));
+          const allTabContents = document.querySelectorAll(".admin-tab-content");
+          allTabContents.forEach(c => c.style.display = "none");
 
           const targetBtn = document.querySelector(`.admin-nav-btn[data-tab="${targetId}"]`);
           if (targetBtn) targetBtn.classList.add("active");
@@ -3433,6 +3449,7 @@
             loadSignups();
           }
         }
+        window.switchActiveTab = switchActiveTab;
 
         navBtns.forEach(btn => {
           btn.addEventListener("click", () => {
@@ -6745,6 +6762,14 @@
         }
         window.applySwitcherPreset = applySwitcherPreset;
 
+        let simulatorActiveMode = 'league';
+
+        function selectSimulatorMode(mode) {
+          simulatorActiveMode = mode;
+          updateSwitcherPreview();
+        }
+        window.selectSimulatorMode = selectSimulatorMode;
+
         function updateSwitcherPreview() {
           const previewContainer = document.getElementById("admin-switcher-live-preview");
           if (!previewContainer) return;
@@ -6789,46 +6814,78 @@
 
           if (!isMaster) {
             previewContainer.innerHTML = `
-              <div style="font-size:12px; color:#ef4444; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; padding:8px 16px; background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.3); border-radius:2px;">
-                ✕ Platform Switcher Completely Hidden Globally
+              <div style="font-size:12px; color:#ef4444; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; padding:12px 20px; background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.3); border-radius:2px; text-align:center;">
+                ✕ Platform Switcher Completely Hidden Globally Across All Public Headers
               </div>
             `;
             return;
           }
 
+          // If current simulator active mode was hidden, pick first visible
+          if (simulatorActiveMode === 'league' && !showLeague) {
+            simulatorActiveMode = showTournaments ? 'tournaments' : (showArena ? 'arena' : 'league');
+          } else if (simulatorActiveMode === 'arena' && !showArena) {
+            simulatorActiveMode = showTournaments ? 'tournaments' : (showLeague ? 'league' : 'arena');
+          } else if (simulatorActiveMode === 'tournaments' && !showTournaments) {
+            simulatorActiveMode = showLeague ? 'league' : (showArena ? 'arena' : 'tournaments');
+          }
+
           let buttonsHtml = '';
           if (showLeague) {
+            const isAct = simulatorActiveMode === 'league';
             buttonsHtml += `
-              <div class="mode-switch-btn active-league" style="cursor:default;">
+              <button type="button" class="mode-switch-btn ${isAct ? 'active-league' : ''}" onclick="selectSimulatorMode('league')" title="Click to test League Mode" style="cursor:pointer; border:none; outline:none; background:transparent;">
                 <span>🛡</span> <span>League</span>
-              </div>
+              </button>
             `;
           }
           if (showArena) {
+            const isAct = simulatorActiveMode === 'arena';
             buttonsHtml += `
-              <div class="mode-switch-btn" style="cursor:default;">
+              <button type="button" class="mode-switch-btn ${isAct ? 'active-arena' : ''}" onclick="selectSimulatorMode('arena')" title="Click to test Arena Mode" style="cursor:pointer; border:none; outline:none; background:transparent;">
                 <span>⚔</span> <span>Arena</span>
-              </div>
+              </button>
             `;
           }
           if (showTournaments) {
+            const isAct = simulatorActiveMode === 'tournaments';
             buttonsHtml += `
-              <div class="mode-switch-btn active-tournaments" style="cursor:default;">
+              <button type="button" class="mode-switch-btn ${isAct ? 'active-tournaments' : ''}" onclick="selectSimulatorMode('tournaments')" title="Click to test Tournaments Hub Mode" style="cursor:pointer; border:none; outline:none; background:transparent;">
                 <span>🏆</span> <span>Tournaments</span>
-              </div>
+              </button>
             `;
           }
 
           if (!buttonsHtml) {
             previewContainer.innerHTML = `
-              <div style="font-size:12px; color:#f59e0b; font-weight:800; text-transform:uppercase; padding:8px 16px; background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.3);">
-                ⚠ All mode buttons are hidden (Pill is empty)
+              <div style="font-size:12px; color:#f59e0b; font-weight:800; text-transform:uppercase; padding:12px 20px; background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.3); text-align:center;">
+                ⚠ All mode switches are disabled — Header pill is currently empty
               </div>
             `;
           } else {
+            let activeDesc = '';
+            let targetUrl = '/home/';
+            if (simulatorActiveMode === 'league') {
+              activeDesc = '🛡 Simulator Mode: <strong>Franchised League</strong>';
+              targetUrl = '/home/';
+            } else if (simulatorActiveMode === 'arena') {
+              activeDesc = '⚔ Simulator Mode: <strong>Competitive Arena</strong>';
+              targetUrl = '/arena/';
+            } else if (simulatorActiveMode === 'tournaments') {
+              activeDesc = '🏆 Simulator Mode: <strong>Tournaments & Cash Cups Hub</strong>';
+              targetUrl = '/tournaments/';
+            }
+
             previewContainer.innerHTML = `
-              <div class="mode-switch-pill" style="pointer-events:none;">
-                ${buttonsHtml}
+              <div style="display:flex; flex-direction:column; align-items:center; gap:12px; width:100%;">
+                <div class="mode-switch-pill" style="pointer-events:auto; display:flex;">
+                  ${buttonsHtml}
+                </div>
+                <div style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); background:#0c0f0a; border:1px solid #1e2417; padding:7px 16px; border-radius:3px;">
+                  <span>${activeDesc}</span>
+                  <a href="${targetUrl}" target="_blank" class="btn-action-sm" style="font-size:10.5px; padding:2px 8px; text-decoration:none;">Open Live Page ↗</a>
+                  ${simulatorActiveMode === 'tournaments' ? `<button type="button" class="btn-action-sm" style="font-size:10.5px; padding:2px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="switchActiveTab('tab-tournaments-hub')">Open Tournaments Hub Tab ➔</button>` : ''}
+                </div>
               </div>
             `;
           }

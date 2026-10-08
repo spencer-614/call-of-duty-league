@@ -2513,6 +2513,8 @@ window.LeagueDB = {
     // Direct DOM manipulation across all pills
     const pills = document.querySelectorAll(".mode-switch-pill");
     pills.forEach(pill => {
+      // Exclude admin live preview simulator
+      if (pill.closest && pill.closest("#admin-switcher-live-preview")) return;
       if (!s.switcher_visible || (!s.show_league && !s.show_arena && !s.show_tournaments)) {
         pill.style.display = "none";
         return;
@@ -5629,6 +5631,9 @@ window.LeagueDB = {
   },
 
   getRoleTabs(roleKey, customPermissions) {
+    if (roleKey === "commissioner") {
+      return [...this.STAFF_ROLES.commissioner.tabs];
+    }
     if (Array.isArray(customPermissions) && customPermissions.length > 0) {
       return customPermissions;
     }
