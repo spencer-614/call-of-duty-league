@@ -1828,6 +1828,22 @@
             const res = await window.LeagueDB.submitSignup(signupData);
 
             if (res.success) {
+              if (currentCombatantUser) {
+                if (!currentCombatantUser.user_metadata) currentCombatantUser.user_metadata = {};
+                currentCombatantUser.user_metadata.gamertag = signupData.gamertag;
+                currentCombatantUser.user_metadata.activision_id = signupData.activision_id;
+                currentCombatantUser.user_metadata.role = signupData.role;
+                currentCombatantUser.user_metadata.region = signupData.region;
+                currentCombatantUser.user_metadata.platform = signupData.platform;
+                try {
+                  localStorage.setItem("frontline_league_auth_user", JSON.stringify(currentCombatantUser));
+                } catch (_) {}
+              }
+              if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+                window.LeagueDB.updateLeagueNavProfile();
+              }
+              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: currentCombatantUser } }));
+
               signupForm.style.display = "none";
               alertBox.style.display = "block";
               alertBox.className = "signup-alert alert-success";

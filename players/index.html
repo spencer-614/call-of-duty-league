@@ -840,6 +840,8 @@
       document.getElementById('player-search').addEventListener('input', renderPlayers);
 
       initPlayers();
+      window.addEventListener("frontline_auth_changed", initPlayers);
+      window.addEventListener("frontline_signups_updated", initPlayers);
 
       // User-Centered Navigation: Close dropdown on outside click or Escape key
       document.addEventListener("click", (e) => {

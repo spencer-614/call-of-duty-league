@@ -3155,7 +3155,15 @@
             console.warn("Could not load staff profile, defaulting:", e);
           }
           if (!activeStaffProfile) {
-            activeStaffProfile = { email: userEmail, role: "commissioner", display_name: userEmail.split("@")[0] };
+            const clean = (userEmail || "").toLowerCase().trim();
+            if (clean === "admin@frontlineleague.com") {
+              activeStaffProfile = { email: userEmail, role: "commissioner", display_name: "Commissioner" };
+            } else {
+              await lockConsole();
+              gateError.textContent = `Access Denied: Logged in as ${userEmail}. Staff credentials required to access Commissioner Console.`;
+              gateError.style.display = "block";
+              return;
+            }
           }
 
           const roleKey = activeStaffProfile.role || "commissioner";
@@ -3236,22 +3244,30 @@
           if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
             const session = await window.LeagueDB.getAuthSession();
             if (session?.user) {
-              const role = session.user.app_metadata?.role || session.user.user_metadata?.role;
-              if (role === "player") {
-                // Deny player accounts from admin console
+              const userEmail = session.user.email || "";
+              const isStaff = await window.LeagueDB.isAccountAdminAsync(session.user);
+              if (!isStaff) {
+                // Deny non-staff accounts from admin console
                 await lockConsole();
-                gateError.textContent = "Access Denied: You are logged in with a Combatant Player account. Staff credentials required.";
+                gateError.textContent = `Access Denied: Logged in as ${userEmail || "Combatant"}. Staff credentials required to access Commissioner Console.`;
                 gateError.style.display = "block";
                 return;
               }
-              await unlockConsole(session.user.email);
+              await unlockConsole(userEmail);
               return;
             }
           }
           // 2. Fallback check for active browser session
           const savedEmail = sessionStorage.getItem("frontline_admin_email");
           if (sessionStorage.getItem("frontline_admin_session") === "authorized" && savedEmail) {
-            await unlockConsole(savedEmail);
+            const isStaff = window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function"
+              ? window.LeagueDB.isAccountAdmin(savedEmail)
+              : false;
+            if (isStaff) {
+              await unlockConsole(savedEmail);
+            } else {
+              await lockConsole();
+            }
           }
         }
 
