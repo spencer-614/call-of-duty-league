@@ -4567,7 +4567,7 @@
           }
           const prevVal = select.value || currentSelectedPlayerId;
           select.innerHTML = playersList.map(p => {
-            const team = p.teams?.tag ? `[${p.teams.tag}]` : (p.team_name ? `[${p.team_name}]` : '[Free Agent]');
+            const team = (p.teams?.tag && p.teams.tag !== 'FA') ? `[${p.teams.tag}]` : (p.team_name && p.team_name.toLowerCase() !== 'fa' && p.team_name.toLowerCase() !== 'free agent' ? `[${p.team_name}]` : '[Free Agent]');
             const kd = p.kdr ? Number(p.kdr).toFixed(2) : '1.00';
             return `<option value="${p.id}">${escapeHtml(p.gamertag)} ${team} — ${kd} K/D</option>`;
           }).join("");
@@ -4595,7 +4595,7 @@
             tbody.innerHTML = playersList.map(p => `
               <tr>
                 <td><strong>${escapeHtml(p.gamertag)}</strong> ${p.activision_id ? `<br><small style="color:var(--muted);">${escapeHtml(p.activision_id)}</small>` : ''}</td>
-                <td>${p.teams ? `<span style="color:var(--lime);">[${escapeHtml(p.teams.tag)}] ${escapeHtml(p.teams.name)}</span>` : (p.team_name || 'Free Agent')}</td>
+                <td>${(p.teams && p.teams.name !== 'FA') ? `<span style="color:var(--lime);">[${escapeHtml(p.teams.tag)}] ${escapeHtml(p.teams.name)}</span>` : '<span style="color:#38bdf8; font-weight:600;">Free Agent</span>'}</td>
                 <td>${escapeHtml(p.role || 'Flex')}</td>
                 <td><strong style="color:var(--lime);">${p.kdr ? Number(p.kdr).toFixed(2) : '1.00'}</strong></td>
                 <td>
@@ -5726,7 +5726,7 @@
           }
           if (otherPlayers.length > 0) {
             playerOptions += `<optgroup label="Other Players & Free Agents">` +
-              otherPlayers.map(p => `<option value="${p.id}" ${String(p.id) === String(selectedPlayerId) ? 'selected' : ''}>${escapeHtml(p.gamertag)} [${p.teams?.tag || 'FA'}]</option>`).join("") +
+              otherPlayers.map(p => `<option value="${p.id}" ${String(p.id) === String(selectedPlayerId) ? 'selected' : ''}>${escapeHtml(p.gamertag)} [${(p.teams?.tag && p.teams.tag !== 'FA') ? p.teams.tag : 'Free Agent'}]</option>`).join("") +
               `</optgroup>`;
           }
 

@@ -653,9 +653,12 @@
 
           // 3. Free Agent / Status match
           const isFA = !player.teams || 
+                       player.teams?.name === 'FA' ||
+                       player.teams?.tag === 'FA' ||
                        player.status?.toLowerCase() === 'free agent' || 
                        player.team_name?.toLowerCase() === 'free agent' || 
                        player.team_name?.toLowerCase() === 'unassigned' ||
+                       player.team_name?.toLowerCase() === 'fa' ||
                        player.division?.toLowerCase() === 'free agent' ||
                        player.is_free_agent === true;
 
@@ -722,14 +725,17 @@
 
         container.innerHTML = filtered.map(player => {
           const isFA = !player.teams || 
+                       player.teams?.name === 'FA' ||
+                       player.teams?.tag === 'FA' ||
                        player.status?.toLowerCase() === 'free agent' || 
                        player.team_name?.toLowerCase() === 'free agent' || 
                        player.team_name?.toLowerCase() === 'unassigned' ||
+                       player.team_name?.toLowerCase() === 'fa' ||
                        player.division?.toLowerCase() === 'free agent' ||
                        player.is_free_agent === true;
 
           const teamName = isFA ? 'Free Agent' : (player.teams?.name || player.team_name || 'Active Squad');
-          const teamTag = (!isFA && player.teams?.tag) ? `[${player.teams.tag}]` : '';
+          const teamTag = (!isFA && player.teams?.tag && player.teams.tag !== 'FA') ? `[${player.teams.tag}]` : '';
           const kd = player.kdr != null ? Number(player.kdr).toFixed(2) : '—';
           const kills = player.total_kills ?? 0;
           const deaths = player.total_deaths ?? 0;

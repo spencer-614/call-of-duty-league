@@ -308,9 +308,21 @@ window.LeagueDB = {
     if (!teams || teams.length === 0) {
       teams = (MOCK_DATA.teams || []).slice();
     }
-    // Enrich teams with division mapping (either from record, or from local persistent division map)
+    // Filter out any bogus 'FA' or 'Free Agent' dummy teams (Free Agents are individual players, not a franchise team)
+    teams = teams.filter(t => {
+      const name = (t.name || '').toLowerCase().trim();
+      const tag = (t.tag || '').toLowerCase().trim();
+      return name !== 'fa' && name !== 'free agent' && name !== 'free agents' && tag !== 'fa' && t.id !== 0;
+    });
+
+    // Cleanse division map of any stale FA team references
     try {
       const divMap = JSON.parse(localStorage.getItem('frontline_teams_division_map') || '{}');
+      delete divMap['fa'];
+      delete divMap['free agent'];
+      delete divMap['free agents'];
+      delete divMap['0'];
+      localStorage.setItem('frontline_teams_division_map', JSON.stringify(divMap));
       teams = teams.map(t => {
         const div = t.division || divMap[t.id] || (t.name ? divMap[t.name.toLowerCase().trim()] : null) || 'div-1';
         return { ...t, division: div };
@@ -327,15 +339,25 @@ window.LeagueDB = {
           .from("teams")
           .select("*, players(*)")
           .order("points", { ascending: false });
-        if (!error && data) return data;
+        if (!error && Array.isArray(data)) {
+          return data.filter(t => {
+            const name = (t.name || '').toLowerCase().trim();
+            const tag = (t.tag || '').toLowerCase().trim();
+            return name !== 'fa' && name !== 'free agent' && name !== 'free agents' && tag !== 'fa' && t.id !== 0;
+          });
+        }
         console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
     }
-    return MOCK_DATA.teams.map(team => ({
+    return (MOCK_DATA.teams || []).filter(t => {
+      const name = (t.name || '').toLowerCase().trim();
+      const tag = (t.tag || '').toLowerCase().trim();
+      return name !== 'fa' && name !== 'free agent' && name !== 'free agents' && tag !== 'fa' && t.id !== 0;
+    }).map(team => ({
       ...team,
-      players: MOCK_DATA.players.filter(p => p.teams?.name === team.name)
+      players: (MOCK_DATA.players || []).filter(p => p.teams?.name === team.name)
     }));
   },
 
@@ -352,18 +374,19 @@ window.LeagueDB = {
 
         if (!error && Array.isArray(data)) {
           list = data.map(p => {
-            const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned')) || p.status === 'Free Agent';
+            const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned' || p.team_name.toLowerCase() === 'fa')) || p.status === 'Free Agent' || p.teams?.name === 'FA' || p.teams?.name?.toLowerCase() === 'free agent';
             const division = p.division || p.teams?.division || (isFreeAgent ? 'Free Agent' : (p.kdr >= 1.15 ? 'Division 1 (Pro)' : (p.kdr >= 1.0 ? 'Division 2 (Challengers)' : 'Open Division')));
             const calculatedRank = p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5"));
             return {
               ...p,
+              teams: isFreeAgent ? null : p.teams,
               avatar_url: p.avatar_url || p.photo_url || null,
               discord_name: p.discord_name || p.gamertag,
               activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
               rank: calculatedRank,
               skill_rank: p.skill_rank || calculatedRank,
               status: p.status || (isFreeAgent ? "Free Agent" : "Active"),
-              team_name: p.teams?.name || p.team_name || (isFreeAgent ? "Free Agent" : "Squad"),
+              team_name: isFreeAgent ? null : (p.teams?.name || p.team_name || "Squad"),
               division: division,
               is_free_agent: isFreeAgent
             };

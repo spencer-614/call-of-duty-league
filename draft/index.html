@@ -709,12 +709,14 @@
 
         const LEGACY_PLACEHOLDER_NAMES = new Set([
           "atlanta faze", "optic texas", "boston breach", "new york subliners",
-          "toronto ultra", "la thieves", "miami heretics", "las vegas legion"
+          "toronto ultra", "la thieves", "miami heretics", "las vegas legion",
+          "fa", "free agent", "free agents"
         ]);
 
-        function isPlaceholderTeam(name) {
-          if (!name) return false;
-          return LEGACY_PLACEHOLDER_NAMES.has(name.toLowerCase().trim());
+        function isPlaceholderTeam(name, tag) {
+          const n = (name || '').toLowerCase().trim();
+          const t = (tag || '').toLowerCase().trim();
+          return LEGACY_PLACEHOLDER_NAMES.has(n) || t === 'fa';
         }
 
         function matchesDivision(teamDivision, targetDivKey) {
@@ -748,7 +750,7 @@
               try {
                 const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) {
-                  const filtered = parsed.filter(t => !isPlaceholderTeam(t.name));
+                  const filtered = parsed.filter(t => !isPlaceholderTeam(t.name, t.tag));
                   if (filtered.length !== parsed.length) {
                     if (filtered.length > 0) {
                       localStorage.setItem(k, JSON.stringify(filtered));
@@ -1430,7 +1432,7 @@
             try {
               const standings = await window.LeagueDB.getStandings();
               if (Array.isArray(standings)) {
-                dbTeams = standings.filter(t => matchesDivision(t.division, divKey));
+                dbTeams = standings.filter(t => !isPlaceholderTeam(t.name, t.tag) && matchesDivision(t.division, divKey));
               }
             } catch(e) {
               console.warn("Could not fetch standings for draft wheel:", e);
@@ -1445,7 +1447,7 @@
             try {
               const parsed = JSON.parse(savedPoolRaw);
               if (Array.isArray(parsed)) {
-                savedPool = parsed.filter(t => !isPlaceholderTeam(t.name));
+                savedPool = parsed.filter(t => !isPlaceholderTeam(t.name, t.tag));
               }
             } catch(e) {}
           }

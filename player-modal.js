@@ -117,14 +117,14 @@
         return;
       }
 
-      const teamName = player.teams?.name || player.team_name || "Free Agent";
-      const teamTag = player.teams?.tag ? `[${player.teams.tag}]` : "";
+      const isFreeAgent = player.status === "Free Agent" || !player.teams || player.teams?.name === "FA" || player.is_free_agent === true;
+      const teamName = isFreeAgent ? "Unassigned Free Agent" : (player.teams?.name || player.team_name || "Squad");
+      const teamTag = (!isFreeAgent && player.teams?.tag && player.teams.tag !== "FA") ? `[${player.teams.tag}]` : "";
       const gamertag = player.gamertag;
       const role = player.role || "Flex";
       const kdr = Number(player.kdr || 1.0).toFixed(2);
       const totalKills = player.total_kills ?? 0;
       const totalDeaths = player.total_deaths ?? 0;
-      const isFreeAgent = player.status === "Free Agent" || !player.teams;
 
       titleEl.textContent = gamertag;
       roleEl.textContent = role;
@@ -137,11 +137,11 @@
           avatarEl.style.display = "none";
         }
       }
-      if (player.teams || (player.team_name && player.team_name !== "Free Agent" && player.team_name !== "Unassigned")) {
+      if (!isFreeAgent && (player.teams || (player.team_name && player.team_name !== "Free Agent" && player.team_name !== "Unassigned" && player.team_name !== "FA"))) {
         const teamLookup = player.teams?.id || player.teams?.name || player.team_name;
         teamEl.innerHTML = `<span class="clickable-team" data-team-id="${escapeHtml(teamLookup)}" style="cursor:pointer; color:var(--lime); text-decoration:underline; text-underline-offset:3px;" title="Click to view squad dossier">${teamTag ? `${teamTag} ` : ""}${escapeHtml(teamName)} ↗</span>`;
       } else {
-        teamEl.textContent = teamName;
+        teamEl.textContent = "Unassigned Free Agent";
       }
 
       if (statusEl) {

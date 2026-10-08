@@ -709,7 +709,7 @@
 
           if (dbPlayer) {
             const assignedTeam = dbPlayer.teams?.name || dbPlayer.team_name || (dbPlayer.team_id ? 'Franchise Starter' : 'Free Agent');
-            const isFA = !assignedTeam || assignedTeam === 'Free Agent' || assignedTeam === 'Unassigned';
+            const isFA = !assignedTeam || assignedTeam === 'Free Agent' || assignedTeam === 'Unassigned' || assignedTeam === 'FA';
             p = {
               _owner_id: authUser.id,
               _owner_email: cleanEmail,
@@ -845,7 +845,7 @@
             if (Array.isArray(teams)) {
               teams.forEach(t => {
                 const name = t.team_name || t.name;
-                if (name && name !== "Frontline League HQ") {
+                if (name && name !== "Frontline League HQ" && name !== "FA" && name.toLowerCase() !== "free agent" && name.toLowerCase() !== "free agents") {
                   options += `<option value="${name}">${name}</option>`;
                 }
               });
