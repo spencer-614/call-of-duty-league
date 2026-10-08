@@ -683,13 +683,24 @@
             }
           }
 
-          // 5. Search query match (gamertag, activision ID, team name, role)
-          const searchMatch = !query || 
-            (player.gamertag || '').toLowerCase().includes(query) || 
-            (player.activision_id || '').toLowerCase().includes(query) || 
-            (player.teams?.name || player.team_name || '').toLowerCase().includes(query) ||
-            (player.teams?.tag || '').toLowerCase().includes(query) ||
-            (player.role || '').toLowerCase().includes(query);
+          // 5. Search query match (gamertag, activision ID, discord, team name, role) with Unicode NFKD normalization
+          let searchMatch = true;
+          if (query) {
+            const normQuery = query.normalize("NFKD").toLowerCase();
+            const normGamer = (player.gamertag || "").normalize("NFKD").toLowerCase();
+            const normAct = (player.activision_id || "").normalize("NFKD").toLowerCase();
+            const normDiscord = (player.discord_name || player.discord || "").normalize("NFKD").toLowerCase();
+            const normTeam = (player.teams?.name || player.team_name || "").normalize("NFKD").toLowerCase();
+            const normTag = (player.teams?.tag || "").normalize("NFKD").toLowerCase();
+            const normRole = (player.role || "").normalize("NFKD").toLowerCase();
+
+            searchMatch = normGamer.includes(normQuery) ||
+                          normAct.includes(normQuery) ||
+                          normDiscord.includes(normQuery) ||
+                          normTeam.includes(normQuery) ||
+                          normTag.includes(normQuery) ||
+                          normRole.includes(normQuery);
+          }
 
           return roleMatch && rankMatch && statusMatch && divMatch && searchMatch;
         });
