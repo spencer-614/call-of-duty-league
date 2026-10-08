@@ -8158,14 +8158,7 @@ window.LadderDB = {
       const key = (e.key || "").toLowerCase();
       const code = e.code || "";
 
-      // 1. Classic Call of Duty console key: Tilde / Backtick ` or ~ (when not in a text box)
-      if (!isInput && (key === "`" || key === "~" || code === "Backquote")) {
-        e.preventDefault();
-        triggerAdminRedirect();
-        return;
-      }
-
-      // 2. Secret word: typing "admin" anywhere on page (when not in a text box)
+      // 1. Secret word: typing "admin" anywhere on page (when not in a text box)
       if (!isInput && key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
         keyBuffer += key;
         if (keyBuffer.length > 10) keyBuffer = keyBuffer.slice(-10);
