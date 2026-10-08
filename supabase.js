@@ -4663,20 +4663,44 @@ window.LeagueDB = {
     }
 
     if (typeof target === "object" && target !== null) {
-      const targetEmail = (target.email || target.user_email || "").toLowerCase().trim();
-      if (targetEmail && getStaffEmails().has(targetEmail)) {
-        return true;
+      const allEmails = new Set();
+      if (target.email) allEmails.add(String(target.email).toLowerCase().trim());
+      if (target.user_email) allEmails.add(String(target.user_email).toLowerCase().trim());
+      if (target.user_metadata?.email) allEmails.add(String(target.user_metadata.email).toLowerCase().trim());
+      const discordIdent = Array.isArray(target.identities) ? target.identities.find(i => i.provider === "discord") : null;
+      if (discordIdent?.identity_data?.email) allEmails.add(String(discordIdent.identity_data.email).toLowerCase().trim());
+
+      const staffEmails = getStaffEmails();
+      for (const e of allEmails) {
+        if (e && staffEmails.has(e)) return true;
       }
 
       const uid = target.userId || target.user_id || target.id;
-      if (uid) {
+      const discordId = discordIdent?.id || target.user_metadata?.provider_id || target.user_metadata?.discord_user_id;
+
+      if (uid || discordId) {
         try {
           const cached = localStorage.getItem("frontline_staff_roles_cache");
           if (cached) {
             const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.some(s => s.user_id && String(s.user_id) === String(uid))) {
+            if (Array.isArray(parsed) && parsed.some(s => 
+              (uid && s.user_id && String(s.user_id) === String(uid)) ||
+              (discordId && s.discord_id && String(s.discord_id) === String(discordId))
+            )) {
               return true;
             }
+          }
+        } catch (e) {}
+
+        try {
+          const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+          const matchedAcc = accounts.find(a => 
+            (uid && (a.id === uid || a.user_id === uid)) ||
+            (discordId && (a.discord_id === discordId || a.id === discordId)) ||
+            Array.from(allEmails).some(e => a.email && a.email.toLowerCase() === e)
+          );
+          if (matchedAcc && (matchedAcc.is_staff === true || matchedAcc.staff_role || (matchedAcc.role && staffRoleKeys.includes(String(matchedAcc.role).toLowerCase())))) {
+            return true;
           }
         } catch (e) {}
       }
@@ -4707,7 +4731,14 @@ window.LeagueDB = {
       if (typeof target === "string" && target.includes("@")) {
         emailToCheck = target.toLowerCase().trim();
       } else if (typeof target === "object" && target !== null) {
-        emailToCheck = (target.email || target.user_email || "").toLowerCase().trim();
+        const discordIdent = Array.isArray(target.identities) ? target.identities.find(i => i.provider === "discord") : null;
+        emailToCheck = (
+          target.email || 
+          target.user_email || 
+          target.user_metadata?.email || 
+          discordIdent?.identity_data?.email || 
+          ""
+        ).toLowerCase().trim();
         idToCheck = target.userId || target.user_id || target.id;
       }
 
@@ -4715,7 +4746,7 @@ window.LeagueDB = {
         if (emailToCheck) {
           const { data, error } = await dbClient
             .from("staff_roles")
-            .select("id, email, role, user_id")
+            .select("id, email, role, user_id, custom_permissions, notes")
             .ilike("email", emailToCheck)
             .maybeSingle();
 
@@ -4734,11 +4765,20 @@ window.LeagueDB = {
         if (idToCheck) {
           const { data, error } = await dbClient
             .from("staff_roles")
-            .select("id, email, role, user_id")
+            .select("id, email, role, user_id, custom_permissions, notes")
             .eq("user_id", String(idToCheck))
             .maybeSingle();
 
-          if (!error && data) return true;
+          if (!error && data) {
+            try {
+              const cached = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
+              if (!cached.some(c => String(c.id) === String(data.id))) {
+                cached.push(data);
+                localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(cached));
+              }
+            } catch (e) {}
+            return true;
+          }
         }
       } catch (err) {
         console.warn("isAccountAdminAsync query notice:", err);
@@ -5817,28 +5857,67 @@ window.LeagueDB = {
     return this.STAFF_ROLES.commissioner.tabs;
   },
 
-  async getStaffProfile(email) {
-    if (!email) return null;
-    const cleanEmail = email.toLowerCase().trim();
+  async getStaffProfile(target) {
+    if (!target) return null;
 
-    // 1. Try Supabase staff_roles table
+    let cleanEmail = "";
+    let userId = null;
+    let discordId = null;
+
+    if (typeof target === "string") {
+      cleanEmail = target.toLowerCase().trim();
+    } else if (typeof target === "object") {
+      const discordIdent = Array.isArray(target.identities) ? target.identities.find(i => i.provider === "discord") : null;
+      cleanEmail = (
+        target.email ||
+        target.user_email ||
+        target.user_metadata?.email ||
+        discordIdent?.identity_data?.email ||
+        ""
+      ).toLowerCase().trim();
+      userId = target.userId || target.user_id || target.id || null;
+      discordId = discordIdent?.id || target.user_metadata?.provider_id || null;
+    }
+
+    // 1. Try Supabase staff_roles table by email or user_id
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
-          .from("staff_roles")
-          .select("*")
-          .ilike("email", cleanEmail)
-          .maybeSingle();
+        if (cleanEmail) {
+          const { data, error } = await dbClient
+            .from("staff_roles")
+            .select("*")
+            .ilike("email", cleanEmail)
+            .maybeSingle();
 
-        if (!error && data) {
-          return {
-            id: data.id,
-            email: data.email,
-            display_name: data.display_name || cleanEmail.split("@")[0],
-            role: data.role || "commissioner",
-            custom_permissions: data.custom_permissions || null,
-            notes: data.notes || ""
-          };
+          if (!error && data) {
+            return {
+              id: data.id,
+              email: data.email,
+              display_name: data.display_name || cleanEmail.split("@")[0],
+              role: data.role || "commissioner",
+              custom_permissions: data.custom_permissions || null,
+              notes: data.notes || ""
+            };
+          }
+        }
+
+        if (userId) {
+          const { data, error } = await dbClient
+            .from("staff_roles")
+            .select("*")
+            .eq("user_id", String(userId))
+            .maybeSingle();
+
+          if (!error && data) {
+            return {
+              id: data.id,
+              email: data.email || cleanEmail,
+              display_name: data.display_name || cleanEmail.split("@")[0],
+              role: data.role || "commissioner",
+              custom_permissions: data.custom_permissions || null,
+              notes: data.notes || ""
+            };
+          }
         }
       } catch (err) {
         console.warn("Error querying staff_roles table from Supabase:", err);
@@ -5850,24 +5929,50 @@ window.LeagueDB = {
       const cached = localStorage.getItem("frontline_staff_roles_cache");
       if (cached) {
         const parsed = JSON.parse(cached);
-        const match = parsed.find(s => s.email && s.email.toLowerCase() === cleanEmail);
+        const match = parsed.find(s => 
+          (cleanEmail && s.email && s.email.toLowerCase() === cleanEmail) ||
+          (userId && s.user_id && String(s.user_id) === String(userId)) ||
+          (discordId && s.discord_id && String(s.discord_id) === String(discordId))
+        );
         if (match) return match;
       }
     } catch (e) {}
 
-    // 3. Fallback to mock list
-    const mock = (MOCK_DATA.staffRoles || []).find(s => s.email.toLowerCase() === cleanEmail);
-    if (mock) return mock;
+    // 2b. Check frontline_arena_registered_accounts for assigned staff role
+    try {
+      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const match = accounts.find(a => 
+        (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail) ||
+        (userId && (a.id === userId || a.user_id === userId)) ||
+        (discordId && (a.discord_id === discordId || a.id === discordId))
+      );
+      if (match && (match.is_staff === true || match.staff_role)) {
+        return {
+          id: match.id,
+          email: match.email || cleanEmail,
+          display_name: match.gamertag || match.username || cleanEmail.split("@")[0],
+          role: match.staff_role || match.role || "referee",
+          custom_permissions: match.custom_permissions || null,
+          notes: match.notes || ""
+        };
+      }
+    } catch (e) {}
 
-    // 4. Primary official commissioner email fallback
-    if (cleanEmail === "admin@frontlineleague.com" || cleanEmail === "todd061496@gmail.com") {
-      return {
-        id: 0,
-        email: cleanEmail,
-        display_name: cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner",
-        role: "commissioner",
-        notes: "Primary League Commissioner"
-      };
+    // 3. Fallback to mock list
+    if (cleanEmail) {
+      const mock = (MOCK_DATA.staffRoles || []).find(s => s.email.toLowerCase() === cleanEmail);
+      if (mock) return mock;
+
+      // 4. Primary official commissioner email fallback
+      if (cleanEmail === "admin@frontlineleague.com" || cleanEmail === "todd061496@gmail.com") {
+        return {
+          id: 0,
+          email: cleanEmail,
+          display_name: cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner",
+          role: "commissioner",
+          notes: "Primary League Commissioner"
+        };
+      }
     }
 
     return null;
@@ -5916,9 +6021,41 @@ window.LeagueDB = {
       display_name: staffData.display_name?.trim() || cleanEmail.split("@")[0],
       role: staffData.role || "referee",
       custom_permissions: staffData.custom_permissions || null,
-      notes: staffData.notes?.trim() || null,
+      notes: staffData.notes?.trim() || (staffData.discord ? `Staff account for Discord @${staffData.discord}` : null),
       updated_at: new Date().toISOString()
     };
+
+    if (staffData.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(staffData.user_id))) {
+      payload.user_id = staffData.user_id;
+    }
+
+    // Update frontline_arena_registered_accounts so Discord / website account immediately gets staff status
+    try {
+      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const idx = accounts.findIndex(a => 
+        (a.email && a.email.toLowerCase() === cleanEmail) ||
+        (staffData.user_id && (a.id === staffData.user_id || a.user_id === staffData.user_id)) ||
+        (staffData.discord && a.discord && a.discord.toLowerCase() === staffData.discord.toLowerCase())
+      );
+      if (idx !== -1) {
+        accounts[idx].is_staff = true;
+        accounts[idx].staff_role = payload.role;
+        accounts[idx].custom_permissions = payload.custom_permissions;
+        if (payload.user_id && !accounts[idx].user_id) accounts[idx].user_id = payload.user_id;
+        localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(accounts));
+      }
+    } catch (e) {}
+
+    // Update active session if currently signed in user matches
+    try {
+      const curAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+      if (curAuth && ((curAuth.email && curAuth.email.toLowerCase() === cleanEmail) || (staffData.user_id && curAuth.id === staffData.user_id))) {
+        curAuth.is_staff = true;
+        curAuth.staff_role = payload.role;
+        curAuth.custom_permissions = payload.custom_permissions;
+        localStorage.setItem("frontline_league_auth_user", JSON.stringify(curAuth));
+      }
+    } catch (e) {}
 
     if (dbClient) {
       try {
@@ -5929,6 +6066,15 @@ window.LeagueDB = {
 
         if (error) {
           console.error("Supabase upsert staff_roles error:", error);
+          // If upsert failed due to user_id constraint (e.g. invalid foreign key), retry without user_id
+          if (payload.user_id && (error.code === "23503" || error.message?.includes("foreign key"))) {
+            delete payload.user_id;
+            const retryRes = await dbClient.from("staff_roles").upsert(payload, { onConflict: "email" }).select();
+            if (!retryRes.error) {
+              await this.getAllStaffMembers();
+              return { success: true, data: retryRes.data?.[0] || payload };
+            }
+          }
           return { success: false, error: error.message };
         }
 
@@ -5944,10 +6090,11 @@ window.LeagueDB = {
     try {
       let list = await this.getAllStaffMembers();
       const existingIdx = list.findIndex(s => s.email.toLowerCase() === cleanEmail);
+      const cacheItem = { ...payload, discord: staffData.discord, discord_id: staffData.discord_id };
       if (existingIdx !== -1) {
-        list[existingIdx] = { ...list[existingIdx], ...payload };
+        list[existingIdx] = { ...list[existingIdx], ...cacheItem };
       } else {
-        list.push({ id: Date.now(), ...payload });
+        list.push({ id: Date.now(), ...cacheItem });
       }
       localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
       return { success: true, data: payload, mock: true };
