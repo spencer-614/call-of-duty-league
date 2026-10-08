@@ -291,6 +291,7 @@ window.LeagueDB = {
 
   // 1. Fetch Teams Standings
   async getStandings() {
+    let teams = [];
     if (dbClient) {
       try {
         const { data, error } = await dbClient
@@ -298,13 +299,24 @@ window.LeagueDB = {
           .select("*")
           .order("points", { ascending: false })
           .order("wins", { ascending: false });
-        if (!error && data) return data;
-        console.warn("Supabase fetch returned error, using fallback:", error);
+        if (!error && data) teams = data;
+        else console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
     }
-    return MOCK_DATA.teams;
+    if (!teams || teams.length === 0) {
+      teams = (MOCK_DATA.teams || []).slice();
+    }
+    // Enrich teams with division mapping (either from record, or from local persistent division map)
+    try {
+      const divMap = JSON.parse(localStorage.getItem('frontline_teams_division_map') || '{}');
+      teams = teams.map(t => {
+        const div = t.division || divMap[t.id] || (t.name ? divMap[t.name.toLowerCase().trim()] : null) || 'div-1';
+        return { ...t, division: div };
+      });
+    } catch(e) {}
+    return teams;
   },
 
   // 1b. Fetch Teams with their Roster of Players
@@ -1273,14 +1285,40 @@ window.LeagueDB = {
 
   // Admin: Create Team
   async createTeam(teamData) {
+    const div = teamData.division || 'div-1';
+    // Persist division locally so it's always remembered regardless of backend schema
+    try {
+      const divMap = JSON.parse(localStorage.getItem('frontline_teams_division_map') || '{}');
+      if (teamData.name) divMap[teamData.name.toLowerCase().trim()] = div;
+      localStorage.setItem('frontline_teams_division_map', JSON.stringify(divMap));
+    } catch(e) {}
+
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
+        const payload = { ...teamData };
+        let { data, error } = await dbClient
           .from("teams")
-          .insert([teamData])
+          .insert([payload])
           .select();
+        
+        // If Postgres column 'division' does not exist in schema, retry without it
+        if (error && error.message && error.message.toLowerCase().includes("division")) {
+          delete payload.division;
+          const retryRes = await dbClient.from("teams").insert([payload]).select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
         if (error) throw error;
-        return { success: true, data: data[0] };
+        if (data && data[0]) {
+          try {
+            const divMap = JSON.parse(localStorage.getItem('frontline_teams_division_map') || '{}');
+            divMap[data[0].id] = div;
+            if (data[0].name) divMap[data[0].name.toLowerCase().trim()] = div;
+            localStorage.setItem('frontline_teams_division_map', JSON.stringify(divMap));
+          } catch(e) {}
+          return { success: true, data: { ...data[0], division: div } };
+        }
       } catch (err) {
         console.error("Supabase createTeam error:", err);
         return { success: false, error: err.message || err };
@@ -1288,7 +1326,7 @@ window.LeagueDB = {
     }
     // Fallback in-memory
     const newId = Date.now();
-    const mockTeam = { id: newId, ...teamData };
+    const mockTeam = { id: newId, ...teamData, division: div };
     MOCK_DATA.teams.push(mockTeam);
     return { success: true, data: mockTeam, mock: true };
   },

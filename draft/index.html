@@ -280,7 +280,7 @@
             <div id="wheel-result-banner" style="display:none; margin-top:20px; width:100%; background:#192013; border:2px solid var(--lime); padding:16px; text-align:center; box-shadow:0 0 20px rgba(213,244,91,0.25);">
               <span style="font-size:11px; font-weight:800; color:var(--lime); letter-spacing:1px; text-transform:uppercase;">OFFICIAL LOTTERY RESULT</span>
               <h2 id="wheel-result-text" style="font:900 28px/1.1 var(--display); color:#ffffff; margin:6px 0; text-transform:uppercase;">
-                PICK #1 AWARDED TO OPTIC TEXAS
+                LOTTERY RESULT PENDING
               </h2>
               <button class="btn-wheel-sub" style="margin-top:8px; background:var(--lime); color:#11120f; font-weight:800;" onclick="document.getElementById('wheel-result-banner').style.display='none';">
                 Confirm &amp; Proceed ➔
@@ -314,7 +314,7 @@
               
               <!-- Quick Team Pool Editor Toggle -->
               <details style="font-size:11px; color:var(--muted); background:#12140e; border:1px solid #24291a; padding:10px 14px;">
-                <summary style="cursor:pointer; font-weight:bold; color:var(--text);">Manage Wheel Teams Pool (Add / Remove) ▾</summary>
+                <summary style="cursor:pointer; font-weight:bold; color:var(--text); display:flex; justify-content:space-between; align-items:center;"><span>Manage Wheel Teams Pool (Add / Remove) ▾</span><button type="button" class="btn-wheel-sub" id="btn-sync-registered-teams" style="padding:2px 8px; font-size:10px; margin-left:auto;" title="Sync teams with registered database">↻ Sync Teams</button></summary>
                 <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;" id="team-pool-editor">
                   <div style="display:flex; gap:6px;">
                     <input type="text" id="input-new-team" class="search-box" style="flex:1; font-size:11px;" placeholder="Add custom team..." />
@@ -563,7 +563,7 @@
 
         <div>
           <label style="display:block; font-size:11.5px; font-weight:800; letter-spacing:0.8px; color:#cbd5e1; text-transform:uppercase; margin-bottom:4px;">HEADLINE</label>
-          <input type="text" id="intel-input-title" class="search-box" style="width:100%;" placeholder="e.g. TRADE ALERT: Boston Breach acquires Pick #2" />
+          <input type="text" id="intel-input-title" class="search-box" style="width:100%;" placeholder="e.g. TRADE ALERT: Team acquires Pick #2" />
         </div>
         <div>
           <label style="display:block; font-size:11.5px; font-weight:800; letter-spacing:0.8px; color:#cbd5e1; text-transform:uppercase; margin-bottom:4px;">INTEL / DETAILS</label>
@@ -682,16 +682,7 @@
             name: "Division 1 · Premier Championship",
             shortName: "DIV 1 · PREMIER",
             badge: "★",
-            teams: [
-              { name: "Atlanta FaZe", tag: "ATL", color: "#e11b22" },
-              { name: "OpTic Texas", tag: "OPT", color: "#95c93d" },
-              { name: "Boston Breach", tag: "BOS", color: "#00ec96" },
-              { name: "New York Subliners", tag: "NYS", color: "#ffe600" },
-              { name: "Toronto Ultra", tag: "TOR", color: "#773dbd" },
-              { name: "LA Thieves", tag: "LAT", color: "#ff1839" },
-              { name: "Miami Heretics", tag: "MIA", color: "#f26522" },
-              { name: "Las Vegas Legion", tag: "LVL", color: "#ff5e00" }
-            ]
+            teams: []
           },
           "div-2": {
             id: "div-2",
@@ -709,13 +700,75 @@
           }
         };
 
+        const WHEEL_PALETTE = [
+          "#d5f45b", "#38bdf8", "#fb923c", "#f43f5e", "#a855f7",
+          "#22c55e", "#eab308", "#06b6d4", "#ec4899", "#8b5cf6",
+          "#14b8a6", "#f97316", "#6366f1", "#84cc16", "#e11b22",
+          "#00ec96"
+        ];
+
+        const LEGACY_PLACEHOLDER_NAMES = new Set([
+          "atlanta faze", "optic texas", "boston breach", "new york subliners",
+          "toronto ultra", "la thieves", "miami heretics", "las vegas legion"
+        ]);
+
+        function isPlaceholderTeam(name) {
+          if (!name) return false;
+          return LEGACY_PLACEHOLDER_NAMES.has(name.toLowerCase().trim());
+        }
+
+        function matchesDivision(teamDivision, targetDivKey) {
+          if (!teamDivision) {
+            // Default unassigned teams to Division 1 (Premier)
+            return targetDivKey === "div-1";
+          }
+          const norm = String(teamDivision).toLowerCase().trim();
+          if (targetDivKey === "div-1") {
+            return norm === "div-1" || norm === "division 1" || norm.includes("premier") || norm.includes("pro") || norm === "1";
+          }
+          if (targetDivKey === "div-2") {
+            return norm === "div-2" || norm === "division 2" || norm.includes("challenger") || norm === "2";
+          }
+          if (targetDivKey === "div-3") {
+            return norm === "div-3" || norm === "division 3" || norm.includes("open") || norm.includes("recruit") || norm === "3";
+          }
+          return false;
+        }
+
+        function purgeLegacyWheelCache() {
+          const keys = [
+            'frontline_wheel_teams_pool',
+            'frontline_wheel_teams_pool_div-1',
+            'frontline_wheel_teams_pool_div-2',
+            'frontline_wheel_teams_pool_div-3'
+          ];
+          keys.forEach(k => {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  const filtered = parsed.filter(t => !isPlaceholderTeam(t.name));
+                  if (filtered.length !== parsed.length) {
+                    if (filtered.length > 0) {
+                      localStorage.setItem(k, JSON.stringify(filtered));
+                    } else {
+                      localStorage.removeItem(k);
+                    }
+                  }
+                }
+              } catch(e) {}
+            }
+          });
+        }
+
         // --- State ---
         let currentTab = 'wheel';
         let currentDivision = localStorage.getItem('frontline_draft_active_division') || 'div-1';
         if (!DIVISIONS[currentDivision]) currentDivision = 'div-1';
 
-        let teamsPool = [...DIVISIONS[currentDivision].teams];
-        let activeWheelTeams = [...teamsPool];
+        let teamsPool = [];
+        let activeWheelTeams = [];
         let draftOrder = [];
         let allFreeAgents = [];
         let draftPicks = [];
@@ -1370,28 +1423,86 @@
         }
 
         async function loadDivisionTeams(divKey) {
-          const divInfo = DIVISIONS[divKey] || DIVISIONS["div-1"];
-          const defaultTeams = [...divInfo.teams];
+          purgeLegacyWheelCache();
+
+          let dbTeams = [];
+          if (window.LeagueDB && typeof window.LeagueDB.getStandings === 'function') {
+            try {
+              const standings = await window.LeagueDB.getStandings();
+              if (Array.isArray(standings)) {
+                dbTeams = standings.filter(t => matchesDivision(t.division, divKey));
+              }
+            } catch(e) {
+              console.warn("Could not fetch standings for draft wheel:", e);
+            }
+          }
 
           // Check if custom saved pool exists for this division
-          const savedPool = localStorage.getItem(`frontline_wheel_teams_pool_${divKey}`);
-          if (savedPool) {
+          const savedKey = `frontline_wheel_teams_pool_${divKey}`;
+          const savedPoolRaw = localStorage.getItem(savedKey) || (divKey === 'div-1' ? localStorage.getItem('frontline_wheel_teams_pool') : null);
+          let savedPool = null;
+          if (savedPoolRaw) {
             try {
-              teamsPool = JSON.parse(savedPool);
-            } catch(e) {
-              teamsPool = defaultTeams;
+              const parsed = JSON.parse(savedPoolRaw);
+              if (Array.isArray(parsed)) {
+                savedPool = parsed.filter(t => !isPlaceholderTeam(t.name));
+              }
+            } catch(e) {}
+          }
+
+          if (dbTeams.length > 0) {
+            const mappedDb = dbTeams.map((t, idx) => ({
+              id: t.id,
+              name: t.name,
+              tag: t.tag || (t.name ? t.name.substring(0, 3).toUpperCase() : "TM"),
+              color: t.color || WHEEL_PALETTE[idx % WHEEL_PALETTE.length]
+            }));
+
+            if (savedPool && savedPool.length > 0) {
+              // Merge any custom teams added locally that aren't already in DB
+              const existingNames = new Set(mappedDb.map(t => (t.name || '').toLowerCase().trim()));
+              const customExtras = savedPool.filter(t => !existingNames.has((t.name || '').toLowerCase().trim()));
+              teamsPool = [...mappedDb, ...customExtras];
+            } else {
+              teamsPool = mappedDb;
             }
+          } else if (savedPool && savedPool.length > 0) {
+            teamsPool = savedPool;
           } else {
-            teamsPool = defaultTeams;
+            teamsPool = [];
           }
 
           recomputeActiveWheelTeams();
           renderTeamPoolEditor();
+          populateDraftModalTeamsSelect();
         }
 
         function recomputeActiveWheelTeams() {
-          const lockedNames = new Set(draftOrder.map(o => o.name.toLowerCase()));
-          activeWheelTeams = teamsPool.filter(t => !lockedNames.has(t.name.toLowerCase()));
+          const lockedNames = new Set(draftOrder.map(o => (o.name || '').toLowerCase().trim()));
+          activeWheelTeams = teamsPool.filter(t => !lockedNames.has((t.name || '').toLowerCase().trim()));
+
+          // Update spin buttons disabled / enabled appearance
+          const spinBtn = document.getElementById("btn-spin-wheel");
+          const quickBtn = document.getElementById("btn-quick-lottery");
+          if (activeWheelTeams.length === 0) {
+            if (spinBtn) {
+              spinBtn.style.opacity = "0.55";
+              spinBtn.title = draftOrder.length > 0 ? "Draft order finalized" : "No registered teams in this division";
+            }
+            if (quickBtn) {
+              quickBtn.style.opacity = "0.55";
+              quickBtn.title = draftOrder.length > 0 ? "Draft order finalized" : "No registered teams in this division";
+            }
+          } else {
+            if (spinBtn) {
+              spinBtn.style.opacity = "1";
+              spinBtn.title = "";
+            }
+            if (quickBtn) {
+              quickBtn.style.opacity = "1";
+              quickBtn.title = "";
+            }
+          }
         }
 
         // --- 2. Load Draft State ---
@@ -1891,10 +2002,18 @@
             ctx.fillStyle = "#d5f45b";
             ctx.font = "900 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("DRAFT ORDER FINALIZED", centerX, centerY - 8);
-            ctx.fillStyle = "#b8baa9";
-            ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
-            ctx.fillText("All draft picks locked & seeded", centerX, centerY + 12);
+            if (draftOrder.length > 0) {
+              ctx.fillText("DRAFT ORDER FINALIZED", centerX, centerY - 8);
+              ctx.fillStyle = "#b8baa9";
+              ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
+              ctx.fillText("All draft picks locked & seeded", centerX, centerY + 12);
+            } else {
+              ctx.fillText("NO REGISTERED TEAMS", centerX, centerY - 8);
+              ctx.fillStyle = "#b8baa9";
+              ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
+              const divName = DIVISIONS[currentDivision]?.shortName || "DIVISION";
+              ctx.fillText(`Register squads for ${divName} in Admin`, centerX, centerY + 12);
+            }
             return;
           }
 
@@ -2059,7 +2178,11 @@
             document.getElementById("modal-draft-staff-login")?.showModal();
             return;
           }
-          if (isSpinning || activeWheelTeams.length === 0) return;
+          if (isSpinning) return;
+          if (activeWheelTeams.length === 0) {
+            showAutoDraftToast("NO TEAMS IN WHEEL", `No registered teams in ${DIVISIONS[currentDivision]?.name || 'this division'} to spin.`, "⚠️");
+            return;
+          }
 
           // If only 1 team remains, auto-assign directly without spinning
           if (activeWheelTeams.length === 1 && draftOrder.length < teamsPool.length) {
@@ -2233,6 +2356,10 @@
             document.getElementById("modal-draft-staff-login")?.showModal();
             return;
           }
+          if (activeWheelTeams.length === 0) {
+            showAutoDraftToast("NO TEAMS IN WHEEL", `No registered teams in ${DIVISIONS[currentDivision]?.name || 'this division'} to randomize.`, "⚠️");
+            return;
+          }
           if (confirm("Run Instant Auto-Lottery to randomize all remaining draft picks?")) {
             // Shuffle remaining teams
             const shuffled = [...activeWheelTeams].sort(() => Math.random() - 0.5);
@@ -2262,13 +2389,14 @@
           }
         }
 
-        function resetLottery() {
+        async function resetLottery() {
           if (!isDraftAdminAuthorized) {
             document.getElementById("modal-draft-staff-login")?.showModal();
             return;
           }
-          if (confirm("Reset the entire draft order and refill the wheel?")) {
+          if (confirm("Reset the entire draft order and refill the wheel with registered teams?")) {
             draftOrder = [];
+            await loadDivisionTeams(currentDivision);
             recomputeActiveWheelTeams();
             saveDraftOrder();
 
@@ -2283,6 +2411,7 @@
             updateHudBanner();
             const banner = document.getElementById("wheel-result-banner");
             if (banner) banner.style.display = "none";
+            showAutoDraftToast("LOTTERY RESET", `Draft order cleared and wheel refilled with ${DIVISIONS[currentDivision]?.shortName || ''} squads.`, "🔄");
           }
         }
 
@@ -2335,8 +2464,19 @@
           const container = document.getElementById("team-tags-container");
           if (!container) return;
 
+          if (teamsPool.length === 0) {
+            const divLabel = DIVISIONS[currentDivision]?.name || "this division";
+            container.innerHTML = `
+              <div style="font-size:11px; color:var(--muted); font-style:italic; padding:6px 0;">
+                No teams registered in ${escapeHtml(divLabel)}. Create squads in Commissioner Admin or add custom teams above.
+              </div>
+            `;
+            return;
+          }
+
           container.innerHTML = teamsPool.map((team, idx) => `
             <span style="display:inline-flex; align-items:center; gap:6px; background:#1b1f14; border:1px solid #333d22; padding:3px 8px; border-radius:3px; font-size:11.5px; color:#fff;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${escapeHtml(team.color || '#d5f45b')};"></span>
               <span>${escapeHtml(team.name)}</span>
               <button type="button" style="background:none; border:none; color:#ff5b5b; cursor:pointer; font-weight:bold; padding:0 2px;" data-remove-idx="${idx}" title="Remove team">×</button>
             </span>
@@ -2346,7 +2486,7 @@
             btn.addEventListener("click", () => {
               const idx = parseInt(btn.getAttribute("data-remove-idx"), 10);
               teamsPool.splice(idx, 1);
-              localStorage.setItem('frontline_wheel_teams_pool', JSON.stringify(teamsPool));
+              localStorage.setItem(`frontline_wheel_teams_pool_${currentDivision}`, JSON.stringify(teamsPool));
               recomputeActiveWheelTeams();
               renderWheel();
               renderTeamPoolEditor();
@@ -2937,6 +3077,20 @@
           document.getElementById("btn-quick-lottery").addEventListener("click", quickAutoLottery);
           document.getElementById("btn-reset-wheel").addEventListener("click", resetLottery);
 
+          // Sync Registered Teams from Database
+          document.getElementById("btn-sync-registered-teams")?.addEventListener("click", async () => {
+            const syncBtn = document.getElementById("btn-sync-registered-teams");
+            if (syncBtn) syncBtn.textContent = "↻ Syncing...";
+            try {
+              await loadDivisionTeams(currentDivision);
+              renderWheel();
+              renderOrderBoard();
+              showAutoDraftToast("TEAMS SYNCED", `Draft wheel populated with registered squads for ${DIVISIONS[currentDivision]?.shortName || ''}.`, "🎯");
+            } finally {
+              if (syncBtn) syncBtn.textContent = "↻ Sync Teams";
+            }
+          });
+
           // Add Team to Pool
           document.getElementById("btn-add-team-pool").addEventListener("click", () => {
             const nameInput = document.getElementById("input-new-team");
@@ -2945,10 +3099,11 @@
             const tag = tagInput.value.trim().toUpperCase();
 
             if (!name) return;
+            const color = WHEEL_PALETTE[teamsPool.length % WHEEL_PALETTE.length];
             teamsPool.push({
               name,
               tag: tag || name.substring(0, 3).toUpperCase(),
-              color: "#d5f45b"
+              color
             });
 
             localStorage.setItem(`frontline_wheel_teams_pool_${currentDivision}`, JSON.stringify(teamsPool));
