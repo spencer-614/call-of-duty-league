@@ -197,6 +197,114 @@
       .auth-divider span {
         padding: 0 12px;
       }
+      /* Active Enlistment / Accepted Card */
+      .enlisted-card {
+        background: radial-gradient(circle at top right, rgba(213, 244, 91, 0.08), rgba(20, 22, 16, 0.95)), #141610;
+        border: 1px solid rgba(213, 244, 91, 0.4);
+        padding: 32px 28px;
+        margin-bottom: 24px;
+        text-align: center;
+        border-radius: 4px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(213, 244, 91, 0.05);
+      }
+      .enlisted-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(213, 244, 91, 0.15);
+        color: var(--lime);
+        border: 1px solid var(--lime);
+        font: 800 12px var(--admin-font, monospace);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 6px 14px;
+        border-radius: 20px;
+        margin-bottom: 16px;
+      }
+      .enlisted-title {
+        font-family: var(--display, 'Bebas Neue', Impact, sans-serif);
+        font-size: clamp(28px, 4vw, 38px);
+        letter-spacing: 1px;
+        line-height: 1.1;
+        margin-bottom: 10px;
+        color: #ffffff;
+      }
+      .enlisted-desc {
+        color: var(--muted);
+        font-size: 14.5px;
+        max-width: 620px;
+        margin: 0 auto 24px;
+        line-height: 1.5;
+      }
+      .enlisted-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+        background: #0d0f0b;
+        border: 1px solid rgba(213, 244, 91, 0.2);
+        padding: 18px;
+        margin: 0 auto 28px;
+        max-width: 700px;
+        text-align: left;
+      }
+      .enlisted-field-label {
+        font-size: 10.5px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+      }
+      .enlisted-field-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .enlisted-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .btn-enlisted-profile {
+        background: var(--lime);
+        color: #11120f;
+        font: 800 13px/1 var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 14px 24px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 800;
+        border-radius: 3px;
+        transition: all 0.2s ease;
+      }
+      .btn-enlisted-profile:hover {
+        background: #ffffff;
+        transform: translateY(-2px);
+      }
+      .btn-enlisted-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--line);
+        color: #ffffff;
+        font: 700 13px/1 var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 14px 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-enlisted-secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
     </style>
   </head>
   <body>
@@ -557,6 +665,58 @@
 
             <!-- Pane 1: Solo Free Agent Form -->
             <div id="pane-solo" class="tab-pane">
+              <!-- Active Combatant Enlistment Status (Shown when already registered/accepted) -->
+              <div id="enlisted-status-container" class="enlisted-card" style="display: none;">
+                <div class="enlisted-badge">
+                  <span>✓</span>
+                  <span>REGISTRATION ACCEPTED · ACTIVE COMBATANT</span>
+                </div>
+                <h2 class="enlisted-title">
+                  WELCOME BACK, <span id="enlisted-gamertag" style="color:var(--lime);">OPERATIVE</span>
+                </h2>
+                <p class="enlisted-desc">
+                  Your dossier is active in the Frontline League database. You are already officially registered for Season 1. Access your combat profile, match schedule, or ladder stats below.
+                </p>
+
+                <div class="enlisted-details-grid">
+                  <div>
+                    <div class="enlisted-field-label">Assigned Gamertag</div>
+                    <div class="enlisted-field-value" id="enlisted-info-gamertag">-</div>
+                  </div>
+                  <div>
+                    <div class="enlisted-field-label">Tactical Role</div>
+                    <div class="enlisted-field-value" id="enlisted-info-role">-</div>
+                  </div>
+                  <div>
+                    <div class="enlisted-field-label">Assigned Squad / Status</div>
+                    <div class="enlisted-field-value" id="enlisted-info-team" style="color:var(--lime);">-</div>
+                  </div>
+                  <div>
+                    <div class="enlisted-field-label">Activision ID</div>
+                    <div class="enlisted-field-value" id="enlisted-info-activision">-</div>
+                  </div>
+                </div>
+
+                <div class="enlisted-actions">
+                  <a href="/profile/" class="btn-enlisted-profile">
+                    <span>Go to League Profile</span>
+                    <span>↗</span>
+                  </a>
+                  <a href="/arena/profile/" class="btn-enlisted-secondary" style="border-color: rgba(88, 101, 242, 0.5); color: #c4ccf8;">
+                    <span>Go to Arena Profile</span>
+                    <span>⚔</span>
+                  </a>
+                  <button type="button" class="btn-enlisted-secondary" onclick="switchTab('team')">
+                    <span>Register a Team Instead</span>
+                    <span>🛡</span>
+                  </button>
+                  <button type="button" class="btn-enlisted-secondary" id="btn-reopen-solo-form" style="font-size:11px; color:var(--muted);" onclick="showSoloFormOverride()">
+                    <span>Edit / Re-submit Solo Form</span>
+                    <span>✎</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- Notification Container (Success or Error Alerts) -->
               <div id="signup-alert-box" style="display: none;"></div>
 
@@ -1270,6 +1430,8 @@
       const displayGamertag = document.getElementById("combatant-display-gamertag");
 
       let currentCombatantUser = null;
+      let isPlayerEnlisted = false;
+      let manualSoloFormOverride = false;
 
       function showGateError(msg) {
         if (!gateError) return;
@@ -1310,7 +1472,22 @@
       linkGotoSignin?.addEventListener("click", () => switchGateTab("signin"));
       linkGotoCreate?.addEventListener("click", () => switchGateTab("create"));
 
-      function unlockRegistrationTerminal(user) {
+      function showSoloFormOverride() {
+        manualSoloFormOverride = true;
+        const enlistedBox = document.getElementById("enlisted-status-container");
+        const soloForm = document.getElementById("league-signup-form");
+        const kickerEl = document.getElementById("signup-header-kicker");
+        const titleEl = document.getElementById("signup-header-title");
+        const descEl = document.getElementById("signup-header-desc");
+        if (enlistedBox) enlistedBox.style.display = "none";
+        if (soloForm) soloForm.style.display = "block";
+        if (kickerEl) kickerEl.textContent = "RECRUITMENT PROTOCOL // OPTION 1 OF 3";
+        if (titleEl) titleEl.innerHTML = 'Player <span style="color:var(--lime);">Registration</span>';
+        if (descEl) descEl.textContent = "Register as an individual combatant or unassigned Free Agent looking for a squad or community draft placement.";
+      }
+      window.showSoloFormOverride = showSoloFormOverride;
+
+      async function unlockRegistrationTerminal(user) {
         currentCombatantUser = user;
         try {
           localStorage.setItem("frontline_league_auth_user", JSON.stringify(user));
@@ -1440,6 +1617,58 @@
         if (gateContainer) gateContainer.style.display = "none";
         if (regTerminal) {
           regTerminal.style.display = "block";
+        }
+
+        // Check player registration status in DB & local store
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.checkPlayerRegistration === "function") {
+            const regStatus = await window.LeagueDB.checkPlayerRegistration(user);
+            const enlistedBox = document.getElementById("enlisted-status-container");
+            const soloForm = document.getElementById("league-signup-form");
+            const kickerEl = document.getElementById("signup-header-kicker");
+            const titleEl = document.getElementById("signup-header-title");
+            const descEl = document.getElementById("signup-header-desc");
+
+            if (regStatus && regStatus.isRegistered) {
+              isPlayerEnlisted = true;
+              const p = regStatus.player || {};
+              const playerTag = p.gamertag || regStatus.gamertag || metaGamertag || "Operative";
+              const playerRole = p.role || regStatus.role || metaRole || "Flex";
+              const playerTeam = p.team || regStatus.team || regStatus.status || "Registered Combatant";
+              const playerAct = p.activision_id || p.activision || regStatus.activision || metaActivision || "Unlinked";
+
+              const elTag = document.getElementById("enlisted-gamertag");
+              const elInfoTag = document.getElementById("enlisted-info-gamertag");
+              const elInfoRole = document.getElementById("enlisted-info-role");
+              const elInfoTeam = document.getElementById("enlisted-info-team");
+              const elInfoAct = document.getElementById("enlisted-info-activision");
+
+              if (elTag) elTag.textContent = playerTag;
+              if (elInfoTag) elInfoTag.textContent = playerTag;
+              if (elInfoRole) elInfoRole.textContent = playerRole;
+              if (elInfoTeam) elInfoTeam.textContent = playerTeam;
+              if (elInfoAct) elInfoAct.textContent = playerAct;
+
+              const urlP = new URLSearchParams(window.location.search);
+              const curType = urlP.get("type");
+              const curHash = window.location.hash;
+              const wantsOther = curType === "team" || curType === "org" || curHash === "#team" || curHash === "#org";
+
+              if (!wantsOther && !manualSoloFormOverride) {
+                if (enlistedBox) enlistedBox.style.display = "block";
+                if (soloForm) soloForm.style.display = "none";
+                if (kickerEl) kickerEl.textContent = "ENLISTMENT RECORD // VERIFIED COMBATANT";
+                if (titleEl) titleEl.innerHTML = 'Registration <span style="color:var(--lime);">Status: Active</span>';
+                if (descEl) descEl.textContent = `Operative ${playerTag} is officially registered for Frontline League Season 1.`;
+              }
+            } else {
+              isPlayerEnlisted = false;
+              if (enlistedBox) enlistedBox.style.display = "none";
+              if (soloForm) soloForm.style.display = "block";
+            }
+          }
+        } catch (err) {
+          console.warn("Error checking player registration status:", err);
         }
       }
 
@@ -1699,9 +1928,24 @@
           tabSoloBtn?.classList.add("active");
           tabSoloBtn?.setAttribute("aria-selected", "true");
           if (paneSolo) paneSolo.style.display = "block";
-          if (kickerEl) kickerEl.textContent = "RECRUITMENT PROTOCOL // OPTION 1 OF 3";
-          if (titleEl) titleEl.innerHTML = 'Player <span style="color:var(--lime);">Registration</span>';
-          if (descEl) descEl.textContent = "Register as an individual combatant or unassigned Free Agent looking for a squad or community draft placement.";
+
+          const enlistedBox = document.getElementById("enlisted-status-container");
+          const soloForm = document.getElementById("league-signup-form");
+
+          if (isPlayerEnlisted && !manualSoloFormOverride) {
+            if (enlistedBox) enlistedBox.style.display = "block";
+            if (soloForm) soloForm.style.display = "none";
+            if (kickerEl) kickerEl.textContent = "ENLISTMENT RECORD // VERIFIED COMBATANT";
+            if (titleEl) titleEl.innerHTML = 'Registration <span style="color:var(--lime);">Status: Active</span>';
+            const curTag = document.getElementById("enlisted-gamertag")?.textContent || "Operative";
+            if (descEl) descEl.textContent = `Operative ${curTag} is officially registered for Frontline League Season 1.`;
+          } else {
+            if (enlistedBox) enlistedBox.style.display = "none";
+            if (soloForm) soloForm.style.display = "block";
+            if (kickerEl) kickerEl.textContent = "RECRUITMENT PROTOCOL // OPTION 1 OF 3";
+            if (titleEl) titleEl.innerHTML = 'Player <span style="color:var(--lime);">Registration</span>';
+            if (descEl) descEl.textContent = "Register as an individual combatant or unassigned Free Agent looking for a squad or community draft placement.";
+          }
           try { window.history.replaceState(null, "", "?type=player"); } catch (_) {}
         } else if (normalized === "team") {
           tabTeamBtn?.classList.add("active");
