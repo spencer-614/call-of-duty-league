@@ -2271,6 +2271,24 @@
             <h3 class="admin-card-title">＋ Assign or Update Staff Role</h3>
             <form id="form-manage-staff">
               <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                <!-- User Selection Dropdown -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:8px;">
+                    <label class="form-label" for="staff-select-user" style="margin-bottom:0; font-size:13px; font-weight:700; color:#ffffff;">
+                      👤 Select User / Combatant to Assign Staff Role &amp; Perms *
+                    </label>
+                    <button type="button" id="btn-refresh-staff-users" class="btn-action-sm" style="font-size:11px; padding:3px 9px;">
+                      ↻ Refresh User List
+                    </button>
+                  </div>
+                  <select id="staff-select-user" class="form-control" style="background:#13150f; border:1.5px solid var(--lime); color:#ffffff; font-weight:600;">
+                    <option value="">-- Click to select a registered user, combatant, or recruit --</option>
+                  </select>
+                  <small style="color:#b5b8a8; font-size:11.5px; margin-top:4px; display:block;">
+                    Selecting a registered player, recruit, or member auto-fills their email, gamertag, and role settings. You can also pick "✍ Enter Custom / External Email Manually".
+                  </small>
+                </div>
+
                 <div class="form-group">
                   <label class="form-label" for="staff-input-email">Staff Account Email *</label>
                   <input type="email" id="staff-input-email" class="form-control" placeholder="e.g. referee@frontlineleague.com" required />
@@ -2298,6 +2316,24 @@
                 <div class="form-group" style="grid-column: 1 / -1;">
                   <label class="form-label" for="staff-input-notes">Operational Notes / Responsibilities</label>
                   <input type="text" id="staff-input-notes" class="form-control" placeholder="e.g. North America East weekend referee" />
+                </div>
+
+                <!-- Granular Module Permissions Toggles -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                    <label class="form-label" style="margin:0; font-size:12.5px; font-weight:700; color:#d5f45b;">
+                      🔐 Granted Module Permissions
+                    </label>
+                    <button type="button" id="btn-reset-role-perms" class="btn-action-sm" style="font-size:10.5px; padding:2px 8px;">
+                      ↺ Reset to Role Defaults
+                    </button>
+                  </div>
+                  <div id="staff-perms-checkboxes" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:8px; background:#10120d; border:1px solid #282c1e; padding:12px; border-radius:4px;">
+                    <!-- Populated dynamically via JS -->
+                  </div>
+                  <small style="color:#b5b8a8; font-size:11.5px; margin-top:4px; display:block;">
+                    Checked modules will be accessible in the Admin Console for this staff account. Unchecked modules will remain hidden and locked.
+                  </small>
                 </div>
               </div>
 
@@ -3431,6 +3467,255 @@
         // ==========================================
         // STAFF DIRECTORY & ROLES MANAGEMENT LOGIC
         // ==========================================
+        const ADMIN_MODULE_TABS = [
+          { id: "tab-teams", label: "Teams & Standings" },
+          { id: "tab-players", label: "Players & Rosters" },
+          { id: "tab-player-stats", label: "Stats & Telemetry" },
+          { id: "tab-matches", label: "Match Scoring & Scan" },
+          { id: "tab-schedule", label: "8-Week Schedule" },
+          { id: "tab-signups", label: "Signups & Recruits" },
+          { id: "tab-broadcast", label: "Broadcast Media" },
+          { id: "tab-announcements", label: "Announcements" },
+          { id: "tab-season", label: "Season Settings" },
+          { id: "tab-rulebook", label: "CDL Rulebook" },
+          { id: "tab-staff", label: "Staff & Roles" },
+          { id: "tab-ladder-disputes", label: "Ladder Disputes" },
+          { id: "tab-platform-switcher", label: "Platform Switcher" },
+          { id: "tab-tournaments-hub", label: "Tournaments Hub" }
+        ];
+
+        let staffUserDirectoryMap = new Map();
+
+        function renderStaffPermCheckboxes() {
+          const container = document.getElementById("staff-perms-checkboxes");
+          if (!container) return;
+          container.innerHTML = ADMIN_MODULE_TABS.map(tab => `
+            <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:#e0e4d4; cursor:pointer; user-select:none; padding:5px 8px; background:#161912; border:1px solid #23271a; border-radius:3px;">
+              <input type="checkbox" class="staff-perm-checkbox" value="${tab.id}" style="accent-color:var(--lime); width:15px; height:15px; cursor:pointer;" />
+              <span>${tab.label}</span>
+            </label>
+          `).join("");
+        }
+
+        function setPermCheckboxes(tabList) {
+          const list = Array.isArray(tabList) ? tabList : [];
+          document.querySelectorAll(".staff-perm-checkbox").forEach(cb => {
+            cb.checked = list.includes(cb.value);
+          });
+        }
+
+        function getSelectedPermCheckboxes() {
+          const checked = [];
+          document.querySelectorAll(".staff-perm-checkbox:checked").forEach(cb => {
+            checked.push(cb.value);
+          });
+          return checked;
+        }
+
+        function syncPermCheckboxesWithRole(roleKey) {
+          if (!window.LeagueDB || !window.LeagueDB.getRoleTabs) {
+            setPermCheckboxes(ADMIN_MODULE_TABS.map(t => t.id));
+            return;
+          }
+          const defaultTabs = window.LeagueDB.getRoleTabs(roleKey || "referee");
+          setPermCheckboxes(defaultTabs);
+        }
+
+        async function populateStaffUserDropdown() {
+          const select = document.getElementById("staff-select-user");
+          if (!select) return;
+
+          const previousSelectedValue = select.value;
+
+          let staffList = [];
+          let playersList = [];
+          let signupsList = [];
+
+          try {
+            const [staffRes, playersRes, signupsRes] = await Promise.all([
+              window.LeagueDB?.getAllStaffMembers ? window.LeagueDB.getAllStaffMembers() : Promise.resolve([]),
+              (cachedPlayers && cachedPlayers.length > 0) ? Promise.resolve(cachedPlayers) : (window.LeagueDB?.getPlayers ? window.LeagueDB.getPlayers() : Promise.resolve([])),
+              (cachedSignups && cachedSignups.length > 0) ? Promise.resolve(cachedSignups) : (window.LeagueDB?.getSignups ? window.LeagueDB.getSignups() : Promise.resolve([]))
+            ]);
+            staffList = staffRes || [];
+            playersList = playersRes || [];
+            signupsList = signupsRes || [];
+          } catch(e) {
+            console.warn("Error gathering user dropdown data:", e);
+          }
+
+          let registeredAccounts = [];
+          try {
+            registeredAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+          } catch(e) {}
+
+          let arenaAuthUser = null;
+          try {
+            arenaAuthUser = JSON.parse(localStorage.getItem("frontline_arena_auth_user"));
+          } catch(e) {}
+
+          let leagueAuthUser = null;
+          try {
+            leagueAuthUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+          } catch(e) {}
+
+          staffUserDirectoryMap = new Map();
+
+          function registerCandidate(user) {
+            if (!user) return;
+            const email = (user.email || user.user_email || "").toLowerCase().trim();
+            const gamertag = (user.gamertag || user.username || user.display_name || "").trim();
+            const discord = (user.discord || user.discord_username || user.discord_name || "").trim();
+
+            if (!email && !gamertag) return;
+
+            const key = email || `gt_${gamertag.toLowerCase()}`;
+            const existing = staffUserDirectoryMap.get(key);
+
+            const merged = {
+              key: key,
+              email: email || existing?.email || (gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : ""),
+              hasRealEmail: !!email || !!existing?.hasRealEmail,
+              gamertag: gamertag || existing?.gamertag || (email ? email.split("@")[0] : "Operative"),
+              discord: discord || existing?.discord || "",
+              role: user.role || existing?.role || null,
+              custom_permissions: user.custom_permissions || existing?.custom_permissions || null,
+              notes: user.notes || existing?.notes || "",
+              category: user.category || existing?.category || "Registered Member",
+              team: user.team || user.team_name || existing?.team || null
+            };
+
+            staffUserDirectoryMap.set(key, merged);
+          }
+
+          // 1. Staff Members
+          staffList.forEach(s => {
+            registerCandidate({
+              ...s,
+              category: "Current Staff",
+              role: s.role || "referee",
+              notes: s.notes || ""
+            });
+          });
+
+          // 2. Registered Website & Discord Accounts
+          registeredAccounts.forEach(a => {
+            registerCandidate({
+              ...a,
+              category: "Registered Member"
+            });
+          });
+
+          if (arenaAuthUser) {
+            registerCandidate({
+              ...arenaAuthUser,
+              category: "Registered Member"
+            });
+          }
+
+          if (leagueAuthUser) {
+            registerCandidate({
+              email: leagueAuthUser.email,
+              gamertag: leagueAuthUser.user_metadata?.gamertag || leagueAuthUser.displayName,
+              category: "Registered Member"
+            });
+          }
+
+          // 3. League Signups & Recruits
+          signupsList.forEach(s => {
+            let extractedEmail = s.email || s.user_email || "";
+            if (!extractedEmail && s.notes) {
+              const match = String(s.notes).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+              if (match) extractedEmail = match[0];
+            }
+            registerCandidate({
+              ...s,
+              email: extractedEmail,
+              category: "Recruit / Signup"
+            });
+          });
+
+          // 4. Players
+          playersList.forEach(p => {
+            let extractedEmail = p.email || p._owner_email || "";
+            registerCandidate({
+              ...p,
+              email: extractedEmail,
+              category: "Roster Combatant"
+            });
+          });
+
+          const staffGroup = [];
+          const registeredGroup = [];
+          const signupsGroup = [];
+          const playersGroup = [];
+
+          staffUserDirectoryMap.forEach(item => {
+            if (item.category === "Current Staff" || item.role) {
+              staffGroup.push(item);
+            } else if (item.category === "Registered Member") {
+              registeredGroup.push(item);
+            } else if (item.category === "Recruit / Signup") {
+              signupsGroup.push(item);
+            } else {
+              playersGroup.push(item);
+            }
+          });
+
+          const sortFn = (a, b) => (a.gamertag || a.email).localeCompare(b.gamertag || b.email);
+          staffGroup.sort(sortFn);
+          registeredGroup.sort(sortFn);
+          signupsGroup.sort(sortFn);
+          playersGroup.sort(sortFn);
+
+          let html = `<option value="">-- Choose User from Database, Signups, or Roster --</option>`;
+
+          function renderOptions(list) {
+            return list.map(item => {
+              const emailDisplay = item.email ? item.email : 'No email logged';
+              const discordDisplay = item.discord ? ` · Discord: ${item.discord}` : '';
+              const roleDisplay = item.role ? ` · [Current Role: ${item.role}]` : '';
+              const teamDisplay = item.team ? ` · [${item.team}]` : '';
+              return `<option value="${escapeHtml(item.key)}">${escapeHtml(item.gamertag)} (${escapeHtml(emailDisplay)}${discordDisplay}${roleDisplay}${teamDisplay})</option>`;
+            }).join("");
+          }
+
+          if (registeredGroup.length > 0) {
+            html += `<optgroup label="🌟 Registered Community & Discord Members (${registeredGroup.length})">
+              ${renderOptions(registeredGroup)}
+            </optgroup>`;
+          }
+
+          if (signupsGroup.length > 0) {
+            html += `<optgroup label="📋 League Signups & Recruits (${signupsGroup.length})">
+              ${renderOptions(signupsGroup)}
+            </optgroup>`;
+          }
+
+          if (staffGroup.length > 0) {
+            html += `<optgroup label="🛡 Current Staff Members (${staffGroup.length})">
+              ${renderOptions(staffGroup)}
+            </optgroup>`;
+          }
+
+          if (playersGroup.length > 0) {
+            html += `<optgroup label="🎮 League Roster Players (${playersGroup.length})">
+              ${renderOptions(playersGroup)}
+            </optgroup>`;
+          }
+
+          html += `<optgroup label="✍ Custom Manual Entry">
+            <option value="__custom__">✍ Enter Custom / External Email Manually...</option>
+          </optgroup>`;
+
+          select.innerHTML = html;
+
+          if (previousSelectedValue) {
+            const hasPrev = Array.from(select.options).some(o => o.value === previousSelectedValue);
+            if (hasPrev) select.value = previousSelectedValue;
+          }
+        }
+
         async function loadStaffDirectory() {
           const tbody = document.getElementById("staff-directory-tbody");
           if (!tbody) return;
@@ -3438,77 +3723,169 @@
             const list = await window.LeagueDB.getAllStaffMembers();
             if (!list || list.length === 0) {
               tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">No staff accounts listed yet. Assign a role above to get started.</td></tr>`;
-              return;
-            }
+            } else {
+              tbody.innerHTML = list.map(s => {
+                const roleKey = s.role || "referee";
+                const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
+                  ? window.LeagueDB.STAFF_ROLES[roleKey] 
+                  : { title: roleKey, badgeClass: "role-badge-commissioner" };
+                const allowedTabs = window.LeagueDB.getRoleTabs(roleKey, s.custom_permissions);
+                const isCurrentUser = activeStaffProfile && activeStaffProfile.email && activeStaffProfile.email.toLowerCase() === (s.email || "").toLowerCase();
 
-            tbody.innerHTML = list.map(s => {
-              const roleKey = s.role || "referee";
-              const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
-                ? window.LeagueDB.STAFF_ROLES[roleKey] 
-                : { title: roleKey, badgeClass: "role-badge-commissioner" };
-              const allowedTabs = window.LeagueDB.getRoleTabs(roleKey, s.custom_permissions);
-              const isCurrentUser = activeStaffProfile && activeStaffProfile.email && activeStaffProfile.email.toLowerCase() === (s.email || "").toLowerCase();
+                const modulesHtml = allowedTabs.map(t => {
+                  const cleanName = t.replace("tab-", "").replace("-", " ");
+                  return `<span class="module-chip">${cleanName.toUpperCase()}</span>`;
+                }).join("");
 
-              const modulesHtml = allowedTabs.map(t => {
-                const cleanName = t.replace("tab-", "").replace("-", " ");
-                return `<span class="module-chip">${cleanName.toUpperCase()}</span>`;
+                return `
+                  <tr>
+                    <td>
+                      <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(s.display_name || s.email.split('@')[0])}</strong>
+                      <div style="font-size:12px; color:var(--muted);">${escapeHtml(s.email)}</div>
+                    </td>
+                    <td>
+                      <span class="role-badge ${roleDef.badgeClass}">${escapeHtml(roleDef.title)}</span>
+                    </td>
+                    <td>
+                      <div style="max-width:340px; line-height:1.4;">${modulesHtml}</div>
+                    </td>
+                    <td style="color:#b5b8a8; font-size:12px;">
+                      ${escapeHtml(s.notes || '—')}
+                    </td>
+                    <td>
+                      <button type="button" class="btn-action-sm btn-edit-staff" data-email="${escapeHtml(s.email)}" data-name="${escapeHtml(s.display_name || '')}" data-role="${escapeHtml(s.role)}" data-notes="${escapeHtml(s.notes || '')}" data-perms="${escapeHtml(JSON.stringify(s.custom_permissions || []))}">Edit</button>
+                      ${!isCurrentUser ? `<button type="button" class="btn-action-sm btn-action-danger btn-delete-staff" data-id="${s.id}" data-email="${escapeHtml(s.email)}">Remove</button>` : `<span style="font-size:11px; color:var(--lime); margin-left:6px; font-weight:bold;">(You)</span>`}
+                    </td>
+                  </tr>
+                `;
               }).join("");
 
-              return `
-                <tr>
-                  <td>
-                    <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(s.display_name || s.email.split('@')[0])}</strong>
-                    <div style="font-size:12px; color:var(--muted);">${escapeHtml(s.email)}</div>
-                  </td>
-                  <td>
-                    <span class="role-badge ${roleDef.badgeClass}">${escapeHtml(roleDef.title)}</span>
-                  </td>
-                  <td>
-                    <div style="max-width:340px; line-height:1.4;">${modulesHtml}</div>
-                  </td>
-                  <td style="color:#b5b8a8; font-size:12px;">
-                    ${escapeHtml(s.notes || '—')}
-                  </td>
-                  <td>
-                    <button type="button" class="btn-action-sm btn-edit-staff" data-email="${escapeHtml(s.email)}" data-name="${escapeHtml(s.display_name || '')}" data-role="${escapeHtml(s.role)}" data-notes="${escapeHtml(s.notes || '')}">Edit</button>
-                    ${!isCurrentUser ? `<button type="button" class="btn-action-sm btn-action-danger btn-delete-staff" data-id="${s.id}" data-email="${escapeHtml(s.email)}">Remove</button>` : `<span style="font-size:11px; color:var(--lime); margin-left:6px; font-weight:bold;">(You)</span>`}
-                  </td>
-                </tr>
-              `;
-            }).join("");
+              // Edit button handler
+              tbody.querySelectorAll(".btn-edit-staff").forEach(btn => {
+                btn.addEventListener("click", () => {
+                  const staffEmail = btn.getAttribute("data-email");
+                  document.getElementById("staff-input-email").value = staffEmail;
+                  document.getElementById("staff-input-name").value = btn.getAttribute("data-name");
+                  document.getElementById("staff-input-role").value = btn.getAttribute("data-role");
+                  document.getElementById("staff-input-notes").value = btn.getAttribute("data-notes");
 
-            // Edit button handler
-            tbody.querySelectorAll(".btn-edit-staff").forEach(btn => {
-              btn.addEventListener("click", () => {
-                document.getElementById("staff-input-email").value = btn.getAttribute("data-email");
-                document.getElementById("staff-input-name").value = btn.getAttribute("data-name");
-                document.getElementById("staff-input-role").value = btn.getAttribute("data-role");
-                document.getElementById("staff-input-notes").value = btn.getAttribute("data-notes");
-                document.getElementById("form-manage-staff").scrollIntoView({ behavior: "smooth", block: "center" });
-              });
-            });
+                  const select = document.getElementById("staff-select-user");
+                  if (select) {
+                    const match = Array.from(select.options).find(o => o.value && o.value.toLowerCase() === (staffEmail || "").toLowerCase());
+                    if (match) {
+                      select.value = match.value;
+                    } else {
+                      select.value = "__custom__";
+                    }
+                  }
 
-            // Delete button handler
-            tbody.querySelectorAll(".btn-delete-staff").forEach(btn => {
-              btn.addEventListener("click", async () => {
-                const email = btn.getAttribute("data-email");
-                const id = btn.getAttribute("data-id");
-                if (!confirm(`Are you sure you want to remove staff privileges for ${email}?`)) return;
-                const res = await window.LeagueDB.deleteStaffRole(id || email);
-                if (res.success) {
-                  showToast(`✓ Removed staff privileges for ${email}`);
-                  loadStaffDirectory();
-                } else {
-                  alert("Failed to remove staff member: " + (res.error || "Unknown error"));
-                }
+                  const rawPerms = btn.getAttribute("data-perms");
+                  let parsedPerms = null;
+                  try {
+                    if (rawPerms && rawPerms !== "null") parsedPerms = JSON.parse(rawPerms);
+                  } catch(e) {}
+
+                  if (Array.isArray(parsedPerms) && parsedPerms.length > 0) {
+                    setPermCheckboxes(parsedPerms);
+                  } else {
+                    syncPermCheckboxesWithRole(btn.getAttribute("data-role"));
+                  }
+
+                  document.getElementById("form-manage-staff").scrollIntoView({ behavior: "smooth", block: "center" });
+                });
               });
-            });
+
+              // Delete button handler
+              tbody.querySelectorAll(".btn-delete-staff").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                  const email = btn.getAttribute("data-email");
+                  const id = btn.getAttribute("data-id");
+                  if (!confirm(`Are you sure you want to remove staff privileges for ${email}?`)) return;
+                  const res = await window.LeagueDB.deleteStaffRole(id || email);
+                  if (res.success) {
+                    showToast(`✓ Removed staff privileges for ${email}`);
+                    loadStaffDirectory();
+                  } else {
+                    alert("Failed to remove staff member: " + (res.error || "Unknown error"));
+                  }
+                });
+              });
+            }
+
+            // Also keep user selection dropdown updated with fresh staff directory data
+            await populateStaffUserDropdown();
 
           } catch(err) {
             console.error("loadStaffDirectory error:", err);
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#ff4a4a;">Failed to load staff directory. Check console.</td></tr>`;
           }
         }
+
+        // Initialize permission checkboxes UI
+        renderStaffPermCheckboxes();
+        syncPermCheckboxesWithRole("referee");
+
+        // Event listener for user dropdown
+        document.getElementById("staff-select-user")?.addEventListener("change", (e) => {
+          const val = e.target.value;
+          if (!val) {
+            document.getElementById("staff-input-email").value = "";
+            document.getElementById("staff-input-name").value = "";
+            document.getElementById("staff-input-notes").value = "";
+            syncPermCheckboxesWithRole(document.getElementById("staff-input-role")?.value || "referee");
+            return;
+          }
+
+          if (val === "__custom__") {
+            document.getElementById("staff-input-email").value = "";
+            document.getElementById("staff-input-name").value = "";
+            document.getElementById("staff-input-notes").value = "";
+            document.getElementById("staff-input-email").focus();
+            syncPermCheckboxesWithRole(document.getElementById("staff-input-role")?.value || "referee");
+            return;
+          }
+
+          const user = staffUserDirectoryMap.get(val);
+          if (user) {
+            document.getElementById("staff-input-email").value = user.email || "";
+            document.getElementById("staff-input-name").value = user.gamertag || "";
+
+            if (user.role) {
+              const roleSelect = document.getElementById("staff-input-role");
+              if (roleSelect) roleSelect.value = user.role;
+            }
+
+            if (user.notes) {
+              document.getElementById("staff-input-notes").value = user.notes;
+            } else {
+              document.getElementById("staff-input-notes").value = `Assigned staff responsibilities for ${user.gamertag}`;
+            }
+
+            if (user.custom_permissions && Array.isArray(user.custom_permissions) && user.custom_permissions.length > 0) {
+              setPermCheckboxes(user.custom_permissions);
+            } else {
+              syncPermCheckboxesWithRole(user.role || document.getElementById("staff-input-role")?.value || "referee");
+            }
+          }
+        });
+
+        // Event listener for role select change
+        document.getElementById("staff-input-role")?.addEventListener("change", (e) => {
+          syncPermCheckboxesWithRole(e.target.value);
+        });
+
+        // Reset perms button
+        document.getElementById("btn-reset-role-perms")?.addEventListener("click", () => {
+          const currentRole = document.getElementById("staff-input-role")?.value || "referee";
+          syncPermCheckboxesWithRole(currentRole);
+          showToast("↺ Permissions reset to role standard defaults");
+        });
+
+        // Refresh users button
+        document.getElementById("btn-refresh-staff-users")?.addEventListener("click", async () => {
+          await populateStaffUserDropdown();
+          showToast("↻ Staff candidate user list refreshed");
+        });
 
         // Staff form submit listener
         document.getElementById("form-manage-staff")?.addEventListener("submit", async (e) => {
@@ -3519,11 +3896,19 @@
           const notes = document.getElementById("staff-input-notes")?.value.trim();
           const submitBtn = document.getElementById("btn-save-staff-role");
 
-          if (!email) return;
+          if (!email) {
+            alert("Please enter or select a valid email for the staff account.");
+            return;
+          }
+
+          const selectedPerms = getSelectedPermCheckboxes();
+          const defaultPerms = window.LeagueDB?.getRoleTabs ? window.LeagueDB.getRoleTabs(role) : [];
+          const isIdentical = selectedPerms.length === defaultPerms.length && selectedPerms.every(p => defaultPerms.includes(p));
+          const customPermissionsToSave = isIdentical ? null : selectedPerms;
 
           if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span>Saving Role...</span><span>⏳</span>`;
+            submitBtn.innerHTML = `<span>Saving Role &amp; Permissions...</span><span>⏳</span>`;
           }
 
           try {
@@ -3531,13 +3916,17 @@
               email: email,
               display_name: name,
               role: role,
+              custom_permissions: customPermissionsToSave,
               notes: notes
             });
 
             if (res.success) {
-              showToast(`✓ Staff role configured for ${email}!`);
+              showToast(`✓ Staff role & permissions configured for ${email}!`);
               document.getElementById("form-manage-staff").reset();
-              loadStaffDirectory();
+              const userSelect = document.getElementById("staff-select-user");
+              if (userSelect) userSelect.value = "";
+              syncPermCheckboxesWithRole("referee");
+              await loadStaffDirectory();
             } else {
               alert("Failed to save staff role: " + (res.error || "Unknown error"));
             }
@@ -4713,13 +5102,22 @@
         window.addEventListener("storage", (e) => {
           if (e.key === "frontline_league_signups" || e.key === "frontline_arena_registered_accounts" || e.key === "frontline_league_auth_user") {
             loadSignups();
+            if (typeof populateStaffUserDropdown === "function") {
+              populateStaffUserDropdown();
+            }
           }
         });
         window.addEventListener("frontline_signups_updated", () => {
           loadSignups();
+          if (typeof populateStaffUserDropdown === "function") {
+            populateStaffUserDropdown();
+          }
         });
         window.addEventListener("focus", () => {
           loadSignups();
+          if (typeof populateStaffUserDropdown === "function") {
+            populateStaffUserDropdown();
+          }
         });
         setInterval(() => {
           const tabSignups = document.getElementById("tab-signups");
