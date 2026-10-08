@@ -2002,6 +2002,58 @@ window.LeagueDB = {
     }
   },
 
+  // Admin: Approve & Enlist All Pending Signups in Batch
+  async approveAndEnlistAllSignups() {
+    try {
+      const signups = await this.getSignups();
+      if (!signups || signups.length === 0) {
+        return { success: true, count: 0, results: [] };
+      }
+
+      let teams = [];
+      try {
+        teams = await this.getTeams();
+      } catch (_) {}
+
+      const results = [];
+      let successCount = 0;
+
+      for (const s of signups) {
+        let teamId = null;
+        if (s.team_name && teams && teams.length > 0) {
+          const found = teams.find(t =>
+            (t.name && t.name.toLowerCase() === s.team_name.toLowerCase()) ||
+            (t.tag && t.tag.toLowerCase() === s.team_name.toLowerCase())
+          );
+          if (found) teamId = found.id;
+        }
+
+        const res = await this.approveAndEnlistSignup(s.id, {
+          gamertag: s.gamertag,
+          role: s.role || "Flex",
+          activision_id: s.activision_id || null,
+          team_id: teamId,
+          kdr: 1.00
+        });
+
+        if (res.success) {
+          successCount++;
+        }
+        results.push({ id: s.id, gamertag: s.gamertag, success: res.success });
+      }
+
+      return {
+        success: true,
+        count: successCount,
+        total: signups.length,
+        results
+      };
+    } catch (err) {
+      console.error("Error in approveAndEnlistAllSignups:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
   // Admin: Update Livestream / Broadcast State
   async updateLiveBroadcast(isLive, vodUrl, title) {
     if (dbClient) {

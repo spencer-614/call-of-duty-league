@@ -1398,9 +1398,14 @@
         <!-- ========================================== -->
         <div id="tab-signups" class="admin-tab-content" style="display:none;">
           <div class="admin-panel-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
-              <h3 class="admin-card-title" style="margin:0;">Incoming Registrations (Free Agents & Squads)</h3>
-              <button type="button" id="btn-refresh-signups" class="btn-action-sm">↻ Refresh Queue</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; gap:12px;">
+              <h3 class="admin-card-title" style="margin:0;">Incoming Registrations (Free Agents &amp; Squads)</h3>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button type="button" id="btn-accept-all-signups" class="btn-paypal-submit" style="width:auto; padding:8px 18px; font-size:12.5px; background:var(--lime); color:#11120f; font-weight:800; border:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="Accept and enlist all pending registrations into the league">
+                  <span>✓ Accept All Registrations</span>
+                </button>
+                <button type="button" id="btn-refresh-signups" class="btn-action-sm">↻ Refresh Queue</button>
+              </div>
             </div>
             <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
               Review recruits from the website signup form and the Discord registration bot. Accepting a registration automatically stores the player in the <strong>players</strong> table and removes them from the <strong>league signups</strong> queue.
@@ -4578,10 +4583,87 @@
             } else {
               tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:24px;">Recruitment queue is empty. All signups have been enlisted or reviewed.</td></tr>`;
             }
+
+            const acceptAllBtn = document.getElementById("btn-accept-all-signups");
+            if (acceptAllBtn) {
+              const pendingCount = cachedSignups ? cachedSignups.length : 0;
+              acceptAllBtn.disabled = pendingCount === 0;
+              acceptAllBtn.style.opacity = pendingCount === 0 ? "0.45" : "1";
+              acceptAllBtn.style.cursor = pendingCount === 0 ? "not-allowed" : "pointer";
+              acceptAllBtn.innerHTML = `<span>✓ Accept All Registrations${pendingCount > 0 ? ` (${pendingCount})` : ''}</span>`;
+            }
           } catch (e) {
             console.error("Error loading signups:", e);
           }
         }
+
+        // Accept All Registrations Handler
+        document.getElementById("btn-accept-all-signups")?.addEventListener("click", async () => {
+          if (!cachedSignups || cachedSignups.length === 0) {
+            showToast("No pending registrations in the recruitment queue.");
+            return;
+          }
+
+          const count = cachedSignups.length;
+          if (!confirm(`Are you sure you want to accept and enlist all ${count} registration${count > 1 ? "s" : ""} into the league?\n\nThis will store all recruits in the players roster and clear the recruitment queue.`)) {
+            return;
+          }
+
+          const btn = document.getElementById("btn-accept-all-signups");
+          if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = "0.7";
+            btn.innerHTML = `<span>⏳ Enlisting ${count} combatants...</span>`;
+          }
+
+          try {
+            let successCount = 0;
+            if (window.LeagueDB && typeof window.LeagueDB.approveAndEnlistAllSignups === "function") {
+              const res = await window.LeagueDB.approveAndEnlistAllSignups();
+              successCount = res.count || (res.success ? count : 0);
+            } else {
+              for (let i = 0; i < cachedSignups.length; i++) {
+                const s = cachedSignups[i];
+                if (btn) {
+                  btn.innerHTML = `<span>⏳ Enlisting (${i + 1}/${count})...</span>`;
+                }
+                let teamId = null;
+                if (s.team_name && cachedTeams && cachedTeams.length > 0) {
+                  const found = cachedTeams.find(t =>
+                    (t.name && t.name.toLowerCase() === s.team_name.toLowerCase()) ||
+                    (t.tag && t.tag.toLowerCase() === s.team_name.toLowerCase())
+                  );
+                  if (found) teamId = found.id;
+                }
+
+                const res = await window.LeagueDB.approveAndEnlistSignup(s.id, {
+                  gamertag: s.gamertag,
+                  role: s.role || "Flex",
+                  activision_id: s.activision_id || null,
+                  team_id: teamId,
+                  kdr: 1.00
+                });
+                if (res.success) successCount++;
+              }
+            }
+
+            showToast(`✓ ACCEPTED ALL: Successfully enlisted ${successCount} combatants into the league!`);
+            await loadSignups();
+            await loadPlayers();
+          } catch (err) {
+            console.error("Error accepting all signups:", err);
+            alert("Error accepting registrations: " + (err.message || String(err)));
+            await loadSignups();
+          } finally {
+            if (btn) {
+              const pendingCount = cachedSignups ? cachedSignups.length : 0;
+              btn.disabled = pendingCount === 0;
+              btn.style.opacity = pendingCount === 0 ? "0.45" : "1";
+              btn.style.cursor = pendingCount === 0 ? "not-allowed" : "pointer";
+              btn.innerHTML = `<span>✓ Accept All Registrations${pendingCount > 0 ? ` (${pendingCount})` : ''}</span>`;
+            }
+          }
+        });
 
         // Refresh buttons
         document.getElementById("btn-refresh-teams")?.addEventListener("click", loadTeams);
