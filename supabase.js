@@ -67,6 +67,7 @@ const MOCK_DATA = {
   players: [],
   signups: [],
   staffRoles: [
+    { id: 0, email: "todd061496@gmail.com", display_name: "Commissioner Spencer", role: "commissioner", notes: "League Owner & Commissioner" },
     { id: 1, email: "admin@frontlineleague.com", display_name: "League Director", role: "commissioner", notes: "Primary commissioner" },
     { id: 2, email: "referee@frontlineleague.com", display_name: "Head Referee", role: "referee", notes: "Match scoring & map stats" },
     { id: 3, email: "roster@frontlineleague.com", display_name: "Roster GM", role: "roster_manager", notes: "Squad rosters & enlistment" },
@@ -4572,6 +4573,7 @@ window.LeagueDB = {
 
     const getStaffEmails = () => {
       const set = new Set([
+        "todd061496@gmail.com",
         "admin@frontlineleague.com",
         "referee@frontlineleague.com",
         "roster@frontlineleague.com",
@@ -5809,13 +5811,13 @@ window.LeagueDB = {
     if (mock) return mock;
 
     // 4. Primary official commissioner email fallback
-    if (cleanEmail === "admin@frontlineleague.com") {
+    if (cleanEmail === "admin@frontlineleague.com" || cleanEmail === "todd061496@gmail.com") {
       return {
         id: 0,
         email: cleanEmail,
-        display_name: "Commissioner",
+        display_name: cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner",
         role: "commissioner",
-        notes: "Default Administrator"
+        notes: "Primary League Commissioner"
       };
     }
 

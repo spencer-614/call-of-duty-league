@@ -3156,8 +3156,12 @@
           }
           if (!activeStaffProfile) {
             const clean = (userEmail || "").toLowerCase().trim();
-            if (clean === "admin@frontlineleague.com") {
-              activeStaffProfile = { email: userEmail, role: "commissioner", display_name: "Commissioner" };
+            if (clean === "admin@frontlineleague.com" || clean === "todd061496@gmail.com") {
+              activeStaffProfile = {
+                email: userEmail,
+                role: "commissioner",
+                display_name: clean === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner"
+              };
             } else {
               await lockConsole();
               gateError.textContent = `Access Denied: Logged in as ${userEmail}. Staff credentials required to access Commissioner Console.`;
@@ -3244,8 +3248,9 @@
           if (window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
             const session = await window.LeagueDB.getAuthSession();
             if (session?.user) {
-              const userEmail = session.user.email || "";
-              const isStaff = await window.LeagueDB.isAccountAdminAsync(session.user);
+              const userEmail = (session.user.email || "").toLowerCase().trim();
+              const isPrimary = userEmail === "todd061496@gmail.com" || userEmail === "admin@frontlineleague.com";
+              const isStaff = isPrimary || (await window.LeagueDB.isAccountAdminAsync(session.user));
               if (!isStaff) {
                 // Deny non-staff accounts from admin console
                 await lockConsole();
@@ -3260,9 +3265,11 @@
           // 2. Fallback check for active browser session
           const savedEmail = sessionStorage.getItem("frontline_admin_email");
           if (sessionStorage.getItem("frontline_admin_session") === "authorized" && savedEmail) {
-            const isStaff = window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function"
+            const cleanSaved = savedEmail.toLowerCase().trim();
+            const isPrimary = cleanSaved === "todd061496@gmail.com" || cleanSaved === "admin@frontlineleague.com";
+            const isStaff = isPrimary || (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function"
               ? window.LeagueDB.isAccountAdmin(savedEmail)
-              : false;
+              : false);
             if (isStaff) {
               await unlockConsole(savedEmail);
             } else {
