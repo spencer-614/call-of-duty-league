@@ -765,14 +765,17 @@
         }
 
         try {
-          if (window.LeagueDB && typeof window.LeagueDB.signInWithEmail === 'function') {
-            const res = await window.LeagueDB.signInWithEmail(email, password);
+          let authUser = null;
+          if (window.LeagueDB && typeof window.LeagueDB.signInPlayer === 'function') {
+            const res = await window.LeagueDB.signInPlayer(email, password);
             if (res && res.error) {
-              throw res.error;
+              throw new Error(res.error);
             }
+            if (res && res.user) authUser = res.user;
           } else if (window.supabaseClient) {
             const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
             if (error) throw error;
+            if (data && data.user) authUser = data.user;
           }
 
           const cleanEmail = email.toLowerCase().trim();
@@ -785,6 +788,28 @@
           if (isStaffAccount) {
             sessionStorage.setItem("frontline_admin_session", "authorized");
             sessionStorage.setItem("frontline_admin_email", cleanEmail);
+            const staffObj = {
+              id: authUser?.id || "admin_commissioner",
+              gamertag: "Commissioner Spencer",
+              username: "Commissioner Spencer",
+              email: cleanEmail,
+              tag: "COMM",
+              team_name: "Frontline League HQ",
+              elo: 1200,
+              tier: "Commissioner",
+              role: "League Commissioner",
+              avatar_url: "/images/leaguelogo_1.png",
+              discord: "—",
+              activision_id: "Spencer#0001",
+              is_staff: true,
+              is_commissioner: true
+            };
+            localStorage.setItem("frontline_arena_user", JSON.stringify(staffObj));
+            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(staffObj));
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser || staffObj));
+          } else if (authUser) {
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser));
+            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(authUser));
           }
 
           showProfileToast("Access granted. Loading commissioner dossier...", "success");
@@ -1252,14 +1277,31 @@
 
       async function signOutLeagueProfile() {
         if (confirm("Are you sure you want to sign out of your Frontline combatant profile?")) {
-          if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
-            await window.LeagueDB.signOutPlayer();
-          } else {
+          try {
             localStorage.removeItem("frontline_league_auth_user");
-            if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
-              window.LeagueDB.updateLeagueNavProfile();
+            localStorage.removeItem("frontline_arena_auth_user");
+            localStorage.removeItem("frontline_arena_user");
+            localStorage.removeItem("frontline_league_player_card");
+            sessionStorage.removeItem("frontline_admin_session");
+            sessionStorage.removeItem("frontline_admin_email");
+            sessionStorage.removeItem("frontline_discord_oauth_pending");
+            
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+                localStorage.removeItem(k);
+              }
+            });
+
+            if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
+              await window.LeagueDB.signOutPlayer();
             }
-          }
+            if (window.LadderDB && typeof window.LadderDB.logoutArenaPlayer === "function") {
+              window.LadderDB.logoutArenaPlayer();
+            }
+            if (window.supabaseClient && window.supabaseClient.auth) {
+              await window.supabaseClient.auth.signOut().catch(() => {});
+            }
+          } catch(e) {}
           showProfileToast("✓ Successfully signed out.");
           loadLeagueProfile();
         }

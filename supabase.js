@@ -4498,13 +4498,41 @@ window.LeagueDB = {
       }
       if (data?.user) {
         try {
+          const userEmail = (data.user.email || cleanEmail).toLowerCase().trim();
           localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
+          const isStaff = this.isAccountAdmin(data.user) || userEmail === "todd061496@gmail.com" || userEmail === "admin@frontlineleague.com";
+          if (isStaff) {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            sessionStorage.setItem("frontline_admin_email", userEmail);
+            const staffObj = {
+              id: data.user.id,
+              gamertag: "Commissioner Spencer",
+              username: "Commissioner Spencer",
+              email: userEmail,
+              tag: "COMM",
+              team_name: "Frontline League HQ",
+              elo: 1200,
+              tier: "Commissioner",
+              role: "League Commissioner",
+              avatar_url: "/images/leaguelogo_1.png",
+              discord: "—",
+              activision_id: "Spencer#0001",
+              is_staff: true,
+              is_commissioner: true
+            };
+            localStorage.setItem("frontline_arena_user", JSON.stringify(staffObj));
+          }
         } catch (e) {}
       }
       return { success: true, user: data.user, session: data.session };
     } catch (err) {
       return { success: false, error: err.message || "Sign-in error occurred." };
     }
+  },
+
+  async signInWithEmail(email, password) {
+    return this.signInPlayer(email, password);
   },
 
   async signInWithDiscord(redirectUrl) {
@@ -4550,14 +4578,26 @@ window.LeagueDB = {
     try {
       localStorage.removeItem("frontline_league_auth_user");
       localStorage.removeItem("frontline_arena_auth_user");
+      localStorage.removeItem("frontline_arena_user");
       localStorage.removeItem("frontline_league_player_card");
       sessionStorage.removeItem("frontline_admin_session");
       sessionStorage.removeItem("frontline_admin_email");
+      sessionStorage.removeItem("frontline_discord_oauth_pending");
+
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+          localStorage.removeItem(k);
+        }
+      });
     } catch (e) {}
     if (typeof this.updateLeagueNavProfile === "function") {
       this.updateLeagueNavProfile();
     }
+    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+      window.LadderDB.updateArenaNavProfile();
+    }
     window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+    window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: null } }));
     if (!dbClient) return { success: true };
     try {
       await dbClient.auth.signOut();
@@ -7101,6 +7141,13 @@ window.LadderDB = {
             }
           }
         }
+      } catch (e) {}
+    }
+
+    if (!authUser) {
+      try {
+        authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || 
+                   JSON.parse(localStorage.getItem("frontline_arena_auth_user")) || null;
       } catch (e) {}
     }
 
