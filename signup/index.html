@@ -268,7 +268,7 @@
 
           <a
             class="cta nav-discord-cta"
-            href="https://discord.gg/eWqqC6TZNM"
+            href="https://discord.gg/frontlinecodleaguecodleague"
             target="_blank"
             rel="noopener"
             aria-label="Join Discord Server"
@@ -672,7 +672,7 @@
               <!-- Form Actions -->
               <div class="form-actions">
                 <div class="form-discord-note">
-                  ⚡ Need assistance? Connect with an admin on <a href="https://discord.gg/eWqqC6TZNM" target="_blank" rel="noopener">Discord ↗</a>
+                  ⚡ Need assistance? Connect with an admin on <a href="https://discord.gg/frontlinecodleaguecodleague" target="_blank" rel="noopener">Discord ↗</a>
                 </div>
                 <button type="submit" id="btn-submit-signup" class="btn-submit-signup">
                   <span>Submit Application</span>
@@ -1514,18 +1514,18 @@
           const redirectUrl = window.location.origin + window.location.pathname;
           if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
             const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
-            if (!res || !res.success) {
-              sessionStorage.removeItem("frontline_discord_oauth_pending");
-              showGateError(res?.error || "Failed to initiate Discord authentication.");
-              btnDiscordAuth.disabled = false;
-              btnDiscordAuth.innerHTML = originalHtml;
+            if (res && res.url) {
+              window.location.href = res.url;
+              return;
             }
+            if (!res || !res.success) {
+              window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
+            }
+          } else {
+            window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
           }
         } catch (err) {
-          sessionStorage.removeItem("frontline_discord_oauth_pending");
-          showGateError(err.message || "An unexpected error occurred during Discord authentication.");
-          btnDiscordAuth.disabled = false;
-          btnDiscordAuth.innerHTML = originalHtml;
+          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
         }
       });
 
@@ -1836,7 +1836,7 @@
                   <strong>Next Operational Step:</strong> Join the official Frontline Discord to confirm your roster spot, review the rulebook, and participate in scrims.
                 </div>
                 <div class="alert-actions">
-                  <a href="https://discord.gg/eWqqC6TZNM" target="_blank" rel="noopener" class="btn-alert-action">
+                  <a href="https://discord.gg/frontlinecodleaguecodleague" target="_blank" rel="noopener" class="btn-alert-action">
                     Join Official Discord ↗
                   </a>
                   <button type="button" id="btn-register-another" class="btn-alert-action btn-alert-secondary">
@@ -1975,7 +1975,7 @@
                         </svg>
                         <span>Pay $25.00 on PayPal ↗</span>
                       </a>
-                      <a href="https://discord.gg/eWqqC6TZNM" target="_blank" rel="noopener" class="btn-alert-action btn-alert-secondary">
+                      <a href="https://discord.gg/frontlinecodleaguecodleague" target="_blank" rel="noopener" class="btn-alert-action btn-alert-secondary">
                         Verify in Discord #team-payments ↗
                       </a>
                     </div>
@@ -2040,7 +2040,7 @@
                     <strong>Next Step:</strong> Join the Frontline Discord so captains can access match fixtures and schedule division scrimmages.
                   </div>
                   <div class="alert-actions">
-                    <a href="https://discord.gg/eWqqC6TZNM" target="_blank" rel="noopener" class="btn-alert-action">
+                    <a href="https://discord.gg/frontlinecodleaguecodleague" target="_blank" rel="noopener" class="btn-alert-action">
                       Join Official Discord ↗
                     </a>
                     <button type="button" id="btn-register-another-team" class="btn-alert-action btn-alert-secondary">
@@ -2149,7 +2149,7 @@
                   League directors will review and link your divisional roster entries in the database.
                 </div>
                 <div class="alert-actions">
-                  <a href="https://discord.gg/eWqqC6TZNM" target="_blank" rel="noopener" class="btn-alert-action" style="background:#0284c7; border-color:#0284c7;">
+                  <a href="https://discord.gg/frontlinecodleaguecodleague" target="_blank" rel="noopener" class="btn-alert-action" style="background:#0284c7; border-color:#0284c7;">
                     Confirm in Discord Org Channel ↗
                   </a>
                   <button type="button" id="btn-register-another-org-franchise" class="btn-alert-action btn-alert-secondary">

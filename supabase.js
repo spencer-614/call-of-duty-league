@@ -37,6 +37,24 @@ if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) 
     dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     window.dbClient = dbClient;
     window.supabaseClient = dbClient;
+
+    dbClient.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        try {
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
+          window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: session.user } }));
+          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: session.user } }));
+        } catch(e) {}
+      } else if (event === "SIGNED_OUT") {
+        try {
+          localStorage.removeItem("frontline_league_auth_user");
+          localStorage.removeItem("frontline_arena_auth_user");
+          window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null } }));
+        } catch(e) {}
+      }
+    });
   } catch(e) {
     console.warn("Supabase client init notice:", e);
   }
@@ -2567,7 +2585,7 @@ window.LeagueDB = {
       start_time: "6:00 PM EST",
       status: "Registration Open",
       image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/eWqqC6TZNM",
+      registration_url: "https://discord.gg/frontlinecodleaguecodleague",
       bracket_url: "/brackets/",
       description: "Official 4v4 CDL Variant Premier Championship. Best of 5 series on official maps. Top squads battle live on broadcast.",
       rules_notes: "CDL V4 Competitive Rulebook applies. Map vetoes in match room. Dedicated host server."
@@ -2585,7 +2603,7 @@ window.LeagueDB = {
       start_time: "8:00 PM EST",
       status: "Registration Open",
       image_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/eWqqC6TZNM",
+      registration_url: "https://discord.gg/frontlinecodleaguecodleague",
       bracket_url: "",
       description: "High-octane 2v2 Search & Destroy prime tournament. First to 6 rounds wins. Knife for first blood / side choice.",
       rules_notes: "SnD ruleset. Hardcore & Radar disabled. No snipers in 2v2."
@@ -2621,7 +2639,7 @@ window.LeagueDB = {
       start_time: "5:00 PM EST",
       status: "Upcoming",
       image_url: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/eWqqC6TZNM",
+      registration_url: "https://discord.gg/frontlinecodleaguecodleague",
       bracket_url: "",
       description: "Path to Pro qualification cup for Division 2 Challengers squads seeking promotion seeds for the Premier division.",
       rules_notes: "All squads must have active community roster on Frontline League."
@@ -4249,34 +4267,42 @@ window.LeagueDB = {
   },
 
   async signInWithDiscord(redirectUrl) {
-    if (!dbClient) {
-      return { success: false, error: "Database client is not connected." };
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+    const targetRedirect = redirectUrl || (origin + pathname);
+    const directOAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(targetRedirect)}`;
+
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem("frontline_discord_oauth_pending", "true");
     }
-    try {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const pathname = typeof window !== "undefined" ? window.location.pathname : "";
-      const targetRedirect = redirectUrl || (origin + pathname);
-      const { data, error } = await dbClient.auth.signInWithOAuth({
-        provider: "discord",
-        options: {
-          redirectTo: targetRedirect,
-          scopes: "identify email"
+
+    const client = dbClient || window.dbClient || window.supabaseClient;
+    if (client && client.auth && typeof client.auth.signInWithOAuth === "function") {
+      try {
+        const { data, error } = await client.auth.signInWithOAuth({
+          provider: "discord",
+          options: {
+            redirectTo: targetRedirect,
+            scopes: "identify email"
+          }
+        });
+        if (!error && data?.url) {
+          if (typeof window !== "undefined") {
+            window.location.href = data.url;
+          }
+          return { success: true, url: data.url, data };
         }
-      });
-      if (error) {
-        if (error.message && (error.message.toLowerCase().includes("not enabled") || error.code === "validation_failed")) {
-          return {
-            success: false,
-            error: "Discord OAuth is not yet enabled in your Supabase project. In your Supabase Dashboard, go to Authentication -> Providers -> Discord to enable it.",
-            unsupported: true
-          };
-        }
-        return { success: false, error: error.message };
+      } catch (err) {
+        console.warn("[LeagueDB] signInWithOAuth exception, falling back to direct URL:", err);
       }
-      return { success: true, data };
-    } catch (err) {
-      return { success: false, error: err.message || "Failed to initiate Discord authentication." };
     }
+
+    if (typeof window !== "undefined") {
+      window.location.href = directOAuthUrl;
+      return { success: true, url: directOAuthUrl };
+    }
+
+    return { success: false, error: "Failed to initiate Discord authentication." };
   },
 
   async signOutPlayer() {

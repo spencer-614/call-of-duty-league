@@ -890,19 +890,18 @@
           const redirectUrl = window.location.origin + window.location.pathname;
           if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
             const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
-            if (!res || !res.success) {
-              sessionStorage.removeItem("frontline_discord_oauth_pending");
-              alert("Discord Sign In Error: " + (res?.error || "Failed to start Discord authentication."));
-              if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = `<span>Continue with Discord</span>`;
-              }
+            if (res && res.url) {
+              window.location.href = res.url;
+              return;
             }
+            if (!res || !res.success) {
+              window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
+            }
+          } else {
+            window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
           }
         } catch (err) {
-          sessionStorage.removeItem("frontline_discord_oauth_pending");
-          alert("Error: " + err.message);
-          if (btn) btn.disabled = false;
+          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
         }
       }
 
