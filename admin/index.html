@@ -3173,7 +3173,6 @@
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
-        const DEFAULT_PASSCODE = "frontline2026";
         let cachedTeams = [];
         let cachedPlayers = [];
         let cachedSignups = [];
@@ -3325,16 +3324,6 @@
           const password = passwordInput?.value || "";
 
           gateError.style.display = "none";
-
-          // Commissioner Emergency Passcode bypass for local Live Preview / testing
-          if (password === DEFAULT_PASSCODE || password === "frontline2026") {
-            const userEmail = email || "commissioner@frontlinecodleague.com";
-            sessionStorage.setItem("frontline_admin_session", "authorized");
-            sessionStorage.setItem("frontline_admin_email", userEmail);
-            await unlockConsole(userEmail);
-            showToast("Welcome, Commander. Authenticated via Directive Passcode");
-            return;
-          }
 
           if (submitBtn) {
             submitBtn.disabled = true;
