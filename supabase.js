@@ -4713,57 +4713,7 @@ window.LeagueDB = {
     const cleanPlatform = (platform || "").trim() || "PC";
     const cleanDiscord = (discordName || "").trim() || cleanGamertag;
 
-    // Guard: Prevent unlinked admin accounts from registering into combatant tables
-    if (this.shouldBlockAdminCombatant(payload)) {
-      console.log(`[LeagueDB] Admin account (${payload.email || cleanGamertag}) not linked to Discord email. Bypassing public.players and free-agent registration.`);
-
-      // Clean up any stray row previously created for this unlinked admin to keep directories pristine
-      if (dbClient) {
-        try {
-          if (userId) {
-            await dbClient.from("players").delete().eq("user_id", String(userId));
-            await dbClient.from("arena_free_agents").delete().eq("user_id", String(userId));
-          }
-          if (cleanGamertag) {
-            await dbClient.from("players").delete().ilike("gamertag", cleanGamertag);
-            await dbClient.from("arena_free_agents").delete().ilike("gamertag", cleanGamertag);
-          }
-        } catch (delErr) {
-          console.warn("Cleanup of unlinked admin rows notice:", delErr);
-        }
-      }
-
-      // Also ensure local arena free agent cache does not retain this unlinked admin
-      try {
-        const faKey = "frontline_arena_free_agents";
-        const localFAs = JSON.parse(localStorage.getItem(faKey)) || [];
-        const cleaned = localFAs.filter(f =>
-          (!userId || f.user_id !== String(userId)) &&
-          (!cleanGamertag || (f.gamertag || "").toLowerCase().trim() !== cleanGamertag.toLowerCase())
-        );
-        localStorage.setItem(faKey, JSON.stringify(cleaned));
-      } catch (e) {}
-
-      // Keep user's auth metadata display name updated if logged in so profile works, but bypass combatant rosters
-      if (dbClient && typeof dbClient.auth?.updateUser === "function") {
-        try {
-          await dbClient.auth.updateUser({
-            data: {
-              gamertag: cleanGamertag,
-              username: cleanGamertag,
-              name: cleanGamertag,
-              profile_completed: true
-            }
-          });
-        } catch (e) {}
-      }
-
-      return {
-        success: true,
-        adminExcluded: true,
-        message: "Staff admin account bypassed combatant and free-agent rosters."
-      };
-    }
+    // Verified combatant registration across players and rosters
 
     let cleanAvatar = avatarUrl;
     if (!cleanAvatar || cleanAvatar.includes("unsplash.com")) {
@@ -5496,33 +5446,52 @@ window.LeagueDB = {
     if (typeof window === "undefined" || !window.document) return;
     if (window.location.pathname.includes("/admin")) return;
 
+    let user = null;
     const authRes = await this.getAuthUser();
-    if (!authRes?.success || !authRes?.user) return;
-    const user = authRes.user;
-
-    // Guard: If this is an admin account that is NOT linked to their Discord email, skip onboarding as a player/free agent
-    if (this.shouldBlockAdminCombatant(user)) {
-      console.log(`[LeagueDB] autoCheckDiscordOnboarding: Admin account (${user.email}) not linked to Discord email. Skipping auto-onboarding.`);
-      return;
+    if (authRes?.success && authRes?.user) {
+      user = authRes.user;
+    } else {
+      try {
+        user = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+      } catch (e) {}
     }
+
+    if (!user) return;
 
     const meta = user.user_metadata || {};
     const discordInfo = this.getDiscordIdentity(user);
     const isDiscord = discordInfo && discordInfo.isDiscord;
 
-    // Automatically create website account using Discord info & log as Free Agent
     if (isDiscord) {
+      const hasActivision = !!meta.activision_id && meta.activision_id !== "Unlinked";
+      const isCompleted = meta.profile_completed === true && hasActivision;
+
+      // If user has not completed their combatant dossier, show the onboarding modal immediately!
+      if (!isCompleted) {
+        console.log("[LeagueDB] Discord user detected without complete dossier. Opening onboarding modal...");
+        this.showDiscordDossierModal({
+          user,
+          onComplete: (data) => {
+            console.log("[LeagueDB] Discord onboarding completed for:", data.gamertag);
+            if (typeof this.updateLeagueNavProfile === "function") {
+              this.updateLeagueNavProfile();
+            }
+            window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user } }));
+          }
+        });
+        return;
+      }
+
+      // If already completed, ensure card and directory are synchronized
       try {
-        const cleanGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || (user.email ? user.email.split("@")[0] : "Operative");
+        const cleanGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || "Operative";
         const cleanDiscord = meta.discord_name || meta.discord_username || discordInfo?.primaryName || cleanGamertag;
-        const cleanDiscordId = discordInfo?.discordId || null;
         const cleanAvatar = discordInfo?.avatarUrl || meta.avatar_url || "";
         const cleanRole = meta.role || meta.tactical_role || "Flex";
         const cleanPlatform = meta.platform || meta.battle_platform || "PC";
         const cleanRegion = meta.region || meta.operational_region || "NA East";
         const cleanActivision = meta.activision_id || "";
 
-        // Check existing card or team assignment so we never demote a drafted / signed player
         let existingCard = null;
         try {
           existingCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
@@ -5533,31 +5502,6 @@ window.LeagueDB = {
           : "Free Agent";
         const isFA = currentTeam === "Free Agent";
 
-        // Mark profile completed in user metadata so the system never prompts for info
-        if (!meta.profile_completed || !meta.gamertag || (cleanAvatar && meta.avatar_url !== cleanAvatar)) {
-          meta.gamertag = cleanGamertag;
-          meta.username = cleanGamertag;
-          meta.name = cleanGamertag;
-          meta.discord_name = cleanDiscord;
-          meta.discord_username = cleanDiscord;
-          if (cleanDiscordId) meta.discord_user_id = cleanDiscordId;
-          meta.role = cleanRole;
-          meta.tactical_role = cleanRole;
-          meta.platform = cleanPlatform;
-          meta.region = cleanRegion;
-          meta.profile_completed = true;
-          if (cleanAvatar) meta.avatar_url = cleanAvatar;
-          user.user_metadata = meta;
-          try {
-            localStorage.setItem("frontline_league_auth_user", JSON.stringify(user));
-          } catch (e) {}
-
-          if (dbClient && typeof dbClient.auth?.updateUser === "function") {
-            dbClient.auth.updateUser({ data: meta }).catch(() => {});
-          }
-        }
-
-        // Log to database: sync across public.players, public.league_signups, public.arena_free_agents
         await this.syncPlayerDossierAcrossTables({
           userId: user.id,
           gamertag: cleanGamertag,
@@ -5572,7 +5516,6 @@ window.LeagueDB = {
           teamName: currentTeam
         });
 
-        // Update player card in localStorage
         const cardObj = {
           gamertag: cleanGamertag,
           team: currentTeam,
@@ -5591,33 +5534,22 @@ window.LeagueDB = {
           localStorage.setItem("frontline_league_player_card", JSON.stringify(cardObj));
         } catch (e) {}
 
-        // Update DOM avatars
         const leagueAvatarEl = document.getElementById("league-user-avatar");
         if (leagueAvatarEl && cleanAvatar) leagueAvatarEl.src = cleanAvatar;
-
-        const editAvatarInput = document.getElementById("edit-league-avatar");
-        if (editAvatarInput && cleanAvatar && (!editAvatarInput.value || editAvatarInput.value.includes("unsplash.com"))) {
-          editAvatarInput.value = cleanAvatar;
-        }
 
         const arenaAvatarEl = document.getElementById("user-avatar-img");
         if (arenaAvatarEl && cleanAvatar) arenaAvatarEl.src = cleanAvatar;
 
-        // Clear pending OAuth flag
         sessionStorage.removeItem("frontline_discord_oauth_pending");
-
-        // Update navigation link
         if (typeof this.updateLeagueNavProfile === "function") {
           this.updateLeagueNavProfile();
         }
       } catch (e) {
-        console.warn("Discord auto-onboarding notice:", e);
+        console.warn("Discord auto-onboarding sync notice:", e);
       }
     }
   },
 
-  // ==========================================
-  // STAFF ROLES & PERMISSIONS (RBAC)
   // ==========================================
   STAFF_ROLES: {
     commissioner: {

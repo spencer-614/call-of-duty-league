@@ -561,6 +561,10 @@
         if (authGate) authGate.style.display = 'none';
         if (contentWrap) contentWrap.style.display = 'block';
 
+        if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+          window.LeagueDB.autoCheckDiscordOnboarding();
+        }
+
         let p = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {
           gamertag: 'Operative',
           team: 'Free Agent',

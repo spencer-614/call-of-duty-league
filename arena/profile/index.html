@@ -601,6 +601,9 @@
                 localStorage.setItem("frontline_arena_auth_user", JSON.stringify(userObj));
                 localStorage.setItem("frontline_league_auth_user", JSON.stringify(u));
               } catch(e) {}
+              if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+                window.LeagueDB.autoCheckDiscordOnboarding();
+              }
               renderProfilePage();
             }
           });

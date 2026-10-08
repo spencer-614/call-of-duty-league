@@ -1459,6 +1459,9 @@
         currentCombatantUser = user;
         sessionStorage.removeItem("frontline_discord_oauth_pending");
         unlockRegistrationTerminal(user);
+        if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+          window.LeagueDB.autoCheckDiscordOnboarding();
+        }
       }
 
       // Check active player session on page load & OAuth redirect returns
