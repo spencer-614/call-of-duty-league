@@ -3272,7 +3272,7 @@ window.LeagueDB = {
           .select("*")
           .order("start_date", { ascending: true });
 
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           list = data;
           try {
             localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
@@ -3280,12 +3280,12 @@ window.LeagueDB = {
           } catch (e) {}
         }
       } catch (err) {
-        // Table may not exist yet, fallback below
+        // Table may not exist or query failed, fallback below
       }
     }
 
-    // 2. Try Supabase league_settings row 'tournaments_registry'
-    if (list === null && dbClient) {
+    // 2. Try Supabase league_settings row 'tournaments_registry' (fallback or sync registry)
+    if ((!list || list.length === 0) && dbClient) {
       try {
         const { data, error } = await dbClient
           .from("league_settings")
@@ -3296,7 +3296,7 @@ window.LeagueDB = {
         if (!error && data && data.status_text !== undefined && data.status_text !== null) {
           try {
             const parsed = JSON.parse(data.status_text);
-            if (Array.isArray(parsed)) {
+            if (Array.isArray(parsed) && parsed.length > 0) {
               list = parsed;
               try {
                 localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
@@ -3309,30 +3309,16 @@ window.LeagueDB = {
     }
 
     // 3. Fallback to localStorage
-    if (list === null) {
+    if (!list || list.length === 0) {
       try {
         const local = localStorage.getItem("frontline_tournaments_data");
         if (local !== null) {
           const parsed = JSON.parse(local);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             list = parsed;
           }
         }
       } catch (e) {}
-    }
-
-    // 4. Default mock fallback ONLY if never initialized anywhere
-    if (list === null) {
-      const isInitialized = (typeof localStorage !== 'undefined') && localStorage.getItem("frontline_tournaments_initialized") === "true";
-      if (!isInitialized) {
-        list = [...this.DEFAULT_TOURNAMENTS];
-        try {
-          localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
-          localStorage.setItem("frontline_tournaments_initialized", "true");
-        } catch (e) {}
-      } else {
-        list = [];
-      }
     }
 
     if (!Array.isArray(list)) list = [];
@@ -3381,51 +3367,50 @@ window.LeagueDB = {
     // Save to localStorage
     try {
       localStorage.setItem("frontline_tournaments_data", JSON.stringify(currentList));
+      localStorage.setItem("frontline_tournaments_initialized", "true");
     } catch (e) {}
 
-    // Save to Supabase (upsert into tournaments or league_settings)
+    // Save to Supabase (upsert into tournaments and league_settings)
     if (dbClient) {
       try {
-        // Try direct tournaments table first
-        const { error: directErr } = await dbClient.from("tournaments").upsert({
+        const payload = {
           id: tourneyItem.id,
           title: tourneyItem.title,
-          format: tourneyItem.format,
-          bracket_type: tourneyItem.bracket_type,
-          prize_pool: tourneyItem.prize_pool,
-          entry_fee: tourneyItem.entry_fee,
+          format: tourneyItem.format || '4v4 CDL Variant',
+          bracket_type: tourneyItem.bracket_type || 'Double Elimination',
+          prize_pool: tourneyItem.prize_pool || '$500 USD',
+          entry_fee: tourneyItem.entry_fee || 'FREE ENTRY',
           max_teams: Number(tourneyItem.max_teams) || 16,
           registered_teams: Number(tourneyItem.registered_teams) || 0,
-          start_date: tourneyItem.start_date,
-          start_time: tourneyItem.start_time,
-          status: tourneyItem.status,
+          start_date: tourneyItem.date || tourneyItem.start_date || '',
+          start_time: tourneyItem.time || tourneyItem.start_time || '',
+          status: tourneyItem.status || 'Registration Open',
           image_url: tourneyItem.image_url || tourneyItem.banner_url || '',
-          registration_url: tourneyItem.registration_url,
-          bracket_url: tourneyItem.bracket_url,
-          description: tourneyItem.description,
-          rules_notes: tourneyItem.rules_notes,
+          registration_url: tourneyItem.registration_url || '',
+          bracket_url: tourneyItem.bracket_url || '/tournaments/bracket/',
+          description: tourneyItem.description || '',
+          rules_notes: tourneyItem.rules_notes || '',
           updated_at: new Date().toISOString()
-        });
+        };
 
+        const { error: directErr } = await dbClient.from("tournaments").upsert(payload, { onConflict: "id" });
         if (directErr) {
-          // Fallback to league_settings JSON registry
-          await dbClient.from("league_settings").upsert({
-            id: "tournaments_registry",
-            status_state: "active",
-            status_text: JSON.stringify(currentList),
-            updated_at: new Date().toISOString()
-          }, { onConflict: "id" });
+          console.warn("Direct tournaments upsert notice:", directErr.message || directErr);
         }
-      } catch (dbErr) {
-        // Fallback to league_settings
-        try {
-          await dbClient.from("league_settings").upsert({
-            id: "tournaments_registry",
-            status_state: "active",
-            status_text: JSON.stringify(currentList),
-            updated_at: new Date().toISOString()
-          }, { onConflict: "id" });
-        } catch (e) {}
+      } catch (err) {
+        console.warn("Tournaments upsert exception:", err);
+      }
+
+      // Always persist to league_settings tournaments_registry
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournaments_registry",
+          status_state: "active",
+          status_text: JSON.stringify(currentList),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (e) {
+        console.warn("league_settings upsert error:", e);
       }
     }
 

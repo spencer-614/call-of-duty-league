@@ -494,13 +494,11 @@ ON CONFLICT (email) DO NOTHING;
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.tournaments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read tournaments" ON public.tournaments;
-CREATE POLICY "Allow public read tournaments" ON public.tournaments FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow public insert tournaments" ON public.tournaments;
-CREATE POLICY "Allow public insert tournaments" ON public.tournaments FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS "Allow public update tournaments" ON public.tournaments;
-CREATE POLICY "Allow public update tournaments" ON public.tournaments FOR UPDATE USING (true);
 DROP POLICY IF EXISTS "Allow public delete tournaments" ON public.tournaments;
-CREATE POLICY "Allow public delete tournaments" ON public.tournaments FOR DELETE USING (true);
+DROP POLICY IF EXISTS "Allow public all tournaments" ON public.tournaments;
+CREATE POLICY "Allow public all tournaments" ON public.tournaments FOR ALL USING (true) WITH CHECK (true);
 
 ALTER TABLE public.tournament_registrations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read tournament_registrations" ON public.tournament_registrations;
