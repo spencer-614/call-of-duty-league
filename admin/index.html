@@ -3201,7 +3201,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=2"></script>
+    <script src="/supabase.js?v=4"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -7465,7 +7465,7 @@
             return;
           }
           try {
-            // Restore from MOCK_DATA.rulebook in supabase.js or clear localStorage
+            // Restore from MOCK_DATA.rulebook in supabase.js?v=4 or clear localStorage
             localStorage.removeItem("frontline_rulebook_data");
             if (window.MOCK_DATA && window.MOCK_DATA.rulebook) {
               cachedAdminRulebook = { ...window.MOCK_DATA.rulebook };

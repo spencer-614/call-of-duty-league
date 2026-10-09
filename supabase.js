@@ -30,6 +30,162 @@ const PAYPAL_CONFIG = {
   receiverEmail: "admin@frontlineleague.com"
 };
 
+// ==============================================================================
+// IMMEDIATE STEALTH ADMIN TRIGGER INITIALIZATION
+// ==============================================================================
+(function initEarlyAdminStealth() {
+  if (typeof window === "undefined" || !window.document) return;
+  if (window.__stealthAdminTriggerInstalled) return;
+  window.__stealthAdminTriggerInstalled = true;
+
+  let keyBuffer = "";
+  let keyBufferTimer = null;
+
+  function triggerAdminRedirect() {
+    try {
+      const curPath = (window.location.pathname || "").toLowerCase();
+      const curHref = (window.location.href || "").toLowerCase();
+      if (curPath === "/admin" || curPath === "/admin/" || curPath.includes("/admin/") || curHref.includes("/admin/") || curHref.includes("admin.html") || curHref.includes("admin/index.html")) {
+        return;
+      }
+      if (window.location.protocol === "file:") {
+        if (curHref.includes("/home/") || curHref.includes("/profile/") || curHref.includes("/players/") || curHref.includes("/teams/") || curHref.includes("/schedule/") || curHref.includes("/rules/") || curHref.includes("/livestreams/") || curHref.includes("/vods/") || curHref.includes("/brackets/") || curHref.includes("/draft/") || curHref.includes("/signup/") || curHref.includes("/arena/") || curHref.includes("/ladders/") || curHref.includes("/match/")) {
+          window.location.href = "../admin/index.html";
+        } else {
+          window.location.href = "admin/index.html";
+        }
+        return;
+      }
+      window.location.href = "/admin/";
+    } catch (e) {
+      window.location.href = "/admin/";
+    }
+  }
+
+  function handleAdminKeydown(e) {
+    if (!e) return;
+    const activeEl = document.activeElement;
+    const isInput =
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.tagName === "SELECT" ||
+        activeEl.isContentEditable);
+
+    const rawKey = e.key || "";
+    const key = rawKey.toLowerCase();
+    const code = e.code || "";
+    const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+    const isAlt = e.altKey;
+    const isShift = e.shiftKey;
+
+    // 1. Hotkey: Alt + A (Simple, fast, no browser conflict)
+    if (isAlt && !isCmdOrCtrl && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 2. Hotkey: Alt + L (Alt + League)
+    if (isAlt && !isCmdOrCtrl && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 3. Hotkey: Ctrl/Cmd + Shift + A (Classic admin combo)
+    if (isCmdOrCtrl && isShift && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 4. Hotkey: Ctrl/Cmd + Shift + L (L for League / Login)
+    if (isCmdOrCtrl && isShift && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 5. Hotkey: Ctrl/Cmd + Alt + A
+    if (isCmdOrCtrl && isAlt && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 6. Hotkey: Ctrl/Cmd + Alt + L
+    if (isCmdOrCtrl && isAlt && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 7. Hotkey: Alt + Shift + A
+    if (isAlt && isShift && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 8. Hotkey: Alt + Shift + L
+    if (isAlt && isShift && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 9. Secret word: typing "admin", "commish", or "frontline" anywhere on the page (when not in a form input)
+    if (!isInput && !isCmdOrCtrl && !isAlt && rawKey.length === 1) {
+      clearTimeout(keyBufferTimer);
+      keyBuffer += key;
+      if (keyBuffer.length > 20) keyBuffer = keyBuffer.slice(-20);
+      if (keyBuffer.endsWith("admin") || keyBuffer.endsWith("commish") || keyBuffer.endsWith("frontline")) {
+        keyBuffer = "";
+        triggerAdminRedirect();
+        return;
+      }
+      keyBufferTimer = setTimeout(() => {
+        keyBuffer = "";
+      }, 3500);
+    }
+  }
+
+  // 10. Secret 5-click easter egg on brand logo / title
+  let logoClicks = 0;
+  let logoTimer = null;
+  function handleLogoClick(e) {
+    const brand = e.target && (e.target.closest(".brand") || e.target.closest(".fl-brand-lockup") || e.target.closest(".brand-logo") || e.target.closest(".brand-text") || e.target.closest(".brand-title"));
+    if (brand) {
+      logoClicks++;
+      clearTimeout(logoTimer);
+      if (logoClicks >= 5) {
+        logoClicks = 0;
+        triggerAdminRedirect();
+        return;
+      }
+      logoTimer = setTimeout(() => {
+        logoClicks = 0;
+      }, 2000);
+    }
+  }
+
+  // Attach to both window and document with capture phase to guarantee interception
+  window.addEventListener("keydown", handleAdminKeydown, true);
+  document.addEventListener("keydown", handleAdminKeydown, true);
+  document.addEventListener("click", handleLogoClick, true);
+
+  window.__openAdminConsole = triggerAdminRedirect;
+})();
+
 // Initialize Supabase Client if library is loaded and configured
 let dbClient = null;
 if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) {
