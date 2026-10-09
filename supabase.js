@@ -8436,65 +8436,124 @@ window.LadderDB = {
 // STEALTH ADMIN ACCESS TRIGGER
 // ==============================================================================
 (function setupStealthAdminTrigger() {
+  if (typeof window === "undefined" || !window.document) return;
   if (window.__stealthAdminTriggerInstalled) return;
   window.__stealthAdminTriggerInstalled = true;
 
   let keyBuffer = "";
+  let keyBufferTimer = null;
 
   function triggerAdminRedirect() {
-    if (window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin")) return;
-    window.location.href = "/admin";
+    const curPath = (window.location.pathname || "").toLowerCase();
+    if (curPath === "/admin" || curPath === "/admin/" || curPath.includes("/admin/") || curPath.endsWith("/admin.html")) {
+      return;
+    }
+    const target = window.location.origin ? (window.location.origin + "/admin/") : "/admin/";
+    window.location.href = target;
   }
 
-  // Use capture phase on window so nothing intercepts or prevents the event
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      const activeEl = document.activeElement;
-      const isInput =
-        activeEl &&
-        (activeEl.tagName === "INPUT" ||
-          activeEl.tagName === "TEXTAREA" ||
-          activeEl.tagName === "SELECT" ||
-          activeEl.isContentEditable);
+  function handleAdminKeydown(e) {
+    if (!e) return;
+    const activeEl = document.activeElement;
+    const isInput =
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.tagName === "SELECT" ||
+        activeEl.isContentEditable);
 
-      const key = (e.key || "").toLowerCase();
-      const code = e.code || "";
+    const rawKey = e.key || "";
+    const key = rawKey.toLowerCase();
+    const code = e.code || "";
+    const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+    const isAlt = e.altKey;
+    const isShift = e.shiftKey;
 
-      // 1. Secret word: typing "admin" anywhere on page (when not in a text box)
-      if (!isInput && key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        keyBuffer += key;
-        if (keyBuffer.length > 10) keyBuffer = keyBuffer.slice(-10);
-        if (keyBuffer.endsWith("admin")) {
-          keyBuffer = "";
-          triggerAdminRedirect();
-          return;
-        }
-      }
+    // 1. Hotkey: Alt + A (Simple, fast, no browser conflict)
+    if (isAlt && !isCmdOrCtrl && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
 
-      // 3. Ctrl + Shift + L (L for League / Login - completely free of browser conflicts)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === "l" || code === "KeyL")) {
-        e.preventDefault();
+    // 2. Hotkey: Alt + L (Alt + League)
+    if (isAlt && !isCmdOrCtrl && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 3. Hotkey: Ctrl/Cmd + Shift + A
+    if (isCmdOrCtrl && isShift && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 4. Hotkey: Ctrl/Cmd + Shift + L (L for League / Login)
+    if (isCmdOrCtrl && isShift && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 5. Hotkey: Ctrl/Cmd + Alt + A
+    if (isCmdOrCtrl && isAlt && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 6. Hotkey: Ctrl/Cmd + Alt + L
+    if (isCmdOrCtrl && isAlt && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 7. Hotkey: Alt + Shift + A
+    if (isAlt && isShift && (key === "a" || key === "å" || code === "KeyA")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 8. Hotkey: Alt + Shift + L
+    if (isAlt && isShift && (key === "l" || code === "KeyL")) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerAdminRedirect();
+      return;
+    }
+
+    // 9. Secret word: typing "admin", "commish", or "frontline" anywhere on the page (when not in a form input)
+    if (!isInput && !isCmdOrCtrl && !isAlt && rawKey.length === 1) {
+      clearTimeout(keyBufferTimer);
+      keyBuffer += key;
+      if (keyBuffer.length > 20) keyBuffer = keyBuffer.slice(-20);
+      if (keyBuffer.endsWith("admin") || keyBuffer.endsWith("commish") || keyBuffer.endsWith("frontline")) {
+        keyBuffer = "";
         triggerAdminRedirect();
         return;
       }
+      keyBufferTimer = setTimeout(() => {
+        keyBuffer = "";
+      }, 3500);
+    }
+  }
 
-      // 4. Alt + A (Simple, fast, no browser conflict)
-      if (e.altKey && !e.ctrlKey && !e.shiftKey && (key === "a" || code === "KeyA")) {
-        e.preventDefault();
-        triggerAdminRedirect();
-        return;
-      }
+  // Attach to both window and document with capture phase to guarantee interception
+  window.addEventListener("keydown", handleAdminKeydown, true);
+  document.addEventListener("keydown", handleAdminKeydown, true);
 
-      // 5. Ctrl + Alt + A
-      if ((e.ctrlKey || e.metaKey) && e.altKey && (key === "a" || code === "KeyA")) {
-        e.preventDefault();
-        triggerAdminRedirect();
-        return;
-      }
-    },
-    true
-  );
+  window.__openAdminConsole = triggerAdminRedirect;
 })();
 
 
