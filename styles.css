@@ -8201,3 +8201,40 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
   background: #202416;
   color: #ffffff !important;
 }
+
+/* ==============================================================================
+   RESPONSIVE HEADER OVERLAP PREVENTION (WELCOME BANNER & PROFILE BUTTON)
+   ============================================================================== */
+.nav-profile-name {
+  display: inline;
+}
+
+@media (max-width: 1400px) {
+  .nav-profile-name {
+    display: none !important;
+  }
+}
+
+/* Hide the large text banner on displays <= 1350px so it never overlaps nav buttons */
+@media (max-width: 1350px) {
+  .header-welcome {
+    display: none !important;
+  }
+}
+
+/* Constrain center hub width on all displays so it never collides with brand or buttons */
+.header-center-hub {
+  max-width: calc(100% - 660px) !important;
+  overflow: visible;
+  z-index: 2 !important;
+}
+
+.brand {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+.nav-right-hub {
+  position: relative !important;
+  z-index: 5 !important;
+}

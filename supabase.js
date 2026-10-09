@@ -1586,6 +1586,30 @@ window.LeagueDB = {
     if (dbClient) {
       try {
         let payload = { ...playerData };
+
+        // Ensure player is stored only once: check if player already exists by gamertag
+        if (payload.gamertag) {
+          try {
+            const { data: existing } = await dbClient
+              .from("players")
+              .select("*")
+              .ilike("gamertag", payload.gamertag.trim())
+              .maybeSingle();
+
+            if (existing) {
+              const { data: updated, error: updErr } = await dbClient
+                .from("players")
+                .update(payload)
+                .eq("id", existing.id)
+                .select();
+              if (!updErr && updated && updated.length > 0) {
+                return { success: true, data: updated[0], alreadyExisted: true };
+              }
+              return { success: true, data: existing, alreadyExisted: true };
+            }
+          } catch (_) {}
+        }
+
         let { data, error } = await dbClient
           .from("players")
           .insert([payload])
@@ -5419,7 +5443,8 @@ window.LeagueDB = {
               })
               .eq("id", existingPlayer.id);
           }
-        } else {
+        } else if (payload.isEnlistedPlayer === true) {
+          // ONLY store in players table if explicitly enlisted/accepted by admin
           const insertObj = {
             gamertag: cleanGamertag,
             activision_id: cleanActivision,
@@ -5454,6 +5479,8 @@ window.LeagueDB = {
               }]);
           }
         }
+        // If not already an accepted player and not isEnlistedPlayer, do NOT insert into players!
+        // The user remains in league_signups recruitment queue until an admin approves them.
       } catch (pErr) {
         console.warn("Supabase players sync notice:", pErr);
       }
@@ -6850,7 +6877,7 @@ window.LeagueDB = {
         }
         topBtn.style.display = "inline-flex";
         const shortName = (gamertag && gamertag !== "Operative") ? gamertag : "";
-        topBtn.innerHTML = `${iconHtml} <span>View Profile${shortName ? " · " + shortName : ""}</span>`;
+        topBtn.innerHTML = `${iconHtml} <span>View Profile</span><span class="nav-profile-name">${shortName ? " · " + shortName : ""}</span>`;
         topBtn.title = "View Profile" + (shortName ? " (" + shortName + ")" : "");
       } else if (topBtn) {
         topBtn.style.display = "none";
