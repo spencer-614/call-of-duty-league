@@ -5298,7 +5298,8 @@ window.LeagueDB = {
       platform = "PC",
       discordName,
       avatarUrl,
-      email
+      email,
+      skipAuthUpdate = false
     } = payload;
 
     const cleanGamertag = (gamertag || "").trim();
@@ -5327,7 +5328,7 @@ window.LeagueDB = {
     if (!cleanGamertag) return { success: false, error: "Gamertag is required." };
 
     // 1. Supabase Auth update if logged in
-    if (dbClient && typeof dbClient.auth?.updateUser === "function") {
+    if (!skipAuthUpdate && dbClient && typeof dbClient.auth?.updateUser === "function") {
       try {
         await dbClient.auth.updateUser({
           data: {
@@ -6051,22 +6052,45 @@ window.LeagueDB = {
     if (typeof window === "undefined" || !window.document) return;
     if (window.location.pathname.includes("/admin")) return;
     if (this._checkingDiscordOnboarding) return;
+    this._checkingDiscordOnboarding = true;
 
     let user = null;
-    const authRes = await this.getAuthUser();
-    if (authRes?.success && authRes?.user) {
-      user = authRes.user;
-    } else {
-      try {
-        user = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
-      } catch (e) {}
+    try {
+      const authRes = await this.getAuthUser();
+      if (authRes?.success && authRes?.user) {
+        user = authRes.user;
+      } else {
+        try {
+          user = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+        } catch (e) {}
+      }
+    } catch (e) {
+      this._checkingDiscordOnboarding = false;
+      return;
     }
 
-    if (!user || !user.id) return;
+    if (!user || !user.id) {
+      this._checkingDiscordOnboarding = false;
+      return;
+    }
     // Guard: never run auto Discord onboarding on admin or staff accounts
-    if (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(user)) return;
-    if (this._discordOnboardedMap && this._discordOnboardedMap[user.id]) return;
-    this._checkingDiscordOnboarding = true;
+    if (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(user)) {
+      this._checkingDiscordOnboarding = false;
+      return;
+    }
+    if (this._discordOnboardedMap && this._discordOnboardedMap[user.id]) {
+      this._checkingDiscordOnboarding = false;
+      return;
+    }
+    const sessionOnboardingKey = `frontline_discord_onboarded_${user.id}`;
+    try {
+      if (sessionStorage.getItem(sessionOnboardingKey) === "true") {
+        this._discordOnboardedMap[user.id] = true;
+        this._checkingDiscordOnboarding = false;
+        return;
+      }
+    } catch (e) {}
+    let onboardingSucceeded = false;
 
     const meta = user.user_metadata || {};
     const discordInfo = this.getDiscordIdentity(user);
@@ -6122,7 +6146,7 @@ window.LeagueDB = {
         }
 
         // Log to database: sync across public.players, public.league_signups, public.arena_free_agents
-        await this.syncPlayerDossierAcrossTables({
+        const syncResult = await this.syncPlayerDossierAcrossTables({
           userId: user.id,
           gamertag: cleanGamertag,
           activisionId: cleanActivision,
@@ -6133,8 +6157,11 @@ window.LeagueDB = {
           avatarUrl: cleanAvatar,
           email: user.email,
           status: isFA ? "Free Agent" : "Active",
-          teamName: currentTeam
+          teamName: currentTeam,
+          skipAuthUpdate: true
         });
+        if (!syncResult?.success) return;
+        onboardingSucceeded = true;
 
         // Update player card in localStorage with owner metadata
         const cardObj = {
@@ -6177,12 +6204,15 @@ window.LeagueDB = {
           this.updateLeagueNavProfile();
         }
 
+        try {
+          sessionStorage.setItem(sessionOnboardingKey, "true");
+        } catch (e) {}
         window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user } }));
       } catch (e) {
         console.warn("Discord auto-onboarding notice:", e);
       } finally {
         if (!this._discordOnboardedMap) this._discordOnboardedMap = {};
-        if (user?.id) this._discordOnboardedMap[user.id] = true;
+        if (onboardingSucceeded && user?.id) this._discordOnboardedMap[user.id] = true;
         this._checkingDiscordOnboarding = false;
       }
     } else {
