@@ -4713,6 +4713,7 @@ window.LeagueDB = {
             }
           };
           localStorage.setItem("frontline_league_auth_user", JSON.stringify(userObj));
+          window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: userObj } }));
           return { success: true, user: userObj, session: { user: userObj } };
         }
       } catch (e) {}
@@ -4727,6 +4728,7 @@ window.LeagueDB = {
         }
       };
       localStorage.setItem("frontline_league_auth_user", JSON.stringify(fallbackUser));
+      window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: fallbackUser } }));
       return { success: true, user: fallbackUser, session: { user: fallbackUser } };
     }
     try {
