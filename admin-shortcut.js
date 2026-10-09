@@ -1,3 +1,25 @@
+// Frontline League - Pre-render Platform Switcher Guard
+// Executes in <head> before <body> parses to completely eliminate FOUC (flash of hidden switcher on refresh)
+(function () {
+  try {
+    var raw = localStorage.getItem("frontline_platform_switcher_settings");
+    if (raw) {
+      var s = JSON.parse(raw);
+      var isArena = s.switcher_visible !== false && s.show_arena !== false;
+      var isLeague = s.switcher_visible !== false && s.show_league !== false;
+      var isTourn = s.switcher_visible !== false && s.show_tournaments !== false;
+      var isMaster = s.switcher_visible !== false && (isLeague || isArena || isTourn);
+      var docEl = document.documentElement;
+      if (docEl) {
+        if (!isMaster) docEl.classList.add("hide-platform-switcher");
+        if (!isLeague) docEl.classList.add("hide-mode-league");
+        if (!isArena) docEl.classList.add("hide-mode-arena");
+        if (!isTourn) docEl.classList.add("hide-mode-tournaments");
+      }
+    }
+  } catch (_) {}
+})();
+
 // Frontline League - Global Stealth Admin Access Trigger
 (function () {
   if (typeof window === "undefined" || !window.document) return;

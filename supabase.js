@@ -9240,18 +9240,33 @@ window.LadderDB = {
     }, 40);
   }
 
-  function initialize() {
-    syncAllNavAndSwitcher();
-    // Also run an immediate sync without waiting for debounce
-    if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
-      window.LeagueDB.updateLeagueNavProfile();
+    function initialize() {
+    if (window.LeagueDB) {
+      if (typeof window.LeagueDB.initPlatformSwitcher === "function") {
+        window.LeagueDB.initPlatformSwitcher();
+      }
+      if (typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+        window.LeagueDB.updateLeagueNavProfile();
+      }
     }
+    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+      window.LadderDB.updateArenaNavProfile();
+    }
+    syncAllNavAndSwitcher();
     setTimeout(checkOnboarding, 1000);
   }
 
-  // Immediate initial sync
-  if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
-    window.LeagueDB.updateLeagueNavProfile();
+  // Immediate initial synchronous sync (prevents flicker on refresh)
+  if (window.LeagueDB) {
+    if (typeof window.LeagueDB.initPlatformSwitcher === "function") {
+      window.LeagueDB.initPlatformSwitcher();
+    }
+    if (typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+      window.LeagueDB.updateLeagueNavProfile();
+    }
+  }
+  if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+    window.LadderDB.updateArenaNavProfile();
   }
 
   if (document.readyState === "loading") {
