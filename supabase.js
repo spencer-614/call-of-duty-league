@@ -8710,21 +8710,31 @@ window.LadderDB = {
 (function initArenaNavWatcher() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
+  let navUpdatePending = false;
+
   function runNavUpdate() {
-    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
-      window.LadderDB.updateArenaNavProfile();
-    }
+    if (navUpdatePending) return;
+    navUpdatePending = true;
+    Promise.resolve().then(() => {
+      navUpdatePending = false;
+      if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+        window.LadderDB.updateArenaNavProfile();
+      }
+    });
   }
 
-  runNavUpdate();
-
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runNavUpdate);
+    document.addEventListener("DOMContentLoaded", runNavUpdate, { once: true });
+  } else {
+    runNavUpdate();
   }
 
   window.addEventListener("frontline_arena_auth_changed", runNavUpdate);
+  window.addEventListener("frontline_auth_changed", runNavUpdate);
   window.addEventListener("storage", (e) => {
-    if (e.key === "frontline_arena_user") runNavUpdate();
+    if (["frontline_arena_user", "frontline_arena_auth_user", "frontline_league_auth_user", "frontline_admin_session", "frontline_admin_email"].includes(e.key) || e.key?.includes("auth-token") || e.key?.includes("supabase.auth.token")) {
+      runNavUpdate();
+    }
   });
 })();
 
@@ -8738,36 +8748,20 @@ window.LadderDB = {
     }
   }
 
-  runNavUpdate();
-
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runNavUpdate);
+    document.addEventListener("DOMContentLoaded", runNavUpdate, { once: true });
+  } else {
+    runNavUpdate();
   }
 
   window.addEventListener("frontline_auth_changed", runNavUpdate);
   window.addEventListener("frontline_dossier_completed", runNavUpdate);
   window.addEventListener("storage", (e) => {
-    if (e.key === "frontline_league_auth_user" || e.key?.includes("auth-token") || e.key?.includes("supabase.auth.token")) {
+    if (["frontline_league_auth_user", "frontline_arena_auth_user", "frontline_arena_user", "frontline_admin_session", "frontline_admin_email"].includes(e.key) || e.key?.includes("auth-token") || e.key?.includes("supabase.auth.token")) {
       runNavUpdate();
     }
   });
 
-  if (dbClient?.auth?.onAuthStateChange) {
-    try {
-      dbClient.auth.onAuthStateChange((event, session) => {
-        if (session?.user) {
-          try {
-            localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
-          } catch(e) {}
-        } else if (event === "SIGNED_OUT") {
-          try {
-            localStorage.removeItem("frontline_league_auth_user");
-          } catch(e) {}
-        }
-        runNavUpdate();
-      });
-    } catch(e) {}
-  }
 })();
 
 
@@ -9031,74 +9025,32 @@ window.LadderDB = {
       if (typeof window.LeagueDB.initPlatformSwitcher === "function") {
         window.LeagueDB.initPlatformSwitcher();
       }
-      if (typeof window.LeagueDB.updateLeagueNavProfile === "function") {
-        window.LeagueDB.updateLeagueNavProfile();
-      }
-    }
-    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
-      window.LadderDB.updateArenaNavProfile();
     }
   }
 
-  // Initial immediate sync
-  syncAllNavAndSwitcher();
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      syncAllNavAndSwitcher();
-      setTimeout(checkOnboarding, 600);
-      setTimeout(syncAllNavAndSwitcher, 800);
-    });
-  } else {
+  function initialize() {
     syncAllNavAndSwitcher();
     setTimeout(checkOnboarding, 600);
-    setTimeout(syncAllNavAndSwitcher, 800);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  } else {
+    initialize();
   }
 
   // Window events
   window.addEventListener("storage", (e) => {
-    if (e.key === "frontline_league_auth_user" || e.key === "frontline_arena_user" || e.key === "frontline_admin_session" || e.key === "frontline_admin_email" || e.key === "frontline_platform_switcher_settings") {
+    if (e.key === "frontline_platform_switcher_settings") {
       syncAllNavAndSwitcher();
     }
   });
 
-  window.addEventListener("frontline_auth_changed", () => {
-    syncAllNavAndSwitcher();
-  });
-  window.addEventListener("frontline_arena_auth_changed", () => {
-    syncAllNavAndSwitcher();
-  });
-
   if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
     try {
-      dbClient.auth.onAuthStateChange((event, session) => {
+      dbClient.auth.onAuthStateChange((event) => {
         if (event === "SIGNED_IN") {
-          if (session?.user) {
-            try {
-              localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
-              localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
-              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: session.user } }));
-              window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: session.user } }));
-            } catch(e) {}
-          }
           setTimeout(checkOnboarding, 400);
-          syncAllNavAndSwitcher();
-        } else if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-          if (session?.user) {
-            try {
-              localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
-              localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
-            } catch(e) {}
-          }
-          syncAllNavAndSwitcher();
-        } else if (event === "SIGNED_OUT") {
-          try {
-            localStorage.removeItem("frontline_league_auth_user");
-            localStorage.removeItem("frontline_arena_auth_user");
-            window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
-            window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null } }));
-          } catch(e) {}
-          syncAllNavAndSwitcher();
         }
       });
     } catch (e) {}
