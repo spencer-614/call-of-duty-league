@@ -1743,12 +1743,13 @@ window.LeagueDB = {
     return { success: true, data: p, mock: true };
   },
 
-  // Admin: Delete Player (permanently removes player from players table, player_map_stats, and league_signups)
+  // Admin: Delete Player (permanently removes player from database and website)
   async deletePlayer(playerId, gamertag = null) {
     const idStr = String(playerId || "").trim();
     const isSignupId = idStr.startsWith("signup-");
     const numericId = !isSignupId && /^\d+$/.test(idStr) ? parseInt(idStr, 10) : null;
     let targetGamertag = gamertag ? String(gamertag).trim() : (!numericId && !isSignupId ? idStr : null);
+    const cleanTagLower = targetGamertag ? targetGamertag.toLowerCase() : null;
 
     if (dbClient) {
       try {
@@ -1758,90 +1759,138 @@ window.LeagueDB = {
         if (isSignupId) {
           const rawSignupId = idStr.replace("signup-", "");
           if (/^\d+$/.test(rawSignupId)) {
-            const { error: sErr, data: sData } = await dbClient
-              .from("league_signups")
-              .delete()
-              .eq("id", parseInt(rawSignupId, 10))
-              .select();
-            if (!sErr && sData && sData.length > 0) deletedRows += sData.length;
+            try {
+              const { data: sData } = await dbClient
+                .from("league_signups")
+                .delete()
+                .eq("id", parseInt(rawSignupId, 10))
+                .select();
+              if (sData && sData.length > 0) deletedRows += sData.length;
+            } catch (_) {}
           }
         }
 
-        // 2. If it's a numeric player ID, fetch gamertag first if not provided, then delete stats and player
-        if (numericId) {
-          if (!targetGamertag) {
-            try {
-              const { data: pData } = await dbClient
-                .from("players")
-                .select("gamertag")
-                .eq("id", numericId)
-                .maybeSingle();
-              if (pData?.gamertag) targetGamertag = pData.gamertag;
-            } catch (_) {}
-          }
+        // 2. If it's a numeric player ID, resolve gamertag if not already known
+        if (numericId && !targetGamertag) {
+          try {
+            const { data: pData } = await dbClient
+              .from("players")
+              .select("gamertag")
+              .eq("id", numericId)
+              .maybeSingle();
+            if (pData?.gamertag) {
+              targetGamertag = pData.gamertag.trim();
+            }
+          } catch (_) {}
+        }
 
-          // Delete associated map stats first
+        // 3. Collect all matching player IDs by numericId or gamertag
+        const allPlayerIds = new Set();
+        if (numericId) allPlayerIds.add(numericId);
+
+        if (targetGamertag) {
+          try {
+            const { data: pList } = await dbClient
+              .from("players")
+              .select("id")
+              .ilike("gamertag", targetGamertag);
+            if (pList && Array.isArray(pList)) {
+              pList.forEach(p => allPlayerIds.add(p.id));
+            }
+          } catch (_) {}
+        }
+
+        const idsArray = Array.from(allPlayerIds);
+
+        // 4. Delete associated player map stats first (foreign key cascade safety)
+        if (idsArray.length > 0) {
           try {
             await dbClient
               .from("player_map_stats")
               .delete()
-              .eq("player_id", numericId);
+              .in("player_id", idsArray);
           } catch (mErr) {
             console.warn("Could not delete associated map stats:", mErr);
           }
 
-          // Delete from players table
-          const { error: pErr, data: pData } = await dbClient
-            .from("players")
-            .delete()
-            .eq("id", numericId)
-            .select();
-
-          if (pErr) throw pErr;
-          if (pData && pData.length > 0) deletedRows += pData.length;
-        }
-
-        // 3. If targetGamertag is known, purge any remaining records by gamertag across players and league_signups
-        if (targetGamertag) {
+          // 5. Delete player from players table
           try {
-            const { data: byTag } = await dbClient
+            const { data: pDeleted, error: pErr } = await dbClient
               .from("players")
-              .select("id")
-              .ilike("gamertag", targetGamertag);
-
-            if (byTag && byTag.length > 0) {
-              const tagIds = byTag.map(b => b.id);
-              await dbClient.from("player_map_stats").delete().in("player_id", tagIds);
-              const { data: tagDeleted } = await dbClient
-                .from("players")
-                .delete()
-                .in("id", tagIds)
-                .select();
-              if (tagDeleted) deletedRows += tagDeleted.length;
-            }
-
-            // Also purge any matching record in league_signups so it can never resurrect
-            await dbClient
-              .from("league_signups")
               .delete()
-              .ilike("gamertag", targetGamertag);
-          } catch (tagErr) {
-            console.warn("Secondary gamertag purge warning:", tagErr);
+              .in("id", idsArray)
+              .select();
+            if (!pErr && pDeleted) deletedRows += pDeleted.length;
+          } catch (delErr) {
+            console.warn("Error deleting player rows by ID:", delErr);
           }
         }
 
-        // Clean up MOCK_DATA in memory so fallback stays consistent
+        // 6. Delete by gamertag across all related tables in Supabase (players, league_signups, arena_free_agents, ladder_rosters)
+        if (targetGamertag) {
+          try {
+            await dbClient.from("players").delete().ilike("gamertag", targetGamertag);
+            await dbClient.from("league_signups").delete().ilike("gamertag", targetGamertag);
+            await dbClient.from("arena_free_agents").delete().ilike("gamertag", targetGamertag);
+            await dbClient.from("ladder_rosters").delete().ilike("gamertag", targetGamertag);
+          } catch (cleanErr) {
+            console.warn("Secondary gamertag purge notice:", cleanErr);
+          }
+        }
+
+        // 7. Purge local storage caches across the entire website
+        try {
+          // Remove from local signups
+          const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+          const filteredSignups = localSignups.filter(s => {
+            if (numericId && String(s.id) === String(numericId)) return false;
+            if (cleanTagLower && String(s.gamertag || "").toLowerCase() === cleanTagLower) return false;
+            return true;
+          });
+          localStorage.setItem("frontline_league_signups", JSON.stringify(filteredSignups));
+
+          // Remove from arena accounts
+          const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+          const filteredAccs = accounts.filter(a => {
+            if (numericId && String(a.id) === String(numericId)) return false;
+            if (cleanTagLower && String(a.gamertag || "").toLowerCase() === cleanTagLower) return false;
+            return true;
+          });
+          localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filteredAccs));
+
+          // Remove from arena free agents
+          const faKey = "frontline_arena_free_agents";
+          const rawFA = JSON.parse(localStorage.getItem(faKey)) || [];
+          const filteredFA = rawFA.filter(a => {
+            if (cleanTagLower && String(a.gamertag || "").toLowerCase() === cleanTagLower) return false;
+            return true;
+          });
+          localStorage.setItem(faKey, JSON.stringify(filteredFA));
+
+          // If local player card matches this gamertag, reset it
+          const rawCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+          if (rawCard && cleanTagLower && String(rawCard.gamertag || "").toLowerCase() === cleanTagLower) {
+            localStorage.removeItem("frontline_league_player_card");
+          }
+        } catch (_) {}
+
+        // Clean up MOCK_DATA in memory
         if (numericId) {
           const idx = MOCK_DATA.players.findIndex(x => x.id == numericId);
           if (idx !== -1) MOCK_DATA.players.splice(idx, 1);
         }
-        if (targetGamertag) {
-          const idx = MOCK_DATA.players.findIndex(x => (x.gamertag || "").toLowerCase() === targetGamertag.toLowerCase());
+        if (cleanTagLower) {
+          const idx = MOCK_DATA.players.findIndex(x => (x.gamertag || "").toLowerCase() === cleanTagLower);
           if (idx !== -1) MOCK_DATA.players.splice(idx, 1);
           if (MOCK_DATA.signups) {
-            const sIdx = MOCK_DATA.signups.findIndex(x => (x.gamertag || "").toLowerCase() === targetGamertag.toLowerCase());
+            const sIdx = MOCK_DATA.signups.findIndex(x => (x.gamertag || "").toLowerCase() === cleanTagLower);
             if (sIdx !== -1) MOCK_DATA.signups.splice(sIdx, 1);
           }
+        }
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("frontline_players_updated"));
+          window.dispatchEvent(new CustomEvent("frontline_signups_updated"));
         }
 
         return { success: true, deletedRows };
@@ -2241,11 +2290,11 @@ window.LeagueDB = {
     return { success: true, mock: true };
   },
 
-  // Admin: Delete Signup from league_signups
+  // Admin: Delete Signup from database and website (permanently removes pending application)
   async deleteSignup(signupId, gamertagParam = null) {
     let targetGamertag = gamertagParam;
 
-    // If targetGamertag not provided, look it up from localStorage or MOCK_DATA
+    // Look up gamertag if not provided
     if (!targetGamertag) {
       try {
         const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
@@ -2263,39 +2312,37 @@ window.LeagueDB = {
 
     if (dbClient) {
       try {
+        // 1. Delete by ID if numeric
         if (cleanIdStr && !isNaN(cleanIdStr)) {
-          const { error, data } = await dbClient
-            .from("league_signups")
-            .delete()
-            .eq("id", parseInt(cleanIdStr, 10))
-            .select();
-
-          if (!data || data.length === 0) {
+          try {
             await dbClient
               .from("league_signups")
-              .update({ status: "Enlisted" })
+              .delete()
               .eq("id", parseInt(cleanIdStr, 10));
-          }
-        } else if (cleanGamerLower) {
-          const { error, data } = await dbClient
-            .from("league_signups")
-            .delete()
-            .ilike("gamertag", cleanGamerLower)
-            .select();
+          } catch (_) {}
+        }
 
-          if (!data || data.length === 0) {
+        // 2. ALSO permanently delete by gamertag so no duplicate row remains in database
+        if (cleanGamerLower) {
+          try {
             await dbClient
               .from("league_signups")
-              .update({ status: "Enlisted" })
+              .delete()
               .ilike("gamertag", cleanGamerLower);
-          }
+
+            // Also clean from arena_free_agents if they were in the free agent queue
+            await dbClient
+              .from("arena_free_agents")
+              .delete()
+              .ilike("gamertag", cleanGamerLower);
+          } catch (_) {}
         }
       } catch (err) {
         console.warn("Supabase deleteSignup notice:", err);
       }
     }
 
-    // Also remove / mark from localStorage
+    // 3. Purge from local storage across the website
     try {
       const localSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
       const updated = localSignups.filter(s => {
@@ -2305,16 +2352,23 @@ window.LeagueDB = {
       });
       localStorage.setItem("frontline_league_signups", JSON.stringify(updated));
 
+      // Completely remove from registered accounts (do NOT keep them as "Enlisted")
       const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-      const updatedAccs = accounts.map(a => {
+      const updatedAccs = accounts.filter(a => {
         const matchId = cleanIdStr && String(a.id) === cleanIdStr;
         const matchGamer = cleanGamerLower && String(a.gamertag || "").toLowerCase() === cleanGamerLower;
-        if (matchId || matchGamer) {
-          return { ...a, status: "Enlisted" };
-        }
-        return a;
+        return !(matchId || matchGamer);
       });
       localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(updatedAccs));
+
+      // Remove from arena free agents cache
+      const faKey = "frontline_arena_free_agents";
+      const rawFA = JSON.parse(localStorage.getItem(faKey)) || [];
+      const updatedFA = rawFA.filter(a => {
+        if (cleanGamerLower && String(a.gamertag || "").toLowerCase() === cleanGamerLower) return false;
+        return true;
+      });
+      localStorage.setItem(faKey, JSON.stringify(updatedFA));
     } catch (e) {}
 
     if (MOCK_DATA.signups) {
