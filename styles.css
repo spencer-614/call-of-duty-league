@@ -111,6 +111,12 @@ a {
   margin-right: 0;
   flex-shrink: 0;
 }
+.footer-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
 .brand-text {
   display: flex;
   flex-direction: column;
@@ -1663,20 +1669,29 @@ textarea.form-control {
   .menu-label-btn {
     padding: 7px 9px;
     font-size: 11px;
+    min-height: 44px;
   }
   .nav-discord-cta,
   .cta {
     padding: 7px 10px;
     font-size: 11px;
+    min-height: 44px;
   }
   .links {
-    width: 310px;
-    right: 0;
+    width: min(310px, calc(100vw - 24px));
+    right: -12px;
     left: auto;
+    max-height: calc(100vh - 160px);
+    max-height: calc(100dvh - 160px);
   }
   .menu-toggle {
     display: block;
     flex-shrink: 0;
+    position: static;
+  }
+  .links a {
+    min-height: 44px;
+    padding: 11px 12px;
   }
   .hero-grid {
     grid-template-columns: 1fr;
@@ -1728,6 +1743,11 @@ textarea.form-control {
   .join-box {
     align-items: flex-start;
     flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+  }
+  .join-pathway-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
   .footer-inner {
     flex-direction: column;
@@ -1752,6 +1772,12 @@ textarea.form-control {
   .standings td {
     padding-left: 4px;
     padding-right: 4px;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-discord-cta > span {
+    display: none;
   }
 }
 
