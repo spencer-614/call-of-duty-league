@@ -600,7 +600,7 @@ window.LeagueDB = {
     // Ensure active logged-in user is present in Community Players with their chosen gamertag & avatar (only if they are a combatant, NOT staff/admin)
     try {
       const authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
-      if (authUser && !this.isAccountAdmin(authUser)) {
+      if (authUser && !(window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(authUser))) {
         let playerCard = null;
         try {
           const raw = JSON.parse(localStorage.getItem("frontline_league_player_card"));
@@ -4714,7 +4714,7 @@ window.LeagueDB = {
           const userEmail = (data.user.email || cleanEmail).toLowerCase().trim();
           localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
           localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
-          const isStaff = this.isAccountAdmin(data.user) || userEmail === "todd061496@gmail.com" || userEmail === "admin@frontlineleague.com";
+          const isStaff = (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" ? window.LeagueDB.isAccountAdmin(data.user) : (this && typeof this.isAccountAdmin === "function" ? this.isAccountAdmin(data.user) : false)) || userEmail === "todd061496@gmail.com" || userEmail === "admin@frontlineleague.com";
           if (isStaff) {
             sessionStorage.setItem("frontline_admin_session", "authorized");
             sessionStorage.setItem("frontline_admin_email", userEmail);
@@ -5980,7 +5980,7 @@ window.LeagueDB = {
 
     if (!user || !user.id) return;
     // Guard: never run auto Discord onboarding on admin or staff accounts
-    if (this.isAccountAdmin(user)) return;
+    if (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(user)) return;
     if (this._discordOnboardedMap && this._discordOnboardedMap[user.id]) return;
     this._checkingDiscordOnboarding = true;
 
@@ -6749,6 +6749,12 @@ const MOCK_LADDER_DATA = {
 };
 
 window.LadderDB = {
+  isAccountAdmin(target) {
+    if (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
+      return window.LeagueDB.isAccountAdmin(target);
+    }
+    return false;
+  },
   // User Active Squad per Ladder
   getMyTeam(ladderType = "4v4_variant") {
     try {
@@ -7556,7 +7562,7 @@ window.LadderDB = {
     const adminSessionEmail = (typeof sessionStorage !== "undefined" ? (sessionStorage.getItem("frontline_admin_email") || "") : "").toLowerCase().trim();
     const isAdminSession = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
 
-    const isStaff = (authUser && this.isAccountAdmin(authUser)) || 
+    const isStaff = (authUser && window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(authUser)) || 
                     cleanAuthEmail === "todd061496@gmail.com" || 
                     cleanAuthEmail === "admin@frontlineleague.com" || 
                     adminSessionEmail === "todd061496@gmail.com" || 
