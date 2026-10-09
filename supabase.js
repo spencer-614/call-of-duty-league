@@ -1128,6 +1128,11 @@ window.LeagueDB = {
     };
   },
 
+  // UUID validation -- only real Postgres UUIDs are safe for FK columns referencing auth.users
+  _isValidUUID(val) {
+    return typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+  },
+
   // 8. Submit League Registration / Signup
   async submitSignup(signupData) {
     if (!signupData || !signupData.gamertag) {
@@ -1175,7 +1180,8 @@ window.LeagueDB = {
       cleanPayload.avatar_url = cleanAvatar;
     }
 
-    if (signupData.user_id) {
+    // Only include user_id if it is a valid Postgres UUID (prevents 22P02 / 23503 DB errors)
+    if (signupData.user_id && this._isValidUUID(signupData.user_id)) {
       cleanPayload.user_id = signupData.user_id;
     }
     if (signupData.discord_user_id) {
@@ -1215,7 +1221,29 @@ window.LeagueDB = {
             remoteSaved = true;
             savedData = data[0];
           } else if (error) {
-            console.warn("Supabase signup insert notice:", error.message || error);
+            // Auto-retry: strip user_id if it caused a UUID/FK constraint error
+            const isUUIDErr = error.code === "22P02" || error.code === "23503" ||
+              (error.message && (error.message.includes("uuid") || error.message.includes("foreign key")));
+            if (isUUIDErr && cleanPayload.user_id) {
+              const retryPayload = Object.assign({}, cleanPayload);
+              delete retryPayload.user_id;
+              try {
+                const { data: rd, error: re } = await dbClient
+                  .from("league_signups")
+                  .insert([retryPayload])
+                  .select();
+                if (!re && rd && rd.length > 0) {
+                  remoteSaved = true;
+                  savedData = rd[0];
+                } else {
+                  console.warn("Supabase signup retry notice:", re ? re.message : "no data");
+                }
+              } catch (retryErr) {
+                console.warn("Supabase signup retry exception:", retryErr);
+              }
+            } else {
+              console.warn("Supabase signup insert notice:", error.message || error);
+            }
           }
         }
       } catch (err) {
@@ -5322,12 +5350,13 @@ window.LeagueDB = {
     if (dbClient) {
       try {
         let existingPlayer = null;
-        if (userId) {
+        const safeUserId = (userId && this._isValidUUID(userId)) ? userId : null;
+        if (safeUserId) {
           try {
             const { data: pById } = await dbClient
               .from("players")
               .select("id, gamertag")
-              .eq("user_id", userId)
+              .eq("user_id", safeUserId)
               .maybeSingle();
             if (pById) existingPlayer = pById;
           } catch (e) {}
@@ -5352,7 +5381,7 @@ window.LeagueDB = {
             platform: cleanPlatform,
             discord_name: cleanDiscord
           };
-          if (userId) updateObj.user_id = userId;
+          if (safeUserId) updateObj.user_id = safeUserId;
           if (cleanAvatar) updateObj.avatar_url = cleanAvatar;
 
           const { error: updErr } = await dbClient
@@ -5386,7 +5415,7 @@ window.LeagueDB = {
             total_kills: 0,
             total_deaths: 0
           };
-          if (userId) insertObj.user_id = userId;
+          if (safeUserId) insertObj.user_id = safeUserId;
 
           const { error: insErr } = await dbClient
             .from("players")
@@ -5433,12 +5462,13 @@ window.LeagueDB = {
     if (dbClient) {
       try {
         let existingFA = null;
-        if (userId) {
+        const safeUserIdFA = (userId && this._isValidUUID(userId)) ? userId : null;
+        if (safeUserIdFA) {
           try {
             const { data: faById } = await dbClient
               .from("arena_free_agents")
               .select("id")
-              .eq("user_id", String(userId))
+              .eq("user_id", safeUserIdFA)
               .maybeSingle();
             if (faById) existingFA = faById;
           } catch (e) {}

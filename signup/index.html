@@ -2193,23 +2193,35 @@
 
               alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
             } else {
-              throw new Error(res.error || "Failed to submit registration");
+              // submitSignup returned success:false — show human-readable message
+              const errMsg = res.error || "Failed to submit registration";
+              const isAdminBlock = errMsg.includes("administrator") || errMsg.includes("Staff");
+              alertBox.style.display = "block";
+              alertBox.className = "signup-alert alert-error";
+              alertBox.innerHTML = `
+                <div class="alert-title">
+                  <span style="font-size: 20px;">⚠</span>
+                  <span>${isAdminBlock ? "REGISTRATION RESTRICTED" : "SUBMISSION ERROR"}</span>
+                </div>
+                <div class="alert-msg">
+                  ${isAdminBlock
+                    ? "Commissioner / staff accounts cannot sign up as free agents. Please use a regular Discord account to register as a player."
+                    : "We encountered an issue submitting your registration. Please try again or contact a commissioner on Discord."}
+                </div>
+              `;
+              alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
             }
           } catch (err) {
             console.error("Submission failed:", err);
             alertBox.style.display = "block";
             alertBox.className = "signup-alert alert-error";
-            const errStr = String(err.message || err);
-            const isTableMissing = errStr.includes("league_signups") || errStr.includes("PGRST205");
             alertBox.innerHTML = `
               <div class="alert-title">
                 <span style="font-size: 20px;">⚠</span>
                 <span>TRANSMISSION FAILED</span>
               </div>
               <div class="alert-msg">
-                ${isTableMissing 
-                  ? "Database table <code>league_signups</code> was not detected in Supabase. Please execute the migration script <code>add_signups.sql</code> in your Supabase SQL Editor to activate registrations."
-                  : "We encountered an issue submitting your registration: " + escapeHtml(errStr)}
+                Your registration could not be completed. Please check your connection and try again, or contact a commissioner on Discord.
               </div>
             `;
             alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
