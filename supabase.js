@@ -2891,7 +2891,7 @@ window.LeagueDB = {
     const pills = document.querySelectorAll(".mode-switch-pill");
     pills.forEach(pill => {
       // Exclude admin live preview simulator
-      if (pill.closest && pill.closest("#admin-switcher-live-preview")) return;
+      if (pill.closest && (pill.closest("#admin-switcher-live-preview") || pill.closest(".admin-wrap"))) return;
       if (!s.switcher_visible || (!s.show_league && !s.show_arena && !s.show_tournaments)) {
         pill.style.display = "none";
         return;
@@ -2934,7 +2934,7 @@ window.LeagueDB = {
       '#btn-goto-arena-profile, #section-league-arena-banner, #btn-signup-arena-profile, .btn-arena-toggle-target, [data-arena-target]'
     );
     arenaTargets.forEach(el => {
-      if (el) {
+      if (el && !el.closest("#admin-switcher-live-preview") && !el.closest(".admin-wrap")) {
         el.style.display = isArenaVisible ? "" : "none";
       }
     });

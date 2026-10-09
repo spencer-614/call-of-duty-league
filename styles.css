@@ -4689,31 +4689,41 @@ body.mode-arena .league-only {
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
 }
 
-/* Platform Switcher Commissioner Hide Rules */
-html.hide-platform-switcher .mode-switch-pill,
-.hide-platform-switcher .mode-switch-pill,
+/* Platform Switcher Commissioner Hide Rules - Public headers only */
+html.hide-platform-switcher header .mode-switch-pill,
+html.hide-platform-switcher .header .mode-switch-pill,
+html.hide-platform-switcher .fl-topbar .mode-switch-pill,
+html.hide-platform-switcher .fl-header .mode-switch-pill,
 html.hide-platform-switcher .btn-arena-toggle-target,
-.hide-platform-switcher .btn-arena-toggle-target,
 html.hide-platform-switcher #btn-goto-arena-profile,
 html.hide-platform-switcher #section-league-arena-banner,
 html.hide-platform-switcher #btn-signup-arena-profile {
   display: none !important;
 }
-html.hide-mode-league .mode-switch-btn[data-mode="league"],
-.hide-mode-league .mode-switch-btn[data-mode="league"] {
+
+#admin-switcher-live-preview .mode-switch-pill {
+  display: flex !important;
+}
+
+html.hide-mode-league header .mode-switch-btn[data-mode="league"],
+html.hide-mode-league .header .mode-switch-btn[data-mode="league"],
+html.hide-mode-league .fl-topbar .mode-switch-btn[data-mode="league"] {
   display: none !important;
 }
-html.hide-mode-arena .mode-switch-btn[data-mode="arena"],
-.hide-mode-arena .mode-switch-btn[data-mode="arena"],
+
+html.hide-mode-arena header .mode-switch-btn[data-mode="arena"],
+html.hide-mode-arena .header .mode-switch-btn[data-mode="arena"],
+html.hide-mode-arena .fl-topbar .mode-switch-btn[data-mode="arena"],
 html.hide-mode-arena .btn-arena-toggle-target,
-.hide-mode-arena .btn-arena-toggle-target,
 html.hide-mode-arena #btn-goto-arena-profile,
 html.hide-mode-arena #section-league-arena-banner,
 html.hide-mode-arena #btn-signup-arena-profile {
   display: none !important;
 }
-html.hide-mode-tournaments .mode-switch-btn[data-mode="tournaments"],
-.hide-mode-tournaments .mode-switch-btn[data-mode="tournaments"] {
+
+html.hide-mode-tournaments header .mode-switch-btn[data-mode="tournaments"],
+html.hide-mode-tournaments .header .mode-switch-btn[data-mode="tournaments"],
+html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"] {
   display: none !important;
 }
 
