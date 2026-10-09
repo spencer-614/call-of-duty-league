@@ -1630,9 +1630,9 @@
             const titleEl = document.getElementById("signup-header-title");
             const descEl = document.getElementById("signup-header-desc");
 
-            if (regStatus && regStatus.isRegistered) {
+            if (regStatus && regStatus.isRegistered && regStatus.status === "Approved") {
               isPlayerEnlisted = true;
-              const p = regStatus.player || {};
+              const p = regStatus.player || regStatus.signup || {};
               const playerTag = p.gamertag || regStatus.gamertag || metaGamertag || "Operative";
               const playerRole = p.role || regStatus.role || metaRole || "Flex";
               const playerTeam = p.team || regStatus.team || regStatus.status || "Registered Combatant";

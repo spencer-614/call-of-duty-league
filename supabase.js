@@ -6741,100 +6741,120 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   async checkPlayerRegistration(target) {
-    if (!target) return { isRegistered: false };
-    let email = "";
-    let userId = null;
-    let gamertag = "";
+  if (!target) return { isRegistered: false };
 
-    if (typeof target === "string") {
-      if (target.includes("@")) email = target.toLowerCase().trim();
-      else gamertag = target.trim();
-    } else if (typeof target === "object" && target !== null) {
-      email = (target.email || target.user_email || target.user_metadata?.email || "").toLowerCase().trim();
-      userId = target.id || target.user_id || target.userId || null;
-      gamertag = (target.user_metadata?.gamertag || target.user_metadata?.username || target.gamertag || "").trim();
+  let email = "";
+  let userId = null;
+  let gamertag = "";
+
+  if (typeof target === "string") {
+    if (target.includes("@")) {
+      email = target.toLowerCase().trim();
+    } else {
+      gamertag = target.trim();
+    }
+  } else if (typeof target === "object") {
+    email = (
+      target.email ||
+      target.user_email ||
+      target.user_metadata?.email ||
+      ""
+    ).toLowerCase().trim();
+
+    userId = target.id || target.user_id || target.userId || null;
+
+    gamertag = (
+      target.user_metadata?.gamertag ||
+      target.user_metadata?.username ||
+      target.gamertag ||
+      ""
+    ).trim();
+  }
+
+  if (!dbClient || (!userId && !email && !gamertag)) {
+    return { isRegistered: false, status: "Unknown" };
+  }
+
+  try {
+    // Check the signup queue first. A pending signup takes precedence
+    // over the player profile automatically created during account signup.
+    let signupQuery = dbClient
+      .from("league_signups")
+      .select("*");
+
+    if (userId) {
+      signupQuery = signupQuery.eq("user_id", userId);
+    } else if (email) {
+      signupQuery = signupQuery.ilike("email", email);
+    } else {
+      signupQuery = signupQuery.ilike("gamertag", gamertag);
     }
 
-    // 1. Check local storage player card
-    try {
-      const rawCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
-      if (rawCard && ((userId && rawCard._owner_id === userId) || (email && rawCard._owner_email && rawCard._owner_email.toLowerCase() === email))) {
-        if (rawCard.gamertag && rawCard.gamertag !== "Operative") {
-          return {
-            isRegistered: true,
-            status: "Approved",
-            gamertag: rawCard.gamertag,
-            team: rawCard.team || "Free Agent",
-            role: rawCard.role || "Flex",
-            division: rawCard.division || "Division 1 · Premier",
-            avatar: rawCard.avatar || "",
-            card: rawCard
-          };
-        }
-      }
-    } catch (e) {}
+    const { data: signups, error: signupError } = await signupQuery
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-    // 2. Query public.players table in Supabase
-    if (dbClient) {
-      try {
-        let q = dbClient.from("players").select("id, user_id, gamertag, team_name, role, avatar_url, division");
-        if (userId) q = q.eq("user_id", userId);
-        else if (email) q = q.ilike("email", email);
-        else if (gamertag) q = q.ilike("gamertag", gamertag);
+    if (signupError) throw signupError;
 
-        const { data, error } = await q.maybeSingle();
-        if (!error && data && data.gamertag) {
-          return {
-            isRegistered: true,
-            status: "Approved",
-            gamertag: data.gamertag,
-            team: data.team_name || "Free Agent",
-            role: data.role || "Flex",
-            division: data.division || "Division 1 · Premier",
-            avatar: data.avatar_url || "",
-            player: data
-          };
-        }
-      } catch (e) {}
+    const signup = signups?.[0];
 
-      // 3. Query public.league_signups table in Supabase
-      try {
-        let q = dbClient.from("league_signups").select("id, user_id, gamertag, team_name, role, status, registration_type, avatar_url");
-        if (userId) q = q.eq("user_id", userId);
-        else if (email) q = q.ilike("email", email);
-        else if (gamertag) q = q.ilike("gamertag", gamertag);
-
-        const { data, error } = await q.maybeSingle();
-        if (!error && data && data.gamertag) {
-          return {
-            isRegistered: true,
-            status: data.status || "Pending",
-            gamertag: data.gamertag,
-            team: data.team_name || "Free Agent",
-            role: data.role || "Flex",
-            avatar: data.avatar_url || "",
-            signup: data
-          };
-        }
-      } catch (e) {}
+    if (signup) {
+      return {
+        isRegistered: true,
+        status: signup.status || "Pending",
+        gamertag: signup.gamertag,
+        team: signup.team_name || "Free Agent",
+        role: signup.role || "Flex",
+        activision: signup.activision_id || "",
+        avatar: signup.avatar_url || "",
+        signup
+      };
     }
 
-    // 4. Check user metadata
-    if (typeof target === "object" && target?.user_metadata) {
-      const meta = target.user_metadata;
-      if (meta.profile_completed && meta.gamertag && meta.gamertag !== "Operative") {
-        return {
-          isRegistered: true,
-          status: "Active",
-          gamertag: meta.gamertag,
-          team: "Free Agent",
-          role: meta.role || "Flex"
-        };
-      }
+    // Current admin approval removes the signup from the queue.
+    // Only infer approval from a player row after confirming no signup exists.
+    let playerQuery = dbClient
+      .from("players")
+      .select("*");
+
+    if (userId) {
+      playerQuery = playerQuery.eq("user_id", userId);
+    } else if (email) {
+      playerQuery = playerQuery.ilike("email", email);
+    } else {
+      playerQuery = playerQuery.ilike("gamertag", gamertag);
+    }
+
+    const { data: player, error: playerError } =
+      await playerQuery.maybeSingle();
+
+    if (playerError) throw playerError;
+
+    if (player) {
+      return {
+        isRegistered: true,
+        status: "Approved",
+        gamertag: player.gamertag,
+        team: player.team_name || "Free Agent",
+        role: player.role || "Flex",
+        division: player.division || "Open Division",
+        activision: player.activision_id || "",
+        avatar: player.avatar_url || "",
+        player
+      };
     }
 
     return { isRegistered: false };
-  },
+  } catch (err) {
+    console.warn("Could not check player registration:", err);
+
+    return {
+      isRegistered: false,
+      status: "Unknown",
+      error: err.message || "Could not verify registration."
+    };
+  }
+},
 
   // ==========================================
   STAFF_ROLES: {
