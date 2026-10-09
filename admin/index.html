@@ -3156,7 +3156,33 @@
       </div>
       <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
         <span id="tourney-reg-count-display" style="font-size:12px; color:var(--muted); font-weight:700;">0 Squads Registered</span>
-        <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-view-tourney-registrations').close()">Done</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-action-sm" id="btn-modal-open-bracket-from-regs" style="border-color:#38bdf8; color:#38bdf8;">⚔️ Manage Bracket</button>
+          <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-view-tourney-registrations').close()">Done</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MODAL: TOURNAMENT BRACKET MANAGER & MATCH ADVANCEMENT -->
+    <dialog id="modal-admin-bracket-manager" class="admin-modal" closedby="any" style="max-width:920px; width:95%;">
+      <div class="admin-modal-header" style="border-bottom:1px solid #2a311e; padding-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">LIVE TOURNAMENT BRACKET ENGINE</div>
+          <h3 class="admin-modal-title" id="admin-bracket-modal-title" style="margin:0; font:800 20px var(--display);">Tournament Bracket</h3>
+        </div>
+        <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-admin-bracket-manager').close()">✕ Close</button>
+      </div>
+      <div class="admin-modal-body" style="max-height:68vh; overflow-y:auto; padding-top:16px;">
+        <div id="admin-bracket-controls" style="margin-bottom:18px; padding:16px; background:#11140e; border:1px solid #2a321e; border-radius:3px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <!-- Controls loaded dynamically -->
+        </div>
+        <div id="admin-bracket-matches-container">
+          <!-- Match list by round -->
+        </div>
+      </div>
+      <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
+        <span id="admin-bracket-status-display" style="font-size:12px; color:var(--muted); font-weight:700;">Bracket Status</span>
+        <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-admin-bracket-manager').close()">Done</button>
       </div>
     </dialog>
 
@@ -8332,6 +8358,8 @@
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="editTournament('${escapeHtml(t.id)}')">✏️ Edit</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
+                      <a href="/brackets/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
                       <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
                       <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
                     </div>
@@ -8483,6 +8511,15 @@
 
           if (!modal || !container) return;
 
+          const openBracketBtn = document.getElementById("btn-modal-open-bracket-from-regs");
+          if (openBracketBtn) {
+            openBracketBtn.onclick = () => {
+              if (typeof modal.close === "function") modal.close();
+              else modal.style.display = "none";
+              adminManageBracket(tourneyId, tourneyTitle);
+            };
+          }
+
           if (titleEl) {
             titleEl.textContent = (tourneyTitle || "Tournament") + " – Enlisted Squads";
           }
@@ -8585,6 +8622,271 @@
           }
         }
         window.adminDeleteTourneyRegistration = adminDeleteTourneyRegistration;
+
+        // ----------------------------------------------------------------------
+        // ADMIN TOURNAMENT BRACKET & MATCH ADVANCEMENT ENGINE
+        // ----------------------------------------------------------------------
+        async function adminManageBracket(tourneyId, tourneyTitle) {
+          const modal = document.getElementById("modal-admin-bracket-manager");
+          const titleEl = document.getElementById("admin-bracket-modal-title");
+          const controlsEl = document.getElementById("admin-bracket-controls");
+          const container = document.getElementById("admin-bracket-matches-container");
+          const statusEl = document.getElementById("admin-bracket-status-display");
+
+          if (!modal || !container) return;
+
+          if (titleEl) {
+            titleEl.textContent = `${tourneyTitle || 'Tournament'} – Live Bracket & Match Manager`;
+          }
+
+          if (typeof modal.showModal === "function") {
+            modal.showModal();
+          } else {
+            modal.setAttribute("open", "true");
+            modal.style.display = "block";
+          }
+
+          container.innerHTML = `
+            <div style="text-align:center; padding:36px; color:var(--muted);">
+              <div style="font-size:28px; margin-bottom:8px;">⚔️</div>
+              <div>Loading tournament bracket engine...</div>
+            </div>
+          `;
+          if (statusEl) statusEl.textContent = 'Loading...';
+
+          try {
+            let tourneys = [];
+            let regs = [];
+            let bracketData = null;
+
+            if (window.LeagueDB) {
+              [tourneys, regs, bracketData] = await Promise.all([
+                typeof window.LeagueDB.getTournaments === "function" ? window.LeagueDB.getTournaments() : [],
+                typeof window.LeagueDB.getTournamentRegistrations === "function" ? window.LeagueDB.getTournamentRegistrations(tourneyId) : [],
+                typeof window.LeagueDB.getTournamentBracket === "function" ? window.LeagueDB.getTournamentBracket(tourneyId) : null
+              ]);
+            } else {
+              tourneys = JSON.parse(localStorage.getItem("frontline_tournaments_data")) || [];
+              const allRegs = JSON.parse(localStorage.getItem("frontline_tournament_registrations")) || [];
+              regs = allRegs.filter(r => String(r.tournament_id) === String(tourneyId));
+            }
+
+            const tourney = tourneys.find(t => String(t.id) === String(tourneyId)) || { id: tourneyId, title: tourneyTitle };
+            const squadCount = regs ? regs.length : 0;
+
+            if (!bracketData || !bracketData.stages || bracketData.stages.length === 0) {
+              if (statusEl) statusEl.textContent = `Pending Generation · ${squadCount} Squads Enlisted`;
+              controlsEl.innerHTML = `
+                <div>
+                  <div style="font-weight:700; color:#ffffff; font-size:14px; margin-bottom:4px;">
+                    ${squadCount < 2 ? '⚠️ Insufficient Squads for Bracket' : '⚡ Ready to Launch Bracket'}
+                  </div>
+                  <div style="font-size:12px; color:var(--muted);">
+                    ${squadCount < 2 
+                      ? `At least 2 registered squads are required to generate the bracket. Currently ${squadCount} enlisted.` 
+                      : `${squadCount} squads enlisted. Click below to seed and generate the live tournament bracket.`}
+                  </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <button type="button" class="btn-paypal-submit" style="padding:8px 18px; font-size:12px; width:auto;" 
+                    ${squadCount < 2 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
+                    onclick="adminGenerateBracketAction('${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                    ⚡ Generate Live Bracket Now
+                  </button>
+                </div>
+              `;
+
+              container.innerHTML = `
+                <div style="text-align:center; padding:44px 20px; background:#0e110b; border:1px dashed #242a38; border-radius:3px;">
+                  <div style="font-size:36px; margin-bottom:10px;">📋</div>
+                  <h4 style="font:800 16px var(--display); color:#fff; text-transform:uppercase; margin:0 0 6px;">
+                    Bracket Has Not Been Generated Yet
+                  </h4>
+                  <p style="color:var(--muted); font-size:12.5px; max-width:480px; margin:0 auto 16px; line-height:1.5;">
+                    ${squadCount < 2 
+                      ? `Once squads enlist via the Tournament Hub (/tournaments/), you can generate the live seeded single- or double-elimination bracket.` 
+                      : `Click "Generate Live Bracket Now" above to seed all ${squadCount} teams into bracket rounds.`}
+                  </p>
+                </div>
+              `;
+              return;
+            }
+
+            // Bracket exists!
+            if (statusEl) statusEl.textContent = `Live Bracket Active · ${squadCount} Teams Seeded`;
+
+            controlsEl.innerHTML = `
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="badge-tourney-status live" style="font-size:10px; padding:2px 6px;">LIVE BRACKET</span>
+                  <strong style="color:#ffffff; font-size:14px;">${escapeHtml(tourney.format || '4v4 CDL Variant')} · ${escapeHtml(tourney.bracket_type || 'Single Elimination')}</strong>
+                </div>
+                <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
+                  ${squadCount} Teams Enlisted · Real-time match scoring and winner advancement enabled
+                </div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <a href="/brackets/?tournament=${encodeURIComponent(tourneyId)}" target="_blank" class="btn-action-sm" style="color:#22c55e; border-color:#22c55e; text-decoration:none; padding:6px 12px; font-weight:800;">
+                  ⚔ View Public Live Bracket ↗
+                </a>
+                <button type="button" class="btn-action-sm btn-action-danger" style="padding:6px 10px;" onclick="adminRegenerateBracketAction('${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                  ↻ Reset &amp; Regenerate
+                </button>
+              </div>
+            `;
+
+            let matchesHtml = '';
+            bracketData.stages.forEach(stage => {
+              matchesHtml += `
+                <div style="margin-bottom:24px;">
+                  <div style="background:#161910; border:1px solid #282f1b; padding:10px 14px; border-radius:3px 3px 0 0; display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:var(--lime); font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">${escapeHtml(stage.name)}</strong>
+                    <span style="font-size:11px; color:var(--muted);">${stage.rounds?.length || 0} Rounds</span>
+                  </div>
+                  <div style="background:#0c0e09; border:1px solid #232918; border-top:none; padding:14px; border-radius:0 0 3px 3px; display:flex; flex-direction:column; gap:16px;">
+              `;
+
+              (stage.rounds || []).forEach(round => {
+                matchesHtml += `
+                  <div>
+                    <div style="font-weight:800; font-size:12px; color:#fbbf24; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                      <span>▸</span> <span>${escapeHtml(round.name)}</span>
+                      <span style="font-size:10px; color:var(--muted); background:#181b12; padding:2px 6px; border:1px solid #282e1d; border-radius:2px;">${escapeHtml(round.bestOf || 'BO5')}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:12px;">
+                `;
+
+                (round.matches || []).forEach(m => {
+                  const isDone = m.status === 'Completed';
+                  const t1Winner = m.team1?.winner;
+                  const t2Winner = m.team2?.winner;
+                  const isTBD = (m.team1?.name?.includes('TBD') || !m.team1?.name) && (m.team2?.name?.includes('TBD') || !m.team2?.name);
+
+                  matchesHtml += `
+                    <div style="background:#12150e; border:1px solid ${isDone ? '#243b24' : '#252a1b'}; border-left:3px solid ${isDone ? '#22c55e' : (m.status === 'Live' ? '#ff3b3b' : '#38bdf8')}; padding:12px; border-radius:3px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:11px;">
+                        <strong style="color:#ffffff;">${escapeHtml(m.code || m.id)}</strong>
+                        <span style="color:${isDone ? '#22c55e' : (m.status === 'Live' ? '#ff3b3b' : 'var(--muted)')}; font-weight:700;">
+                          ${isDone ? '✓ FINAL' : (m.status === 'Live' ? '🔴 LIVE' : 'SCHEDULED')}
+                        </span>
+                      </div>
+
+                      <!-- Team 1 Row -->
+                      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:${t1Winner ? 'rgba(34,197,94,0.12)' : '#0d0f0b'}; border-radius:2px; margin-bottom:4px; border:${t1Winner ? '1px solid #22c55e40' : '1px solid #1a1e14'};">
+                        <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+                          ${m.team1?.seed ? `<span style="font-size:10px; color:var(--muted); font-weight:800;">#${m.team1.seed}</span>` : ''}
+                          <span style="font-weight:700; font-size:13px; color:${t1Winner ? '#4ade80' : '#ffffff'}; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;" id="t1-name-${m.id}">
+                            ${escapeHtml(m.team1?.name || 'TBD')}
+                          </span>
+                        </div>
+                        <input type="number" id="score1-${m.id}" value="${m.team1?.score || 0}" min="0" max="5" style="width:42px; text-align:center; background:#181b12; border:1px solid #333d22; color:#fff; font-weight:800; font-size:13px; padding:3px;" />
+                      </div>
+
+                      <!-- Team 2 Row -->
+                      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:${t2Winner ? 'rgba(34,197,94,0.12)' : '#0d0f0b'}; border-radius:2px; margin-bottom:10px; border:${t2Winner ? '1px solid #22c55e40' : '1px solid #1a1e14'};">
+                        <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+                          ${m.team2?.seed ? `<span style="font-size:10px; color:var(--muted); font-weight:800;">#${m.team2.seed}</span>` : ''}
+                          <span style="font-weight:700; font-size:13px; color:${t2Winner ? '#4ade80' : '#ffffff'}; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;" id="t2-name-${m.id}">
+                            ${escapeHtml(m.team2?.name || 'TBD')}
+                          </span>
+                        </div>
+                        <input type="number" id="score2-${m.id}" value="${m.team2?.score || 0}" min="0" max="5" style="width:42px; text-align:center; background:#181b12; border:1px solid #333d22; color:#fff; font-weight:800; font-size:13px; padding:3px;" />
+                      </div>
+
+                      <!-- Match Action Row -->
+                      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                        <select id="winner-${m.id}" class="form-control" style="font-size:11px; padding:4px 6px; height:auto; flex:1;">
+                          <option value="">-- Choose Winner --</option>
+                          <option value="${escapeHtml(m.team1?.name || '')}" ${t1Winner ? 'selected' : ''}>${escapeHtml(m.team1?.name || 'Team 1')}</option>
+                          <option value="${escapeHtml(m.team2?.name || '')}" ${t2Winner ? 'selected' : ''}>${escapeHtml(m.team2?.name || 'Team 2')}</option>
+                        </select>
+                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; border-color:#22c55e; color:#22c55e;" onclick="adminAdvanceMatchAction('${escapeHtml(tourneyId)}', '${escapeHtml(m.id)}', '${escapeHtml(tourneyTitle)}')">
+                          ✓ Save &amp; Advance
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                });
+
+                matchesHtml += `</div></div>`;
+              });
+
+              matchesHtml += `</div></div>`;
+            });
+
+            container.innerHTML = matchesHtml;
+          } catch (err) {
+            console.error("Error managing bracket:", err);
+            container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading bracket manager: ${escapeHtml(err.message)}</div>`;
+          }
+        }
+        window.adminManageBracket = adminManageBracket;
+
+        async function adminGenerateBracketAction(tourneyId, tourneyTitle) {
+          if (!confirm("Generate live tournament bracket now from registered squads? This will seed the bracket and enable live match scoring.")) return;
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.generateTournamentBracket === 'function') {
+              const res = await window.LeagueDB.generateTournamentBracket(tourneyId);
+              if (res.success) {
+                showToast("⚡ Bracket generated and seeded successfully!");
+                await adminManageBracket(tourneyId, tourneyTitle);
+                await loadAdminTournaments();
+              } else {
+                showToast(`Failed: ${res.error || 'Unknown error'}`, true);
+              }
+            }
+          } catch (err) {
+            console.error("Generate bracket error:", err);
+            showToast("Error generating bracket: " + err.message, true);
+          }
+        }
+        window.adminGenerateBracketAction = adminGenerateBracketAction;
+
+        async function adminAdvanceMatchAction(tourneyId, matchId, tourneyTitle) {
+          const score1Input = document.getElementById(`score1-${matchId}`);
+          const score2Input = document.getElementById(`score2-${matchId}`);
+          const winnerSelect = document.getElementById(`winner-${matchId}`);
+
+          const s1 = parseInt(score1Input?.value || '0', 10);
+          const s2 = parseInt(score2Input?.value || '0', 10);
+          let winner = winnerSelect?.value;
+
+          if (!winner) {
+            if (s1 > s2) {
+              winner = document.getElementById(`t1-name-${matchId}`)?.textContent.trim();
+            } else if (s2 > s1) {
+              winner = document.getElementById(`t2-name-${matchId}`)?.textContent.trim();
+            }
+          }
+
+          if (!winner || winner.includes('TBD')) {
+            showToast("Please choose or specify the winning team for this match.", true);
+            return;
+          }
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.advanceTournamentMatch === 'function') {
+              const res = await window.LeagueDB.advanceTournamentMatch(tourneyId, matchId, winner, s1, s2);
+              if (res.success) {
+                showToast(`✓ Match updated! "${winner}" advanced to next round.`);
+                await adminManageBracket(tourneyId, tourneyTitle);
+                await loadAdminTournaments();
+              } else {
+                showToast(`Failed: ${res.error || 'Could not update match'}`, true);
+              }
+            }
+          } catch (err) {
+            console.error("Advance match error:", err);
+            showToast("Error advancing match: " + err.message, true);
+          }
+        }
+        window.adminAdvanceMatchAction = adminAdvanceMatchAction;
+
+        async function adminRegenerateBracketAction(tourneyId, tourneyTitle) {
+          if (!confirm("Are you sure you want to RESET and REGENERATE this bracket? All recorded match scores will be reset to round 1 seeding.")) return;
+          await adminGenerateBracketAction(tourneyId, tourneyTitle);
+        }
+        window.adminRegenerateBracketAction = adminRegenerateBracketAction;
 
         // Initial preview update
         updateTournamentPreview();

@@ -663,11 +663,31 @@
           </ul>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn-tourney-outline" onclick="closeTourneyDetailsModal()">Close</button>
-          <button type="button" class="btn-tourney-primary" id="modal-detail-register-btn" onclick="openRegistrationFromDetails()">
-            Register Squad ↗
-          </button>
+        <!-- Enlisted Squads List in Details Modal -->
+        <div style="background:#0c0e09; border:1px solid #232918; padding:16px; border-radius:2px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="font:800 13px var(--body); color:#fbbf24; text-transform:uppercase; margin:0; letter-spacing:0.5px;">
+              📋 Enlisted Squads &amp; Competitors
+            </h4>
+            <span id="modal-detail-squads-count" style="font-size:11px; color:var(--muted); font-weight:700;">Loading squads...</span>
+          </div>
+          <div id="modal-detail-squads-list" style="max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <a id="modal-detail-bracket-link" href="#" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none; display:none; padding:10px 16px;">
+              <span>⚔</span> View Live Bracket ↗
+            </a>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-tourney-outline" onclick="closeTourneyDetailsModal()">Close</button>
+            <button type="button" class="btn-tourney-primary" id="modal-detail-register-btn" onclick="openRegistrationFromDetails()">
+              Register Squad ↗
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -959,15 +979,19 @@
                   <button type="button" class="btn-tourney-outline" onclick="openTourneyDetails('${escapeHtml(t.id)}')">
                     <span>🔍</span> Details
                   </button>
-                  ${rawStatus.includes('completed') ? `
-                    <button type="button" class="btn-tourney-outline" disabled style="opacity:0.5; cursor:not-allowed;">
-                      Bracket Concluded
-                    </button>
+                  ${(rawStatus.includes('live') || t.bracket_data) ? `
+                    <a href="/brackets/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none;">
+                      <span>⚔</span> View Bracket ↗
+                    </a>
+                  ` : (rawStatus.includes('completed') ? `
+                    <a href="/brackets/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-outline" style="text-decoration:none;">
+                      <span>⚔</span> Final Bracket ↗
+                    </a>
                   ` : `
                     <button type="button" class="btn-tourney-primary" onclick="openTourneyRegister('${escapeHtml(t.id)}')">
                       <span>Register Squad ↗</span>
                     </button>
-                  `}
+                  `)}
                 </div>
               </div>
             </article>
@@ -987,7 +1011,7 @@
         renderTournaments();
       }
 
-      function openTourneyDetails(id) {
+      async function openTourneyDetails(id) {
         const t = currentTournaments.find(item => String(item.id) === String(id));
         if (!t) return;
         currentSelectedTourney = t;
@@ -997,7 +1021,7 @@
         document.getElementById('modal-detail-prize').textContent = t.prize_pool || '$500 USD';
         document.getElementById('modal-detail-entry').textContent = t.entry_fee || 'FREE ENTRY';
         document.getElementById('modal-detail-format').textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Double Elimination'}`;
-        document.getElementById('modal-detail-date').textContent = `${t.date || 'TBD'} ${t.time ? '· ' + t.time : ''}`;
+        document.getElementById('modal-detail-date').textContent = `${t.date || t.start_date || 'TBD'} ${t.time || t.start_time ? '· ' + (t.time || t.start_time) : ''}`;
 
         const badge = document.getElementById('modal-detail-badge');
         if (badge) {
@@ -1008,10 +1032,68 @@
 
         const regBtn = document.getElementById('modal-detail-register-btn');
         if (regBtn) {
-          if ((t.status || '').toLowerCase().includes('completed')) {
+          if ((t.status || '').toLowerCase().includes('completed') || (t.status || '').toLowerCase().includes('closed')) {
             regBtn.style.display = 'none';
           } else {
             regBtn.style.display = 'inline-flex';
+          }
+        }
+
+        const bracketLink = document.getElementById('modal-detail-bracket-link');
+        if (bracketLink) {
+          const isLiveOrBracket = (t.status || '').toLowerCase().includes('live') || !!t.bracket_data || (t.status || '').toLowerCase().includes('completed');
+          if (isLiveOrBracket) {
+            bracketLink.href = `/brackets/?tournament=${encodeURIComponent(t.id)}`;
+            bracketLink.style.display = 'inline-flex';
+          } else {
+            bracketLink.style.display = 'none';
+          }
+        }
+
+        // Load enlisted squads into details modal
+        const squadsCountEl = document.getElementById('modal-detail-squads-count');
+        const squadsListEl = document.getElementById('modal-detail-squads-list');
+        if (squadsListEl) {
+          squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px; padding:6px 0;">Loading enlisted squads from database...</div>';
+          try {
+            let squads = [];
+            if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function') {
+              squads = await window.LeagueDB.getTournamentRegistrations(t.id);
+            } else {
+              const local = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
+              squads = local.filter(r => String(r.tournament_id) === String(t.id));
+            }
+
+            if (squadsCountEl) {
+              squadsCountEl.textContent = `${squads.length} Squad${squads.length === 1 ? '' : 's'} Enlisted`;
+            }
+
+            if (!squads || squads.length === 0) {
+              squadsListEl.innerHTML = `
+                <div style="color:var(--muted); font-size:12px; padding:12px 0; text-align:center; background:#10130d; border:1px dashed #242c18;">
+                  No squads registered yet. Be the first to enlist!
+                </div>
+              `;
+            } else {
+              squadsListEl.innerHTML = squads.map((sq, idx) => {
+                const rosterArr = Array.isArray(sq.roster) ? sq.roster : (sq.roster_text ? sq.roster_text.split(/,\s*/) : []);
+                return `
+                  <div style="background:#13160f; border:1px solid #232918; border-left:3px solid #fbbf24; padding:8px 12px; border-radius:2px; font-size:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                      <strong style="color:#ffffff;">#${idx + 1} ${escapeHtml(sq.team_name || 'Squad')}</strong>
+                      <span style="color:#fbbf24; font-size:11px;">Captain: ${escapeHtml(sq.captain_gamertag || 'Captain')}</span>
+                    </div>
+                    ${rosterArr.length ? `
+                      <div style="color:#9ca3af; font-size:11px;">
+                        Roster: ${rosterArr.map(p => escapeHtml(p)).join(' • ')}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('');
+            }
+          } catch(e) {
+            if (squadsListEl) squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px;">Enlisted roster details available in Discord.</div>';
           }
         }
 

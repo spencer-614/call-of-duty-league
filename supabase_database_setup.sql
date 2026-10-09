@@ -314,11 +314,14 @@ CREATE TABLE IF NOT EXISTS public.tournaments (
     image_url TEXT,
     registration_url TEXT,
     bracket_url TEXT,
+    bracket_data JSONB,
     description TEXT,
     rules_notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS bracket_data JSONB;
 
 -- ------------------------------------------------------------------------------
 -- TOURNAMENT REGISTRATIONS
@@ -483,3 +486,33 @@ VALUES
     ('recruiter@frontlineleague.com', 'Recruitment Lead', 'recruiter', 'Signup queue & free agents'),
     ('broadcast@frontlineleague.com', 'Media Crew', 'broadcaster', 'Livestreams & announcements')
 ON CONFLICT (email) DO NOTHING;
+
+-- ------------------------------------------------------------------------------
+-- ROW LEVEL SECURITY (RLS) POLICIES FOR TOURNAMENTS & REGISTRATIONS
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.tournaments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read tournaments" ON public.tournaments;
+CREATE POLICY "Allow public read tournaments" ON public.tournaments FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public insert tournaments" ON public.tournaments;
+CREATE POLICY "Allow public insert tournaments" ON public.tournaments FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public update tournaments" ON public.tournaments;
+CREATE POLICY "Allow public update tournaments" ON public.tournaments FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Allow public delete tournaments" ON public.tournaments;
+CREATE POLICY "Allow public delete tournaments" ON public.tournaments FOR DELETE USING (true);
+
+ALTER TABLE public.tournament_registrations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read tournament_registrations" ON public.tournament_registrations;
+CREATE POLICY "Allow public read tournament_registrations" ON public.tournament_registrations FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public insert tournament_registrations" ON public.tournament_registrations;
+CREATE POLICY "Allow public insert tournament_registrations" ON public.tournament_registrations FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public update tournament_registrations" ON public.tournament_registrations;
+CREATE POLICY "Allow public update tournament_registrations" ON public.tournament_registrations FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Allow public delete tournament_registrations" ON public.tournament_registrations;
+CREATE POLICY "Allow public delete tournament_registrations" ON public.tournament_registrations FOR DELETE USING (true);
+
+ALTER TABLE public.tournament_matches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read tournament_matches" ON public.tournament_matches;
+CREATE POLICY "Allow public read tournament_matches" ON public.tournament_matches FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public write tournament_matches" ON public.tournament_matches;
+CREATE POLICY "Allow public write tournament_matches" ON public.tournament_matches FOR ALL USING (true);
+

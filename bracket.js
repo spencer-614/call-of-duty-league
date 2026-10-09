@@ -1551,6 +1551,127 @@
     }
 
     refreshView();
+
+    // 5. Asynchronously load active Tournament Hub live brackets
+    loadDynamicTournaments();
+  }
+
+  // Dynamic Tournament Brackets Loader from Supabase / LeagueDB
+  async function loadDynamicTournaments() {
+    if (!window.LeagueDB || typeof window.LeagueDB.getTournaments !== "function") return;
+    try {
+      const tourneys = await window.LeagueDB.getTournaments();
+      if (!Array.isArray(tourneys) || !tourneys.length) return;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetTourneyId = urlParams.get('tournament');
+
+      const selectorBar = document.querySelector(".division-selector-bar");
+
+      for (const t of tourneys) {
+        let bData = t.bracket_data;
+        if (!bData && typeof window.LeagueDB.getTournamentBracket === "function") {
+          bData = await window.LeagueDB.getTournamentBracket(t.id);
+        }
+
+        const isTarget = targetTourneyId && String(targetTourneyId) === String(t.id);
+
+        if (bData && bData.stages && bData.stages.length > 0) {
+          BRACKET_DATA[t.id] = {
+            id: String(t.id),
+            name: t.title || "Frontline Championship",
+            tier: t.format || "Sanctioned Tournament",
+            badge: (t.status || "LIVE BRACKET").toUpperCase(),
+            format: `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Single Elimination'}`,
+            prizePool: t.prize_pool || "TBD",
+            status: (t.status || "LIVE BRACKET").toUpperCase(),
+            description: t.description || "Official tournament elimination bracket.",
+            ruleset: "CDL 2026 Competitive Ruleset · Dedicated Central Host",
+            explainer: {
+              kicker: "TOURNAMENT CIRCUIT // BRACKET PROGRESSION",
+              title: `${escapeHtml(t.title || 'Tournament')} <span style="color:var(--lime);">Live Bracket Progression</span>`,
+              items: [
+                {
+                  title: "1. Match Progression",
+                  text: "Teams are seeded according to official tournament registration order. Match winners automatically advance to subsequent rounds until a champion is crowned."
+                },
+                {
+                  title: "2. Server & Central Host Protocol",
+                  text: "Competitors host games on dedicated Dallas / Central servers with official competitive ruleset and map veto directives."
+                },
+                {
+                  title: "3. Live Telemetry & Scores",
+                  text: "Official referees and team captains enter match results to update the live bracket immediately in real time."
+                },
+                {
+                  title: "4. Prize Payout Directive",
+                  text: `Cash prizes for the ${t.prize_pool || '$500 USD'} prize pool are disbursed immediately upon tournament completion.`
+                }
+              ]
+            },
+            stages: bData.stages
+          };
+
+          if (selectorBar && !selectorBar.querySelector(`[data-division="${escapeHtml(t.id)}"]`)) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "div-tab-btn" + (isTarget ? " active" : "");
+            btn.setAttribute("data-division", t.id);
+            btn.setAttribute("aria-selected", isTarget ? "true" : "false");
+            btn.innerHTML = `
+              <span>🏆 ${escapeHtml(t.title)}</span>
+              <span class="div-badge-pill" style="background:#f59e0b; color:#111; font-weight:800;">LIVE CUP</span>
+            `;
+            btn.addEventListener("click", () => {
+              document.querySelectorAll(".div-tab-btn").forEach(tab => {
+                tab.classList.remove("active");
+                tab.setAttribute("aria-selected", "false");
+              });
+              btn.classList.add("active");
+              btn.setAttribute("aria-selected", "true");
+              currentDivision = t.id;
+              currentStageFilter = "all";
+              refreshView();
+            });
+            selectorBar.appendChild(btn);
+          }
+
+          if (isTarget) {
+            document.querySelectorAll(".div-tab-btn").forEach(tab => {
+              const active = tab.getAttribute("data-division") === String(t.id);
+              tab.classList.toggle("active", active);
+              tab.setAttribute("aria-selected", active ? "true" : "false");
+            });
+            currentDivision = t.id;
+            currentStageFilter = "all";
+            refreshView();
+          }
+        } else if (isTarget) {
+          // Target tournament requested, but bracket not yet generated
+          const rootEl = document.getElementById("bracket-display-root");
+          if (rootEl) {
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:60px 20px; text-align:center; background:#12150e; border:1px dashed #2e3620; margin:20px 0;">
+                <div style="font-size:36px; margin-bottom:12px;">⏳</div>
+                <h3 style="font:800 22px var(--display); color:#fff; text-transform:uppercase; margin-bottom:8px;">
+                  Bracket Pending Generation
+                </h3>
+                <p style="color:var(--muted); max-width:540px; margin:0 auto 20px; font-size:13.5px; line-height:1.6;">
+                  Registrations for <strong>${escapeHtml(t.title)}</strong> are currently open! Once registrations conclude and at least 2 squads enlist, tournament referees will launch and seed the live bracket here.
+                </p>
+                <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                  <a href="/tournaments/" class="btn-tourney-primary" style="background:#f59e0b; border-color:#fbbf24; color:#111; padding:10px 18px; text-decoration:none; font-weight:800;">
+                    Register or View Tournament Hub ↗
+                  </a>
+                </div>
+              </div>
+            `;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load dynamic tournament brackets:", err);
+    }
   }
 
   // Run on DOM ready

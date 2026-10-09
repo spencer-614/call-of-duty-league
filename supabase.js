@@ -3573,6 +3573,277 @@ window.LeagueDB = {
     return list;
   },
 
+  // ==============================================================================
+  // TOURNAMENT LIVE BRACKET GENERATION ENGINE & MATCH ADVANCEMENT
+  // ==============================================================================
+  async generateTournamentBracket(tournamentId, options = {}) {
+    const list = await this.getTournaments();
+    const tourney = list.find(t => String(t.id) === String(tournamentId));
+    if (!tourney) return { success: false, error: "Tournament not found." };
+
+    // Fetch registered squads for this tournament
+    const regs = await this.getTournamentRegistrations(tournamentId);
+    if (!regs || regs.length < 2) {
+      return {
+        success: false,
+        error: `Tournament requires at least 2 registered teams to generate a bracket (currently ${regs ? regs.length : 0} registered).`
+      };
+    }
+
+    const isDoubleElim = String(tourney.bracket_type || "").toLowerCase().includes("double");
+    const N = regs.length;
+
+    // Calculate bracket size (next power of 2: 2, 4, 8, 16, 32)
+    let size = 2;
+    while (size < N) size *= 2;
+
+    function getSeedPairs(num) {
+      if (num === 2) return [[1, 2]];
+      let rounds = Math.log2(num) - 1;
+      let pls = [1, 2];
+      for (let i = 0; i < rounds; i++) {
+        let next = [];
+        let sum = (pls.length * 2) + 1;
+        pls.forEach(p => {
+          next.push(p);
+          next.push(sum - p);
+        });
+        pls = next;
+      }
+      let pairs = [];
+      for (let i = 0; i < pls.length; i += 2) {
+        pairs.push([pls[i], pls[i + 1]]);
+      }
+      return pairs;
+    }
+
+    const pairs = getSeedPairs(size);
+    const totalRounds = Math.log2(size);
+
+    function getRoundName(roundIdx, total) {
+      const fromEnd = total - roundIdx;
+      if (fromEnd === 1) return "Grand Finals";
+      if (fromEnd === 2) return "Semifinals";
+      if (fromEnd === 3) return "Quarterfinals";
+      if (fromEnd === 4) return "Round of 16";
+      return `Round ${roundIdx + 1}`;
+    }
+
+    const rounds = [];
+    let matchCounter = 1;
+
+    // Round 1 Matches
+    const r1Matches = pairs.map(([s1, s2], idx) => {
+      const t1 = regs[s1 - 1] || null;
+      const t2 = regs[s2 - 1] || null;
+      const mid = `M${matchCounter++}`;
+      const isBye1 = !t2 && t1;
+      const isBye2 = !t1 && t2;
+
+      return {
+        id: mid,
+        code: `R1-M${idx + 1}`,
+        roundName: getRoundName(0, totalRounds),
+        stageName: isDoubleElim ? "Winners Bracket" : "Championship Bracket",
+        status: (isBye1 || isBye2) ? "Completed" : "Scheduled",
+        time: "Round 1",
+        bestOf: "BO5",
+        team1: {
+          seed: s1,
+          name: t1 ? t1.team_name : "BYE",
+          tag: t1 ? (t1.team_name.slice(0, 4).toUpperCase()) : "BYE",
+          score: isBye1 ? 1 : 0,
+          winner: isBye1 ? true : null
+        },
+        team2: {
+          seed: s2,
+          name: t2 ? t2.team_name : "BYE",
+          tag: t2 ? (t2.team_name.slice(0, 4).toUpperCase()) : "BYE",
+          score: isBye2 ? 1 : 0,
+          winner: isBye2 ? true : null
+        },
+        maps: []
+      };
+    });
+
+    rounds.push({
+      roundId: "r1",
+      name: getRoundName(0, totalRounds),
+      badge: "Round 1",
+      bestOf: "BO5",
+      matches: r1Matches
+    });
+
+    // Subsequent rounds (Quarterfinals, Semifinals, Grand Finals)
+    let prevMatches = r1Matches;
+    for (let r = 1; r < totalRounds; r++) {
+      const currMatches = [];
+      const numMatches = prevMatches.length / 2;
+      for (let m = 0; m < numMatches; m++) {
+        const parent1 = prevMatches[m * 2];
+        const parent2 = prevMatches[m * 2 + 1];
+        const mid = `M${matchCounter++}`;
+
+        const t1Name = parent1.team1.winner ? parent1.team1.name : (parent1.team2.winner ? parent1.team2.name : `Winner of ${parent1.code}`);
+        const t1Tag = parent1.team1.winner ? parent1.team1.tag : (parent1.team2.winner ? parent1.team2.tag : "TBD");
+        const t1Seed = parent1.team1.winner ? parent1.team1.seed : (parent1.team2.winner ? parent1.team2.seed : null);
+
+        const t2Name = parent2.team1.winner ? parent2.team1.name : (parent2.team2.winner ? parent2.team2.name : `Winner of ${parent2.code}`);
+        const t2Tag = parent2.team1.winner ? parent2.team1.tag : (parent2.team2.winner ? parent2.team2.tag : "TBD");
+        const t2Seed = parent2.team1.winner ? parent2.team1.seed : (parent2.team2.winner ? parent2.team2.seed : null);
+
+        currMatches.push({
+          id: mid,
+          code: `R${r + 1}-M${m + 1}`,
+          roundName: getRoundName(r, totalRounds),
+          stageName: isDoubleElim ? (r === totalRounds - 1 ? "Grand Finals" : "Winners Bracket") : "Championship Bracket",
+          status: "Scheduled",
+          time: getRoundName(r, totalRounds),
+          bestOf: "BO5",
+          sourceMatch1: parent1.id,
+          sourceMatch2: parent2.id,
+          team1: { seed: t1Seed, name: t1Name, tag: t1Tag, score: 0, winner: null },
+          team2: { seed: t2Seed, name: t2Name, tag: t2Tag, score: 0, winner: null },
+          maps: []
+        });
+      }
+
+      rounds.push({
+        roundId: `r${r + 1}`,
+        name: getRoundName(r, totalRounds),
+        badge: `Round ${r + 1}`,
+        bestOf: "BO5",
+        matches: currMatches
+      });
+      prevMatches = currMatches;
+    }
+
+    const bracketObj = {
+      id: tourney.id,
+      tournament_id: tourney.id,
+      name: tourney.title || "Tournament Bracket",
+      tier: tourney.format || "4v4 CDL Variant",
+      badge: "LIVE TOURNAMENT",
+      format: `${N}-Team ${tourney.bracket_type || 'Single Elimination'}`,
+      prizePool: tourney.prize_pool || "$500 USD",
+      status: "LIVE BRACKET",
+      description: tourney.description || "Official tournament bracket progression.",
+      ruleset: "CDL V4 Competitive Settings · Dallas/Central Host",
+      generated_at: new Date().toISOString(),
+      teams_count: N,
+      explainer: {
+        kicker: "LIVE TOURNAMENT // BRACKET PROGRESSION",
+        title: `${tourney.title} <span style="color:var(--lime);">Live Match Bracket</span>`,
+        items: [
+          { title: "1. Match Check-In", text: "Teams must check in 15 minutes before their scheduled match time in Discord." },
+          { title: "2. Best of 5 Series", text: "Standard CDL rotation: Hardpoint, SnD, Control, Hardpoint, SnD." },
+          { title: "3. Live Telemetry", text: "Series scores and winner advancements update in real time as matches finish." }
+        ]
+      },
+      stages: [
+        {
+          id: "winners",
+          name: isDoubleElim ? "Winners Bracket (Upper)" : "Championship Bracket",
+          rounds: rounds
+        }
+      ]
+    };
+
+    tourney.bracket_data = bracketObj;
+    tourney.bracket_url = `/brackets/?tournament=${tourney.id}`;
+    tourney.status = "Live";
+    tourney.teams_registered_count = N;
+    tourney.registered_teams = N;
+
+    try {
+      localStorage.setItem(`frontline_tournament_bracket_${tourney.id}`, JSON.stringify(bracketObj));
+    } catch (_) {}
+
+    await this.saveTournament(tourney);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_bracket_updated", {
+        detail: { tournamentId: tourney.id, bracket: bracketObj }
+      }));
+    }
+
+    return { success: true, bracket: bracketObj, tournament: tourney };
+  },
+
+  async getTournamentBracket(tournamentId) {
+    if (!tournamentId) return null;
+    try {
+      const cached = localStorage.getItem(`frontline_tournament_bracket_${tournamentId}`);
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+
+    const tourneys = await this.getTournaments();
+    const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
+    if (tourney?.bracket_data) return tourney.bracket_data;
+    return null;
+  },
+
+  async advanceTournamentMatch(tournamentId, matchId, winnerNumber, score1 = 3, score2 = 0) {
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (!bracket) return { success: false, error: "Bracket not found." };
+
+    let targetMatch = null;
+    bracket.stages.forEach(s => {
+      s.rounds.forEach(r => {
+        r.matches.forEach(m => {
+          if (m.id === matchId || m.code === matchId) targetMatch = m;
+        });
+      });
+    });
+
+    if (!targetMatch) return { success: false, error: "Match not found in bracket." };
+
+    targetMatch.status = "Completed";
+    targetMatch.team1.score = parseInt(score1, 10) || 0;
+    targetMatch.team2.score = parseInt(score2, 10) || 0;
+    targetMatch.team1.winner = (winnerNumber === 1);
+    targetMatch.team2.winner = (winnerNumber === 2);
+
+    const winner = winnerNumber === 1 ? targetMatch.team1 : targetMatch.team2;
+
+    // Advance winner to dependent match in next round
+    bracket.stages.forEach(s => {
+      s.rounds.forEach(r => {
+        r.matches.forEach(m => {
+          if (m.sourceMatch1 === targetMatch.id) {
+            m.team1.name = winner.name;
+            m.team1.tag = winner.tag;
+            m.team1.seed = winner.seed;
+          }
+          if (m.sourceMatch2 === targetMatch.id) {
+            m.team2.name = winner.name;
+            m.team2.tag = winner.tag;
+            m.team2.seed = winner.seed;
+          }
+        });
+      });
+    });
+
+    try {
+      localStorage.setItem(`frontline_tournament_bracket_${tournamentId}`, JSON.stringify(bracket));
+    } catch (_) {}
+
+    const tourneys = await this.getTournaments();
+    const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
+    if (tourney) {
+      tourney.bracket_data = bracket;
+      await this.saveTournament(tourney);
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_bracket_updated", {
+        detail: { tournamentId, bracket }
+      }));
+    }
+
+    return { success: true, winner: winner.name, bracket };
+  },
+
   async deleteTournamentRegistration(registrationId, tournamentId = null) {
     if (!registrationId) return { success: false, error: "Registration ID required" };
 
