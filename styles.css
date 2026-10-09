@@ -8133,3 +8133,71 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
 
 
 
+
+/* ==============================================================================
+   LEAGUE & COMBATANT PROFILE NAVIGATION BUTTONS
+   ============================================================================== */
+.nav-league-profile-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(213, 244, 91, 0.12) !important;
+  border: 1px solid var(--lime) !important;
+  color: var(--lime) !important;
+  font-family: var(--body);
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 8px 14px !important;
+  border-radius: 2px !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(213, 244, 91, 0.15);
+  flex-shrink: 0;
+}
+
+.nav-league-profile-cta:hover {
+  background: var(--lime) !important;
+  color: #0b0d09 !important;
+  box-shadow: 0 0 18px rgba(213, 244, 91, 0.45);
+  transform: translateY(-1px);
+}
+
+.nav-league-profile-cta img {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .nav-league-profile-cta {
+    padding: 6px 10px !important;
+    font-size: 10.5px !important;
+    gap: 4px;
+  }
+}
+
+.nav-league-profile-link {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: #181a13;
+  border: 1px solid #25281d;
+  color: var(--lime) !important;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-league-profile-link:hover {
+  border-color: var(--lime);
+  background: #202416;
+  color: #ffffff !important;
+}
