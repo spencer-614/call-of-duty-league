@@ -520,6 +520,19 @@
             teamsEl.textContent = `${count} / ${max} Squads`;
           }
           if (rulesEl) rulesEl.textContent = `${t.date || 'TBD'} ${t.time ? '· ' + t.time : ''}`;
+
+          const bannerSec = document.getElementById('tourney-banner-section');
+          if (bannerSec) {
+            const bUrl = t.banner_url || t.image_url;
+            if (bUrl) {
+              bannerSec.style.backgroundImage = `linear-gradient(180deg, rgba(16, 19, 13, 0.82) 0%, rgba(16, 19, 13, 0.95) 100%), url('${escapeHtml(bUrl)}')`;
+              bannerSec.style.backgroundSize = 'cover';
+              bannerSec.style.backgroundPosition = 'center';
+              bannerSec.style.backgroundRepeat = 'no-repeat';
+            } else {
+              bannerSec.style.backgroundImage = 'linear-gradient(135deg, #181d11 0%, #10130d 100%)';
+            }
+          }
         }
 
         function updateStageFilterButtons() {

@@ -2685,7 +2685,7 @@
 
             <!-- Tournament Card Preview -->
             <div style="max-width:540px; margin:0 auto; background:#12140e; border:1px solid #303723; border-radius:4px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.6);">
-              <div id="preview-tourney-banner" style="position:relative; height:160px; background-size:cover; background-position:center; background-image:url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80'); background-color:#1c160c; display:flex; justify-content:space-between; align-items:flex-start; padding:12px;">
+              <div id="preview-tourney-banner" style="position:relative; width:100%; aspect-ratio:16/9; min-height:190px; max-height:280px; background-size:cover; background-position:center; background-repeat:no-repeat; background-image:url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80'); background-color:#1c160c; display:flex; justify-content:space-between; align-items:flex-start; padding:12px; box-sizing:border-box;">
                 <span id="preview-tourney-status-badge" class="tourney-badge-status tourney-badge-open" style="position:static;">REGISTRATION OPEN</span>
                 <span id="preview-tourney-format-badge" style="font:800 11px var(--body); background:rgba(0,0,0,0.75); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; padding:3px 8px; border-radius:2px;">4v4 CDL Variant</span>
                 <span id="preview-tourney-prize-badge" style="position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,0.85); border:1px solid #f59e0b; color:#fbbf24; font:900 12px var(--body); padding:4px 10px; border-radius:4px; box-shadow:0 0 10px rgba(245,158,11,0.3);">$1,500 USD</span>
@@ -2811,36 +2811,38 @@
 
                 <!-- Graphic Banner Attachment / Upload -->
                 <div class="form-group" style="grid-column: 1 / -1; background:#141611; border:1px dashed #3a4022; padding:16px; border-radius:4px;">
-                  <label class="form-label" style="font-size:13px; font-weight:800; color:#fbbf24; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
-                    <span>📸 Embedded Graphic Banner / Flyer Image (Optional)</span>
-                    <span style="font-size:11px; font-weight:normal; color:var(--muted);">(Upload image file, paste direct image URL, or choose preset)</span>
+                  <label class="form-label" style="font-size:13px; font-weight:800; color:#fbbf24; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+                    <span>📸 Embedded Graphic Banner / Flyer Image (Fitted for 1200 × 675 px · 16:9)</span>
                   </label>
+                  <p style="color:#9ca3af; font-size:11.5px; margin:0 0 12px; line-height:1.5;">
+                    Optimal dimensions are <strong>1200 × 675 px</strong> (standard 16:9 widescreen). High-resolution images scale smoothly and fit perfectly on desktop cards, mobile screens, and tournament brackets without stretching or distortion.
+                  </p>
                   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; align-items:flex-start;">
                     <div>
-                      <label class="form-label" for="tourney-image-file" style="font-size:11.5px; margin-bottom:2px;">Upload Image File (PNG, JPG, WebP)</label>
+                      <label class="form-label" for="tourney-image-file" style="font-size:11.5px; margin-bottom:2px;">Upload 1200×675 Image File (PNG, JPG, WebP)</label>
                       <input type="file" id="tourney-image-file" accept="image/*" class="form-control" style="padding:6px; font-size:12px;" />
                     </div>
                     <div>
-                      <label class="form-label" for="tourney-banner-input" style="font-size:11.5px; margin-bottom:2px;">Or Direct Image URL</label>
-                      <input type="url" id="tourney-banner-input" class="form-control" placeholder="https://images.unsplash.com/... or /images/..." style="font-size:12px;" />
+                      <label class="form-label" for="tourney-banner-input" style="font-size:11.5px; margin-bottom:2px;">Or Direct Image URL (1200×675)</label>
+                      <input type="url" id="tourney-banner-input" class="form-control" placeholder="https://... or /images/..." style="font-size:12px;" />
                     </div>
                   </div>
 
                   <!-- Presets -->
                   <div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">
-                    <span style="font-size:11px; color:var(--muted); font-weight:700;">Graphic Presets:</span>
-                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80')">🏆 Major Trophy</button>
-                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80')">🎯 SnD Combat</button>
-                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&auto=format&fit=crop&q=80')">⚔ Arena Duel</button>
-                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800&auto=format&fit=crop&q=80')">⚡ Champions</button>
+                    <span style="font-size:11px; color:var(--muted); font-weight:700;">1200×675 Presets:</span>
+                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80')">🏆 Major Trophy</button>
+                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&h=675&auto=format&fit=crop&q=80')">🎯 SnD Combat</button>
+                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&h=675&auto=format&fit=crop&q=80')">⚔ Arena Duel</button>
+                    <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1200&h=675&auto=format&fit=crop&q=80')">⚡ Champions</button>
                   </div>
 
                   <!-- Banner Preview Box -->
-                  <div id="tourney-image-preview-container" style="display:none; align-items:center; gap:14px; margin-top:12px; padding:10px 14px; background:#0e100c; border:1px solid #282d18; border-radius:3px;">
-                    <img id="tourney-uploaded-thumb" src="" alt="Thumbnail" style="width:72px; height:48px; object-fit:cover; background:#050604; border-radius:3px; border:1px solid #3c4225;" />
+                  <div id="tourney-image-preview-container" style="display:none; align-items:center; gap:14px; margin-top:12px; padding:12px 14px; background:#0e100c; border:1px solid #282d18; border-radius:3px;">
+                    <img id="tourney-uploaded-thumb" src="" alt="1200x675 Preview" style="width:104px; height:58.5px; aspect-ratio:16/9; object-fit:cover; background:#050604; border-radius:3px; border:1px solid #3c4225;" />
                     <div style="flex:1;">
-                      <span id="tourney-image-filename" style="font-size:12px; font-weight:700; color:#d4d8c2; display:block; margin-bottom:2px;">Graphic Banner Ready</span>
-                      <div style="display:inline-block; font-size:11px; color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.25); padding:1px 6px; border-radius:2px;">✓ Banner attached to tournament post</div>
+                      <span id="tourney-image-filename" style="font-size:12px; font-weight:700; color:#d4d8c2; display:block; margin-bottom:2px;">Graphic Banner Attached</span>
+                      <div style="display:inline-block; font-size:11px; color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.25); padding:1px 6px; border-radius:2px;">✓ Formatted for 1200 × 675 px (16:9 aspect ratio)</div>
                     </div>
                     <button type="button" class="btn-action-sm btn-action-danger" style="padding:4px 10px; font-size:11px;" onclick="removeTourneyImage()">✕ Remove Image</button>
                   </div>
