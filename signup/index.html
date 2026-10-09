@@ -2170,6 +2170,11 @@
           try {
             const res = await window.LeagueDB.submitSignup(signupData);
 
+            if (res.alreadyEnlisted) {
+              alert("You are already enlisted. Your profile details have been updated.");
+              return;
+              }
+
             if (res.success) {
               if (currentCombatantUser) {
                 if (!currentCombatantUser.user_metadata) currentCombatantUser.user_metadata = {};

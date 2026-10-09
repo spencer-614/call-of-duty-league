@@ -1188,34 +1188,66 @@ window.LeagueDB = {
       cleanPayload.discord_user_id = signupData.discord_user_id;
     }
 
-    // Guard: If player is already accepted/enlisted in the league, NEVER send another registration!
-    if (dbClient) {
-      try {
-        const { data: pByTag } = await dbClient
-          .from("players")
-          .select("id, gamertag")
-          .ilike("gamertag", cleanGamertag)
-          .maybeSingle();
-
-        if (pByTag) {
-          console.log(`[LeagueDB] submitSignup skipped: Operative ${cleanGamertag} is already an accepted player.`);
-          return { success: true, alreadyEnlisted: true, data: pByTag };
-        }
-
-        if (cleanPayload.user_id) {
-          const { data: pById } = await dbClient
-            .from("players")
-            .select("id, gamertag")
-            .eq("user_id", cleanPayload.user_id)
-            .maybeSingle();
-
-          if (pById) {
-            console.log(`[LeagueDB] submitSignup skipped: User ID ${cleanPayload.user_id} is already an accepted player.`);
-            return { success: true, alreadyEnlisted: true, data: pById };
-          }
-        }
-      } catch (_) {}
+    // Save registration profile details before any already-enlisted early return.
+    if (dbClient && cleanPayload.user_id) {
+    await this.completeCombatantDossier({
+      gamertag: cleanGamertag,
+      activisionId: cleanActivision,
+      role: cleanRole,
+      region: cleanRegion,
+      platform: cleanPlatform,
+      discordName: cleanDiscord,
+      avatarUrl: cleanAvatar
+    });
     }
+
+    // Guard: If player is already accepted/enlisted in the league, NEVER send another registration!
+    // An automatically created player profile is not an approved registration.
+// In the current approval flow, approved players have their signup removed.
+if (dbClient && cleanPayload.user_id) {
+  try {
+    const { data: signups, error: signupError } = await dbClient
+      .from("league_signups")
+      .select("id, status")
+      .eq("user_id", cleanPayload.user_id);
+
+    if (signupError) {
+      return {
+        success: false,
+        error: "Could not verify your registration: " + signupError.message
+      };
+    }
+
+    // An existing signup must be allowed through to the save/update logic.
+    if (!signups || signups.length === 0) {
+      const { data: player, error: playerError } = await dbClient
+        .from("players")
+        .select("id, gamertag")
+        .eq("user_id", cleanPayload.user_id)
+        .maybeSingle();
+
+      if (playerError) {
+        return {
+          success: false,
+          error: "Could not verify your player profile: " + playerError.message
+        };
+      }
+
+      if (player) {
+        return {
+          success: true,
+          alreadyEnlisted: true,
+          data: player
+        };
+      }
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message || "Could not verify your registration."
+    };
+  }
+}
 
     let remoteSaved = false;
     let savedData = null;
