@@ -3262,7 +3262,7 @@ window.LeagueDB = {
   ],
 
   async getTournaments(filters = {}) {
-    let list = [];
+    let list = null;
 
     // 1. Try Supabase dedicated table 'tournaments' if created
     if (dbClient) {
@@ -3272,10 +3272,11 @@ window.LeagueDB = {
           .select("*")
           .order("start_date", { ascending: true });
 
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           list = data;
           try {
             localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
+            localStorage.setItem("frontline_tournaments_initialized", "true");
           } catch (e) {}
         }
       } catch (err) {
@@ -3284,7 +3285,7 @@ window.LeagueDB = {
     }
 
     // 2. Try Supabase league_settings row 'tournaments_registry'
-    if ((!list || list.length === 0) && dbClient) {
+    if (list === null && dbClient) {
       try {
         const { data, error } = await dbClient
           .from("league_settings")
@@ -3292,13 +3293,14 @@ window.LeagueDB = {
           .eq("id", "tournaments_registry")
           .maybeSingle();
 
-        if (!error && data && data.status_text) {
+        if (!error && data && data.status_text !== undefined && data.status_text !== null) {
           try {
             const parsed = JSON.parse(data.status_text);
-            if (Array.isArray(parsed) && parsed.length > 0) {
+            if (Array.isArray(parsed)) {
               list = parsed;
               try {
                 localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
+                localStorage.setItem("frontline_tournaments_initialized", "true");
               } catch (e) {}
             }
           } catch (e) {}
@@ -3307,22 +3309,33 @@ window.LeagueDB = {
     }
 
     // 3. Fallback to localStorage
-    if (!list || list.length === 0) {
+    if (list === null) {
       try {
         const local = localStorage.getItem("frontline_tournaments_data");
-        if (local) {
-          list = JSON.parse(local);
+        if (local !== null) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            list = parsed;
+          }
         }
       } catch (e) {}
     }
 
-    // 4. Default mock fallback
-    if (!list || list.length === 0) {
-      list = [...this.DEFAULT_TOURNAMENTS];
-      try {
-        localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
-      } catch (e) {}
+    // 4. Default mock fallback ONLY if never initialized anywhere
+    if (list === null) {
+      const isInitialized = (typeof localStorage !== 'undefined') && localStorage.getItem("frontline_tournaments_initialized") === "true";
+      if (!isInitialized) {
+        list = [...this.DEFAULT_TOURNAMENTS];
+        try {
+          localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
+          localStorage.setItem("frontline_tournaments_initialized", "true");
+        } catch (e) {}
+      } else {
+        list = [];
+      }
     }
+
+    if (!Array.isArray(list)) list = [];
 
     // Filter in-memory if requested
     if (filters) {
@@ -3427,11 +3440,18 @@ window.LeagueDB = {
 
     try {
       localStorage.setItem("frontline_tournaments_data", JSON.stringify(filtered));
+      localStorage.setItem("frontline_tournaments_initialized", "true");
     } catch (e) {}
 
     if (dbClient) {
       try {
         await dbClient.from("tournaments").delete().eq("id", tournamentId);
+      } catch (e) {}
+      try {
+        await dbClient.from("tournament_registrations").delete().eq("tournament_id", tournamentId);
+      } catch (e) {}
+      try {
+        await dbClient.from("tournament_matches").delete().eq("division_id", tournamentId);
       } catch (e) {}
       try {
         await dbClient.from("league_settings").upsert({
@@ -3444,6 +3464,36 @@ window.LeagueDB = {
     }
 
     window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: { id: tournamentId, deleted: true } }));
+    return { success: true };
+  },
+
+  async deleteAllTournaments() {
+    try {
+      localStorage.setItem("frontline_tournaments_data", "[]");
+      localStorage.setItem("frontline_tournaments_initialized", "true");
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("tournaments").delete().neq("id", "___none___");
+      } catch (e) {}
+      try {
+        await dbClient.from("tournament_registrations").delete().neq("id", "___none___");
+      } catch (e) {}
+      try {
+        await dbClient.from("tournament_matches").delete().neq("id", -1);
+      } catch (e) {}
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournaments_registry",
+          status_state: "active",
+          status_text: "[]",
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (e) {}
+    }
+
+    window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: { deletedAll: true } }));
     return { success: true };
   },
 

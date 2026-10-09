@@ -856,9 +856,14 @@
       }
 
       function updateMetrics() {
-        if (!currentTournaments || !currentTournaments.length) return;
-        const activeCount = currentTournaments.filter(t => (t.status || '').toLowerCase() !== 'completed').length;
         const countEl = document.getElementById('metric-active-count');
+        const poolEl = document.getElementById('metric-total-pool');
+        if (!currentTournaments || !currentTournaments.length) {
+          if (countEl) countEl.textContent = '0 Events';
+          if (poolEl) poolEl.textContent = '$0 USD';
+          return;
+        }
+        const activeCount = currentTournaments.filter(t => (t.status || '').toLowerCase() !== 'completed').length;
         if (countEl) countEl.textContent = `${activeCount} Events`;
 
         let totalPrize = 0;
@@ -866,9 +871,8 @@
           const m = String(t.prize_pool || '').replace(/[^0-9]/g, '');
           if (m) totalPrize += parseInt(m, 10);
         });
-        const poolEl = document.getElementById('metric-total-pool');
-        if (poolEl && totalPrize > 0) {
-          poolEl.textContent = `$${totalPrize.toLocaleString()} USD`;
+        if (poolEl) {
+          poolEl.textContent = totalPrize > 0 ? `$${totalPrize.toLocaleString()} USD` : '$0 USD';
         }
       }
 

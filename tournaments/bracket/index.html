@@ -418,6 +418,25 @@
                 No active tournaments currently recorded in the registry.
               </div>
             `;
+            const rootEl = document.getElementById('bracket-display-root');
+            if (rootEl) {
+              rootEl.innerHTML = `
+                <div class="empty-bracket-state" style="padding:70px 20px; text-align:center; background:#12150e; border:1px dashed #2e3620; margin:24px 0; border-radius:3px;">
+                  <div style="font-size:42px; margin-bottom:14px;">🏆</div>
+                  <h3 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin-bottom:10px;">
+                    No Active Tournaments Found
+                  </h3>
+                  <p style="color:#9ca3af; max-width:540px; margin:0 auto 22px; font-size:13.5px; line-height:1.6;">
+                    There are currently no scheduled tournaments or live brackets published. Check back soon or visit the Tournaments Hub.
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                    <a href="/tournaments/" class="btn-tourney-primary" style="padding:11px 20px;">
+                      <span>←</span> Tournaments Hub
+                    </a>
+                  </div>
+                </div>
+              `;
+            }
             return;
           }
 

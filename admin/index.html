@@ -2889,7 +2889,10 @@
           <div class="admin-panel-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; gap:12px;">
               <h3 class="admin-card-title" style="margin:0;">Dispatched Tournaments &amp; Archive</h3>
-              <button type="button" class="btn-action-sm" onclick="loadAdminTournaments()">↻ Refresh Tournaments</button>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn-action-sm btn-action-danger" onclick="adminDeleteAllTourneys()" style="font-size:11px; padding:4px 10px;">🗑 Delete All</button>
+                <button type="button" class="btn-action-sm" onclick="loadAdminTournaments()">↻ Refresh Tournaments</button>
+              </div>
             </div>
             <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
               Active tournaments appear on <a href="/tournaments/" target="_blank" style="color:#fbbf24;">/tournaments/</a>. You can edit brackets, change status to Live, or review enlisted squads at any time.
@@ -8211,71 +8214,7 @@
                 try { list = JSON.parse(local); } catch (e) {}
               }
             }
-            if (!list || list.length === 0) {
-              list = [
-                {
-                  id: "tourney_prime_snd",
-                  title: "Saturday Night SnD Prime Cup",
-                  format: "2v2 Search & Destroy",
-                  bracket_type: "Single Elimination",
-                  prize_pool: "$750 USD",
-                  entry_fee: "Free Entry",
-                  date: "2026-10-17",
-                  time: "8:00 PM EST",
-                  registered_teams: 28,
-                  max_teams: 32,
-                  status: "Registration Open",
-                  banner_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80",
-                  description: "2v2 Search and Destroy Prime series. Single elimination high-intensity bracket with instant cash payout."
-                },
-                {
-                  id: "tourney_radar_1v1",
-                  title: "Radar Always On 1v1 Gunfight Showdown",
-                  format: "1v1 Radar",
-                  bracket_type: "Double Elimination",
-                  prize_pool: "$500 USD",
-                  entry_fee: "Free Entry",
-                  date: "2026-10-18",
-                  time: "7:00 PM EST",
-                  registered_teams: 16,
-                  max_teams: 16,
-                  status: "Live",
-                  banner_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&auto=format&fit=crop&q=80",
-                  description: "1v1 Radar always on gunfight tournament. Pure mechanical duel with no radar latency."
-                },
-                {
-                  id: "tourney_challengers_cup",
-                  title: "Division 2 Challengers Qualifier Cup",
-                  format: "4v4 CDL Variant",
-                  bracket_type: "Double Elimination",
-                  prize_pool: "$1,000 USD",
-                  entry_fee: "Free Entry",
-                  date: "2026-10-31",
-                  time: "5:00 PM EST",
-                  registered_teams: 8,
-                  max_teams: 16,
-                  status: "Upcoming",
-                  banner_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
-                  description: "Challengers tier 4v4 variant cup. Standard CDL rules with top 4 squads earning franchise tryout consideration."
-                },
-                {
-                  id: "tourney_fall_major",
-                  title: "Frontline Fall Major #1 Championship",
-                  format: "4v4 CDL Variant",
-                  bracket_type: "Double Elimination",
-                  prize_pool: "$2,500 USD",
-                  entry_fee: "Free Entry",
-                  date: "2026-11-14",
-                  time: "6:00 PM EST",
-                  registered_teams: 14,
-                  max_teams: 32,
-                  status: "Registration Open",
-                  pinned: true,
-                  banner_url: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800&auto=format&fit=crop&q=80",
-                  description: "Premier major championship tournament with official prize distribution, live broadcast feature matches, and Championship rings."
-                }
-              ];
-            }
+            // Tournaments loaded from database/storage without mock respawning
             cachedAdminTournaments = list || [];
 
             // Update Metrics Bar
@@ -8488,15 +8427,23 @@
 
         async function adminDeleteTourney(id, title) {
           if (!confirm(`Are you sure you want to delete tournament "${title}"? This cannot be undone.`)) return;
-          if (!window.LeagueDB || typeof window.LeagueDB.deleteTournament !== 'function') return;
 
           try {
-            const res = await window.LeagueDB.deleteTournament(id);
-            if (res.success) {
+            if (window.LeagueDB && typeof window.LeagueDB.deleteTournament === 'function') {
+              const res = await window.LeagueDB.deleteTournament(id);
+              if (res.success) {
+                showToast(`✓ Tournament "${title}" removed.`);
+                await loadAdminTournaments();
+              } else {
+                showToast(`Failed to delete tournament: ${res.error}`, true);
+              }
+            } else {
+              let localList = JSON.parse(localStorage.getItem("frontline_tournaments_data") || "[]");
+              localList = localList.filter(t => String(t.id) !== String(id));
+              localStorage.setItem("frontline_tournaments_data", JSON.stringify(localList));
+              localStorage.setItem("frontline_tournaments_initialized", "true");
               showToast(`✓ Tournament "${title}" removed.`);
               await loadAdminTournaments();
-            } else {
-              showToast(`Failed to delete tournament: ${res.error}`, true);
             }
           } catch(err) {
             console.error("Delete tournament error:", err);
@@ -8504,6 +8451,35 @@
           }
         }
         window.adminDeleteTourney = adminDeleteTourney;
+
+        async function adminDeleteAllTourneys() {
+          if (!cachedAdminTournaments || cachedAdminTournaments.length === 0) {
+            showToast("No tournaments to delete.", true);
+            return;
+          }
+          if (!confirm(`Are you sure you want to delete ALL ${cachedAdminTournaments.length} tournament(s)? This will permanently remove all tournaments, matches, and squad registrations.`)) return;
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.deleteAllTournaments === 'function') {
+              const res = await window.LeagueDB.deleteAllTournaments();
+              if (res.success) {
+                showToast("✓ All tournaments successfully deleted.");
+                await loadAdminTournaments();
+              } else {
+                showToast(`Failed: ${res.error}`, true);
+              }
+            } else {
+              localStorage.setItem("frontline_tournaments_data", "[]");
+              localStorage.setItem("frontline_tournaments_initialized", "true");
+              showToast("✓ All tournaments successfully deleted.");
+              await loadAdminTournaments();
+            }
+          } catch (err) {
+            console.error("Delete all tournaments error:", err);
+            showToast("Error deleting all tournaments.", true);
+          }
+        }
+        window.adminDeleteAllTourneys = adminDeleteAllTourneys;
 
         async function adminViewTourneyRegistrations(tourneyId, tourneyTitle) {
           const modal = document.getElementById("modal-view-tourney-registrations");
