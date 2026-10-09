@@ -2854,7 +2854,7 @@
 
                 <div class="form-group">
                   <label class="form-label" for="tourney-bracket-url-input">Bracket Page Route / URL</label>
-                  <input type="text" id="tourney-bracket-url-input" class="form-control" placeholder="/brackets/ or Challonge link" value="/brackets/" />
+                  <input type="text" id="tourney-bracket-url-input" class="form-control" placeholder="/tournaments/bracket/ or Challonge link" value="/tournaments/bracket/" />
                 </div>
 
                 <!-- Priority Pinning & Active Checks -->
@@ -8123,7 +8123,7 @@
           document.getElementById("tourney-time-input").value = tourney.time || tourney.start_time || "8:00 PM EST";
           document.getElementById("tourney-banner-input").value = tourney.banner_url || tourney.image_url || "";
           document.getElementById("tourney-reg-url-input").value = tourney.registration_url || "";
-          document.getElementById("tourney-bracket-url-input").value = tourney.bracket_url || "/brackets/";
+          document.getElementById("tourney-bracket-url-input").value = tourney.bracket_url || "/tournaments/bracket/";
           
           const pinEl = document.getElementById("tourney-pinned-input");
           if (pinEl) pinEl.checked = !!tourney.pinned;
@@ -8359,7 +8359,7 @@
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="editTournament('${escapeHtml(t.id)}')">✏️ Edit</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
-                      <a href="/brackets/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
+                      <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
                       <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
                       <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
                     </div>
@@ -8390,7 +8390,7 @@
           const time = document.getElementById("tourney-time-input")?.value.trim();
           const bannerUrl = document.getElementById("tourney-banner-input")?.value.trim() || "";
           const regUrl = document.getElementById("tourney-reg-url-input")?.value.trim() || "";
-          const bracketUrl = document.getElementById("tourney-bracket-url-input")?.value.trim() || "/brackets/";
+          const bracketUrl = document.getElementById("tourney-bracket-url-input")?.value.trim() || "/tournaments/bracket/";
           const desc = document.getElementById("tourney-desc-input")?.value.trim() || "";
           const isPinned = !!document.getElementById("tourney-pinned-input")?.checked;
           const isActive = document.getElementById("tourney-is-active-input")?.checked !== false;
@@ -8726,7 +8726,7 @@
                 </div>
               </div>
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <a href="/brackets/?tournament=${encodeURIComponent(tourneyId)}" target="_blank" class="btn-action-sm" style="color:#22c55e; border-color:#22c55e; text-decoration:none; padding:6px 12px; font-weight:800;">
+                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(tourneyId)}" target="_blank" class="btn-action-sm" style="color:#22c55e; border-color:#22c55e; text-decoration:none; padding:6px 12px; font-weight:800;">
                   ⚔ View Public Live Bracket ↗
                 </a>
                 <button type="button" class="btn-action-sm btn-action-danger" style="padding:6px 10px;" onclick="adminRegenerateBracketAction('${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">

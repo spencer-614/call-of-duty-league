@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <link rel="icon" type="image/png" href="/images/leaguelogo_1.png" />
+    <link rel="apple-touch-icon" href="/images/leaguelogo_1.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Frontline — Tournament Hub Live Brackets</title>
+    <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
+    <style>
+      :root {
+        --tourney-gold: #fbbf24;
+        --tourney-dark: #0f120c;
+        --tourney-border: #29321e;
+      }
+      .tourney-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        font: 800 10.5px var(--body);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-radius: 2px;
+      }
+      .tourney-badge-pill.live {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid #ef4444;
+        color: #f87171;
+      }
+      .tourney-badge-pill.open {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid var(--tourney-gold);
+        color: var(--tourney-gold);
+      }
+      .tourney-badge-pill.completed {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid #22c55e;
+        color: #4ade80;
+      }
+      .tourney-tab-active {
+        background: #2b2410 !important;
+        border-color: var(--tourney-gold) !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.25) !important;
+      }
+      .btn-tourney-primary {
+        background: #f59e0b;
+        color: #11140e;
+        border: 1px solid #fbbf24;
+        padding: 8px 16px;
+        font: 800 12px var(--body);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        border-radius: 2px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+      .btn-tourney-primary:hover {
+        background: #d97706;
+        color: #ffffff;
+      }
+      .btn-tourney-outline {
+        background: transparent;
+        border: 1px solid #3d472c;
+        color: #cbd5e1;
+        padding: 8px 16px;
+        font: 800 12px var(--body);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        border-radius: 2px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+      .btn-tourney-outline:hover {
+        border-color: var(--tourney-gold);
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Header & Navigation -->
+    <header class="header">
+      <div class="wrap nav">
+        <a class="brand" href="/home/">
+          <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">TOURNAMENTS CIRCUIT</small>
+            <div class="brand-status">
+              <span class="nav-beacon" style="background:#fbbf24;"></span>
+              <span style="color:#fbbf24;">TOURNAMENT BRACKETS</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Header Center Hub with Mode Switcher -->
+        <div class="header-center-hub">
+          <h1 class="header-welcome">TOURNAMENT <span class="welcome-accent" style="color:#fbbf24;">BRACKETS</span></h1>
+          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+            <a href="/brackets/" class="mode-switch-btn" data-mode="league" title="Frontline Franchised League Playoff Brackets">
+              <span>🛡</span> <span>League</span>
+            </a>
+            <a href="/arena/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Circuit">
+              <span>⚔</span> <span>Arena</span>
+            </a>
+            <a href="/tournaments/" class="mode-switch-btn active-league" data-mode="tournaments" title="Frontline Tournaments Hub" style="background:#2b2512; border-color:#fbbf24; color:#fbbf24;">
+              <span>🏆</span> <span>Tournaments</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
+                  <a href="/tournaments/" style="color:#fbbf24;"><span class="nav-icon">🏆</span> Tournaments Hub</a>
+                  <a href="/tournaments/bracket/" style="color:#fbbf24;"><span class="nav-icon">⚔</span> Tournament Brackets</a>
+                  <a href="/brackets/"><span class="nav-icon">🛡</span> League Playoffs</a>
+                  <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="/teams/"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.gg/frontlinecodleague"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <span>Join Discord</span>
+            <span class="cta-arrow">↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Breadcrumb Bar -->
+    <div style="background:#0c0d0a; border-bottom:1px solid #232718; padding:10px 0;">
+      <div class="wrap" style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);">
+        <a href="/home/" style="color:var(--muted); text-decoration:none;">Frontline Home</a>
+        <span>/</span>
+        <a href="/tournaments/" style="color:var(--muted); text-decoration:none;">Tournaments Hub</a>
+        <span>/</span>
+        <strong style="color:#fbbf24;">Live Tournament Brackets</strong>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <!-- Page Header -->
+      <section class="bracket-header-section" style="border-bottom:1px solid #232918; padding-bottom:24px;">
+        <div class="kicker" style="color:#fbbf24;">🏆 TOURNAMENT CIRCUIT // ELIMINATION BRACKET PROGRESSION</div>
+        <h2 style="font: 800 44px/0.95 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
+          TOURNAMENT <span style="color:#fbbf24;">LIVE BRACKETS</span>
+        </h2>
+        <p class="intro">
+          Sanctioned single- and double-elimination brackets for Frontline open cups, weekend variant showdowns, and cash majors. Follow seeded match progressions, map vetoes, and live scores in real time.
+        </p>
+      </section>
+
+      <!-- Tournament Selector Bar -->
+      <div style="margin-top:24px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <span style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">
+            SELECT TOURNAMENT EVENT:
+          </span>
+          <a href="/tournaments/" class="btn-tourney-outline" style="font-size:11px; padding:4px 10px;">
+            <span>←</span> Back to Tournament Hub
+          </a>
+        </div>
+        <nav class="division-selector-bar" id="tournaments-selector-bar" aria-label="Tournament Events" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:6px;">
+          <button type="button" class="div-tab-btn active" id="tab-loading-tourneys" style="opacity:0.7;">
+            <span>Loading Tournaments...</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Active Tournament Overview Banner -->
+      <section class="division-info-banner" id="tourney-banner-section" aria-label="Tournament Details" style="border-color:#384325; background:linear-gradient(135deg, #181d11 0%, #10130d 100%);">
+        <div class="div-banner-left">
+          <div style="font: 800 11.5px var(--body); color:#fbbf24; letter-spacing: 1.5px; margin-bottom: 4px;">
+            // ACTIVE TOURNAMENT BRACKET TELEMETRY
+          </div>
+          <div style="display:flex; align-items:center; gap: 12px; flex-wrap: wrap;">
+            <h2 id="tourney-banner-title" style="margin:0; font:800 28px var(--display); color:#fff; text-transform:uppercase;">Frontline Championship</h2>
+            <span class="pill" id="tourney-banner-badge" style="color:#fbbf24; border-color:#fbbf2480; background:rgba(245,158,11,0.1);">LIVE BRACKET</span>
+          </div>
+          <p id="tourney-banner-desc" style="color:#9ca3af; font-size:13px; line-height:1.5; margin-top:8px; max-width:640px;">
+            Official competitive bracket.
+          </p>
+        </div>
+
+        <div class="div-banner-stats">
+          <div>
+            <div class="stat-chip-label">BRACKET FORMAT</div>
+            <div class="stat-chip-value" id="tourney-banner-format" style="color:#ffffff;">Double Elimination</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">PRIZE POOL</div>
+            <div class="stat-chip-value" id="tourney-banner-prize" style="color:#fbbf24;">$500 USD</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">SQUADS SEEDED</div>
+            <div class="stat-chip-value" id="tourney-banner-teams" style="color:#38bdf8;">8 Squads</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">HOST PROTOCOL</div>
+            <div class="stat-chip-value" id="tourney-banner-rules" style="font-size:13px; color:#cbd5e1;">Central 60Hz CDL</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bracket Controls & View Modes Toolbar -->
+      <div class="bracket-toolbar">
+        <div class="stage-filter-group" id="stage-filter-container" aria-label="Stage Filter">
+          <button type="button" class="stage-filter-btn active" data-stage="all">All Stages</button>
+        </div>
+
+        <div class="view-mode-group" aria-label="Display View">
+          <button type="button" class="view-mode-btn active" id="view-btn-tree" title="Interactive visual tree">
+            ☷ Tree View
+          </button>
+          <button type="button" class="view-mode-btn" id="view-btn-list" title="Chronological schedule view">
+            ☰ Schedule View
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Bracket Container (Populated dynamically) -->
+      <section id="bracket-display-root" aria-label="Interactive Tournament Bracket" style="min-height:360px;">
+        <div style="text-align:center; padding: 70px 0; color:var(--muted);">
+          Connecting to Frontline Tournament Bracket Engine...
+        </div>
+      </section>
+
+      <!-- Tournament Rules & Format Explainer -->
+      <section id="tournament-explainer-section" style="margin: 40px 0 60px; background:var(--panel); border:1px solid #28301c; padding: 32px; border-radius:3px;">
+        <div class="kicker" id="explainer-kicker" style="color:#fbbf24;">TOURNAMENT DIRECTIVE // CDL RULES</div>
+        <h3 id="explainer-title" style="font: 800 24px var(--display); text-transform: uppercase; margin: 8px 0 16px; color:var(--text);">
+          How Frontline <span style="color:#fbbf24;">Tournament Brackets Work</span>
+        </h3>
+        <div id="explainer-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">1. Automated Seeding &amp; BYE Progression</strong>
+            Squads are seeded according to official check-in order and regional standing. In uneven brackets, top seeds receive automatic round 1 BYEs advancing directly to round 2.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">2. Map Vetoes &amp; Host Rotation</strong>
+            Higher-seeded squad elects Map 1 host on dedicated Central servers (Dallas, TX / Chicago, IL). Standard veto order: HP veto, SnD veto, Control pick, HP pick, SnD remaining.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">3. Real-Time Score Verification</strong>
+            Referees verify match screenshots and stream timestamps in Discord. The bracket updates automatically and moves winners forward into their next scheduled matchup.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">4. Instant Prize Payouts</strong>
+            Cash pools are disbursed to winning captains immediately after Grand Finals conclusion via PayPal, CashApp, or Venmo.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal Dialog: Match Details & Maps -->
+    <dialog id="modal-match-details" class="bracket-modal" closedby="any">
+      <div class="modal-inner">
+        <div class="modal-header">
+          <div>
+            <span class="modal-code" id="modal-match-code">MATCH</span>
+            <span class="modal-stage" id="modal-match-stage">STAGE</span>
+          </div>
+          <button type="button" class="modal-close-btn" id="modal-close-btn" aria-label="Close match details dialog">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-match-body">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Global Footer -->
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <div class="footer-info">
+          <strong>FRONTLINE · TOURNAMENTS CIRCUIT</strong>
+          <span>Sanctioned weekend cups &amp; community elimination brackets. Not affiliated with or endorsed by Activision.</span>
+        </div>
+        <div class="footer-links">
+          <a href="/tournaments/" style="color:#fbbf24;">Tournament Hub</a>
+          <a href="/tournaments/bracket/" style="color:#fbbf24;" class="active">Tournament Brackets</a>
+          <a href="/brackets/">League Playoffs</a>
+          <a href="/home/#standings">Standings</a>
+          <a href="/schedule/">Schedule</a>
+          <a href="/teams/">Teams</a>
+          <a href="/players/">Players</a>
+          <a href="/rules/">Rulebook</a>
+          <a href="/livestreams/">Livestreams</a>
+          <a href="/signup/">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase.js?v=4"></script>
+    <script src="/bullet-sparks.js"></script>
+    <script>
+      (function() {
+        let currentTournaments = [];
+        let activeTournament = null;
+        let activeBracketData = null;
+        let currentStageFilter = 'all';
+        let currentViewMode = 'tree';
+
+        function escapeHtml(str) {
+          if (!str) return '';
+          return String(str).replace(/[&<>"']/g, m => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          })[m]);
+        }
+
+        async function initTournamentBracketPage() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const requestedTourneyId = urlParams.get('tournament');
+
+          // Fetch tournaments from LeagueDB
+          if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
+            try {
+              currentTournaments = await window.LeagueDB.getTournaments();
+            } catch(e) {
+              console.error('Error fetching tournaments:', e);
+              currentTournaments = [];
+            }
+          }
+          if (!currentTournaments || !currentTournaments.length) {
+            currentTournaments = JSON.parse(localStorage.getItem('frontline_tournaments_data')) || [];
+          }
+
+          renderTournamentSelectorTabs(requestedTourneyId);
+
+          // View mode toggle
+          document.getElementById('view-btn-tree')?.addEventListener('click', () => {
+            if (currentViewMode === 'tree') return;
+            currentViewMode = 'tree';
+            document.getElementById('view-btn-tree')?.classList.add('active');
+            document.getElementById('view-btn-list')?.classList.remove('active');
+            renderActiveBracket();
+          });
+
+          document.getElementById('view-btn-list')?.addEventListener('click', () => {
+            if (currentViewMode === 'list') return;
+            currentViewMode = 'list';
+            document.getElementById('view-btn-list')?.classList.add('active');
+            document.getElementById('view-btn-tree')?.classList.remove('active');
+            renderActiveBracket();
+          });
+
+          // Match details modal close handlers
+          const dialog = document.getElementById('modal-match-details');
+          document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+            dialog?.close();
+            document.documentElement.classList.remove('modal-open');
+            document.body.classList.remove('modal-open');
+          });
+          dialog?.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+              dialog.close();
+              document.documentElement.classList.remove('modal-open');
+              document.body.classList.remove('modal-open');
+            }
+          });
+        }
+
+        function renderTournamentSelectorTabs(preferredId) {
+          const tabContainer = document.getElementById('tournaments-selector-bar');
+          if (!tabContainer) return;
+
+          if (!currentTournaments.length) {
+            tabContainer.innerHTML = `
+              <div style="color:var(--muted); font-size:13px; padding:10px 0;">
+                No active tournaments currently recorded in the registry.
+              </div>
+            `;
+            return;
+          }
+
+          // Choose active tournament: prefer query param, then first with bracket, or first tournament
+          let selected = null;
+          if (preferredId) {
+            selected = currentTournaments.find(t => String(t.id) === String(preferredId));
+          }
+          if (!selected) {
+            selected = currentTournaments.find(t => t.bracket_data) || currentTournaments[0];
+          }
+
+          tabContainer.innerHTML = currentTournaments.map(t => {
+            const isSel = selected && String(selected.id) === String(t.id);
+            const status = (t.status || 'open').toLowerCase();
+            let pillClass = 'open';
+            let pillText = 'OPEN';
+            if (status.includes('live')) {
+              pillClass = 'live';
+              pillText = 'LIVE';
+            } else if (status.includes('completed')) {
+              pillClass = 'completed';
+              pillText = 'FINAL';
+            }
+
+            return `
+              <button type="button" class="div-tab-btn ${isSel ? 'tourney-tab-active active' : ''}" data-tid="${escapeHtml(t.id)}" style="flex-shrink:0;">
+                <span>🏆 ${escapeHtml(t.title || 'Tournament')}</span>
+                <span class="tourney-badge-pill ${pillClass}">${pillText}</span>
+              </button>
+            `;
+          }).join('');
+
+          tabContainer.querySelectorAll('.div-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const tid = btn.getAttribute('data-tid');
+              selectTournament(tid);
+            });
+          });
+
+          if (selected) {
+            selectTournament(selected.id);
+          }
+        }
+
+        async function selectTournament(tid) {
+          const tourney = currentTournaments.find(t => String(t.id) === String(tid));
+          if (!tourney) return;
+          activeTournament = tourney;
+
+          // Update active tab visuals
+          document.querySelectorAll('#tournaments-selector-bar .div-tab-btn').forEach(btn => {
+            const match = btn.getAttribute('data-tid') === String(tid);
+            btn.classList.toggle('active', match);
+            btn.classList.toggle('tourney-tab-active', match);
+          });
+
+          // Update URL query param smoothly
+          try {
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('tournament', tourney.id);
+            window.history.replaceState({}, '', newUrl);
+          } catch(e) {}
+
+          // Update banner
+          updateBanner(tourney);
+
+          // Fetch fresh bracket data
+          activeBracketData = tourney.bracket_data;
+          if (!activeBracketData && window.LeagueDB && typeof window.LeagueDB.getTournamentBracket === 'function') {
+            activeBracketData = await window.LeagueDB.getTournamentBracket(tourney.id);
+          }
+
+          currentStageFilter = 'all';
+          updateStageFilterButtons();
+          renderActiveBracket();
+        }
+
+        function updateBanner(t) {
+          const titleEl = document.getElementById('tourney-banner-title');
+          const badgeEl = document.getElementById('tourney-banner-badge');
+          const descEl = document.getElementById('tourney-banner-desc');
+          const formatEl = document.getElementById('tourney-banner-format');
+          const prizeEl = document.getElementById('tourney-banner-prize');
+          const teamsEl = document.getElementById('tourney-banner-teams');
+          const rulesEl = document.getElementById('tourney-banner-rules');
+
+          if (titleEl) titleEl.textContent = t.title || 'Frontline Championship';
+          if (badgeEl) {
+            const s = (t.status || 'open').toLowerCase();
+            badgeEl.className = 'pill ' + (s.includes('live') ? 'tourney-badge-pill live' : (s.includes('completed') ? 'tourney-badge-pill completed' : 'tourney-badge-pill open'));
+            badgeEl.textContent = (t.status || 'REGISTRATION OPEN').toUpperCase();
+          }
+          if (descEl) descEl.textContent = t.description || 'Official competitive elimination bracket. Matches verified on Dallas / Central 60Hz servers.';
+          if (formatEl) formatEl.textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Single Elimination'}`;
+          if (prizeEl) prizeEl.textContent = t.prize_pool || '$500 USD';
+          if (teamsEl) {
+            const count = t.teams_registered_count || (t.registered_teams?.length) || 0;
+            const max = t.max_teams || 16;
+            teamsEl.textContent = `${count} / ${max} Squads`;
+          }
+          if (rulesEl) rulesEl.textContent = `${t.date || 'TBD'} ${t.time ? '· ' + t.time : ''}`;
+        }
+
+        function updateStageFilterButtons() {
+          const container = document.getElementById('stage-filter-container');
+          if (!container) return;
+
+          if (!activeBracketData || !activeBracketData.stages || !activeBracketData.stages.length) {
+            container.innerHTML = `<button type="button" class="stage-filter-btn active" data-stage="all">All Stages</button>`;
+            return;
+          }
+
+          const stages = [
+            { id: 'all', name: 'All Stages' },
+            ...activeBracketData.stages.map(s => ({ id: s.id, name: s.name }))
+          ];
+
+          container.innerHTML = stages.map(s => `
+            <button type="button" class="stage-filter-btn ${s.id === currentStageFilter ? 'active' : ''}" data-stage="${escapeHtml(s.id)}">
+              ${escapeHtml(s.name)}
+            </button>
+          `).join('');
+
+          container.querySelectorAll('.stage-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const sid = btn.getAttribute('data-stage');
+              if (sid === currentStageFilter) return;
+              container.querySelectorAll('.stage-filter-btn').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              currentStageFilter = sid;
+              renderActiveBracket();
+            });
+          });
+        }
+
+        function renderActiveBracket() {
+          const rootEl = document.getElementById('bracket-display-root');
+          if (!rootEl) return;
+
+          if (!activeBracketData || !activeBracketData.stages || !activeBracketData.stages.length) {
+            // Bracket pending generation
+            const count = activeTournament?.teams_registered_count || 0;
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:70px 20px; text-align:center; background:#12150e; border:1px dashed #2e3620; margin:24px 0; border-radius:3px;">
+                <div style="font-size:42px; margin-bottom:14px;">⏳</div>
+                <h3 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin-bottom:10px;">
+                  Live Bracket Pending Generation
+                </h3>
+                <p style="color:#9ca3af; max-width:540px; margin:0 auto 22px; font-size:13.5px; line-height:1.6;">
+                  Registrations for <strong>${escapeHtml(activeTournament?.title || 'this tournament')}</strong> are currently open! 
+                  ${count > 0 ? `Currently <strong>${count} squads</strong> have enlisted.` : 'Be the first squad to register!'}
+                  Once registrations close and teams are seeded, the live bracket will be generated right here.
+                </p>
+                <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                  <a href="/tournaments/" class="btn-tourney-primary" style="padding:11px 20px;">
+                    <span>📋</span> Register Squad in Tournament Hub ↗
+                  </a>
+                  <a href="/rules/" class="btn-tourney-outline" style="padding:11px 20px;">
+                    <span>📜</span> View CDL Ruleset
+                  </a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          if (currentViewMode === 'tree') {
+            renderBracketTree();
+          } else {
+            renderBracketList();
+          }
+        }
+
+        function renderMatchCard(match) {
+          const isCompleted = match.status === 'Completed';
+          const isLive = match.status === 'Live';
+
+          let statusBadge = '';
+          if (isLive) {
+            statusBadge = `<span class="badge-match-live"><span class="live-pulse-dot"></span>LIVE</span>`;
+          } else if (isCompleted) {
+            statusBadge = `<span class="badge-match-finished" style="background:#142918; color:#4ade80; border:1px solid #22c55e;">FINAL</span>`;
+          } else {
+            statusBadge = `<span class="badge-match-time">${escapeHtml(match.time || 'TBD')}</span>`;
+          }
+
+          return `
+            <div class="bracket-match-card ${isLive ? 'is-live-match' : ''}" data-match-id="${escapeHtml(match.id)}" role="button" tabindex="0" aria-label="Match ${escapeHtml(match.code)}: ${escapeHtml(match.team1?.name)} vs ${escapeHtml(match.team2?.name)}">
+              <div class="bmc-header">
+                <span class="bmc-code" style="color:#fbbf24; font-weight:800;">${escapeHtml(match.code || match.id)}</span>
+                ${statusBadge}
+              </div>
+              <div class="bmc-teams">
+                <!-- Team 1 -->
+                <div class="bmc-team-row ${match.team1?.winner ? 'winner-row' : ''}">
+                  <div class="bmc-team-info">
+                    ${match.team1?.seed ? `<span class="bmc-seed" style="color:#fbbf24;">${match.team1.seed}</span>` : ''}
+                    <span class="bmc-name" title="${escapeHtml(match.team1?.name)}" style="font-weight:700;">${escapeHtml(match.team1?.name || 'TBD')}</span>
+                  </div>
+                  <span class="bmc-score" style="font-weight:800;">${match.team1?.score ?? 0}</span>
+                </div>
+                <!-- Team 2 -->
+                <div class="bmc-team-row ${match.team2?.winner ? 'winner-row' : ''}">
+                  <div class="bmc-team-info">
+                    ${match.team2?.seed ? `<span class="bmc-seed" style="color:#fbbf24;">${match.team2.seed}</span>` : ''}
+                    <span class="bmc-name" title="${escapeHtml(match.team2?.name)}" style="font-weight:700;">${escapeHtml(match.team2?.name || 'TBD')}</span>
+                  </div>
+                  <span class="bmc-score" style="font-weight:800;">${match.team2?.score ?? 0}</span>
+                </div>
+              </div>
+              <div class="bmc-footer">
+                <span class="bmc-bestof">${escapeHtml(match.bestOf || 'BO5')}</span>
+                <span class="bmc-action-hint">Match Intel ↗</span>
+              </div>
+            </div>
+          `;
+        }
+
+        function renderBracketTree() {
+          const rootEl = document.getElementById('bracket-display-root');
+          if (!rootEl || !activeBracketData) return;
+
+          let stagesToRender = activeBracketData.stages || [];
+          if (currentStageFilter !== 'all') {
+            stagesToRender = stagesToRender.filter(s => s.id === currentStageFilter);
+          }
+
+          if (!stagesToRender.length) {
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:50px 20px; text-align:center;">
+                <h3>NO MATCHES IN THIS STAGE</h3>
+                <p style="color:var(--muted); font-size:13px;">Please select another stage filter above.</p>
+              </div>
+            `;
+            return;
+          }
+
+          rootEl.innerHTML = `
+            <div class="bracket-tree-container">
+              ${stagesToRender.map(stage => `
+                <div class="bracket-stage-block" id="stage-${stage.id}">
+                  <div class="bracket-stage-title-bar" style="border-left:3px solid #fbbf24;">
+                    <span class="stage-tag" style="color:#fbbf24;">// TOURNAMENT STAGE</span>
+                    <h3 class="stage-name">${escapeHtml(stage.name)}</h3>
+                  </div>
+                  <div class="bracket-rounds-track">
+                    ${(stage.rounds || []).map((round, rIndex) => `
+                      <div class="bracket-round-column" data-round-index="${rIndex}">
+                        <div class="round-header" style="border-top:2px solid #fbbf24;">
+                          <span class="round-badge" style="color:#fbbf24;">${escapeHtml(round.badge || `Round ${rIndex + 1}`)}</span>
+                          <h4 class="round-title">${escapeHtml(round.name)}</h4>
+                          <span class="round-rule">${escapeHtml(round.bestOf || 'BO5')}</span>
+                        </div>
+                        <div class="round-matches-list">
+                          ${(round.matches || []).map(m => renderMatchCard(m)).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+
+          attachCardClicks();
+        }
+
+        function renderBracketList() {
+          const rootEl = document.getElementById('bracket-display-root');
+          if (!rootEl || !activeBracketData) return;
+
+          let allMatches = [];
+          (activeBracketData.stages || []).forEach(stage => {
+            if (currentStageFilter !== 'all' && stage.id !== currentStageFilter) return;
+            (stage.rounds || []).forEach(round => {
+              (round.matches || []).forEach(m => {
+                allMatches.push({ ...m, stageName: stage.name, roundName: round.name });
+              });
+            });
+          });
+
+          if (!allMatches.length) {
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:50px 20px; text-align:center;">
+                <h3>NO MATCHES RECORDED</h3>
+              </div>
+            `;
+            return;
+          }
+
+          rootEl.innerHTML = `
+            <div class="bracket-list-container">
+              <div class="schedule-grid">
+                ${allMatches.map(m => `
+                  <div class="schedule-card-item">
+                    <div class="sci-header">
+                      <span class="sci-stage" style="color:#fbbf24;">${escapeHtml(m.stageName)} · ${escapeHtml(m.roundName)}</span>
+                      <span class="sci-time">${escapeHtml(m.time || 'Scheduled')}</span>
+                    </div>
+                    ${renderMatchCard(m)}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+
+          attachCardClicks();
+        }
+
+        function attachCardClicks() {
+          const matchMap = new Map();
+          (activeBracketData?.stages || []).forEach(s => {
+            (s.rounds || []).forEach(r => {
+              (r.matches || []).forEach(m => {
+                matchMap.set(m.id, { ...m, stageName: s.name, roundName: r.name });
+              });
+            });
+          });
+
+          document.querySelectorAll('.bracket-match-card').forEach(card => {
+            const mid = card.getAttribute('data-match-id');
+            const match = matchMap.get(mid);
+            if (!match) return;
+
+            card.addEventListener('click', () => openMatchDetailsModal(match));
+            card.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openMatchDetailsModal(match);
+              }
+            });
+          });
+        }
+
+        function openMatchDetailsModal(match) {
+          const dialog = document.getElementById('modal-match-details');
+          const codeEl = document.getElementById('modal-match-code');
+          const stageEl = document.getElementById('modal-match-stage');
+          const bodyEl = document.getElementById('modal-match-body');
+
+          if (!dialog || !bodyEl) return;
+
+          if (codeEl) codeEl.textContent = match.code || match.id;
+          if (stageEl) stageEl.textContent = `${match.stageName || 'Stage'} · ${match.roundName || 'Round'}`;
+
+          const t1 = match.team1 || { name: 'TBD', score: 0 };
+          const t2 = match.team2 || { name: 'TBD', score: 0 };
+          const isDone = match.status === 'Completed';
+
+          bodyEl.innerHTML = `
+            <div class="modal-teams-head" style="margin-bottom:20px;">
+              <div class="modal-team-side ${t1.winner ? 'winner' : ''}">
+                <div class="modal-team-name" style="font-size:18px; font-weight:800;">${escapeHtml(t1.name)}</div>
+                ${t1.seed ? `<div class="modal-team-seed" style="color:#fbbf24;">Seed #${t1.seed}</div>` : ''}
+                <div class="modal-big-score" style="color:#ffffff;">${t1.score ?? 0}</div>
+              </div>
+              <div class="modal-vs-divider">
+                <span style="color:#fbbf24;">VS</span>
+                <small>${escapeHtml(match.bestOf || 'BO5')}</small>
+              </div>
+              <div class="modal-team-side ${t2.winner ? 'winner' : ''}">
+                <div class="modal-team-name" style="font-size:18px; font-weight:800;">${escapeHtml(t2.name)}</div>
+                ${t2.seed ? `<div class="modal-team-seed" style="color:#fbbf24;">Seed #${t2.seed}</div>` : ''}
+                <div class="modal-big-score" style="color:#ffffff;">${t2.score ?? 0}</div>
+              </div>
+            </div>
+
+            <div style="background:#10130d; border:1px solid #232a18; padding:14px; border-radius:3px; margin-bottom:16px;">
+              <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:6px;">MATCH STATUS &amp; PROTOCOL</div>
+              <div style="font-size:13px; color:#cbd5e1; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <span>Status: <strong style="color:${isDone ? '#22c55e' : '#fbbf24'};">${isDone ? '✓ Completed (Official)' : (match.status || 'Scheduled')}</strong></span>
+                <span>Ruleset: <strong>CDL 2026 Competitive</strong></span>
+                <span>Host: <strong>Dedicated Central Host</strong></span>
+              </div>
+            </div>
+
+            <div style="text-align:right;">
+              <button type="button" class="btn-tourney-outline" onclick="document.getElementById('modal-match-details').close()">
+                Close Intel
+              </button>
+            </div>
+          `;
+
+          document.documentElement.classList.add('modal-open');
+          document.body.classList.add('modal-open');
+          dialog.showModal();
+        }
+
+        // Init on DOM ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTournamentBracketPage);
+        } else {
+          initTournamentBracketPage();
+        }
+
+        // User Navigation: Close dropdown on outside click or Escape key
+        document.addEventListener('click', (e) => {
+          const toggle = document.getElementById('menu-toggle');
+          const menuWrap = document.querySelector('.menu-toggle');
+          if (toggle && toggle.checked && menuWrap && !menuWrap.contains(e.target)) {
+            toggle.checked = false;
+          }
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            const toggle = document.getElementById('menu-toggle');
+            if (toggle) toggle.checked = false;
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

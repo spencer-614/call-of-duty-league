@@ -548,8 +548,8 @@
             <a href="/rules/" class="btn-tourney-outline" style="padding:11px 20px; font-size:12px;">
               <span>📜</span> <span>CDL Official Ruleset</span>
             </a>
-            <a href="/brackets/" class="btn-tourney-outline" style="padding:11px 20px; font-size:12px;">
-              <span>⚔</span> <span>View Playoff Brackets ↗</span>
+            <a href="/tournaments/bracket/" class="btn-tourney-outline" style="padding:11px 20px; font-size:12px;">
+              <span>⚔</span> <span>Live Tournament Brackets ↗</span>
             </a>
           </div>
 
@@ -980,11 +980,11 @@
                     <span>🔍</span> Details
                   </button>
                   ${(rawStatus.includes('live') || t.bracket_data) ? `
-                    <a href="/brackets/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none;">
+                    <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none;">
                       <span>⚔</span> View Bracket ↗
                     </a>
                   ` : (rawStatus.includes('completed') ? `
-                    <a href="/brackets/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-outline" style="text-decoration:none;">
+                    <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-outline" style="text-decoration:none;">
                       <span>⚔</span> Final Bracket ↗
                     </a>
                   ` : `
@@ -1043,7 +1043,7 @@
         if (bracketLink) {
           const isLiveOrBracket = (t.status || '').toLowerCase().includes('live') || !!t.bracket_data || (t.status || '').toLowerCase().includes('completed');
           if (isLiveOrBracket) {
-            bracketLink.href = `/brackets/?tournament=${encodeURIComponent(t.id)}`;
+            bracketLink.href = `/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}`;
             bracketLink.style.display = 'inline-flex';
           } else {
             bracketLink.style.display = 'none';
