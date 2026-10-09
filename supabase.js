@@ -2814,6 +2814,16 @@ window.LeagueDB = {
 
   async getPlatformSwitcherSettings() {
     let settings = { ...this.DEFAULT_SWITCHER_SETTINGS };
+
+    // 1. Check local storage first
+    try {
+      const local = localStorage.getItem("frontline_platform_switcher_settings");
+      if (local) {
+        settings = { ...settings, ...JSON.parse(local) };
+      }
+    } catch (e) {}
+
+    // 2. Query cloud database
     if (dbClient) {
       try {
         const { data, error } = await dbClient
@@ -2837,18 +2847,15 @@ window.LeagueDB = {
       }
     }
 
-    try {
-      const local = localStorage.getItem("frontline_platform_switcher_settings");
-      if (local) {
-        settings = { ...settings, ...JSON.parse(local) };
-      }
-    } catch (e) {}
-
     return settings;
   },
 
   async savePlatformSwitcherSettings(newSettings) {
-    const current = await this.getPlatformSwitcherSettings();
+    let current = { ...this.DEFAULT_SWITCHER_SETTINGS };
+    try {
+      const local = localStorage.getItem("frontline_platform_switcher_settings");
+      if (local) current = { ...current, ...JSON.parse(local) };
+    } catch (e) {}
     const merged = { ...current, ...newSettings };
 
     try {
@@ -2878,13 +2885,16 @@ window.LeagueDB = {
     const s = { ...this.DEFAULT_SWITCHER_SETTINGS, ...settings };
 
     const isArenaVisible = s.switcher_visible !== false && s.show_arena !== false;
+    const isLeagueVisible = s.switcher_visible !== false && s.show_league !== false;
+    const isTournVisible = s.switcher_visible !== false && s.show_tournaments !== false;
+    const isMasterVisible = s.switcher_visible !== false && (isLeagueVisible || isArenaVisible || isTournVisible);
 
     const docEl = document.documentElement;
     if (docEl) {
-      docEl.classList.toggle("hide-platform-switcher", !s.switcher_visible);
-      docEl.classList.toggle("hide-mode-league", s.show_league === false);
+      docEl.classList.toggle("hide-platform-switcher", !isMasterVisible);
+      docEl.classList.toggle("hide-mode-league", !isLeagueVisible);
       docEl.classList.toggle("hide-mode-arena", !isArenaVisible);
-      docEl.classList.toggle("hide-mode-tournaments", s.show_tournaments === false);
+      docEl.classList.toggle("hide-mode-tournaments", !isTournVisible);
     }
 
     // Direct DOM manipulation across all pills
@@ -2892,30 +2902,38 @@ window.LeagueDB = {
     pills.forEach(pill => {
       // Exclude admin live preview simulator
       if (pill.closest && (pill.closest("#admin-switcher-live-preview") || pill.closest(".admin-wrap"))) return;
-      if (!s.switcher_visible || (!s.show_league && !s.show_arena && !s.show_tournaments)) {
-        pill.style.display = "none";
+      if (!isMasterVisible) {
+        pill.style.setProperty("display", "none", "important");
         return;
       } else {
-        pill.style.display = "";
+        pill.style.removeProperty("display");
       }
 
       // Check for league button
-      const leagueBtn = pill.querySelector('[data-mode="league"]') || pill.querySelector('a[href*="/home"], a[href*="index.html"], a[href*="players"], a[href*="brackets"]');
+      const leagueBtn = pill.querySelector('[data-mode="league"]') || pill.querySelector('a[href*="/home"], a[href*="index.html"], a[href*="players"], a[href*="brackets"], a[href*="profile"]');
       if (leagueBtn) {
         leagueBtn.setAttribute("data-mode", "league");
-        leagueBtn.style.display = (s.show_league !== false) ? "" : "none";
+        if (!isLeagueVisible) {
+          leagueBtn.style.setProperty("display", "none", "important");
+        } else {
+          leagueBtn.style.removeProperty("display");
+        }
       }
 
       // Check for arena button
       const arenaBtn = pill.querySelector('[data-mode="arena"]') || pill.querySelector('a[href*="/arena"], a[href*="arena.html"], a[href*="ladders"]');
       if (arenaBtn) {
         arenaBtn.setAttribute("data-mode", "arena");
-        arenaBtn.style.display = isArenaVisible ? "" : "none";
+        if (!isArenaVisible) {
+          arenaBtn.style.setProperty("display", "none", "important");
+        } else {
+          arenaBtn.style.removeProperty("display");
+        }
       }
 
       // Check for tournaments button (or inject if missing)
       let tournBtn = pill.querySelector('[data-mode="tournaments"]') || pill.querySelector('a[href*="tournaments"]');
-      if (!tournBtn) {
+      if (!tournBtn && isTournVisible) {
         tournBtn = document.createElement("a");
         tournBtn.href = "/tournaments/";
         tournBtn.className = "mode-switch-btn" + (window.location.pathname.includes("tournaments") ? " active-tournaments" : "");
@@ -2923,10 +2941,15 @@ window.LeagueDB = {
         tournBtn.setAttribute("title", "Frontline Tournaments Hub");
         tournBtn.innerHTML = `<span>🏆</span> <span>Tournaments</span>`;
         pill.appendChild(tournBtn);
-      } else {
-        tournBtn.setAttribute("data-mode", "tournaments");
       }
-      tournBtn.style.display = (s.show_tournaments !== false) ? "" : "none";
+      if (tournBtn) {
+        tournBtn.setAttribute("data-mode", "tournaments");
+        if (!isTournVisible) {
+          tournBtn.style.setProperty("display", "none", "important");
+        } else {
+          tournBtn.style.removeProperty("display");
+        }
+      }
     });
 
     // Toggle arena profile links & banner sections across profile, signup, etc.
@@ -2935,7 +2958,11 @@ window.LeagueDB = {
     );
     arenaTargets.forEach(el => {
       if (el && !el.closest("#admin-switcher-live-preview") && !el.closest(".admin-wrap")) {
-        el.style.display = isArenaVisible ? "" : "none";
+        if (!isArenaVisible) {
+          el.style.setProperty("display", "none", "important");
+        } else {
+          el.style.removeProperty("display");
+        }
       }
     });
   },
@@ -2955,6 +2982,24 @@ window.LeagueDB = {
         this.applyPlatformSwitcherSettings(cloudSettings);
       } catch (e) {}
     }, 100);
+
+    // Multi-tab sync & instant listener
+    if (!window._frontline_switcher_listener_attached) {
+      window._frontline_switcher_listener_attached = true;
+      window.addEventListener("storage", (e) => {
+        if (e.key === "frontline_platform_switcher_settings" && e.newValue) {
+          try {
+            const updated = JSON.parse(e.newValue);
+            this.applyPlatformSwitcherSettings(updated);
+          } catch (_) {}
+        }
+      });
+      window.addEventListener("frontline_switcher_settings_changed", (e) => {
+        if (e.detail) {
+          this.applyPlatformSwitcherSettings(e.detail);
+        }
+      });
+    }
   },
 
   // ==============================================================================
@@ -6530,7 +6575,7 @@ window.LeagueDB = {
     } catch (e) {}
 
     const profileLinks = document.querySelectorAll(
-      '.nav-league-profile-link, #nav-league-profile-link, a[href="/profile/"], a[href="profile.html"]'
+      '.nav-league-profile-link, #nav-league-profile-link, a[href="/profile/"], a[href="profile.html"], a[href="/profile/index.html"], a[href="../profile/"]'
     );
 
     let authUser = null;
@@ -6556,6 +6601,63 @@ window.LeagueDB = {
       } catch (e) {}
     }
 
+    // 1. Check Commissioner / Admin session storage
+    let adminEmail = "";
+    let isAdminAuthorized = false;
+    try {
+      adminEmail = (sessionStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+      isAdminAuthorized = sessionStorage.getItem("frontline_admin_session") === "authorized";
+    } catch (e) {}
+
+    // 2. Check Arena user
+    let arenaUser = null;
+    try {
+      arenaUser = JSON.parse(localStorage.getItem("frontline_arena_user") || localStorage.getItem("frontline_arena_auth_user") || "null");
+    } catch (e) {}
+
+    // 3. Check Player Card
+    let playerCard = null;
+    try {
+      playerCard = JSON.parse(localStorage.getItem("frontline_league_player_card") || "null");
+    } catch (e) {}
+
+    if (!authUser && (isAdminAuthorized || adminEmail || (arenaUser && (arenaUser.is_commissioner || arenaUser.is_staff)))) {
+      const isSpencer = adminEmail === "todd061496@gmail.com" || arenaUser?.email === "todd061496@gmail.com";
+      const cleanEmail = adminEmail || arenaUser?.email || "admin@frontlineleague.com";
+      const commishGamertag = arenaUser?.gamertag || (isSpencer ? "Commissioner Spencer" : (cleanEmail === "admin@frontlineleague.com" ? "Commissioner" : "Commissioner Spencer"));
+      authUser = {
+        id: arenaUser?.id || "commissioner-admin",
+        email: cleanEmail,
+        user_metadata: {
+          gamertag: commishGamertag,
+          username: arenaUser?.username || commishGamertag,
+          name: commishGamertag,
+          role: "commissioner",
+          is_commissioner: true,
+          avatar_url: arenaUser?.avatar_url || null
+        }
+      };
+    } else if (!authUser && arenaUser && (arenaUser.gamertag || arenaUser.email)) {
+      authUser = {
+        id: arenaUser.id || arenaUser.user_id || "arena-user",
+        email: arenaUser.email || "",
+        user_metadata: {
+          gamertag: arenaUser.gamertag || arenaUser.username || "Combatant",
+          avatar_url: arenaUser.avatar_url || null,
+          role: arenaUser.role || "Combatant"
+        }
+      };
+    } else if (!authUser && playerCard && playerCard.gamertag && playerCard.gamertag !== "Operative") {
+      authUser = {
+        id: "local-card-user",
+        email: playerCard.email || "",
+        user_metadata: {
+          gamertag: playerCard.gamertag,
+          role: playerCard.role || "Flex"
+        }
+      };
+    }
+
     const isLoggedIn = !!authUser;
 
     profileLinks.forEach((link) => {
@@ -6576,7 +6678,12 @@ window.LeagueDB = {
         link.style.display = "";
         link.style.removeProperty("display");
         const meta = authUser.user_metadata || {};
-        const gamertag = meta.gamertag || meta.username || meta.name;
+        let gamertag = meta.gamertag || meta.username || meta.name || "";
+        if (!gamertag && authUser.email) {
+          if (authUser.email.toLowerCase() === "todd061496@gmail.com") gamertag = "Commissioner Spencer";
+          else if (authUser.email.toLowerCase() === "admin@frontlineleague.com") gamertag = "Commissioner";
+          else gamertag = authUser.email.split("@")[0];
+        }
         const discordInfo = typeof this.getDiscordIdentity === "function" ? this.getDiscordIdentity(authUser) : null;
         let navAvatar = discordInfo?.avatarUrl || meta.avatar_url;
         if (navAvatar && navAvatar.includes("unsplash.com")) navAvatar = null;
@@ -8799,19 +8906,48 @@ window.LadderDB = {
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      if (window.LeagueDB && typeof window.LeagueDB.initPlatformSwitcher === "function") {
+  function syncAllNavAndSwitcher() {
+    if (window.LeagueDB) {
+      if (typeof window.LeagueDB.initPlatformSwitcher === "function") {
         window.LeagueDB.initPlatformSwitcher();
       }
+      if (typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+        window.LeagueDB.updateLeagueNavProfile();
+      }
+    }
+    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+      window.LadderDB.updateArenaNavProfile();
+    }
+  }
+
+  // Initial immediate sync
+  syncAllNavAndSwitcher();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      syncAllNavAndSwitcher();
       setTimeout(checkOnboarding, 600);
+      setTimeout(syncAllNavAndSwitcher, 800);
     });
   } else {
-    if (window.LeagueDB && typeof window.LeagueDB.initPlatformSwitcher === "function") {
-      window.LeagueDB.initPlatformSwitcher();
-    }
+    syncAllNavAndSwitcher();
     setTimeout(checkOnboarding, 600);
+    setTimeout(syncAllNavAndSwitcher, 800);
   }
+
+  // Window events
+  window.addEventListener("storage", (e) => {
+    if (e.key === "frontline_league_auth_user" || e.key === "frontline_arena_user" || e.key === "frontline_admin_session" || e.key === "frontline_admin_email" || e.key === "frontline_platform_switcher_settings") {
+      syncAllNavAndSwitcher();
+    }
+  });
+
+  window.addEventListener("frontline_auth_changed", () => {
+    syncAllNavAndSwitcher();
+  });
+  window.addEventListener("frontline_arena_auth_changed", () => {
+    syncAllNavAndSwitcher();
+  });
 
   if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
     try {
@@ -8826,6 +8962,7 @@ window.LadderDB = {
             } catch(e) {}
           }
           setTimeout(checkOnboarding, 400);
+          syncAllNavAndSwitcher();
         } else if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
           if (session?.user) {
             try {
@@ -8833,6 +8970,7 @@ window.LadderDB = {
               localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
             } catch(e) {}
           }
+          syncAllNavAndSwitcher();
         } else if (event === "SIGNED_OUT") {
           try {
             localStorage.removeItem("frontline_league_auth_user");
@@ -8840,6 +8978,7 @@ window.LadderDB = {
             window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
             window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null } }));
           } catch(e) {}
+          syncAllNavAndSwitcher();
         }
       });
     } catch (e) {}

@@ -4690,40 +4690,46 @@ body.mode-arena .league-only {
 }
 
 /* Platform Switcher Commissioner Hide Rules - Public headers only */
-html.hide-platform-switcher header .mode-switch-pill,
-html.hide-platform-switcher .header .mode-switch-pill,
-html.hide-platform-switcher .fl-topbar .mode-switch-pill,
-html.hide-platform-switcher .fl-header .mode-switch-pill,
-html.hide-platform-switcher .btn-arena-toggle-target,
-html.hide-platform-switcher #btn-goto-arena-profile,
-html.hide-platform-switcher #section-league-arena-banner,
-html.hide-platform-switcher #btn-signup-arena-profile {
+html.hide-platform-switcher .mode-switch-pill:not(#admin-switcher-live-preview *):not(.admin-wrap *),
+html.hide-platform-switcher header .mode-switch-pill:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher .header .mode-switch-pill:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher .fl-topbar .mode-switch-pill:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher .fl-header .mode-switch-pill:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher .header-center-hub .mode-switch-pill:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher .btn-arena-toggle-target:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher #btn-goto-arena-profile:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher #section-league-arena-banner:not(#admin-switcher-live-preview *),
+html.hide-platform-switcher #btn-signup-arena-profile:not(#admin-switcher-live-preview *) {
   display: none !important;
 }
 
-#admin-switcher-live-preview .mode-switch-pill {
+#admin-switcher-live-preview .mode-switch-pill,
+.admin-wrap #admin-switcher-live-preview .mode-switch-pill {
   display: flex !important;
 }
 
-html.hide-mode-league header .mode-switch-btn[data-mode="league"],
-html.hide-mode-league .header .mode-switch-btn[data-mode="league"],
-html.hide-mode-league .fl-topbar .mode-switch-btn[data-mode="league"] {
+html.hide-mode-league .mode-switch-btn[data-mode="league"]:not(#admin-switcher-live-preview *):not(.admin-wrap *),
+html.hide-mode-league header .mode-switch-btn[data-mode="league"]:not(#admin-switcher-live-preview *),
+html.hide-mode-league .header .mode-switch-btn[data-mode="league"]:not(#admin-switcher-live-preview *),
+html.hide-mode-league .fl-topbar .mode-switch-btn[data-mode="league"]:not(#admin-switcher-live-preview *) {
   display: none !important;
 }
 
-html.hide-mode-arena header .mode-switch-btn[data-mode="arena"],
-html.hide-mode-arena .header .mode-switch-btn[data-mode="arena"],
-html.hide-mode-arena .fl-topbar .mode-switch-btn[data-mode="arena"],
-html.hide-mode-arena .btn-arena-toggle-target,
-html.hide-mode-arena #btn-goto-arena-profile,
-html.hide-mode-arena #section-league-arena-banner,
-html.hide-mode-arena #btn-signup-arena-profile {
+html.hide-mode-arena .mode-switch-btn[data-mode="arena"]:not(#admin-switcher-live-preview *):not(.admin-wrap *),
+html.hide-mode-arena header .mode-switch-btn[data-mode="arena"]:not(#admin-switcher-live-preview *),
+html.hide-mode-arena .header .mode-switch-btn[data-mode="arena"]:not(#admin-switcher-live-preview *),
+html.hide-mode-arena .fl-topbar .mode-switch-btn[data-mode="arena"]:not(#admin-switcher-live-preview *),
+html.hide-mode-arena .btn-arena-toggle-target:not(#admin-switcher-live-preview *),
+html.hide-mode-arena #btn-goto-arena-profile:not(#admin-switcher-live-preview *),
+html.hide-mode-arena #section-league-arena-banner:not(#admin-switcher-live-preview *),
+html.hide-mode-arena #btn-signup-arena-profile:not(#admin-switcher-live-preview *) {
   display: none !important;
 }
 
-html.hide-mode-tournaments header .mode-switch-btn[data-mode="tournaments"],
-html.hide-mode-tournaments .header .mode-switch-btn[data-mode="tournaments"],
-html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"] {
+html.hide-mode-tournaments .mode-switch-btn[data-mode="tournaments"]:not(#admin-switcher-live-preview *):not(.admin-wrap *),
+html.hide-mode-tournaments header .mode-switch-btn[data-mode="tournaments"]:not(#admin-switcher-live-preview *),
+html.hide-mode-tournaments .header .mode-switch-btn[data-mode="tournaments"]:not(#admin-switcher-live-preview *),
+html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:not(#admin-switcher-live-preview *) {
   display: none !important;
 }
 
