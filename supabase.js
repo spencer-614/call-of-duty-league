@@ -5871,9 +5871,11 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     // 2. Sync public.players table (Insert or Update)
+
+    let existingPlayer = null;
+
     if (dbClient) {
       try {
-        let existingPlayer = null;
         const safeUserId = (userId && this._isValidUUID(userId)) ? userId : null;
         if (safeUserId) {
           try {
