@@ -5786,24 +5786,6 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
-    // 3. Sync public.league_signups table (Insert or Update) - ONLY for pending recruits, NEVER for accepted players!
-    if (!existingPlayer && !payload.skipSignupSync) try {
-      await this.submitSignup({
-        user_id: userId || null,
-        gamertag: cleanGamertag,
-        activision_id: cleanActivision,
-        discord_username: cleanDiscord,
-        role: cleanRole,
-        platform: cleanPlatform,
-        region: cleanRegion,
-        registration_type: "Free Agent",
-        notes: `[Auto-Registered: ${email || cleanDiscord || cleanGamertag}]`,
-        status: "Pending"
-      });
-    } catch (sErr) {
-      console.warn("Supabase league_signups sync notice:", sErr);
-    }
-
     // 4. Sync public.arena_free_agents table (Insert or Update)
     if (dbClient) {
       try {
