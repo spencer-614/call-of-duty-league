@@ -683,14 +683,22 @@
 
         if (!authUser) {
           try {
-            const adminEmail = sessionStorage.getItem("frontline_admin_email");
-            if (adminEmail && sessionStorage.getItem("frontline_admin_session") === "authorized") {
+            const adminEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email");
+            const adminAuth = (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
+            if (adminEmail && adminAuth) {
+              const clean = adminEmail.toLowerCase().trim();
+              const isSpencer = clean === "todd061496@gmail.com";
+              const commishGamertag = isSpencer ? "Commissioner Spencer" : (clean === "admin@frontlineleague.com" ? "Commissioner" : "Commissioner Spencer");
               authUser = {
-                id: "admin_" + Date.now(),
+                id: "admin_commissioner",
                 email: adminEmail,
                 user_metadata: {
-                  gamertag: adminEmail.split("@")[0],
-                  role: "commissioner"
+                  gamertag: commishGamertag,
+                  username: commishGamertag,
+                  name: commishGamertag,
+                  role: "commissioner",
+                  is_commissioner: true,
+                  avatar_url: "/images/leaguelogo_1.png"
                 }
               };
             }

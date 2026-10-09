@@ -944,6 +944,7 @@
           </div>
 
           <div style="display:flex; align-items:center; gap:12px;">
+            <a href="/profile/" target="_blank" class="btn-action-sm" style="border-color:var(--lime); color:var(--lime);">👤 View Profile ↗</a>
             <a href="/home/#standings" target="_blank" class="btn-action-sm">League ↗</a>
             <a href="/arena/" target="_blank" class="btn-action-sm" style="border-color:#ff1e44; color:#ff1e44;">Competitive Arena ↗</a>
             <button type="button" id="btn-logout" class="btn-action-sm btn-action-danger">Sign Out</button>
@@ -2536,7 +2537,7 @@
                 </div>
                 <div class="admin-toggle-wrapper">
                   <label class="admin-toggle-switch">
-                    <input type="checkbox" id="toggle-master-switcher" checked onchange="updateSwitcherPreview()" />
+                    <input type="checkbox" id="toggle-master-switcher" checked onchange="handleSwitcherToggleChanged()" />
                     <span class="admin-toggle-slider"></span>
                   </label>
                   <div class="admin-toggle-info">
@@ -2563,7 +2564,7 @@
                 </div>
                 <div class="admin-toggle-wrapper">
                   <label class="admin-toggle-switch">
-                    <input type="checkbox" id="toggle-show-league" checked onchange="updateSwitcherPreview()" />
+                    <input type="checkbox" id="toggle-show-league" checked onchange="handleSwitcherToggleChanged()" />
                     <span class="admin-toggle-slider"></span>
                   </label>
                   <div class="admin-toggle-info">
@@ -2590,7 +2591,7 @@
                 </div>
                 <div class="admin-toggle-wrapper">
                   <label class="admin-toggle-switch">
-                    <input type="checkbox" id="toggle-show-arena" checked onchange="updateSwitcherPreview()" />
+                    <input type="checkbox" id="toggle-show-arena" checked onchange="handleSwitcherToggleChanged()" />
                     <span class="admin-toggle-slider"></span>
                   </label>
                   <div class="admin-toggle-info">
@@ -2617,7 +2618,7 @@
                 </div>
                 <div class="admin-toggle-wrapper">
                   <label class="admin-toggle-switch">
-                    <input type="checkbox" id="toggle-show-tournaments" checked onchange="updateSwitcherPreview()" />
+                    <input type="checkbox" id="toggle-show-tournaments" checked onchange="handleSwitcherToggleChanged()" />
                     <span class="admin-toggle-slider"></span>
                   </label>
                   <div class="admin-toggle-info">
@@ -2631,7 +2632,7 @@
               <div style="background:#131610; border:1px solid #2a311e; padding:18px; border-radius:3px; grid-column:1/-1;">
                 <div class="admin-toggle-wrapper">
                   <label class="admin-toggle-switch">
-                    <input type="checkbox" id="toggle-tournaments-page-enabled" checked />
+                    <input type="checkbox" id="toggle-tournaments-page-enabled" checked onchange="handleSwitcherToggleChanged()" />
                     <span class="admin-toggle-slider"></span>
                   </label>
                   <div class="admin-toggle-info">
@@ -3255,6 +3256,25 @@
                 role: "commissioner",
                 display_name: clean === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner"
               };
+              localStorage.setItem("frontline_admin_session", "authorized");
+              localStorage.setItem("frontline_admin_email", userEmail);
+              const commishUser = {
+                id: "commissioner_admin",
+                email: userEmail,
+                user_metadata: {
+                  gamertag: activeStaffProfile.display_name,
+                  username: activeStaffProfile.display_name,
+                  name: activeStaffProfile.display_name,
+                  role: "commissioner",
+                  is_commissioner: true,
+                  avatar_url: "/images/leaguelogo_1.png"
+                }
+              };
+              localStorage.setItem("frontline_league_auth_user", JSON.stringify(commishUser));
+              localStorage.setItem("frontline_arena_user", JSON.stringify(commishUser));
+              localStorage.setItem("frontline_arena_auth_user", JSON.stringify(commishUser));
+              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: commishUser } }));
+              window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: commishUser } }));
             } else {
               await lockConsole();
               gateError.textContent = `Access Denied: Logged in as ${userEmail}. Staff credentials required to access Commissioner Console.`;
@@ -7520,7 +7540,8 @@
           }
 
           updateSwitcherPreview();
-          showToast("Applied preset: " + presetKey);
+          saveAdminSwitcherSettings(true);
+          showToast("✓ Switcher directive broadcast: " + presetKey);
         }
         window.applySwitcherPreset = applySwitcherPreset;
 

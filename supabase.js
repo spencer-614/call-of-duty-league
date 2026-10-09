@@ -6575,7 +6575,7 @@ window.LeagueDB = {
     } catch (e) {}
 
     const profileLinks = document.querySelectorAll(
-      '.nav-league-profile-link, #nav-league-profile-link, a[href="/profile/"], a[href="profile.html"], a[href="/profile/index.html"], a[href="../profile/"]'
+      '.nav-league-profile-link, #nav-league-profile-link, .nav-league-profile-cta, #nav-league-profile-cta, a[href="/profile/"], a[href="profile.html"], a[href="/profile/index.html"], a[href="../profile/"]'
     );
 
     let authUser = null;
@@ -6601,12 +6601,12 @@ window.LeagueDB = {
       } catch (e) {}
     }
 
-    // 1. Check Commissioner / Admin session storage
+    // 1. Check Commissioner / Admin session storage or localStorage
     let adminEmail = "";
     let isAdminAuthorized = false;
     try {
-      adminEmail = (sessionStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
-      isAdminAuthorized = sessionStorage.getItem("frontline_admin_session") === "authorized";
+      adminEmail = (sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+      isAdminAuthorized = (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
     } catch (e) {}
 
     // 2. Check Arena user
@@ -6634,7 +6634,7 @@ window.LeagueDB = {
           name: commishGamertag,
           role: "commissioner",
           is_commissioner: true,
-          avatar_url: arenaUser?.avatar_url || null
+          avatar_url: arenaUser?.avatar_url || "/images/leaguelogo_1.png"
         }
       };
     } else if (!authUser && arenaUser && (arenaUser.gamertag || arenaUser.email)) {
@@ -6660,6 +6660,25 @@ window.LeagueDB = {
 
     const isLoggedIn = !!authUser;
 
+    let gamertag = "";
+    let iconHtml = '<span class="nav-icon">👤</span>';
+
+    if (isLoggedIn) {
+      const meta = authUser.user_metadata || {};
+      gamertag = meta.gamertag || meta.username || meta.name || "";
+      if (!gamertag && authUser.email) {
+        if (authUser.email.toLowerCase() === "todd061496@gmail.com") gamertag = "Commissioner Spencer";
+        else if (authUser.email.toLowerCase() === "admin@frontlineleague.com") gamertag = "Commissioner";
+        else gamertag = authUser.email.split("@")[0];
+      }
+      const discordInfo = typeof this.getDiscordIdentity === "function" ? this.getDiscordIdentity(authUser) : null;
+      let navAvatar = discordInfo?.avatarUrl || meta.avatar_url;
+      if (navAvatar && navAvatar.includes("unsplash.com")) navAvatar = null;
+      iconHtml = navAvatar
+        ? `<img src="${navAvatar}" alt="" style="width:16px; height:16px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; margin-right:6px; border:1px solid var(--lime);" />`
+        : `<span class="nav-icon">👤</span>`;
+    }
+
     profileLinks.forEach((link) => {
       const href = link.getAttribute("href") || "";
 
@@ -6675,21 +6694,12 @@ window.LeagueDB = {
       }
 
       if (isLoggedIn) {
-        link.style.display = "";
-        link.style.removeProperty("display");
-        const meta = authUser.user_metadata || {};
-        let gamertag = meta.gamertag || meta.username || meta.name || "";
-        if (!gamertag && authUser.email) {
-          if (authUser.email.toLowerCase() === "todd061496@gmail.com") gamertag = "Commissioner Spencer";
-          else if (authUser.email.toLowerCase() === "admin@frontlineleague.com") gamertag = "Commissioner";
-          else gamertag = authUser.email.split("@")[0];
+        if (link.classList.contains("nav-league-profile-cta")) {
+          link.style.display = "inline-flex";
+        } else {
+          link.style.display = "";
+          link.style.removeProperty("display");
         }
-        const discordInfo = typeof this.getDiscordIdentity === "function" ? this.getDiscordIdentity(authUser) : null;
-        let navAvatar = discordInfo?.avatarUrl || meta.avatar_url;
-        if (navAvatar && navAvatar.includes("unsplash.com")) navAvatar = null;
-        const iconHtml = navAvatar
-          ? `<img src="${navAvatar}" alt="" style="width:16px; height:16px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; margin-right:6px; border:1px solid var(--lime);" />`
-          : `<span class="nav-icon">👤</span>`;
 
         if (gamertag && gamertag !== "Operative") {
           link.innerHTML = `${iconHtml} View Profile (${gamertag})`;
@@ -6698,6 +6708,26 @@ window.LeagueDB = {
         }
       } else {
         link.style.display = "none";
+      }
+    });
+
+    // Dynamic Topbar Profile Button Injection/Update
+    const rightHubs = document.querySelectorAll(".nav-right-hub, .fl-header .right, header .nav-right-hub");
+    rightHubs.forEach(hub => {
+      let topBtn = hub.querySelector(".nav-league-profile-cta");
+      if (isLoggedIn) {
+        if (!topBtn) {
+          topBtn = document.createElement("a");
+          topBtn.href = "/profile/";
+          topBtn.className = "cta nav-league-profile-cta";
+          topBtn.style.cssText = "background:rgba(213,244,91,0.12); border:1px solid var(--lime); color:var(--lime); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; padding:7px 14px; text-decoration:none; border-radius:2px; display:inline-flex; align-items:center; gap:6px; margin-right:8px;";
+          hub.insertBefore(topBtn, hub.firstChild);
+        }
+        topBtn.style.display = "inline-flex";
+        const shortName = gamertag || "Profile";
+        topBtn.innerHTML = `${iconHtml} <span>${shortName}</span>`;
+      } else if (topBtn) {
+        topBtn.style.display = "none";
       }
     });
 
