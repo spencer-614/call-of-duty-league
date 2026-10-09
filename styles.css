@@ -8218,16 +8218,24 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
 }
 
 /* ==============================================================================
-   RESPONSIVE HEADER OVERLAP PREVENTION (WELCOME BANNER & PROFILE BUTTON)
+   RESPONSIVE HEADER OVERLAP PREVENTION & PROFILE BADGE
    ============================================================================== */
-.nav-profile-name {
-  display: inline;
+.nav-profile-username {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--lime);
 }
 
-@media (max-width: 1250px) {
-  .nav-profile-name {
-    display: none !important;
-  }
+.nav-league-profile-cta {
+  gap: 7px !important;
+  padding: 6px 12px !important;
 }
 
 /* Hide the welcome banner on screens <= 1100px so mode switcher pill has full breathing room */

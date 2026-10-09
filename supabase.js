@@ -6829,7 +6829,7 @@ window.LeagueDB = {
   },
 
   // Updates the League navigation bar Profile link across all pages
-  // Hides "View Profile" until someone signs up through email or signs in with Discord
+  // Shows the user's avatar and profile username (no generic "View Profile" text)
   async updateLeagueNavProfile() {
     if (typeof document === "undefined") return false;
 
@@ -6930,23 +6930,42 @@ window.LeagueDB = {
 
     const isLoggedIn = !!authUser;
 
-    let gamertag = "";
+    let displayName = "";
+    let avatarUrl = null;
     let iconHtml = '<span class="nav-icon">👤</span>';
+    let avatarHtml = '<span class="nav-icon">👤</span>';
 
     if (isLoggedIn) {
       const meta = authUser.user_metadata || {};
-      gamertag = meta.gamertag || meta.username || meta.name || "";
-      if (!gamertag && authUser.email) {
-        if (authUser.email.toLowerCase() === "todd061496@gmail.com") gamertag = "Commissioner Spencer";
-        else if (authUser.email.toLowerCase() === "admin@frontlineleague.com") gamertag = "Commissioner";
-        else gamertag = authUser.email.split("@")[0];
+      displayName = meta.gamertag || meta.username || meta.name || "";
+      if (!displayName && authUser.email) {
+        if (authUser.email.toLowerCase() === "todd061496@gmail.com") displayName = "Commissioner Spencer";
+        else if (authUser.email.toLowerCase() === "admin@frontlineleague.com") displayName = "Commissioner";
+        else displayName = authUser.email.split("@")[0];
       }
+      if (!displayName && playerCard && playerCard.gamertag && playerCard.gamertag !== "Operative") {
+        displayName = playerCard.gamertag;
+      }
+      if (!displayName && arenaUser && arenaUser.gamertag) {
+        displayName = arenaUser.gamertag;
+      }
+
       const discordInfo = typeof this.getDiscordIdentity === "function" ? this.getDiscordIdentity(authUser) : null;
-      let navAvatar = discordInfo?.avatarUrl || meta.avatar_url;
-      if (navAvatar && navAvatar.includes("unsplash.com")) navAvatar = null;
-      iconHtml = navAvatar
-        ? `<img src="${navAvatar}" alt="" style="width:16px; height:16px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; margin-right:6px; border:1px solid var(--lime);" />`
-        : `<span class="nav-icon">👤</span>`;
+      if (!displayName && discordInfo?.primaryName) {
+        displayName = discordInfo.primaryName;
+      }
+      if (!displayName) displayName = "Player";
+
+      avatarUrl = discordInfo?.avatarUrl || meta.avatar_url || meta.picture || meta.avatar || (playerCard && playerCard.avatar) || (arenaUser && arenaUser.avatar_url) || null;
+      if (avatarUrl && avatarUrl.includes("unsplash.com")) avatarUrl = null;
+
+      if (avatarUrl) {
+        avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" class="nav-profile-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';" style="width:20px; height:20px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; border:1.5px solid var(--lime); flex-shrink:0;" /><span class="nav-icon nav-fallback-icon" style="display:none; font-size:13px; vertical-align:middle;">👤</span>`;
+        iconHtml = `<img src="${avatarUrl}" alt="" onerror="this.style.display='none';" style="width:16px; height:16px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; margin-right:6px; border:1px solid var(--lime);" />`;
+      } else {
+        avatarHtml = `<span class="nav-icon" style="font-size:13px; vertical-align:middle;">👤</span>`;
+        iconHtml = `<span class="nav-icon">👤</span>`;
+      }
     }
 
     profileLinks.forEach((link) => {
@@ -6966,21 +6985,19 @@ window.LeagueDB = {
       if (isLoggedIn) {
         if (link.classList.contains("nav-league-profile-cta")) {
           link.style.setProperty("display", "inline-flex", "important");
+          link.innerHTML = `${avatarHtml} <span class="nav-profile-username">${displayName}</span>`;
+          link.title = `${displayName} — Profile`;
         } else {
           link.style.setProperty("display", "flex", "important");
-        }
-
-        if (gamertag && gamertag !== "Operative") {
-          link.innerHTML = `${iconHtml} View Profile (${gamertag})`;
-        } else {
-          link.innerHTML = `${iconHtml} View Profile`;
+          link.innerHTML = `${iconHtml} ${displayName} (Profile)`;
+          link.title = `Profile (${displayName})`;
         }
       } else {
         link.style.setProperty("display", "none", "important");
       }
     });
 
-    // Dynamic Topbar Profile Button Injection/Update
+    // Dynamic Topbar Profile Button Injection/Update (Shows avatar + username)
     const rightHubs = document.querySelectorAll(".nav-right-hub, .fl-header .right, header .nav-right-hub");
     rightHubs.forEach(hub => {
       let topBtn = hub.querySelector(".nav-league-profile-cta");
@@ -6989,13 +7006,11 @@ window.LeagueDB = {
           topBtn = document.createElement("a");
           topBtn.href = "/profile/";
           topBtn.className = "cta nav-league-profile-cta";
-          topBtn.style.cssText = "background:rgba(213,244,91,0.12); border:1px solid var(--lime); color:var(--lime); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; padding:7px 14px; text-decoration:none; border-radius:2px; display:inline-flex; align-items:center; gap:6px; margin-right:8px;";
           hub.insertBefore(topBtn, hub.firstChild);
         }
         topBtn.style.display = "inline-flex";
-        const shortName = (gamertag && gamertag !== "Operative") ? gamertag : "";
-        topBtn.innerHTML = `${iconHtml} <span>View Profile</span><span class="nav-profile-name">${shortName ? " · " + shortName : ""}</span>`;
-        topBtn.title = "View Profile" + (shortName ? " (" + shortName + ")" : "");
+        topBtn.innerHTML = `${avatarHtml} <span class="nav-profile-username">${displayName}</span>`;
+        topBtn.title = `${displayName} — Profile`;
       } else if (topBtn) {
         topBtn.style.display = "none";
       }
