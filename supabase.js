@@ -4834,21 +4834,23 @@ window.LeagueDB = {
         }
       });
     } catch (e) {}
-    if (typeof this.updateLeagueNavProfile === "function") {
-      this.updateLeagueNavProfile();
+    if (dbClient) {
+      try {
+        const { error } = await dbClient.auth.signOut();
+        if (error) return { success: false, error: error.message };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    } else {
+      window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+      window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: null } }));
     }
+
+    if (typeof this.updateLeagueNavProfile === "function") this.updateLeagueNavProfile();
     if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
       window.LadderDB.updateArenaNavProfile();
     }
-    window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
-    window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: null } }));
-    if (!dbClient) return { success: true };
-    try {
-      await dbClient.auth.signOut();
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
+    return { success: true };
   },
 
   async getAuthUser() {
@@ -7690,7 +7692,7 @@ window.LadderDB = {
     // 3. Fallback to Supabase player session
     if (authUser) {
       const meta = authUser.user_metadata || {};
-      const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.extractDiscordIdentity(authUser) : null;
+      const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.getDiscordIdentity(authUser) : null;
       const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
       return {
         id: authUser.id,

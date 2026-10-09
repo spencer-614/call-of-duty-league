@@ -1296,32 +1296,34 @@
       async function signOutLeagueProfile() {
         if (confirm("Are you sure you want to sign out of your Frontline combatant profile?")) {
           try {
-            localStorage.removeItem("frontline_league_auth_user");
-            localStorage.removeItem("frontline_arena_auth_user");
-            localStorage.removeItem("frontline_arena_user");
-            localStorage.removeItem("frontline_league_player_card");
-            sessionStorage.removeItem("frontline_admin_session");
-            sessionStorage.removeItem("frontline_admin_email");
-            sessionStorage.removeItem("frontline_discord_oauth_pending");
-            
-            Object.keys(localStorage).forEach(k => {
-              if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
-                localStorage.removeItem(k);
-              }
-            });
-
             if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
-              await window.LeagueDB.signOutPlayer();
+              const result = await window.LeagueDB.signOutPlayer();
+              if (!result?.success) throw new Error(result?.error || "Sign out failed.");
+            } else {
+              const client = window.supabaseClient || window.dbClient;
+              localStorage.removeItem("frontline_league_auth_user");
+              localStorage.removeItem("frontline_arena_auth_user");
+              localStorage.removeItem("frontline_arena_user");
+              localStorage.removeItem("frontline_league_player_card");
+              sessionStorage.removeItem("frontline_admin_session");
+              sessionStorage.removeItem("frontline_admin_email");
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
+              Object.keys(localStorage).forEach(key => {
+                if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+                  localStorage.removeItem(key);
+                }
+              });
+              if (client?.auth?.signOut) {
+                const { error } = await client.auth.signOut();
+                if (error) throw error;
+              }
+              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
             }
-            if (window.LadderDB && typeof window.LadderDB.logoutArenaPlayer === "function") {
-              window.LadderDB.logoutArenaPlayer();
-            }
-            if (window.supabaseClient && window.supabaseClient.auth) {
-              await window.supabaseClient.auth.signOut().catch(() => {});
-            }
-          } catch(e) {}
-          showProfileToast("✓ Successfully signed out.");
-          loadLeagueProfile();
+            await loadLeagueProfile();
+            showProfileToast("✓ Successfully signed out.");
+          } catch (e) {
+            showProfileToast(`Sign out failed: ${e.message || "Please try again."}`, true);
+          }
         }
       }
 
