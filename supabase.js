@@ -2455,13 +2455,18 @@ window.LeagueDB = {
         } catch (_) {}
       }
 
-      // 2. Build player entity
+      // 2. Build player entity (ensure discord identity, avatar, platform & region are mapped)
       const newPlayerData = {
         gamertag: gamertag,
         role: signup?.role || customPlayerData.role || "Flex",
         team_id: teamId,
         kdr: customPlayerData.kdr != null ? parseFloat(customPlayerData.kdr) : 1.00,
         activision_id: signup?.activision_id || customPlayerData.activision_id || null,
+        discord_name: customPlayerData.discord_name || signup?.discord_username || signup?.discord_name || null,
+        avatar_url: customPlayerData.avatar_url || signup?.avatar_url || null,
+        platform: customPlayerData.platform || signup?.platform || "PC",
+        region: customPlayerData.region || signup?.region || "NA East",
+        user_id: customPlayerData.user_id || (this._isValidUUID && this._isValidUUID(signup?.user_id) ? signup.user_id : null),
         total_kills: 0,
         total_deaths: 0,
         wins: 0,
@@ -2526,6 +2531,11 @@ window.LeagueDB = {
           gamertag: s.gamertag,
           role: s.role || "Flex",
           activision_id: s.activision_id || null,
+          discord_name: s.discord_username || s.discord_name || null,
+          avatar_url: s.avatar_url || null,
+          platform: s.platform || "PC",
+          region: s.region || "NA East",
+          user_id: (this._isValidUUID && this._isValidUUID(s.user_id)) ? s.user_id : null,
           team_id: teamId,
           kdr: 1.00
         });
@@ -5462,15 +5472,31 @@ window.LeagueDB = {
     const cleanRole = (role || "").trim() || "Flex";
     const cleanRegion = (region || "").trim() || "NA East";
     const cleanPlatform = (platform || "").trim() || "PC";
-    const cleanDiscord = (discordName || "").trim() || cleanGamertag;
+    let cleanDiscord = (discordName || "").trim();
+
+    // Guard: ONLY use localUser Discord info if this sync payload is explicitly for the logged-in user!
+    // Never leak admin's Discord handle onto other players!
+    if (!cleanDiscord && userId) {
+      try {
+        const localUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+        if (localUser && localUser.id === userId) {
+          const disc = this.getDiscordIdentity(localUser);
+          if (disc?.handle) cleanDiscord = disc.handle;
+          else if (disc?.primaryName) cleanDiscord = disc.primaryName;
+        }
+      } catch (e) {}
+    }
+    if (!cleanDiscord) {
+      cleanDiscord = cleanGamertag;
+    }
 
     // Verified combatant registration across players and rosters
 
     let cleanAvatar = avatarUrl;
-    if (!cleanAvatar || cleanAvatar.includes("unsplash.com")) {
+    if ((!cleanAvatar || cleanAvatar.includes("unsplash.com")) && userId) {
       try {
         const localUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
-        if (localUser) {
+        if (localUser && localUser.id === userId) {
           const disc = this.getDiscordIdentity(localUser);
           if (disc?.avatarUrl) cleanAvatar = disc.avatarUrl;
         }

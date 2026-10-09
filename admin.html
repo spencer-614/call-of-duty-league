@@ -3673,6 +3673,8 @@
 
           staffUsersMap = new Map();
 
+          const VALID_STAFF_ROLES = ["commissioner", "referee", "stats_official", "roster_manager", "recruiter", "broadcaster", "rulebook_admin"];
+
           function mergeCandidateUser(candidate) {
             if (!candidate) return;
             const rawEmail = (candidate.email || candidate.user_email || candidate._owner_email || "").toLowerCase().trim();
@@ -3680,6 +3682,12 @@
             const discord = (candidate.discord || candidate.discord_username || candidate.discord_name || "").trim();
             const discordId = candidate.discord_id || candidate.discord_user_id || null;
             const userId = candidate.user_id || candidate.id || null;
+            const playerId = candidate.player_id || (candidate.category === "Roster Player" ? candidate.id : null);
+            const signupId = candidate.signup_id || (candidate.category === "League Recruit" ? candidate.id : null);
+
+            // Filter out tactical player roles (AR, SMG, Flex) from staff roles
+            const staffRole = (candidate.role && VALID_STAFF_ROLES.includes(candidate.role)) ? candidate.role : 
+                              (candidate.staff_role && VALID_STAFF_ROLES.includes(candidate.staff_role) ? candidate.staff_role : null);
 
             if (!rawEmail && !gamertag && !discord) return;
 
@@ -3716,7 +3724,9 @@
               if (!existing.discord && discord) existing.discord = discord;
               if (!existing.discord_id && discordId) existing.discord_id = discordId;
               if (!existing.user_id && userId) existing.user_id = userId;
-              if (candidate.role && !existing.role) existing.role = candidate.role;
+              if (!existing.player_id && playerId) existing.player_id = playerId;
+              if (!existing.signup_id && signupId) existing.signup_id = signupId;
+              if (staffRole && !existing.role) existing.role = staffRole;
               if (candidate.custom_permissions && !existing.custom_permissions) existing.custom_permissions = candidate.custom_permissions;
               if (candidate.staff_id && !existing.staff_id) existing.staff_id = candidate.staff_id;
               if (candidate.notes && !existing.notes) existing.notes = candidate.notes;
@@ -3732,7 +3742,9 @@
                 discord: discord,
                 discord_id: discordId,
                 user_id: userId,
-                role: candidate.role || null,
+                player_id: playerId,
+                signup_id: signupId,
+                role: staffRole,
                 custom_permissions: candidate.custom_permissions || null,
                 staff_id: candidate.staff_id || null,
                 notes: candidate.notes || "",
@@ -3935,8 +3947,8 @@
                     <button type="button" class="btn-action-sm btn-config-perms" data-user-key="${escapeHtml(item.key)}" title="Configure custom tab permissions" style="font-size:11px; padding:4px 8px;">
                       ⚙ Perms
                     </button>
-                    ${item.role && !isSelf ? `
-                      <button type="button" class="btn-action-sm btn-action-danger btn-remove-staff-role" data-user-key="${escapeHtml(item.key)}" title="Revoke staff privileges" style="font-size:11px; padding:4px 8px;">
+                    ${!isSelf ? `
+                      <button type="button" class="btn-action-sm btn-action-danger btn-remove-staff-role" data-user-key="${escapeHtml(item.key)}" title="Remove player / user permanently from database and website" style="font-size:11px; padding:4px 8px; color:#ff4d4d; border-color:#ff4d4d50;">
                         ✕
                       </button>
                     ` : ''}
@@ -4050,25 +4062,86 @@
             });
           });
 
-          // 3. Remove / Revoke button click
+          // 3. Complete user/player permanent removal handler
           tbody.querySelectorAll(".btn-remove-staff-role").forEach(btn => {
             btn.addEventListener("click", async () => {
               const userKey = btn.getAttribute("data-user-key");
               const user = staffUsersMap.get(userKey);
               if (!user) return;
 
-              if (!confirm(`Revoke staff privileges for ${user.gamertag} (${user.email})?`)) return;
+              const isStaff = !!user.role;
+              const hasPlayer = user.category === "Roster Player" || !!user.player_id;
+              const hasSignup = user.category === "League Recruit" || !!user.signup_id;
+
+              let confirmMsg = `Are you sure you want to permanently remove "${user.gamertag}" from the league database and website?\n\nThis will remove them from the players roster, signups, permissions, and caches.`;
+              if (isStaff && !hasPlayer && !hasSignup) {
+                confirmMsg = `Revoke staff privileges for ${user.gamertag} (${user.email || 'No email'})?`;
+              }
+
+              if (!confirm(confirmMsg)) return;
 
               btn.disabled = true;
-              const res = await window.LeagueDB.deleteStaffRole(user.staff_id || user.email);
-              if (res.success) {
-                user.role = null;
-                user.custom_permissions = null;
-                showToast(`✓ Revoked staff privileges for ${user.gamertag}`);
-                renderStaffUsersTable();
-              } else {
-                alert("Failed to revoke: " + (res.error || "Unknown error"));
+              btn.textContent = "...";
+
+              try {
+                // 1. Permanently delete from players table in Supabase & caches
+                if (window.LeagueDB && typeof window.LeagueDB.deletePlayer === "function") {
+                  await window.LeagueDB.deletePlayer(user.player_id || user.user_id || user.gamertag, user.gamertag);
+                }
+
+                // 2. Permanently delete from league_signups table
+                if (window.LeagueDB && typeof window.LeagueDB.deleteSignup === "function") {
+                  await window.LeagueDB.deleteSignup(user.signup_id || user.gamertag, user.gamertag);
+                }
+
+                // 3. Delete from staff_roles table if was staff
+                if (user.staff_id || isStaff) {
+                  await window.LeagueDB.deleteStaffRole(user.staff_id || user.email);
+                }
+
+                // 4. Purge from local storage accounts and signups
+                try {
+                  const regAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+                  const filteredReg = regAccounts.filter(a =>
+                    String(a.gamertag || "").toLowerCase() !== String(user.gamertag || "").toLowerCase() &&
+                    String(a.email || "").toLowerCase() !== String(user.email || "").toLowerCase()
+                  );
+                  localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(filteredReg));
+                } catch (_) {}
+
+                try {
+                  const localS = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+                  const filteredS = localS.filter(s =>
+                    String(s.gamertag || "").toLowerCase() !== String(user.gamertag || "").toLowerCase() &&
+                    String(s.email || "").toLowerCase() !== String(user.email || "").toLowerCase()
+                  );
+                  localStorage.setItem("frontline_league_signups", JSON.stringify(filteredS));
+                } catch (_) {}
+
+                try {
+                  const fa = JSON.parse(localStorage.getItem("frontline_arena_free_agents")) || [];
+                  const filteredFa = fa.filter(f =>
+                    String(f.gamertag || "").toLowerCase() !== String(user.gamertag || "").toLowerCase()
+                  );
+                  localStorage.setItem("frontline_arena_free_agents", JSON.stringify(filteredFa));
+                } catch (_) {}
+
+                staffUsersMap.delete(userKey);
+                cachedPlayers = null;
+                cachedSignups = null;
+
+                showToast(`✓ Permanently removed ${user.gamertag} from database and website!`);
+
+                // Re-fetch all data fresh
+                if (typeof loadStaffDirectory === "function") await loadStaffDirectory();
+                if (typeof loadPlayers === "function") await loadPlayers();
+                if (typeof loadSignups === "function") await loadSignups();
+                if (typeof loadTeams === "function") await loadTeams();
+              } catch (err) {
+                console.error("Error removing player/user:", err);
+                alert("Failed to remove: " + (err.message || String(err)));
                 btn.disabled = false;
+                btn.textContent = "✕";
               }
             });
           });
@@ -4652,12 +4725,17 @@
                 if (confirm(`Are you sure you want to remove "${name}" from the league rosters and database?`)) {
                   btn.disabled = true;
                   btn.textContent = "Removing...";
+                  cachedPlayers = null;
+                  cachedSignups = null;
                   const res = await window.LeagueDB.deletePlayer(id, name);
                   if (res && res.success) {
-                    showToast(`✓ Removed ${name} from league database!`);
+                    showToast(`✓ Removed ${name} from league database and website!`);
+                    cachedPlayers = null;
+                    cachedSignups = null;
                     await loadPlayers();
                     await loadTeams();
                     await loadSignups();
+                    if (typeof loadStaffDirectory === "function") await loadStaffDirectory();
                   } else {
                     alert("Failed to remove player: " + (res?.error || "Unknown error"));
                     btn.disabled = false;
