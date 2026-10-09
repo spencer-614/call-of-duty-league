@@ -559,97 +559,6 @@ window.LeagueDB = {
       list = (MOCK_DATA.players || []).slice();
     }
 
-    // Merge in any incoming Free Agent signups so all recruits immediately show in Community Players
-    try {
-      let signups = [];
-      if (typeof this.getSignups === "function") {
-        signups = await this.getSignups();
-      }
-      const existingTags = new Set(list.map(p => (p.gamertag || "").toLowerCase().trim()));
-
-      (signups || []).forEach(s => {
-        const tag = (s.gamertag || "").trim();
-        const lowerTag = tag.toLowerCase();
-        if (!tag || existingTags.has(lowerTag)) return;
-
-        existingTags.add(lowerTag);
-        list.push({
-          id: `signup-${s.id}`,
-          gamertag: tag,
-          discord_name: s.discord_username || s.discord_name || tag,
-          activision_id: s.activision_id || `${tag}#0000`,
-          role: s.role || "Flex",
-          platform: s.platform || "PC",
-          region: s.region || "NA East",
-          avatar_url: s.avatar_url || s.photo_url || null,
-          rank: "1.0",
-          skill_rank: "1.0",
-          status: "Free Agent",
-          kdr: 1.00,
-          total_kills: 0,
-          total_deaths: 0,
-          wins: 0,
-          losses: 0,
-          team_name: s.team_name || "Free Agent",
-          division: "Open Division",
-          is_free_agent: !s.team_name || s.team_name.toLowerCase() === "free agent"
-        });
-      });
-    } catch (e) {}
-
-    // Ensure active logged-in user is present in Community Players with their chosen gamertag & avatar (only if they are a combatant, NOT staff/admin)
-    try {
-      const authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
-      if (authUser && !(window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(authUser))) {
-        let playerCard = null;
-        try {
-          const raw = JSON.parse(localStorage.getItem("frontline_league_player_card"));
-          if (raw && (raw._owner_id === authUser.id || (raw._owner_email && raw._owner_email.toLowerCase() === (authUser.email || "").toLowerCase()))) {
-            playerCard = raw;
-          }
-        } catch (_) {}
-
-        const meta = authUser?.user_metadata || {};
-        const authTag = (playerCard?.gamertag || meta.gamertag || meta.username || meta.name || "").trim();
-        const discordAvatar = playerCard?.avatar || meta.avatar_url || meta.picture || authUser?.avatar_url;
-
-        if (authTag && authTag !== "Operative") {
-          const lowerTag = authTag.toLowerCase();
-          const match = list.find(p => (p.gamertag || "").toLowerCase().trim() === lowerTag);
-          if (match) {
-            if (discordAvatar && (!match.avatar_url || match.avatar_url.includes("unsplash.com"))) {
-              match.avatar_url = discordAvatar;
-            }
-            if (playerCard?.activision && !match.activision_id) {
-              match.activision_id = playerCard.activision;
-            }
-          } else {
-            list.unshift({
-              id: `auth-${authUser?.id || Date.now()}`,
-              gamertag: authTag,
-              discord_name: meta.discord_name || playerCard?.discord || authTag,
-              activision_id: playerCard?.activision || meta.activision_id || `${authTag}#1234567`,
-              role: playerCard?.role || meta.role || "Flex",
-              platform: playerCard?.platform || meta.platform || "PC",
-              region: playerCard?.region || meta.region || "NA East",
-              avatar_url: discordAvatar || null,
-              rank: "1.0",
-              skill_rank: "1.0",
-              status: playerCard?.team && playerCard.team !== "Free Agent" ? "Active" : "Free Agent",
-              kdr: 1.00,
-              total_kills: 0,
-              total_deaths: 0,
-              wins: 0,
-              losses: 0,
-              team_name: playerCard?.team || "Free Agent",
-              division: playerCard?.division || "Open Division",
-              is_free_agent: !playerCard?.team || playerCard.team === "Free Agent"
-            });
-          }
-        }
-      }
-    } catch (e) {}
-
     return list;
   },
 
@@ -1188,19 +1097,6 @@ window.LeagueDB = {
       cleanPayload.discord_user_id = signupData.discord_user_id;
     }
 
-    // Save registration profile details before any already-enlisted early return.
-    if (dbClient && cleanPayload.user_id) {
-    await this.completeCombatantDossier({
-      gamertag: cleanGamertag,
-      activisionId: cleanActivision,
-      role: cleanRole,
-      region: cleanRegion,
-      platform: cleanPlatform,
-      discordName: cleanDiscord,
-      avatarUrl: cleanAvatar
-    });
-    }
-
     // Guard: If player is already accepted/enlisted in the league, NEVER send another registration!
     // An automatically created player profile is not an approved registration.
 // In the current approval flow, approved players have their signup removed.
@@ -1389,104 +1285,25 @@ if (dbClient && cleanPayload.user_id) {
 
   // 9. Fetch All League Signups (for admin review) - Filters out any accepted players
   async getSignups() {
-    // 0. Fetch existing enlisted players to ensure accepted players NEVER appear in incoming registrations
-    const acceptedPlayerTags = new Set();
-    const acceptedPlayerIds = new Set();
-    if (dbClient) {
-      try {
-        const { data: pList } = await dbClient
-          .from("players")
-          .select("id, gamertag, user_id");
-        if (pList && Array.isArray(pList)) {
-          pList.forEach(p => {
-            if (p.gamertag) acceptedPlayerTags.add(p.gamertag.trim().toLowerCase());
-            if (p.user_id) acceptedPlayerIds.add(String(p.user_id).trim().toLowerCase());
-          });
-        }
-      } catch (_) {}
-    }
+  if (!dbClient) {
+    throw new Error("Database connection is unavailable.");
+  }
 
-    // Helper to test if a record belongs to an already accepted player
-    const isAlreadyAccepted = (rec) => {
-      if (!rec) return true;
-      const tag = String(rec.gamertag || "").trim().toLowerCase();
-      if (tag && acceptedPlayerTags.has(tag)) return true;
-      const uid = String(rec.user_id || "").trim().toLowerCase();
-      if (uid && acceptedPlayerIds.has(uid)) return true;
-      const st = String(rec.status || "").trim().toLowerCase();
-      if (st === "enlisted" || st === "approved" || st === "approved_enlisted") return true;
-      return false;
-    };
+  const { data, error } = await dbClient
+    .from("league_signups")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-    let remoteSignups = [];
-    if (dbClient) {
-      try {
-        const { data, error } = await dbClient
-          .from("league_signups")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (!error && Array.isArray(data)) {
-          remoteSignups = data.filter(s => !isAlreadyAccepted(s));
-        }
-      } catch (err) {
-        console.warn("Supabase getSignups error:", err);
-      }
-    }
+  if (error) throw error;
 
-    // Local storage signups
-    let localSignups = [];
-    try {
-      localSignups = (JSON.parse(localStorage.getItem("frontline_league_signups")) || [])
-        .filter(s => !isAlreadyAccepted(s));
-    } catch (e) {}
+  return (data || []).filter(signup => {
+    const status = String(signup.status || "Pending")
+      .trim()
+      .toLowerCase();
 
-    // Also include any registered combatant accounts that haven't been enlisted yet
-    let registeredAccounts = [];
-    try {
-      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-      registeredAccounts = accounts
-        .filter(a => !isAlreadyAccepted(a))
-        .map(a => ({
-          id: a.id || ("acc_" + a.gamertag),
-          gamertag: a.gamertag,
-          activision_id: a.activision_id || `${a.gamertag}#1234567`,
-          discord_username: a.discord || a.gamertag,
-          role: a.role || "Starter",
-          platform: "Crossplay",
-          region: "NA East",
-          registration_type: a.tag ? `[${a.tag}] Squad Recruit` : "Free Agent",
-          team_name: a.team_name || null,
-          notes: `[Account: ${a.email || 'Registered User'}] Website combatant registration`,
-          status: "Pending",
-          created_at: a.created_at || new Date().toISOString()
-        }));
-    } catch (e) {}
-
-    // In-memory mock signups
-    const memorySignups = (MOCK_DATA.signups || []).filter(s => !isAlreadyAccepted(s));
-
-    // Merge all sources without duplicates (prefer remote, then local, then registered accounts, then memory)
-    const combined = [];
-    const seenGamertags = new Set();
-
-    function addSignups(list) {
-      for (const s of list) {
-        if (!s || !s.gamertag) continue;
-        const key = String(s.gamertag).trim().toLowerCase();
-        if (!seenGamertags.has(key) && !isAlreadyAccepted(s)) {
-          seenGamertags.add(key);
-          combined.push(s);
-        }
-      }
-    }
-
-    addSignups(remoteSignups);
-    addSignups(localSignups);
-    addSignups(registeredAccounts);
-    addSignups(memorySignups);
-
-    return combined;
-  },
+    return !["enlisted", "approved", "approved_enlisted"].includes(status);
+  });
+},
 
   // 10. Submit Organization / Team Buy-In Application ($25 entry)
   async submitOrgSignup(orgData) {
