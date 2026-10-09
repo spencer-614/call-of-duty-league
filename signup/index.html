@@ -1709,7 +1709,23 @@
             const errCode = hashParams.get("error_code") || "";
             const errDesc = hashParams.get("error_description") || hashParams.get("error") || "Discord authentication was not completed.";
             const cleanDesc = decodeURIComponent(errDesc.replace(/\+/g, " "));
-            showGateError(`Discord Authorization Notice (${errCode || 'OAuth'}): ${cleanDesc}`);
+            // Clean the hash from URL so it doesn't persist on refresh
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState(null, "", window.location.pathname + window.location.search);
+            }
+            // Special handling for unexpected_failure (Supabase DB issue on new user creation)
+            const isUnexpectedFailure = errCode === "unexpected_failure" || cleanDesc.toLowerCase().includes("database error");
+            if (isUnexpectedFailure) {
+              showGateError(
+                'Discord sign-in is temporarily unavailable due to a server issue. ' +
+                'Please use the <strong>Create New Account</strong> or <strong>Sign In to Account</strong> tab below to register instead. ' +
+                'Your registration will still be saved. We apologize for the inconvenience.'
+              );
+              // Auto-switch to the Create Account tab so the user sees it immediately
+              if (tabBtnCreate) tabBtnCreate.click();
+            } else {
+              showGateError(`Discord Authorization Notice (${errCode || 'OAuth'}): ${cleanDesc}`);
+            }
             return;
           } catch (_) {}
         }
