@@ -1701,6 +1701,48 @@
 
       // Check active player session on page load & OAuth redirect returns
       async function checkInitialCombatantAuth() {
+        // 0. Handle OAuth Error Redirects
+        if (window.location.hash && window.location.hash.includes("error=")) {
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const errCode = hashParams.get("error_code") || "";
+            const errDesc = hashParams.get("error_description") || hashParams.get("error") || "Discord authentication was not completed.";
+            const cleanDesc = decodeURIComponent(errDesc.replace(/\+/g, " "));
+            showGateError(`Discord Authorization Notice (${errCode || 'OAuth'}): ${cleanDesc}`);
+            return;
+          } catch (_) {}
+        }
+
+        // 1. Instant JWT parse from URL hash
+        if (window.location.hash && window.location.hash.includes("access_token=")) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const token = hashParams.get("access_token");
+            if (token) {
+              const parts = token.split(".");
+              if (parts.length === 3) {
+                const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+                const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+                if (payload && (payload.sub || payload.email)) {
+                  const hashUser = {
+                    id: payload.sub || "usr_" + Date.now(),
+                    email: payload.email || "",
+                    user_metadata: payload.user_metadata || {},
+                    app_metadata: payload.app_metadata || {}
+                  };
+                  localStorage.setItem("frontline_league_auth_user", JSON.stringify(hashUser));
+                  localStorage.setItem("frontline_arena_auth_user", JSON.stringify(hashUser));
+                  sessionStorage.removeItem("frontline_discord_oauth_pending");
+                  handleCombatantAuthSuccess(hashUser);
+                  return;
+                }
+              }
+            }
+          } catch(e) {}
+        }
+
+        // 2. Check live Supabase Auth User
         if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
           const res = await window.LeagueDB.getAuthUser();
           if (res?.success && res.user) {
@@ -1715,6 +1757,38 @@
             return;
           }
         }
+
+        // 3. Fallback to localStorage
+        try {
+          const local = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+          if (local && (local.id || local.email)) {
+            handleCombatantAuthSuccess(local);
+            return;
+          }
+        } catch (_) {}
+
+        // 4. If an OAuth redirect is pending, retry briefly before locking
+        if (sessionStorage.getItem("frontline_discord_oauth_pending") === "true") {
+          let retries = 0;
+          const retryTimer = setInterval(async () => {
+            retries++;
+            if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
+              const retryRes = await window.LeagueDB.getAuthUser();
+              if (retryRes?.success && retryRes.user) {
+                clearInterval(retryTimer);
+                handleCombatantAuthSuccess(retryRes.user);
+                return;
+              }
+            }
+            if (retries >= 5) {
+              clearInterval(retryTimer);
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
+              lockRegistrationTerminal();
+            }
+          }, 400);
+          return;
+        }
+
         lockRegistrationTerminal();
       }
 
@@ -1745,8 +1819,16 @@
         const originalHtml = btnDiscordAuth.innerHTML;
         btnDiscordAuth.innerHTML = `<span>Connecting to Discord Authorization...</span> <span>⏳</span>`;
 
+        // Safety timeout to re-enable button if user cancels or stays on page
+        setTimeout(() => {
+          if (btnDiscordAuth) {
+            btnDiscordAuth.disabled = false;
+            btnDiscordAuth.innerHTML = originalHtml;
+          }
+        }, 6000);
+
         try {
-          const redirectUrl = window.location.origin + window.location.pathname;
+          const redirectUrl = (window.location.origin + window.location.pathname).split("#")[0];
           if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
             const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
             if (res && res.url) {
@@ -1760,7 +1842,8 @@
             window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
           }
         } catch (err) {
-          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
+          const fallbackUrl = (window.location.origin + window.location.pathname).split("#")[0];
+          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(fallbackUrl);
         }
       });
 

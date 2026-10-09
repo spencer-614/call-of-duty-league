@@ -4751,7 +4751,8 @@ window.LeagueDB = {
   async signInWithDiscord(redirectUrl) {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const pathname = typeof window !== "undefined" ? window.location.pathname : "";
-    const targetRedirect = redirectUrl || (origin + pathname);
+    const rawTarget = redirectUrl || (origin + pathname);
+    const targetRedirect = rawTarget.split("#")[0]; // Clean any existing fragment
     const directOAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(targetRedirect)}`;
 
     if (typeof sessionStorage !== "undefined") {
@@ -4821,26 +4822,75 @@ window.LeagueDB = {
   },
 
   async getAuthUser() {
+    // 0. Instant URL hash parse if returning from OAuth redirect
+    if (typeof window !== "undefined" && window.location.hash && window.location.hash.includes("access_token=")) {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const token = hashParams.get("access_token");
+        if (token) {
+          const parts = token.split(".");
+          if (parts.length === 3) {
+            const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+            const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            if (payload && (payload.sub || payload.email)) {
+              const hashUser = {
+                id: payload.sub || "usr_" + Date.now(),
+                email: payload.email || "",
+                user_metadata: payload.user_metadata || {},
+                app_metadata: payload.app_metadata || {}
+              };
+              try {
+                localStorage.setItem("frontline_league_auth_user", JSON.stringify(hashUser));
+                localStorage.setItem("frontline_arena_auth_user", JSON.stringify(hashUser));
+              } catch (_) {}
+              return { success: true, user: hashUser };
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
     if (!dbClient) {
       try {
-        const local = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+        const local = JSON.parse(localStorage.getItem("frontline_league_auth_user") || localStorage.getItem("frontline_arena_auth_user"));
         return { success: !!local, user: local || null };
       } catch (e) {
         return { success: false, user: null };
       }
     }
+
     try {
       const { data, error } = await dbClient.auth.getUser();
-      if (error || !data?.user) {
-        // Fallback to session check
-        const { data: sessData } = await dbClient.auth.getSession();
-        if (sessData?.session?.user) {
-          return { success: true, user: sessData.session.user };
-        }
-        return { success: false, user: null };
+      if (!error && data?.user) {
+        try {
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(data.user));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(data.user));
+        } catch (_) {}
+        return { success: true, user: data.user };
       }
-      return { success: true, user: data.user };
+
+      // Fallback to session check
+      const { data: sessData } = await dbClient.auth.getSession();
+      if (sessData?.session?.user) {
+        try {
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(sessData.session.user));
+          localStorage.setItem("frontline_arena_auth_user", JSON.stringify(sessData.session.user));
+        } catch (_) {}
+        return { success: true, user: sessData.session.user };
+      }
+
+      // Fallback to localStorage
+      const local = JSON.parse(localStorage.getItem("frontline_league_auth_user") || localStorage.getItem("frontline_arena_auth_user"));
+      if (local) {
+        return { success: true, user: local };
+      }
+
+      return { success: false, user: null };
     } catch (err) {
+      const local = JSON.parse(localStorage.getItem("frontline_league_auth_user") || localStorage.getItem("frontline_arena_auth_user"));
+      if (local) {
+        return { success: true, user: local };
+      }
       return { success: false, error: err.message, user: null };
     }
   },
