@@ -1188,6 +1188,35 @@ window.LeagueDB = {
       cleanPayload.discord_user_id = signupData.discord_user_id;
     }
 
+    // Guard: If player is already accepted/enlisted in the league, NEVER send another registration!
+    if (dbClient) {
+      try {
+        const { data: pByTag } = await dbClient
+          .from("players")
+          .select("id, gamertag")
+          .ilike("gamertag", cleanGamertag)
+          .maybeSingle();
+
+        if (pByTag) {
+          console.log(`[LeagueDB] submitSignup skipped: Operative ${cleanGamertag} is already an accepted player.`);
+          return { success: true, alreadyEnlisted: true, data: pByTag };
+        }
+
+        if (cleanPayload.user_id) {
+          const { data: pById } = await dbClient
+            .from("players")
+            .select("id, gamertag")
+            .eq("user_id", cleanPayload.user_id)
+            .maybeSingle();
+
+          if (pById) {
+            console.log(`[LeagueDB] submitSignup skipped: User ID ${cleanPayload.user_id} is already an accepted player.`);
+            return { success: true, alreadyEnlisted: true, data: pById };
+          }
+        }
+      } catch (_) {}
+    }
+
     let remoteSaved = false;
     let savedData = null;
 
@@ -1326,8 +1355,37 @@ window.LeagueDB = {
     return { success: true, data: savedData || finalRecord };
   },
 
-  // 9. Fetch All League Signups (for admin review)
+  // 9. Fetch All League Signups (for admin review) - Filters out any accepted players
   async getSignups() {
+    // 0. Fetch existing enlisted players to ensure accepted players NEVER appear in incoming registrations
+    const acceptedPlayerTags = new Set();
+    const acceptedPlayerIds = new Set();
+    if (dbClient) {
+      try {
+        const { data: pList } = await dbClient
+          .from("players")
+          .select("id, gamertag, user_id");
+        if (pList && Array.isArray(pList)) {
+          pList.forEach(p => {
+            if (p.gamertag) acceptedPlayerTags.add(p.gamertag.trim().toLowerCase());
+            if (p.user_id) acceptedPlayerIds.add(String(p.user_id).trim().toLowerCase());
+          });
+        }
+      } catch (_) {}
+    }
+
+    // Helper to test if a record belongs to an already accepted player
+    const isAlreadyAccepted = (rec) => {
+      if (!rec) return true;
+      const tag = String(rec.gamertag || "").trim().toLowerCase();
+      if (tag && acceptedPlayerTags.has(tag)) return true;
+      const uid = String(rec.user_id || "").trim().toLowerCase();
+      if (uid && acceptedPlayerIds.has(uid)) return true;
+      const st = String(rec.status || "").trim().toLowerCase();
+      if (st === "enlisted" || st === "approved" || st === "approved_enlisted") return true;
+      return false;
+    };
+
     let remoteSignups = [];
     if (dbClient) {
       try {
@@ -1336,7 +1394,7 @@ window.LeagueDB = {
           .select("*")
           .order("created_at", { ascending: false });
         if (!error && Array.isArray(data)) {
-          remoteSignups = data.filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+          remoteSignups = data.filter(s => !isAlreadyAccepted(s));
         }
       } catch (err) {
         console.warn("Supabase getSignups error:", err);
@@ -1347,7 +1405,7 @@ window.LeagueDB = {
     let localSignups = [];
     try {
       localSignups = (JSON.parse(localStorage.getItem("frontline_league_signups")) || [])
-        .filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+        .filter(s => !isAlreadyAccepted(s));
     } catch (e) {}
 
     // Also include any registered combatant accounts that haven't been enlisted yet
@@ -1355,7 +1413,7 @@ window.LeagueDB = {
     try {
       const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
       registeredAccounts = accounts
-        .filter(a => a.status !== "Enlisted" && a.status !== "Approved_Enlisted")
+        .filter(a => !isAlreadyAccepted(a))
         .map(a => ({
           id: a.id || ("acc_" + a.gamertag),
           gamertag: a.gamertag,
@@ -1373,7 +1431,7 @@ window.LeagueDB = {
     } catch (e) {}
 
     // In-memory mock signups
-    const memorySignups = (MOCK_DATA.signups || []).filter(s => s.status !== "Enlisted" && s.status !== "Approved_Enlisted");
+    const memorySignups = (MOCK_DATA.signups || []).filter(s => !isAlreadyAccepted(s));
 
     // Merge all sources without duplicates (prefer remote, then local, then registered accounts, then memory)
     const combined = [];
@@ -1383,7 +1441,7 @@ window.LeagueDB = {
       for (const s of list) {
         if (!s || !s.gamertag) continue;
         const key = String(s.gamertag).trim().toLowerCase();
-        if (!seenGamertags.has(key)) {
+        if (!seenGamertags.has(key) && !isAlreadyAccepted(s)) {
           seenGamertags.add(key);
           combined.push(s);
         }
@@ -2363,8 +2421,13 @@ window.LeagueDB = {
         return { success: false, error: playerResult.error || "Failed to create player in players table" };
       }
 
-      // 4. Remove player from league_signups table & local storage
+      // 4. Remove player from league_signups table & local storage (also clean up by gamertag)
       const deleteResult = await this.deleteSignup(signupId, gamertag);
+      if (dbClient && gamertag) {
+        try {
+          await dbClient.from("league_signups").delete().ilike("gamertag", gamertag.trim());
+        } catch (_) {}
+      }
 
       return {
         success: true,
@@ -5486,8 +5549,8 @@ window.LeagueDB = {
       }
     }
 
-    // 3. Sync public.league_signups table (Insert or Update)
-    if (!payload.skipSignupSync) try {
+    // 3. Sync public.league_signups table (Insert or Update) - ONLY for pending recruits, NEVER for accepted players!
+    if (!existingPlayer && !payload.skipSignupSync) try {
       await this.submitSignup({
         user_id: userId || null,
         gamertag: cleanGamertag,
