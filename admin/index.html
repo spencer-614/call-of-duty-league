@@ -2685,10 +2685,9 @@
 
             <!-- Tournament Card Preview -->
             <div style="max-width:540px; margin:0 auto; background:#12140e; border:1px solid #303723; border-radius:4px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.6);">
-              <div id="preview-tourney-banner" style="position:relative; width:100%; aspect-ratio:16/9; min-height:190px; max-height:280px; background-size:cover; background-position:center; background-repeat:no-repeat; background-image:url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80'); background-color:#1c160c; display:flex; justify-content:space-between; align-items:flex-start; padding:12px; box-sizing:border-box;">
-                <span id="preview-tourney-status-badge" class="tourney-badge-status tourney-badge-open" style="position:static;">REGISTRATION OPEN</span>
-                <span id="preview-tourney-format-badge" style="font:800 11px var(--body); background:rgba(0,0,0,0.75); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; padding:3px 8px; border-radius:2px;">4v4 CDL Variant</span>
-                <span id="preview-tourney-prize-badge" style="position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,0.85); border:1px solid #f59e0b; color:#fbbf24; font:900 12px var(--body); padding:4px 10px; border-radius:4px; box-shadow:0 0 10px rgba(245,158,11,0.3);">$1,500 USD</span>
+              <div id="preview-tourney-banner" style="position:relative; width:100%; aspect-ratio:16/9; background-size:contain; background-position:center; background-repeat:no-repeat; background-image:url('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80'); background-color:#0b0d09; display:flex; justify-content:space-between; align-items:flex-start; padding:10px; box-sizing:border-box;">
+                <span id="preview-tourney-status-badge" class="tourney-badge-status tourney-badge-open" style="position:static; backdrop-filter:blur(4px);">REGISTRATION OPEN</span>
+                <span id="preview-tourney-format-badge" style="font:800 11px var(--body); background:rgba(0,0,0,0.75); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; padding:3px 8px; border-radius:2px; backdrop-filter:blur(4px);">4v4 CDL Variant</span>
               </div>
               <div style="padding:18px;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
@@ -2835,6 +2834,19 @@
                     <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&h=675&auto=format&fit=crop&q=80')">🎯 SnD Combat</button>
                     <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&h=675&auto=format&fit=crop&q=80')">⚔ Arena Duel</button>
                     <button type="button" class="btn-action-sm" onclick="setTourneyBannerPreset('https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1200&h=675&auto=format&fit=crop&q=80')">⚡ Champions</button>
+                  </div>
+
+                  <!-- Banner Scaling Fit Selector -->
+                  <div style="display:flex; align-items:center; gap:16px; margin-top:12px; padding:10px 14px; background:#0b0d08; border:1px solid #232817; border-radius:3px; flex-wrap:wrap;">
+                    <span style="font-size:11.5px; font-weight:800; color:#fbbf24;">Banner Scaling Fit:</span>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:#ffffff;">
+                      <input type="radio" name="tourney-banner-fit" id="tourney-fit-contain" value="contain" checked onchange="setTourneyBannerFit('contain')" style="accent-color:#fbbf24;" />
+                      <span><strong>Fit Full Image (Contain)</strong> · Recommended for Posters/Flyers (Zero Cropping)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:#9ca3af;">
+                      <input type="radio" name="tourney-banner-fit" id="tourney-fit-cover" value="cover" onchange="setTourneyBannerFit('cover')" style="accent-color:#fbbf24;" />
+                      <span><strong>Fill Banner (Cover)</strong> · Edge-to-edge crop</span>
+                    </label>
                   </div>
 
                   <!-- Banner Preview Box -->
@@ -8035,12 +8047,23 @@
           if (bannerEl) {
             if (bannerUrl) {
               bannerEl.style.backgroundImage = `url('${bannerUrl}')`;
+              bannerEl.style.backgroundSize = currentTourneyBannerFit || "contain";
+              bannerEl.style.backgroundColor = "#0b0d09";
             } else {
               bannerEl.style.backgroundImage = "none";
+              bannerEl.style.backgroundColor = "#141710";
             }
           }
         }
         window.updateTournamentPreview = updateTournamentPreview;
+
+        let currentTourneyBannerFit = 'contain';
+        function setTourneyBannerFit(fit) {
+          currentTourneyBannerFit = fit;
+          const bannerEl = document.getElementById("preview-tourney-banner");
+          if (bannerEl) bannerEl.style.backgroundSize = fit;
+        }
+        window.setTourneyBannerFit = setTourneyBannerFit;
 
         function setTourneyBannerPreset(url) {
           const input = document.getElementById("tourney-banner-input");
@@ -8132,6 +8155,10 @@
           
           const pinEl = document.getElementById("tourney-pinned-input");
           if (pinEl) pinEl.checked = !!tourney.pinned;
+          const fitMode = tourney.banner_fit || 'contain';
+          const fitRadio = document.getElementById('tourney-fit-' + fitMode);
+          if (fitRadio) fitRadio.checked = true;
+          setTourneyBannerFit(fitMode);
           const actEl = document.getElementById("tourney-is-active-input");
           if (actEl) actEl.checked = tourney.is_active !== false;
 
@@ -8363,6 +8390,7 @@
             description: desc,
             pinned: isPinned,
             is_active: isActive,
+            banner_fit: document.querySelector('input[name="tourney-banner-fit"]:checked')?.value || 'contain',
             teams_registered_count: existingTourney ? (existingTourney.teams_registered_count || 0) : 0,
             registered_teams: existingTourney ? (existingTourney.registered_teams || 0) : 0
           };

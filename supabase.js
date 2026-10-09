@@ -3399,7 +3399,7 @@ window.LeagueDB = {
           start_date: tourneyItem.start_date,
           start_time: tourneyItem.start_time,
           status: tourneyItem.status,
-          image_url: tourneyItem.image_url,
+          image_url: tourneyItem.image_url || tourneyItem.banner_url || '',
           registration_url: tourneyItem.registration_url,
           bracket_url: tourneyItem.bracket_url,
           description: tourneyItem.description,

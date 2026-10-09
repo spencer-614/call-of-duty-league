@@ -322,6 +322,8 @@ CREATE TABLE IF NOT EXISTS public.tournaments (
 );
 
 ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS bracket_data JSONB;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS banner_url TEXT;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS banner_fit TEXT DEFAULT 'contain';
 
 -- ------------------------------------------------------------------------------
 -- TOURNAMENT REGISTRATIONS

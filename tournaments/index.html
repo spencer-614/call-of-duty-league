@@ -205,18 +205,20 @@
       .tourney-card-banner {
         width: 100%;
         aspect-ratio: 16 / 9;
-        min-height: 185px;
-        background: linear-gradient(135deg, #241c0c 0%, #171b12 100%);
+        background: #0b0d09 linear-gradient(135deg, #241c0c 0%, #171b12 100%);
         position: relative;
-        background-size: cover;
+        background-size: contain;
         background-position: center;
         background-repeat: no-repeat;
         border-bottom: 1px solid #2a311e;
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        padding: 12px 14px;
+        padding: 10px 12px;
         box-sizing: border-box;
+      }
+      .tourney-card-banner.has-custom-image::before {
+        display: none !important;
       }
       .tourney-card-banner::before {
         content: "";
@@ -626,7 +628,7 @@
     <div id="modal-tourney-details" class="tourney-modal-overlay">
       <div class="tourney-modal-card">
         <button type="button" class="tourney-modal-close" onclick="closeTourneyDetailsModal()">&times;</button>
-        <div id="modal-detail-banner-wrap" style="display:none; width:100%; aspect-ratio:16/9; max-height:260px; background-size:cover; background-position:center; background-repeat:no-repeat; border-radius:3px; margin-bottom:16px; border:1px solid #2d3520; position:relative; overflow:hidden;"></div>
+        <div id="modal-detail-banner-wrap" style="display:none; width:100%; aspect-ratio:16/9; background-size:contain; background-position:center; background-repeat:no-repeat; background-color:#0b0d09; border-radius:3px; margin-bottom:16px; border:1px solid #2d3520; position:relative; overflow:hidden;"></div>
         <div style="margin-bottom:14px;">
           <span class="badge-tourney-status open" id="modal-detail-badge">REGISTRATION OPEN</span>
         </div>
@@ -944,8 +946,11 @@
             statusLabel = 'COMPLETED';
           }
 
-          const bannerBg = t.banner_url
-            ? `background-image: url('${escapeHtml(t.banner_url)}');`
+          const bannerUrl = t.banner_url || t.image_url;
+          const hasImage = !!bannerUrl;
+          const fitMode = t.banner_fit || 'contain';
+          const bannerBg = hasImage
+            ? `background-image: url('${escapeHtml(bannerUrl)}'); background-size: ${fitMode}; background-color: #0b0d09;`
             : `background: linear-gradient(135deg, #241c0c 0%, #151810 100%);`;
 
           const teamsCount = t.teams_registered_count || (t.registered_teams?.length) || 0;
@@ -953,7 +958,7 @@
 
           return `
             <article class="tourney-card" data-tourney-id="${escapeHtml(t.id)}">
-              <div class="tourney-card-banner" style="${bannerBg}">
+              <div class="tourney-card-banner ${hasImage ? 'has-custom-image' : ''}" style="${bannerBg}">
                 <span class="badge-tourney-status ${statusClass}">${statusLabel}</span>
                 <span style="font:800 11px var(--body); background:rgba(0,0,0,0.7); border:1px solid #ffffff20; color:#fbbf24; padding:3px 8px; border-radius:2px; z-index:2;">
                   ${escapeHtml(t.format || '4v4 CDL Variant')}
@@ -1037,6 +1042,8 @@
           const bUrl = t.banner_url || t.image_url;
           if (bUrl) {
             bannerWrap.style.backgroundImage = `url('${escapeHtml(bUrl)}')`;
+            bannerWrap.style.backgroundSize = t.banner_fit || 'contain';
+            bannerWrap.style.backgroundColor = '#0b0d09';
             bannerWrap.style.display = 'block';
           } else {
             bannerWrap.style.display = 'none';
