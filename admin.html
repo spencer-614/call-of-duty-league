@@ -3185,7 +3185,10 @@
         </div>
       </div>
       <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
-        <button type="button" id="btn-modal-reset-perms" class="btn-action-sm">↺ Reset to Role Defaults</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button type="button" id="btn-modal-reset-perms" class="btn-action-sm">↺ Reset to Defaults</button>
+          <button type="button" id="btn-modal-revoke-perms" class="btn-action-sm btn-action-danger" style="color:#ff4d4d; border-color:#ff4d4d60;" title="Revoke all staff privileges and return user to standard member">✕ Revoke Staff Role</button>
+        </div>
         <div style="display:flex; gap:8px;">
           <button type="button" class="btn-action-sm" id="btn-cancel-modal-perms">Cancel</button>
           <button type="button" id="btn-modal-save-perms" class="btn-paypal-submit" style="padding:8px 18px; font-size:12px;">
@@ -3947,6 +3950,11 @@
                     <button type="button" class="btn-action-sm btn-config-perms" data-user-key="${escapeHtml(item.key)}" title="Configure custom tab permissions" style="font-size:11px; padding:4px 8px;">
                       ⚙ Perms
                     </button>
+                    ${item.role && !isSelf ? `
+                      <button type="button" class="btn-action-sm btn-revoke-staff-role" data-user-key="${escapeHtml(item.key)}" title="Revoke staff privileges (reverts to standard member)" style="font-size:11px; padding:4px 8px; color:#ffb300; border-color:#ffb30060;">
+                        Revoke Perms
+                      </button>
+                    ` : ''}
                     ${!isSelf ? `
                       <button type="button" class="btn-action-sm btn-action-danger btn-remove-staff-role" data-user-key="${escapeHtml(item.key)}" title="Remove player / user permanently from database and website" style="font-size:11px; padding:4px 8px; color:#ff4d4d; border-color:#ff4d4d50;">
                         ✕
@@ -3964,6 +3972,46 @@
         function attachStaffTableListeners() {
           const tbody = document.getElementById("staff-users-tbody");
           if (!tbody) return;
+
+          // Dedicated Revoke Staff Perms button click
+          tbody.querySelectorAll(".btn-revoke-staff-role").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const userKey = btn.getAttribute("data-user-key");
+              const user = staffUsersMap.get(userKey);
+              if (!user) return;
+
+              if (!confirm(`Revoke all staff privileges and permissions for "${user.gamertag}" (${user.email || 'No email'})?\n\nThis will remove their staff role and restore them to standard member status.`)) return;
+
+              btn.disabled = true;
+              btn.textContent = "Revoking...";
+
+              try {
+                const res = await window.LeagueDB.deleteStaffRole({
+                  staff_id: user.staff_id,
+                  email: user.email,
+                  gamertag: user.gamertag,
+                  user_id: user.user_id,
+                  discord: user.discord
+                });
+
+                if (res.success) {
+                  user.role = null;
+                  user.custom_permissions = null;
+                  showToast(`✓ Revoked staff privileges for ${user.gamertag}`);
+                  await loadStaffDirectory();
+                } else {
+                  alert("Failed to revoke staff role: " + (res.error || "Unknown error"));
+                  btn.disabled = false;
+                  btn.textContent = "Revoke Perms";
+                }
+              } catch (err) {
+                console.error("Error revoking staff role:", err);
+                alert("Failed to revoke: " + (err.message || String(err)));
+                btn.disabled = false;
+                btn.textContent = "Revoke Perms";
+              }
+            });
+          });
 
           // 1. Role dropdown change
           tbody.querySelectorAll(".select-user-role").forEach(select => {
@@ -4012,14 +4060,20 @@
 
                 btn.disabled = true;
                 btn.textContent = "Revoking...";
-                const res = await window.LeagueDB.deleteStaffRole(user.staff_id || user.email);
+                const res = await window.LeagueDB.deleteStaffRole({
+                  staff_id: user.staff_id,
+                  email: user.email,
+                  gamertag: user.gamertag,
+                  user_id: user.user_id,
+                  discord: user.discord
+                });
                 btn.disabled = false;
 
                 if (res.success) {
                   user.role = null;
                   user.custom_permissions = null;
                   showToast(`✓ Revoked staff privileges for ${user.gamertag}`);
-                  renderStaffUsersTable();
+                  await loadStaffDirectory();
                 } else {
                   alert("Failed to revoke staff role: " + (res.error || "Unknown error"));
                   btn.textContent = "Save Role";
@@ -4246,6 +4300,48 @@
             cb.checked = defaultTabs.includes(cb.value);
           });
           showToast("↺ Reset checkboxes to role standard defaults");
+        });
+
+        document.getElementById("btn-modal-revoke-perms")?.addEventListener("click", async () => {
+          if (!activeModalUserKey) return;
+          const user = staffUsersMap.get(activeModalUserKey);
+          if (!user) return;
+
+          if (!confirm(`Revoke all staff privileges and permissions for "${user.gamertag}"?\n\nThis will remove their staff role and restore them to standard member status.`)) return;
+
+          const btn = document.getElementById("btn-modal-revoke-perms");
+          if (btn) { btn.disabled = true; btn.textContent = "Revoking..."; }
+
+          try {
+            const res = await window.LeagueDB.deleteStaffRole({
+              staff_id: user.staff_id,
+              email: user.email,
+              gamertag: user.gamertag,
+              user_id: user.user_id,
+              discord: user.discord
+            });
+
+            const modal = document.getElementById("modal-staff-custom-perms");
+            if (modal) {
+              if (typeof modal.close === "function") modal.close();
+              else modal.removeAttribute("open");
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = "✕ Revoke Staff Role"; }
+
+            if (res.success) {
+              user.role = null;
+              user.custom_permissions = null;
+              showToast(`✓ Revoked staff privileges for ${user.gamertag}`);
+              await loadStaffDirectory();
+            } else {
+              alert("Failed to revoke staff role: " + (res.error || "Unknown error"));
+            }
+          } catch (err) {
+            console.error("Error revoking staff role:", err);
+            alert("Failed to revoke staff role: " + (err.message || String(err)));
+            if (btn) { btn.disabled = false; btn.textContent = "✕ Revoke Staff Role"; }
+          }
         });
 
         document.getElementById("btn-close-modal-perms")?.addEventListener("click", () => {

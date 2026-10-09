@@ -6693,7 +6693,7 @@ window.LeagueDB = {
           .select("*")
           .order("created_at", { ascending: true });
 
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           list = data;
           try {
             localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
@@ -6809,37 +6809,104 @@ window.LeagueDB = {
     }
   },
 
-  async deleteStaffRole(staffIdOrEmail) {
-    if (dbClient) {
-      try {
-        let query = dbClient.from("staff_roles").delete();
-        if (typeof staffIdOrEmail === "number" || /^\d+$/.test(String(staffIdOrEmail))) {
-          query = query.eq("id", staffIdOrEmail);
-        } else {
-          query = query.ilike("email", String(staffIdOrEmail).toLowerCase().trim());
-        }
-        const { error } = await query;
-        if (error) console.warn("deleteStaffRole warning:", error);
-        await this.getAllStaffMembers();
-      } catch (err) {
-        console.warn("deleteStaffRole error:", err);
+  async deleteStaffRole(target) {
+    let staffId = null;
+    let targetEmail = null;
+    let targetUserId = null;
+    let targetGamertag = null;
+    let targetDiscord = null;
+
+    if (typeof target === "object" && target !== null) {
+      staffId = target.staff_id || target.id || null;
+      targetEmail = (target.email || "").toLowerCase().trim() || null;
+      targetUserId = target.user_id || null;
+      targetGamertag = (target.gamertag || target.display_name || target.username || "").toLowerCase().trim() || null;
+      targetDiscord = (target.discord || target.discord_username || "").toLowerCase().trim() || null;
+    } else if (typeof target === "number" || /^\d+$/.test(String(target || ""))) {
+      staffId = parseInt(target, 10);
+    } else if (typeof target === "string") {
+      const s = String(target).toLowerCase().trim();
+      if (s.includes("@")) {
+        targetEmail = s;
+      } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) {
+        targetUserId = s;
+      } else {
+        targetGamertag = s;
       }
     }
 
-    // Local fallback
-    try {
-      let list = await this.getAllStaffMembers();
-      list = list.filter(s => s.id != staffIdOrEmail && s.email.toLowerCase() !== String(staffIdOrEmail).toLowerCase());
-      localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
-    } catch (e) {}
+    if (dbClient) {
+      try {
+        if (staffId) {
+          try { await dbClient.from("staff_roles").delete().eq("id", staffId); } catch (_) {}
+        }
+        if (targetEmail) {
+          try { await dbClient.from("staff_roles").delete().ilike("email", targetEmail); } catch (_) {}
+        }
+        if (targetUserId) {
+          try { await dbClient.from("staff_roles").delete().eq("user_id", targetUserId); } catch (_) {}
+        }
+        if (targetGamertag) {
+          try { await dbClient.from("staff_roles").delete().ilike("display_name", targetGamertag); } catch (_) {}
+        }
+      } catch (err) {
+        console.warn("deleteStaffRole db error:", err);
+      }
+    }
 
-    // Also strip is_staff and staff_role from frontline_arena_registered_accounts cache
+    // 1. Purge from in-memory MOCK_DATA
+    if (typeof MOCK_DATA !== "undefined" && Array.isArray(MOCK_DATA.staffRoles)) {
+      MOCK_DATA.staffRoles = MOCK_DATA.staffRoles.filter(s => {
+        if (staffId && s.id === staffId) return false;
+        if (targetEmail && s.email && s.email.toLowerCase() === targetEmail) return false;
+        if (targetGamertag && s.display_name && s.display_name.toLowerCase() === targetGamertag) return false;
+        return true;
+      });
+    }
+
+    // 2. Fetch fresh staff list from DB or update cache
+    let freshList = [];
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient.from("staff_roles").select("*").order("created_at", { ascending: true });
+        if (!error && Array.isArray(data)) {
+          freshList = data;
+          try {
+            localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(freshList));
+          } catch (_) {}
+        }
+      } catch (_) {}
+    } else {
+      try {
+        const raw = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
+        freshList = raw.filter(s => {
+          if (staffId && s.id === staffId) return false;
+          if (targetEmail && s.email && s.email.toLowerCase() === targetEmail) return false;
+          if (targetGamertag && s.display_name && s.display_name.toLowerCase() === targetGamertag) return false;
+          return true;
+        });
+        localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(freshList));
+      } catch (_) {}
+    }
+
+    // 3. Strip is_staff and staff_role from frontline_arena_registered_accounts cache
     try {
       const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-      const targetStr = String(staffIdOrEmail).toLowerCase().trim();
       let updated = false;
       accounts.forEach(a => {
-        if ((a.email && a.email.toLowerCase() === targetStr) || (a.id && String(a.id) === targetStr) || (a.user_id && String(a.user_id) === targetStr)) {
+        const aEmail = (a.email || "").toLowerCase().trim();
+        const aTag = (a.gamertag || a.username || "").toLowerCase().trim();
+        const aId = String(a.id || "");
+        const aUserId = String(a.user_id || "");
+        const aDisc = (a.discord || "").toLowerCase().trim();
+
+        const match = (targetEmail && aEmail === targetEmail) ||
+                      (targetGamertag && aTag === targetGamertag) ||
+                      (targetUserId && (aUserId === targetUserId || aId === targetUserId)) ||
+                      (targetDiscord && aDisc === targetDiscord) ||
+                      (staffId && String(a.staff_id || "") === String(staffId));
+
+        if (match) {
           a.is_staff = false;
           delete a.staff_role;
           delete a.custom_permissions;
@@ -6849,7 +6916,23 @@ window.LeagueDB = {
       if (updated) {
         localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(accounts));
       }
-    } catch (e) {}
+    } catch (_) {}
+
+    // 4. Update frontline_league_auth_user if current user was targeted
+    try {
+      const curAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+      if (curAuth) {
+        const authEmail = (curAuth.email || "").toLowerCase().trim();
+        const authId = String(curAuth.id || "");
+        const match = (targetEmail && authEmail === targetEmail) || (targetUserId && authId === targetUserId);
+        if (match) {
+          curAuth.is_staff = false;
+          delete curAuth.staff_role;
+          delete curAuth.custom_permissions;
+          localStorage.setItem("frontline_league_auth_user", JSON.stringify(curAuth));
+        }
+      }
+    } catch (_) {}
 
     return { success: true };
   },
