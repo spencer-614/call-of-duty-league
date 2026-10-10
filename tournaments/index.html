@@ -953,7 +953,9 @@
             ? `background-image: url('${escapeHtml(bannerUrl)}'); background-size: ${fitMode}; background-color: #0b0d09;`
             : `background: linear-gradient(135deg, #241c0c 0%, #151810 100%);`;
 
-          const teamsCount = t.teams_registered_count || (t.registered_teams?.length) || 0;
+          const teamsCount = Array.isArray(t.registered_teams)
+          ? t.registered_teams.length
+          : Number(t.registered_teams ?? t.teams_registered_count ?? 0);
           const maxTeams = t.max_teams || 32;
 
           return `
