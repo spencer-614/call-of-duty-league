@@ -3395,8 +3395,23 @@
           }
           sessionStorage.removeItem("frontline_admin_session");
           sessionStorage.removeItem("frontline_admin_email");
+          sessionStorage.removeItem("frontline_admin_discord_oauth_pending");
+          localStorage.removeItem("frontline_admin_session");
+          localStorage.removeItem("frontline_admin_email");
+          localStorage.removeItem("frontline_arena_user");
+          localStorage.removeItem("frontline_league_auth_user");
+          localStorage.removeItem("frontline_arena_auth_user");
+          localStorage.removeItem("frontline_league_player_card");
+          try {
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+                localStorage.removeItem(k);
+              }
+            });
+          } catch (e) {}
           activeStaffProfile = null;
           activeAllowedTabs = [];
+          if (gateError) gateError.style.display = "none";
           gateContainer.style.display = "block";
           dashboardContainer.style.display = "none";
         }

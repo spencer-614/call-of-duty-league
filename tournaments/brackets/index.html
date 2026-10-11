@@ -86,6 +86,159 @@
         border-color: var(--tourney-gold);
         color: #ffffff;
       }
+      /* Match Private Chat Styling */
+      .match-chat-container {
+        margin-top: 18px;
+        background: #0d0f0a;
+        border: 1px solid #2d361c;
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .match-chat-header {
+        background: #14170e;
+        border-bottom: 1px solid #2d361c;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .match-chat-header-title {
+        font: 800 12px var(--body);
+        color: #fbbf24;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .match-chat-badge-private {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 2px;
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .match-chat-box {
+        height: 230px;
+        overflow-y: auto;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #090b07;
+        font-size: 13px;
+      }
+      .match-chat-msg {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        max-width: 90%;
+        padding: 8px 11px;
+        border-radius: 4px;
+        border: 1px solid #1f2615;
+        background: #12150e;
+      }
+      .match-chat-msg.msg-self {
+        align-self: flex-end;
+        background: #192010;
+        border-color: #3f4e24;
+      }
+      .match-chat-msg.msg-staff {
+        background: #241c0e;
+        border-color: #5c4718;
+      }
+      .match-chat-msg-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+      }
+      .match-chat-msg-author {
+        font-weight: 800;
+        color: #fbbf24;
+      }
+      .match-chat-msg-role-tag {
+        font-size: 9.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border-radius: 2px;
+      }
+      .role-tag-staff {
+        background: #f59e0b;
+        color: #000;
+      }
+      .role-tag-team {
+        background: #2b361a;
+        color: #d9f99d;
+        border: 1px solid #4d602e;
+      }
+      .match-chat-msg-time {
+        color: #64748b;
+        font-size: 10px;
+        margin-left: auto;
+      }
+      .match-chat-msg-text {
+        color: #f1f5f9;
+        font-size: 13px;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      .match-chat-footer {
+        border-top: 1px solid #2d361c;
+        padding: 10px 14px;
+        background: #11140e;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .match-chat-input {
+        flex: 1;
+        background: #090b07;
+        border: 1px solid #2d361c;
+        color: #fff;
+        padding: 8px 12px;
+        font: 500 13px var(--body);
+        border-radius: 2px;
+        outline: none;
+      }
+      .match-chat-input:focus {
+        border-color: #fbbf24;
+      }
+      .match-chat-send-btn {
+        background: #f59e0b;
+        color: #111;
+        font: 800 12px var(--body);
+        text-transform: uppercase;
+        border: 1px solid #fbbf24;
+        padding: 8px 14px;
+        cursor: pointer;
+        border-radius: 2px;
+        white-space: nowrap;
+        transition: all 0.2s;
+      }
+      .match-chat-send-btn:hover {
+        background: #d97706;
+        color: #fff;
+      }
+      .match-chat-denied-notice {
+        padding: 18px 16px;
+        background: #10120d;
+        border: 1px dashed #3a4427;
+        border-radius: 4px;
+        text-align: center;
+        margin-top: 16px;
+      }
     </style>
   </head>
   <body>
@@ -663,7 +816,7 @@
               </div>
               <div class="bmc-footer">
                 <span class="bmc-bestof">${escapeHtml(match.bestOf || 'BO5')}</span>
-                <span class="bmc-action-hint">Match Intel ↗</span>
+                <span class="bmc-action-hint">Match Intel &amp; Chat 💬</span>
               </div>
             </div>
           `;
@@ -785,7 +938,11 @@
           });
         }
 
-        function openMatchDetailsModal(match) {
+        let activeChatMatch = null;
+        let chatPollInterval = null;
+
+        async function openMatchDetailsModal(match) {
+          activeChatMatch = match;
           const dialog = document.getElementById('modal-match-details');
           const codeEl = document.getElementById('modal-match-code');
           const stageEl = document.getElementById('modal-match-stage');
@@ -799,6 +956,148 @@
           const t1 = match.team1 || { name: 'TBD', score: 0 };
           const t2 = match.team2 || { name: 'TBD', score: 0 };
           const isDone = match.status === 'Completed';
+
+          // Determine current user identity
+          let user = null;
+          if (window.LeagueDB && typeof window.LeagueDB.getCurrentPlayer === 'function') {
+            user = window.LeagueDB.getCurrentPlayer();
+          }
+          if (!user) {
+            try {
+              user = JSON.parse(localStorage.getItem('frontline_arena_user')) || 
+                     JSON.parse(localStorage.getItem('frontline_arena_auth_user')) || 
+                     JSON.parse(localStorage.getItem('frontline_league_auth_user'));
+            } catch (_) {}
+          }
+
+          // Check if user is staff / admin
+          let isStaff = false;
+          let adminSession = false;
+          try {
+            adminSession = (sessionStorage.getItem('frontline_admin_session') === 'authorized') ||
+                           (localStorage.getItem('frontline_admin_session') === 'authorized');
+          } catch (_) {}
+
+          const userEmail = (user?.email || '').toLowerCase().trim();
+          const adminEmail = (sessionStorage.getItem('frontline_admin_email') || localStorage.getItem('frontline_admin_email') || '').toLowerCase().trim();
+
+          if (user?.is_staff || user?.is_commissioner || adminSession ||
+              userEmail === 'todd061496@gmail.com' || userEmail === 'admin@frontlineleague.com' ||
+              adminEmail === 'todd061496@gmail.com' || adminEmail === 'admin@frontlineleague.com' ||
+              (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === 'function' && window.LeagueDB.isAccountAdmin(user))) {
+            isStaff = true;
+          }
+
+          // Check tournament registrations to verify team membership
+          let tourneyRegs = [];
+          if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function' && activeTournament?.id) {
+            try {
+              tourneyRegs = await window.LeagueDB.getTournamentRegistrations(activeTournament.id);
+            } catch (_) {}
+          }
+          if (!tourneyRegs.length) {
+            try {
+              const allRegs = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
+              tourneyRegs = allRegs.filter(r => String(r.tournament_id) === String(activeTournament?.id));
+            } catch (_) {}
+          }
+
+          const t1NameClean = String(t1.name || '').trim().toLowerCase();
+          const t2NameClean = String(t2.name || '').trim().toLowerCase();
+
+          // Find registration for Team 1 and Team 2
+          const reg1 = tourneyRegs.find(r => String(r.team_name || '').trim().toLowerCase() === t1NameClean);
+          const reg2 = tourneyRegs.find(r => String(r.team_name || '').trim().toLowerCase() === t2NameClean);
+
+          function isUserInReg(reg, u) {
+            if (!reg || !u) return false;
+            const uGamertag = String(u.gamertag || u.username || '').trim().toLowerCase();
+            const uDiscord = String(u.discord || '').trim().toLowerCase();
+            const uActId = String(u.activision_id || '').trim().toLowerCase();
+
+            // Match captain
+            if (uGamertag && String(reg.captain_gamertag || '').trim().toLowerCase() === uGamertag) return true;
+            if (uDiscord && String(reg.captain_discord || '').trim().toLowerCase() === uDiscord) return true;
+            if (uActId && String(reg.captain_activision_id || '').trim().toLowerCase() === uActId) return true;
+
+            // Match roster
+            let roster = [];
+            if (Array.isArray(reg.roster)) roster = reg.roster;
+            else if (typeof reg.roster === 'string') {
+              try { roster = JSON.parse(reg.roster); } catch (_) {}
+            }
+            if (Array.isArray(roster)) {
+              for (const member of roster) {
+                const mTag = String(typeof member === 'object' ? (member.gamertag || member.name || '') : member).trim().toLowerCase();
+                if (mTag && uGamertag && mTag === uGamertag) return true;
+              }
+            }
+            return false;
+          }
+
+          const inTeam1 = isUserInReg(reg1, user) || (user?.team_name && String(user.team_name).trim().toLowerCase() === t1NameClean);
+          const inTeam2 = isUserInReg(reg2, user) || (user?.team_name && String(user.team_name).trim().toLowerCase() === t2NameClean);
+          const hasAccess = isStaff || inTeam1 || inTeam2;
+
+          let userTeamName = null;
+          let userRole = 'combatant';
+          if (isStaff) {
+            userRole = 'staff';
+            userTeamName = 'League Official';
+          } else if (inTeam1) {
+            userTeamName = t1.name;
+          } else if (inTeam2) {
+            userTeamName = t2.name;
+          }
+
+          // Build Match Chat HTML Section
+          let chatSectionHtml = '';
+          if (hasAccess) {
+            const roleLabel = isStaff ? '🛡 LEAGUE STAFF / OFFICIAL' : `⚔ ${escapeHtml(userTeamName || 'COMBATANT')}`;
+            chatSectionHtml = `
+              <div class="match-chat-container">
+                <div class="match-chat-header">
+                  <div class="match-chat-header-title">
+                    <span>💬 Match Communications</span>
+                    <span class="match-chat-badge-private">🔒 Private Matchup Chat</span>
+                  </div>
+                  <div style="font-size:11px; color:#cbd5e1;">
+                    Access: <strong style="color:${isStaff ? '#fbbf24' : '#4ade80'};">${roleLabel}</strong>
+                  </div>
+                </div>
+                <div class="match-chat-box" id="match-chat-box-${escapeHtml(match.id)}">
+                  <div style="color:#64748b; font-size:12px; text-align:center; padding:20px 0;">
+                    Loading secure match communications...
+                  </div>
+                </div>
+                <form class="match-chat-footer" id="match-chat-form" onsubmit="return false;">
+                  <input type="text" class="match-chat-input" id="match-chat-input" placeholder="Type match message to ${escapeHtml(t1.name)} & ${escapeHtml(t2.name)}..." autocomplete="off" maxlength="500" />
+                  <button type="submit" class="match-chat-send-btn" id="match-chat-send-btn">
+                    <span>Send</span> ✈
+                  </button>
+                </form>
+              </div>
+            `;
+          } else {
+            chatSectionHtml = `
+              <div class="match-chat-denied-notice">
+                <div style="font-size:20px; margin-bottom:6px;">🔒</div>
+                <div style="font:800 12px var(--body); color:#f87171; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  PRIVATE MATCH CHAT RESTRICTED
+                </div>
+                <p style="color:#94a3b8; font-size:12px; max-width:440px; margin:0 auto; line-height:1.5;">
+                  This match channel is private and encrypted exclusively for combatants on <strong>${escapeHtml(t1.name || 'Team 1')}</strong>, <strong>${escapeHtml(t2.name || 'Team 2')}</strong>, and verified League Staff.
+                </p>
+                ${!user ? `
+                  <div style="margin-top:10px;">
+                    <a href="/login/" class="btn-tourney-outline" style="font-size:11px; padding:5px 12px;">
+                      Log In to Verify Team Identity
+                    </a>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }
 
           bodyEl.innerHTML = `
             <div class="modal-teams-head" style="margin-bottom:20px;">
@@ -827,7 +1126,9 @@
               </div>
             </div>
 
-            <div style="text-align:right;">
+            ${chatSectionHtml}
+
+            <div style="text-align:right; margin-top:16px;">
               <button type="button" class="btn-tourney-outline" onclick="document.getElementById('modal-match-details').close()">
                 Close Intel
               </button>
@@ -837,6 +1138,142 @@
           document.documentElement.classList.add('modal-open');
           document.body.classList.add('modal-open');
           dialog.showModal();
+
+          // Initialize chat interactions if authorized
+          if (hasAccess && activeTournament?.id) {
+            setupMatchChat({
+              tournamentId: activeTournament.id,
+              matchId: match.id,
+              user,
+              isStaff,
+              userTeamName,
+              userRole
+            });
+          }
+        }
+
+        function setupMatchChat({ tournamentId, matchId, user, isStaff, userTeamName, userRole }) {
+          if (chatPollInterval) clearInterval(chatPollInterval);
+
+          const chatBox = document.getElementById(`match-chat-box-${matchId}`);
+          const chatForm = document.getElementById('match-chat-form');
+          const chatInput = document.getElementById('match-chat-input');
+          const sendBtn = document.getElementById('match-chat-send-btn');
+          if (!chatBox) return;
+
+          const mySenderName = user?.gamertag || user?.username || (user?.email ? user.email.split('@')[0] : (isStaff ? 'League Staff' : 'Combatant'));
+
+          async function loadMessages() {
+            let messages = [];
+            if (window.LeagueDB && typeof window.LeagueDB.getTournamentMatchChat === 'function') {
+              try {
+                messages = await window.LeagueDB.getTournamentMatchChat(tournamentId, matchId);
+              } catch (_) {}
+            } else {
+              try {
+                const key = `frontline_match_chat_${tournamentId}_${matchId}`;
+                messages = JSON.parse(localStorage.getItem(key)) || [];
+              } catch (_) {}
+            }
+
+            if (!messages || messages.length === 0) {
+              chatBox.innerHTML = `
+                <div style="color:#64748b; font-size:12px; text-align:center; padding:35px 0;">
+                  No messages in this matchup yet. Only teams and staff can see this channel.
+                </div>
+              `;
+              return;
+            }
+
+            chatBox.innerHTML = messages.map(m => {
+              const isMe = (user?.id && m.sender_id === user.id) || (m.sender_name === mySenderName);
+              const isStaffMsg = m.sender_role === 'staff';
+              const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+              return `
+                <div class="match-chat-msg ${isMe ? 'msg-self' : ''} ${isStaffMsg ? 'msg-staff' : ''}">
+                  <div class="match-chat-msg-head">
+                    <span class="match-chat-msg-author">${escapeHtml(m.sender_name || 'Combatant')}</span>
+                    ${isStaffMsg ? `
+                      <span class="match-chat-msg-role-tag role-tag-staff">🛡 STAFF</span>
+                    ` : (m.sender_team ? `
+                      <span class="match-chat-msg-role-tag role-tag-team">${escapeHtml(m.sender_team)}</span>
+                    ` : '')}
+                    <span class="match-chat-msg-time">${timeStr}</span>
+                  </div>
+                  <div class="match-chat-msg-text">${escapeHtml(m.message || '')}</div>
+                </div>
+              `;
+            }).join('');
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
+
+          async function sendMessage() {
+            if (!chatInput) return;
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            chatInput.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
+
+            const payload = {
+              tournamentId,
+              matchId,
+              senderId: user?.id || null,
+              senderName: mySenderName,
+              senderTeam: userTeamName,
+              senderRole: isStaff ? 'staff' : 'combatant',
+              message: text
+            };
+
+            try {
+              if (window.LeagueDB && typeof window.LeagueDB.sendTournamentMatchChat === 'function') {
+                await window.LeagueDB.sendTournamentMatchChat(payload);
+              } else {
+                const key = `frontline_match_chat_${tournamentId}_${matchId}`;
+                const local = JSON.parse(localStorage.getItem(key)) || [];
+                local.push({
+                  id: 'tmc_' + Date.now(),
+                  ...payload,
+                  created_at: new Date().toISOString()
+                });
+                localStorage.setItem(key, JSON.stringify(local));
+              }
+              chatInput.value = '';
+              await loadMessages();
+            } catch (err) {
+              console.error('Failed to send match chat:', err);
+            } finally {
+              chatInput.disabled = false;
+              if (sendBtn) sendBtn.disabled = false;
+              chatInput.focus();
+            }
+          }
+
+          if (chatForm) {
+            chatForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              sendMessage();
+            });
+          }
+
+          // Initial load and live polling
+          loadMessages();
+          chatPollInterval = setInterval(loadMessages, 3000);
+
+          // Clear interval when modal closes
+          const dialog = document.getElementById('modal-match-details');
+          if (dialog) {
+            const onDialogClose = () => {
+              if (chatPollInterval) {
+                clearInterval(chatPollInterval);
+                chatPollInterval = null;
+              }
+              dialog.removeEventListener('close', onDialogClose);
+            };
+            dialog.addEventListener('close', onDialogClose);
+          }
         }
 
         // Init on DOM ready

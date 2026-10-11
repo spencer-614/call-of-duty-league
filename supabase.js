@@ -211,11 +211,14 @@ if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) 
         try {
           localStorage.removeItem("frontline_league_auth_user");
           localStorage.removeItem("frontline_arena_auth_user");
+          localStorage.removeItem("frontline_arena_user");
           localStorage.removeItem("frontline_league_player_card");
+          localStorage.removeItem("frontline_admin_session");
+          localStorage.removeItem("frontline_admin_email");
           sessionStorage.removeItem("frontline_admin_session");
           sessionStorage.removeItem("frontline_admin_email");
           window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
-          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null } }));
+          window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null, player: null } }));
         } catch(e) {}
       }
     });
@@ -3728,6 +3731,128 @@ if (dbClient && cleanPayload.user_id) {
     return { success: true, winner: winner.name, bracket };
   },
 
+  // ==============================================================================
+  // TOURNAMENT MATCH CHAT (Strictly scoped to participating teams & staff)
+  // ==============================================================================
+  async getTournamentMatchChat(tournamentId, matchId) {
+    if (!tournamentId || !matchId) return [];
+    let messages = [];
+
+    // 1. Try Supabase Client
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("tournament_match_chats")
+          .select("*")
+          .eq("tournament_id", String(tournamentId))
+          .eq("match_id", String(matchId))
+          .order("created_at", { ascending: true });
+        if (!error && Array.isArray(data)) {
+          messages = data;
+        }
+      } catch (e) {
+        console.warn("Supabase match chat fetch notice:", e.message || e);
+      }
+    }
+
+    // 2. Try Railway API
+    if ((!messages || messages.length === 0) && typeof fetch !== "undefined") {
+      try {
+        const filters = [
+          { col: "tournament_id", op: "eq", val: String(tournamentId) },
+          { col: "match_id", op: "eq", val: String(matchId) }
+        ];
+        const res = await fetch("/api/data/tournament_match_chats?q=" + encodeURIComponent(
+          JSON.stringify({ filters, orderBy: [{ col: "created_at", ascending: true }] })
+        ));
+        if (res.ok) {
+          const json = await res.json();
+          if (json && Array.isArray(json.data) && json.data.length > 0) {
+            messages = json.data;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback / Merge with LocalStorage cache
+    try {
+      const key = `frontline_match_chat_${tournamentId}_${matchId}`;
+      const local = JSON.parse(localStorage.getItem(key)) || [];
+      if (!messages || messages.length === 0) {
+        messages = local;
+      } else {
+        // Merge any local messages not yet in remote
+        const ids = new Set(messages.map(m => m.id));
+        local.forEach(lm => {
+          if (!ids.has(lm.id)) {
+            messages.push(lm);
+          }
+        });
+        messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      }
+    } catch (_) {}
+
+    return messages;
+  },
+
+  async sendTournamentMatchChat({ tournamentId, matchId, senderId, senderName, senderTeam, senderRole, message }) {
+    if (!tournamentId || !matchId || !message || !message.trim()) {
+      return { success: false, error: "Missing required chat parameters." };
+    }
+
+    const chatMsg = {
+      id: "tmc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      tournament_id: String(tournamentId),
+      match_id: String(matchId),
+      sender_id: senderId || null,
+      sender_name: senderName || "Combatant",
+      sender_team: senderTeam || null,
+      sender_role: senderRole || "combatant",
+      message: message.trim(),
+      created_at: new Date().toISOString()
+    };
+
+    let remoteSaved = false;
+
+    // 1. Insert into Supabase
+    if (dbClient) {
+      try {
+        const { error } = await dbClient.from("tournament_match_chats").insert([chatMsg]);
+        if (!error) remoteSaved = true;
+      } catch (e) {
+        console.warn("Supabase match chat insert notice:", e.message || e);
+      }
+    }
+
+    // 2. Insert into Railway Backend
+    if (!remoteSaved && typeof fetch !== "undefined") {
+      try {
+        const res = await fetch("/api/data/tournament_match_chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(chatMsg)
+        });
+        if (res.ok) remoteSaved = true;
+      } catch (e) {}
+    }
+
+    // 3. Always cache in LocalStorage
+    try {
+      const key = `frontline_match_chat_${tournamentId}_${matchId}`;
+      const local = JSON.parse(localStorage.getItem(key)) || [];
+      local.push(chatMsg);
+      localStorage.setItem(key, JSON.stringify(local));
+    } catch (_) {}
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_match_chat_message", {
+        detail: { message: chatMsg }
+      }));
+    }
+
+    return { success: true, message: chatMsg, remoteSaved };
+  },
+
   async deleteTournamentRegistration(registrationId, tournamentId = null) {
     if (!registrationId) return { success: false, error: "Registration ID required" };
 
@@ -4855,13 +4980,29 @@ if (dbClient && cleanPayload.user_id) {
 
   async signOutAdmin() {
     try {
+      this._cachedAuthUser = null;
+      this._cachedAuthUserTime = 0;
       sessionStorage.removeItem("frontline_admin_session");
       sessionStorage.removeItem("frontline_admin_email");
+      sessionStorage.removeItem("frontline_admin_discord_oauth_pending");
+      localStorage.removeItem("frontline_admin_session");
+      localStorage.removeItem("frontline_admin_email");
+      localStorage.removeItem("frontline_arena_user");
       localStorage.removeItem("frontline_league_auth_user");
       localStorage.removeItem("frontline_arena_auth_user");
       localStorage.removeItem("frontline_league_player_card");
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+          localStorage.removeItem(k);
+        }
+      });
       window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+      window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: null, player: null } }));
     } catch (e) {}
+    if (typeof this.updateLeagueNavProfile === "function") this.updateLeagueNavProfile();
+    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+      window.LadderDB.updateArenaNavProfile();
+    }
     if (!dbClient) return { success: true };
     try {
       await dbClient.auth.signOut();
@@ -5130,10 +5271,14 @@ if (dbClient && cleanPayload.user_id) {
 
   async signOutPlayer() {
     try {
+      this._cachedAuthUser = null;
+      this._cachedAuthUserTime = 0;
       localStorage.removeItem("frontline_league_auth_user");
       localStorage.removeItem("frontline_arena_auth_user");
       localStorage.removeItem("frontline_arena_user");
       localStorage.removeItem("frontline_league_player_card");
+      localStorage.removeItem("frontline_admin_session");
+      localStorage.removeItem("frontline_admin_email");
       sessionStorage.removeItem("frontline_admin_session");
       sessionStorage.removeItem("frontline_admin_email");
       sessionStorage.removeItem("frontline_discord_oauth_pending");
@@ -5143,7 +5288,13 @@ if (dbClient && cleanPayload.user_id) {
           localStorage.removeItem(k);
         }
       });
+      window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+      window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: null, user: null } }));
     } catch (e) {}
+    if (typeof this.updateLeagueNavProfile === "function") this.updateLeagueNavProfile();
+    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
+      window.LadderDB.updateArenaNavProfile();
+    }
     if (dbClient) {
       try {
         const { error } = await dbClient.auth.signOut();
@@ -5151,14 +5302,6 @@ if (dbClient && cleanPayload.user_id) {
       } catch (err) {
         return { success: false, error: err.message };
       }
-    } else {
-      window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
-      window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { player: null } }));
-    }
-
-    if (typeof this.updateLeagueNavProfile === "function") this.updateLeagueNavProfile();
-    if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === "function") {
-      window.LadderDB.updateArenaNavProfile();
     }
     return { success: true };
   },
@@ -8379,6 +8522,11 @@ window.LadderDB = {
   logoutArenaPlayer() {
     try {
       localStorage.removeItem("frontline_arena_user");
+      localStorage.removeItem("frontline_arena_auth_user");
+      localStorage.removeItem("frontline_admin_session");
+      localStorage.removeItem("frontline_admin_email");
+      sessionStorage.removeItem("frontline_admin_session");
+      sessionStorage.removeItem("frontline_admin_email");
       if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
         window.LeagueDB.signOutPlayer().catch(() => {});
       }
@@ -9586,6 +9734,12 @@ window.LadderDB = {
           try {
             localStorage.removeItem("frontline_league_auth_user");
             localStorage.removeItem("frontline_arena_auth_user");
+            localStorage.removeItem("frontline_arena_user");
+            localStorage.removeItem("frontline_league_player_card");
+            localStorage.removeItem("frontline_admin_session");
+            localStorage.removeItem("frontline_admin_email");
+            sessionStorage.removeItem("frontline_admin_session");
+            sessionStorage.removeItem("frontline_admin_email");
           } catch(e) {}
           syncAllNavAndSwitcher();
         }

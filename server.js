@@ -149,7 +149,7 @@ const ALLOWED_TABLES = new Set([
   "scheduled_matches", "tournament_divisions", "tournament_matches",
   "tournaments", "tournament_registrations",
   "arena_free_agents", "ladder_teams", "ladder_rosters", "ladder_matches",
-  "ladder_disputes", "staff_roles"
+  "ladder_disputes", "staff_roles", "tournament_match_chats"
 ]);
 
 // Allowed SQL filter operators - Strict whitelist
@@ -283,6 +283,23 @@ async function initDatabaseTables() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_tourney_reg_tid ON public.tournament_registrations (tournament_id);
+    `);
+
+    // 3. Tournament Match Private Chat Messages Table (Strictly scoped to matchup combatants & staff)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.tournament_match_chats (
+        id TEXT PRIMARY KEY,
+        tournament_id TEXT NOT NULL,
+        match_id TEXT NOT NULL,
+        sender_id TEXT,
+        sender_name TEXT NOT NULL,
+        sender_team TEXT,
+        sender_role TEXT DEFAULT 'combatant',
+        message TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_tmc_match ON public.tournament_match_chats (tournament_id, match_id);
+      CREATE INDEX IF NOT EXISTS idx_tmc_created ON public.tournament_match_chats (created_at ASC);
     `);
     console.log("PostgreSQL database schemas verified & auto-migrated.");
   } catch (err) {

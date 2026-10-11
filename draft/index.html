@@ -1347,6 +1347,9 @@
           }
           sessionStorage.removeItem("frontline_admin_session");
           sessionStorage.removeItem("frontline_admin_email");
+          localStorage.removeItem("frontline_admin_session");
+          localStorage.removeItem("frontline_admin_email");
+          localStorage.removeItem("frontline_arena_user");
           isDraftAdminAuthorized = false;
           currentDraftStaffProfile = null;
           applyDraftAdminPermissions();

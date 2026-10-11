@@ -516,3 +516,27 @@ CREATE POLICY "Allow public read tournament_matches" ON public.tournament_matche
 DROP POLICY IF EXISTS "Allow public write tournament_matches" ON public.tournament_matches;
 CREATE POLICY "Allow public write tournament_matches" ON public.tournament_matches FOR ALL USING (true);
 
+-- ------------------------------------------------------------------------------
+-- TOURNAMENT MATCH PRIVATE CHATS (Match-exclusive chat for teams & staff)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.tournament_match_chats (
+    id TEXT PRIMARY KEY,
+    tournament_id TEXT NOT NULL,
+    match_id TEXT NOT NULL,
+    sender_id TEXT,
+    sender_name TEXT NOT NULL,
+    sender_team TEXT,
+    sender_role TEXT DEFAULT 'combatant',
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tmc_match ON public.tournament_match_chats (tournament_id, match_id);
+CREATE INDEX IF NOT EXISTS idx_tmc_created ON public.tournament_match_chats (created_at ASC);
+
+ALTER TABLE public.tournament_match_chats ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read tournament_match_chats" ON public.tournament_match_chats;
+CREATE POLICY "Allow public read tournament_match_chats" ON public.tournament_match_chats FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public write tournament_match_chats" ON public.tournament_match_chats;
+CREATE POLICY "Allow public write tournament_match_chats" ON public.tournament_match_chats FOR ALL USING (true);
+
+
