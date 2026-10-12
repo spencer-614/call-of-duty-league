@@ -661,7 +661,7 @@
           <h4 style="font:800 13px var(--body); color:#fbbf24; text-transform:uppercase; margin:0 0 8px; letter-spacing:0.5px;">
             Official CDL Rules &amp; Map Veto Directive
           </h4>
-          <ul style="font-size:12px; color:#9ca3af; margin:0; padding-left:18px; line-height:1.6;">
+          <ul id="modal-detail-rules-list" style="font-size:12px; color:#9ca3af; margin:0; padding-left:18px; line-height:1.6;">
             <li>Matches conducted under official CDL 2026 Competitive Ruleset.</li>
             <li>Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.</li>
             <li>Dedicated Central host location (Dallas, TX / Chicago, IL) required.</li>
@@ -1037,6 +1037,25 @@
         document.getElementById('modal-detail-entry').textContent = t.entry_fee || 'FREE ENTRY';
         document.getElementById('modal-detail-format').textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Double Elimination'}`;
         document.getElementById('modal-detail-date').textContent = `${t.date || t.start_date || 'TBD'} ${t.time || t.start_time ? '· ' + (t.time || t.start_time) : ''}`;
+
+        // Render Official CDL Rules & Map Veto Directive
+        const rulesListEl = document.getElementById('modal-detail-rules-list');
+        if (rulesListEl) {
+          const defaultRules = [
+            'Matches conducted under official CDL 2026 Competitive Ruleset.',
+            'Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.',
+            'Dedicated Central host location (Dallas, TX / Chicago, IL) required.',
+            'Check-in opens 45 minutes prior to bracket start in Discord.'
+          ];
+
+          let rulesItems = defaultRules;
+          if (t.rules_notes && t.rules_notes.trim()) {
+            const lines = t.rules_notes.split(/\r?\n/).map(l => l.replace(/^[\s•\-\*]+/, '').trim()).filter(Boolean);
+            if (lines.length > 0) rulesItems = lines;
+          }
+
+          rulesListEl.innerHTML = rulesItems.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        }
 
         const bannerWrap = document.getElementById('modal-detail-banner-wrap');
         if (bannerWrap) {

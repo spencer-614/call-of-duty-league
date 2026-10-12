@@ -3225,6 +3225,7 @@ if (dbClient && cleanPayload.user_id) {
       max_teams: Number(tournamentData.max_teams || existingObj.max_teams || 32),
       registered_teams: Number(tournamentData.registered_teams !== undefined ? tournamentData.registered_teams : (existingObj.registered_teams || 0)),
       teams_registered_count: Number(tournamentData.teams_registered_count !== undefined ? tournamentData.teams_registered_count : (existingObj.teams_registered_count || existingObj.registered_teams || 0)),
+      rules_notes: tournamentData.rules_notes !== undefined ? tournamentData.rules_notes : (existingObj.rules_notes || ''),
       pinned: !!(tournamentData.pinned !== undefined ? tournamentData.pinned : existingObj.pinned),
       is_active: tournamentData.is_active !== undefined ? tournamentData.is_active : (existingObj.is_active !== false),
       updated_at: new Date().toISOString()

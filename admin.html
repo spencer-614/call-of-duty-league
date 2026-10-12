@@ -2752,6 +2752,17 @@
                   <textarea id="tourney-desc-input" class="form-control" rows="3" placeholder="Brief rules summary, check-in instructions, map veto guidelines, host protocols..." required style="resize:vertical;"></textarea>
                 </div>
 
+                <div class="form-group" style="grid-column: 1 / -1; background:#12140d; border:1px solid #2e351d; border-left:3px solid #fbbf24; padding:14px; border-radius:3px;">
+                  <label class="form-label" for="tourney-rules-notes-input" style="display:flex; justify-content:space-between; align-items:center; color:#fbbf24; font-weight:800; font-size:12.5px; margin-bottom:4px;">
+                    <span>📜 Official CDL Rules &amp; Map Veto Directive (Bullet Points / Directives)</span>
+                    <small style="color:var(--muted); font-size:11px; text-transform:none; font-weight:normal;">One bullet directive per line</small>
+                  </label>
+                  <p style="color:#9ca3af; font-size:11.5px; margin:0 0 8px; line-height:1.4;">
+                    These directives render as official bullet points inside the public tournament details modal under <strong>OFFICIAL CDL RULES &amp; MAP VETO DIRECTIVE</strong>.
+                  </p>
+                  <textarea id="tourney-rules-notes-input" class="form-control" rows="4" placeholder="• Matches conducted under official CDL 2026 Competitive Ruleset.&#10;• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.&#10;• Dedicated Central host location (Dallas, TX / Chicago, IL) required.&#10;• Check-in opens 45 minutes prior to bracket start in Discord." style="resize:vertical; font-size:12.5px;"></textarea>
+                </div>
+
                 <div class="form-group">
                   <label class="form-label" for="tourney-format-input">Format / Game Mode *</label>
                   <select id="tourney-format-input" class="form-control" required>
@@ -3224,6 +3235,17 @@
             <div class="form-group" style="grid-column: 1 / -1;">
               <label class="form-label" for="modal-edit-tourney-desc">Tournament Brief / Directives &amp; Rules *</label>
               <textarea id="modal-edit-tourney-desc" class="form-control" rows="3" required placeholder="Rules summary, check-in instructions, map veto guidelines, host protocols..." style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1; background:#12140d; border:1px solid #2e351d; border-left:3px solid #fbbf24; padding:14px; border-radius:3px;">
+              <label class="form-label" for="modal-edit-tourney-rules-notes" style="display:flex; justify-content:space-between; align-items:center; color:#fbbf24; font-weight:800; font-size:12.5px; margin-bottom:4px;">
+                <span>📜 Official CDL Rules &amp; Map Veto Directive (Bullet Points / Directives)</span>
+                <small style="color:var(--muted); font-size:11px; text-transform:none; font-weight:normal;">One bullet directive per line</small>
+              </label>
+              <p style="color:#9ca3af; font-size:11.5px; margin:0 0 8px; line-height:1.4;">
+                These directives render as official bullet points inside the public tournament details modal under <strong>OFFICIAL CDL RULES &amp; MAP VETO DIRECTIVE</strong>.
+              </p>
+              <textarea id="modal-edit-tourney-rules-notes" class="form-control" rows="4" placeholder="• Matches conducted under official CDL 2026 Competitive Ruleset.&#10;• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.&#10;• Dedicated Central host location (Dallas, TX / Chicago, IL) required.&#10;• Check-in opens 45 minutes prior to bracket start in Discord." style="resize:vertical; font-size:12.5px;"></textarea>
             </div>
 
             <div class="form-group">
@@ -8331,6 +8353,8 @@
           document.getElementById("edit-tourney-modal-header-title").textContent = "✏️ Edit Tournament: " + (tourney.title || 'Event');
           document.getElementById("modal-edit-tourney-title").value = tourney.title || "";
           document.getElementById("modal-edit-tourney-desc").value = tourney.description || "";
+          const defaultRules = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
+          document.getElementById("modal-edit-tourney-rules-notes").value = tourney.rules_notes || defaultRules;
           document.getElementById("modal-edit-tourney-format").value = tourney.format || "4v4 CDL Variant";
           document.getElementById("modal-edit-tourney-bracket-type").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("modal-edit-tourney-prize").value = tourney.prize_pool || "$1,500 USD";
@@ -8424,6 +8448,7 @@
 
           const title = document.getElementById("modal-edit-tourney-title").value.trim();
           const desc = document.getElementById("modal-edit-tourney-desc").value.trim();
+          const rulesNotes = (document.getElementById("modal-edit-tourney-rules-notes")?.value || "").trim();
           const format = document.getElementById("modal-edit-tourney-format").value;
           const bracketType = document.getElementById("modal-edit-tourney-bracket-type").value;
           const prizePool = document.getElementById("modal-edit-tourney-prize").value.trim();
@@ -8456,6 +8481,7 @@
             id,
             title,
             description: desc,
+            rules_notes: rulesNotes,
             format,
             bracket_type: bracketType,
             prize_pool: prizePool,
@@ -8526,6 +8552,9 @@
           document.getElementById("tourney-id").value = tourney.id || "";
           document.getElementById("tourney-title-input").value = tourney.title || "";
           document.getElementById("tourney-desc-input").value = tourney.description || "";
+          const rulesInput = document.getElementById("tourney-rules-notes-input");
+          const defaultRulesComposer = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
+          if (rulesInput) rulesInput.value = tourney.rules_notes || defaultRulesComposer;
           document.getElementById("tourney-format-input").value = tourney.format || "4v4 CDL Variant";
           document.getElementById("tourney-bracket-type-input").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("tourney-prize-input").value = tourney.prize_pool || "$1,500 USD";
@@ -8582,6 +8611,8 @@
           if (form) form.reset();
 
           document.getElementById("tourney-id").value = "";
+          const rulesInputClear = document.getElementById("tourney-rules-notes-input");
+          if (rulesInputClear) rulesInputClear.value = "";
           
           const formTitle = document.getElementById("tourney-form-title");
           if (formTitle) formTitle.textContent = "🏆 Compose & Publish Tournament";
@@ -8745,6 +8776,7 @@
           const regUrl = document.getElementById("tourney-reg-url-input")?.value.trim() || "";
           const bracketUrl = document.getElementById("tourney-bracket-url-input")?.value.trim() || "/tournaments/bracket/";
           const desc = document.getElementById("tourney-desc-input")?.value.trim() || "";
+          const rulesNotesComposer = document.getElementById("tourney-rules-notes-input")?.value.trim() || "";
           const isPinned = !!document.getElementById("tourney-pinned-input")?.checked;
           const isActive = document.getElementById("tourney-is-active-input")?.checked !== false;
 
@@ -8773,6 +8805,7 @@
             registration_url: regUrl,
             bracket_url: bracketUrl,
             description: desc,
+            rules_notes: rulesNotesComposer,
             pinned: isPinned,
             is_active: isActive,
             banner_fit: document.querySelector('input[name="tourney-banner-fit"]:checked')?.value || 'contain',
