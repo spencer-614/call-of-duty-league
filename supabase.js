@@ -4048,12 +4048,20 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     const rowId = this._getMatchChatRowId(tournamentId, matchId);
+    let cleanSenderName = String(senderName || "").trim();
+    if (!cleanSenderName || cleanSenderName.includes("@")) {
+      const p = this.getCurrentPlayer();
+      if (p?.gamertag && !p.gamertag.includes("@")) cleanSenderName = p.gamertag;
+      else if (senderRole === "staff") cleanSenderName = "League Official";
+      else cleanSenderName = senderTeam || "Combatant";
+    }
+
     const chatMsg = {
       id: "tmc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
       tournament_id: String(tournamentId),
       match_id: String(matchId),
       sender_id: senderId || null,
-      sender_name: String(senderName || "Combatant").trim(),
+      sender_name: cleanSenderName,
       sender_team: senderTeam || null,
       sender_role: senderRole || "combatant",
       message: message.trim(),
@@ -8655,7 +8663,16 @@ window.LadderDB = {
     if (authUser) {
       const meta = authUser.user_metadata || {};
       const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.getDiscordIdentity(authUser) : null;
-      const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
+      let gamertag = meta.gamertag || meta.username || meta.display_name || meta.global_name || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || meta.full_name || meta.name;
+      if (!gamertag || (typeof gamertag === "string" && gamertag.includes("@"))) {
+        try {
+          const card = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+          if (card?.gamertag && !card.gamertag.includes("@")) gamertag = card.gamertag;
+        } catch (_) {}
+      }
+      if (!gamertag || (typeof gamertag === "string" && gamertag.includes("@"))) {
+        gamertag = "Combatant";
+      }
       return {
         id: authUser.id,
         gamertag: gamertag,

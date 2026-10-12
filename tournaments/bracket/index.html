@@ -488,7 +488,7 @@
 
     <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=20261012b"></script>
+    <script src="/supabase.js?v=20261012c"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -971,6 +971,12 @@
                      JSON.parse(localStorage.getItem('frontline_league_player_card'));
             } catch (_) {}
           }
+          if (user && !user.gamertag) {
+            try {
+              const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+              if (card?.gamertag) user.gamertag = card.gamertag;
+            } catch (_) {}
+          }
 
           // Check if user is staff / admin
           let isStaff = false;
@@ -1156,12 +1162,85 @@
               user,
               isStaff,
               userTeamName,
-              userRole
+              userRole,
+              reg1,
+              reg2
             });
           }
         }
 
-        function setupMatchChat({ tournamentId, matchId, user, isStaff, userTeamName, userRole }) {
+        function resolvePlayerProfileName(u, isStaffUser, teamName, r1, r2) {
+          const isEmail = s => typeof s === 'string' && s.includes('@');
+
+          // 1. If staff/commissioner
+          const email = (u?.email || (sessionStorage.getItem('frontline_admin_email') || localStorage.getItem('frontline_admin_email') || '')).toLowerCase().trim();
+          if (isStaffUser) {
+            if (email === 'todd061496@gmail.com' || email === 'admin@frontlineleague.com' || !email) {
+              return 'Commissioner Spencer';
+            }
+            if (u?.gamertag && !isEmail(u.gamertag)) return u.gamertag.trim();
+            if (u?.user_metadata?.gamertag && !isEmail(u.user_metadata.gamertag)) return u.user_metadata.gamertag.trim();
+            return 'League Official';
+          }
+
+          // 2. Direct gamertag on user object (if not an email)
+          if (u?.gamertag && !isEmail(u.gamertag)) return u.gamertag.trim();
+          if (u?.displayName && !isEmail(u.displayName)) return u.displayName.trim();
+          if (u?.display_name && !isEmail(u.display_name)) return u.display_name.trim();
+
+          // 3. User metadata (from Supabase Auth / Discord OAuth)
+          const meta = u?.user_metadata || {};
+          if (meta.gamertag && !isEmail(meta.gamertag)) return meta.gamertag.trim();
+          if (meta.global_name && !isEmail(meta.global_name)) return meta.global_name.trim();
+          if (meta.display_name && !isEmail(meta.display_name)) return meta.display_name.trim();
+          if (meta.full_name && !isEmail(meta.full_name)) return meta.full_name.trim();
+          if (meta.username && !isEmail(meta.username)) return meta.username.trim();
+          if (meta.name && !isEmail(meta.name)) return meta.name.trim();
+
+          // 4. Discord provider identity via LeagueDB
+          if (window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === 'function') {
+            try {
+              const disc = window.LeagueDB.getDiscordIdentity(u);
+              if (disc?.globalName && !isEmail(disc.globalName)) return disc.globalName.trim();
+              if (disc?.handle && !isEmail(disc.handle)) return disc.handle.trim();
+              if (disc?.primaryName && !isEmail(disc.primaryName)) return disc.primaryName.trim();
+            } catch (_) {}
+          }
+
+          // 5. Local player card (Frontline League Profile)
+          try {
+            const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+            if (card?.gamertag && !isEmail(card.gamertag)) return card.gamertag.trim();
+            if (card?.name && !isEmail(card.name)) return card.name.trim();
+          } catch (_) {}
+
+          // 6. Local arena user profile
+          try {
+            const arenaUser = JSON.parse(localStorage.getItem('frontline_arena_user'));
+            if (arenaUser?.gamertag && !isEmail(arenaUser.gamertag)) return arenaUser.gamertag.trim();
+            if (arenaUser?.username && !isEmail(arenaUser.username)) return arenaUser.username.trim();
+          } catch (_) {}
+
+          // 7. Check if user is registered captain or roster member of a team in this match
+          if (r1 && isUserInReg(r1, u) && r1.captain_gamertag && !isEmail(r1.captain_gamertag)) {
+            return r1.captain_gamertag.trim();
+          }
+          if (r2 && isUserInReg(r2, u) && r2.captain_gamertag && !isEmail(r2.captain_gamertag)) {
+            return r2.captain_gamertag.trim();
+          }
+
+          // 8. Username on user object if not an email
+          if (u?.username && !isEmail(u.username)) return u.username.trim();
+
+          // 9. Fallback to team designation or Combatant (never email!)
+          if (teamName && teamName !== 'League Official' && teamName !== 'TBD') {
+            return `${teamName} Combatant`;
+          }
+
+          return 'Combatant';
+        }
+
+        function setupMatchChat({ tournamentId, matchId, user, isStaff, userTeamName, userRole, reg1, reg2 }) {
           if (chatPollInterval) clearInterval(chatPollInterval);
 
           const chatBox = document.getElementById(`match-chat-box-${matchId}`);
@@ -1177,7 +1256,7 @@
             localStorage.setItem('frontline_chat_client_id', myClientId);
           }
           const mySenderId = user?.id || user?.sub || myClientId;
-          const mySenderName = user?.gamertag || user?.username || (user?.email ? user.email.split('@')[0] : (isStaff ? 'League Staff' : 'Combatant'));
+          const mySenderName = resolvePlayerProfileName(user, isStaff, userTeamName, reg1, reg2);
 
           let lastLoadedHash = '';
 
@@ -1210,7 +1289,10 @@
             }
 
             chatBox.innerHTML = messages.map(m => {
-              const isMe = (m.sender_id && m.sender_id === mySenderId) || (m.sender_name === mySenderName);
+              const isMe = (m.sender_id && m.sender_id === mySenderId) || 
+                           (m.sender_name === mySenderName) ||
+                           (user?.email && m.sender_name === user.email.split('@')[0]) ||
+                           (user?.email && m.sender_name === user.email);
               const isStaffMsg = m.sender_role === 'staff';
               const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
