@@ -8695,7 +8695,7 @@
             }
 
             tbody.innerHTML = cachedAdminTournaments.map(t => {
-              const enlisted = Number(t.registered_teams) || (Array.isArray(t.registered_teams) ? t.registered_teams.length : 0) || t.teams_registered_count || 0;
+              const enlisted = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
               const max = t.max_teams || 32;
               const curStatus = t.status || 'Registration Open';
               

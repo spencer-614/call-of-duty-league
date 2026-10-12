@@ -687,7 +687,7 @@
           if (formatEl) formatEl.textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Single Elimination'}`;
           if (prizeEl) prizeEl.textContent = t.prize_pool || '$500 USD';
           if (teamsEl) {
-            const count = t.teams_registered_count || (t.registered_teams?.length) || 0;
+            const count = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
             const max = t.max_teams || 16;
             teamsEl.textContent = `${count} / ${max} Squads`;
           }

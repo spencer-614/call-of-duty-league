@@ -703,6 +703,7 @@
       <div class="tourney-modal-card">
         <button type="button" class="tourney-modal-close" onclick="closeTourneyRegisterModal()">&times;</button>
         <div class="tourney-eyebrow" style="margin-bottom:12px;">SQUAD ENLISTMENT DIRECTIVE</div>
+        <div id="reg-modal-duplicate-warning" style="display:none; background:#291414; border:1px solid #7f1d1d; color:#fca5a5; padding:10px 14px; border-radius:2px; font-size:12px; margin-bottom:14px; line-height:1.5;"></div>
         <h2 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin:0 0 6px;" id="reg-modal-title">
           Register for Tournament
         </h2>
@@ -952,9 +953,7 @@
             ? `background-image: url('${escapeHtml(bannerUrl)}'); background-size: ${fitMode}; background-color: #0b0d09;`
             : `background: linear-gradient(135deg, #241c0c 0%, #151810 100%);`;
 
-          const teamsCount = Array.isArray(t.registered_teams)
-          ? t.registered_teams.length
-          : Number(t.registered_teams ?? t.teams_registered_count ?? 0);
+          const teamsCount = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
           const maxTeams = t.max_teams || 32;
 
           return `
@@ -1123,6 +1122,8 @@
         // Load enlisted squads into details modal asynchronously
         const squadsCountEl = document.getElementById('modal-detail-squads-count');
         const squadsListEl = document.getElementById('modal-detail-squads-list');
+        const userStatusBox = document.getElementById('modal-detail-user-enlist-status');
+
         if (squadsListEl) {
           squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px; padding:6px 0;">Loading enlisted squads from database...</div>';
           try {
@@ -1134,8 +1135,67 @@
               squads = local.filter(r => String(r.tournament_id) === String(t.id));
             }
 
+            const maxTeams = t.max_teams || 32;
             if (squadsCountEl) {
-              squadsCountEl.textContent = `${squads.length} Squad${squads.length === 1 ? '' : 's'} Enlisted`;
+              squadsCountEl.textContent = `${squads.length} / ${maxTeams} Squad${squads.length === 1 ? '' : 's'} Enlisted`;
+            }
+
+            // Detect if logged-in user is already enrolled in a squad for this tournament
+            let userEnlistedSquad = null;
+            try {
+              const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+              const authUser = JSON.parse(localStorage.getItem('frontline_auth_user'));
+              const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+              const uTag = norm(card?.gamertag || authUser?.gamertag || authUser?.username);
+              const uDisc = norm(card?.discord || authUser?.discord);
+              const uActId = norm(card?.activision_id || authUser?.activision_id);
+
+              if (uTag || uDisc || uActId) {
+                userEnlistedSquad = squads.find(sq => {
+                  if (uTag && norm(sq.captain_gamertag) === uTag) return true;
+                  if (uDisc && norm(sq.captain_discord) === uDisc) return true;
+                  if (uActId && norm(sq.captain_activision_id) === uActId) return true;
+                  let roster = [];
+                  if (Array.isArray(sq.roster)) roster = sq.roster;
+                  else if (typeof sq.roster === 'string') {
+                    try { roster = JSON.parse(sq.roster); } catch (_) { roster = sq.roster.split(/,\s*/); }
+                  } else if (sq.roster_text) {
+                    roster = sq.roster_text.split(/,\s*/);
+                  }
+                  return roster.some(m => norm(typeof m === 'object' ? (m.gamertag || m.name) : m) === uTag);
+                });
+              }
+            } catch (_) {}
+
+            if (userEnlistedSquad) {
+              if (regBtn) {
+                regBtn.textContent = '✓ Squad Enlisted';
+                regBtn.disabled = true;
+                regBtn.style.opacity = '0.6';
+                regBtn.style.cursor = 'not-allowed';
+                regBtn.title = `You are already enlisted with squad "${userEnlistedSquad.team_name}". Players may only register for one squad per tournament.`;
+              }
+              if (userStatusBox) {
+                userStatusBox.style.display = 'block';
+                userStatusBox.innerHTML = `🛡️ You are confirmed in this tournament with squad <strong style="color:#fbbf24;">${escapeHtml(userEnlistedSquad.team_name)}</strong> (Captain: ${escapeHtml(userEnlistedSquad.captain_gamertag)}). Each player may only register for one squad.`;
+              }
+            } else {
+              const isClosed = (t.status || '').toLowerCase().includes('completed') || (t.status || '').toLowerCase().includes('closed');
+              if (regBtn) {
+                if (isClosed) {
+                  regBtn.style.display = 'none';
+                } else {
+                  regBtn.style.display = 'inline-flex';
+                  regBtn.textContent = 'Register Squad ↗';
+                  regBtn.disabled = false;
+                  regBtn.style.opacity = '1';
+                  regBtn.style.cursor = 'pointer';
+                  regBtn.title = '';
+                }
+              }
+              if (userStatusBox) {
+                userStatusBox.style.display = 'none';
+              }
             }
 
             if (!squads || squads.length === 0) {
@@ -1155,7 +1215,7 @@
                     </div>
                     ${rosterArr.length ? `
                       <div style="color:#9ca3af; font-size:11px;">
-                        Roster: ${rosterArr.map(p => escapeHtml(p)).join(' • ')}
+                        Roster: ${rosterArr.map(p => escapeHtml(typeof p === 'object' ? (p.gamertag || p.name) : p)).join(' • ')}
                       </div>
                     ` : ''}
                   </div>
@@ -1180,13 +1240,53 @@
         }
       }
 
-      function openTourneyRegister(id) {
+      async function openTourneyRegister(id) {
         const t = currentTournaments.find(item => String(item.id) === String(id));
         if (!t) return;
         currentSelectedTourney = t;
 
         document.getElementById('reg-tournament-id').value = t.id;
         document.getElementById('reg-modal-title').textContent = `Enlist: ${t.title || 'Tournament'}`;
+
+        const warningEl = document.getElementById('reg-modal-duplicate-warning');
+        const submitBtn = document.getElementById('btn-submit-reg');
+        if (warningEl) warningEl.style.display = 'none';
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+
+        // Check if player is already registered
+        try {
+          let squads = [];
+          if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function') {
+            squads = await window.LeagueDB.getTournamentRegistrations(t.id);
+          } else {
+            const local = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
+            squads = local.filter(r => String(r.tournament_id) === String(t.id));
+          }
+
+          const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+          const authUser = JSON.parse(localStorage.getItem('frontline_auth_user'));
+          const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+          const uTag = norm(card?.gamertag || authUser?.gamertag || authUser?.username);
+          const uDisc = norm(card?.discord || authUser?.discord);
+
+          if (uTag || uDisc) {
+            const existing = squads.find(sq => {
+              if (uTag && norm(sq.captain_gamertag) === uTag) return true;
+              if (uDisc && norm(sq.captain_discord) === uDisc) return true;
+              let roster = [];
+              if (Array.isArray(sq.roster)) roster = sq.roster;
+              else if (sq.roster_text) roster = sq.roster_text.split(/,\s*/);
+              return roster.some(m => norm(typeof m === 'object' ? (m.gamertag || m.name) : m) === uTag);
+            });
+
+            if (existing && warningEl && submitBtn) {
+              warningEl.style.display = 'block';
+              warningEl.innerHTML = `⚠️ <strong>Already Enlisted:</strong> You are already registered for this tournament in squad <strong style="color:#ffffff;">"${escapeHtml(existing.team_name)}"</strong>. Each player may only register for one squad per tournament.`;
+              submitBtn.disabled = true;
+              submitBtn.style.opacity = '0.5';
+            }
+          }
+        } catch (_) {}
 
         // Autofill with logged in user if available
         try {
@@ -1246,11 +1346,15 @@
           };
 
           if (window.LeagueDB && typeof window.LeagueDB.registerSquadForTournament === 'function') {
-            await window.LeagueDB.registerSquadForTournament(tourneyId, squadData);
+            const regRes = await window.LeagueDB.registerSquadForTournament(tourneyId, squadData);
+            if (!regRes || !regRes.success) {
+              showToast(regRes?.error || 'Registration denied. Each player may only register for one squad per tournament.', true);
+              return;
+            }
           }
 
           closeTourneyRegisterModal();
-          showToast(`Squad "${teamName}" successfully enlisted and logged to database! See you in the bracket.`);
+          showToast(`Squad "${teamName}" successfully enlisted! See you in the bracket.`);
 
           // Re-fetch and update UI
           if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
@@ -1259,7 +1363,7 @@
           }
         } catch(err) {
           console.error(err);
-          showToast('Failed to register squad. Please contact an admin in Discord.', true);
+          showToast(err.message || 'Failed to register squad. Please contact an admin in Discord.', true);
         } finally {
           if (submitBtn) {
             submitBtn.disabled = false;
@@ -1287,6 +1391,19 @@
       });
 
       // Init on load
+      window.addEventListener('frontline_tournament_registered', async () => {
+        if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
+          currentTournaments = await window.LeagueDB.getTournaments();
+          renderTournaments();
+        }
+      });
+      window.addEventListener('frontline_tournament_registration_deleted', async () => {
+        if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
+          currentTournaments = await window.LeagueDB.getTournaments();
+          renderTournaments();
+        }
+      });
+
       document.addEventListener('DOMContentLoaded', initTournamentsPage);
       if (document.readyState === 'interactive' || document.readyState === 'complete') {
         initTournamentsPage();
