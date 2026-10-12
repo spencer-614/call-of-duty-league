@@ -30,3 +30,4 @@ CREATE INDEX IF NOT EXISTS idx_tournament_players_user ON public.tournament_play
 ALTER TABLE public.tournament_players ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all tournament_players" ON public.tournament_players;
 CREATE POLICY "Allow public all tournament_players" ON public.tournament_players FOR ALL USING (true) WITH CHECK (true);
+
