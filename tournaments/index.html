@@ -4,451 +4,270 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#11120f" />
-        <link rel="icon" type="image/png" href="/images/leaguelogo_1.png" />
+    <link rel="icon" type="image/png" href="/images/leaguelogo_1.png" />
     <link rel="apple-touch-icon" href="/images/leaguelogo_1.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=4"></script>
-    <script src="/bullet-sparks.js" defer></script>
+    <title>Frontline — Tournament Hub Live Brackets</title>
+    <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
     <style>
-      /* Page-specific styling for Tournaments Hub */
       :root {
-        --tourney-gold: #f59e0b;
-        --tourney-gold-glow: rgba(245, 158, 11, 0.35);
-        --tourney-card-bg: #141712;
-        --tourney-border: #2e3522;
+        --tourney-gold: #fbbf24;
+        --tourney-dark: #0f120c;
+        --tourney-border: #29321e;
       }
-
-      .tourney-hero {
-        position: relative;
-        padding: 44px 32px 36px;
-        background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(245, 158, 11, 0.22), transparent 70%), #11140e;
-        border: 1px solid #3d3b1e;
-        border-radius: 4px;
-        margin-bottom: 32px;
-        overflow: hidden;
-      }
-      .tourney-hero::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, var(--tourney-gold), transparent);
-        opacity: 0.6;
-      }
-
-      .tourney-eyebrow {
+      .tourney-badge-pill {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        background: rgba(245, 158, 11, 0.12);
-        border: 1px solid rgba(245, 158, 11, 0.35);
-        color: #fbbf24;
-        font: 800 11.5px/1 var(--body);
-        letter-spacing: 1.5px;
+        gap: 5px;
+        padding: 3px 8px;
+        font: 800 10.5px var(--body);
         text-transform: uppercase;
-        padding: 5px 12px;
-        margin-bottom: 14px;
+        letter-spacing: 0.5px;
         border-radius: 2px;
       }
-
-      .tourney-hero-title {
-        font: 900 clamp(32px, 5vw, 56px)/1 var(--display);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 0 0 14px;
-        color: #ffffff;
+      .tourney-badge-pill.live {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid #ef4444;
+        color: #f87171;
       }
-      .tourney-hero-title span {
+      .tourney-badge-pill.open {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid var(--tourney-gold);
         color: var(--tourney-gold);
-        text-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
       }
-
-      .tourney-hero-desc {
-        color: #d1d5db;
-        font: 500 14.5px/1.65 var(--body);
-        max-width: 760px;
-        margin: 0 0 24px;
+      .tourney-badge-pill.completed {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid #22c55e;
+        color: #4ade80;
       }
-
-      .tourney-telemetry-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-        margin-top: 32px;
-        padding-top: 24px;
-        border-top: 1px solid rgba(245, 158, 11, 0.2);
-      }
-      .tourney-metric-label {
-        font-size: 11px;
-        color: var(--muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 4px;
-      }
-      .tourney-metric-val {
-        font: 900 24px var(--body);
-        color: #ffffff;
-      }
-      .tourney-metric-val.gold {
-        color: #fbbf24;
-      }
-      .tourney-metric-val.green {
-        color: #22c55e;
-      }
-
-      /* Filter Toolbar */
-      .tourney-toolbar {
-        background: #131610;
-        border: 1px solid #2a311e;
-        padding: 16px 20px;
-        border-radius: 3px;
-        margin-bottom: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .tourney-search-row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .tourney-search-input {
-        flex: 1;
-        min-width: 220px;
-        background: #0d0f0a;
-        border: 1px solid #333a24;
-        color: #ffffff;
-        padding: 10px 14px;
-        font-size: 13px;
-        font-family: inherit;
-        border-radius: 2px;
-        outline: none;
-        transition: border-color 0.2s;
-      }
-      .tourney-search-input:focus {
-        border-color: var(--tourney-gold);
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-      }
-
-      .tourney-filter-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .tourney-filter-label {
-        font-size: 11.5px;
-        font-weight: 800;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        margin-right: 4px;
-      }
-
-      .tourney-pill-btn {
-        background: #1a1e14;
-        border: 1px solid #353d26;
-        color: #cbd5e1;
-        padding: 7px 14px;
-        font: 800 11px var(--body);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        cursor: pointer;
-        border-radius: 2px;
-        transition: all 0.2s;
-      }
-      .tourney-pill-btn:hover {
-        border-color: var(--tourney-gold);
-        color: #ffffff;
-      }
-      .tourney-pill-btn.active {
-        background: #2b2512;
-        border-color: var(--tourney-gold);
-        color: #fbbf24;
-        box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
-      }
-
-      /* Tournament Grid & Cards */
-      .tourneys-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-        gap: 22px;
-      }
-
-      @media (max-width: 700px) {
-        .tourneys-grid {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-
-      .tourney-card {
-        background: var(--tourney-card-bg);
-        border: 1px solid var(--tourney-border);
-        border-radius: 3px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-        position: relative;
-      }
-      .tourney-card:hover {
-        transform: translateY(-3px);
-        border-color: var(--tourney-gold);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), 0 0 16px rgba(245, 158, 11, 0.15);
-      }
-
-      .tourney-card-banner {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background: #0b0d09 linear-gradient(135deg, #241c0c 0%, #171b12 100%);
-        position: relative;
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-        border-bottom: 1px solid #2a311e;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 10px 12px;
-        box-sizing: border-box;
-      }
-      .tourney-card-banner.has-custom-image::before {
-        display: none !important;
-      }
-      .tourney-card-banner::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(17, 20, 14, 0.88) 100%);
-        pointer-events: none;
-      }
-
-      .tourney-card-body {
-        padding: 18px 20px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      }
-
-      .tourney-card-title {
-        font: 800 20px/1.2 var(--display);
-        color: #ffffff;
-        text-transform: uppercase;
-        margin: 0 0 8px;
-        letter-spacing: 0.5px;
-      }
-      .tourney-card-desc {
-        font-size: 12.5px;
-        color: #9ca3af;
-        line-height: 1.5;
-        margin-bottom: 16px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .tourney-meta-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        background: #0f120c;
-        border: 1px solid #232918;
-        padding: 12px 14px;
-        margin-bottom: 16px;
-        border-radius: 2px;
-      }
-      .tourney-meta-item small {
-        display: block;
-        font-size: 10px;
-        color: var(--muted);
-        font-weight: 800;
-        text-transform: uppercase;
-        margin-bottom: 2px;
-      }
-      .tourney-meta-item strong {
-        font-size: 13px;
-        color: #ffffff;
-        font-weight: 700;
-      }
-
-      .tourney-card-footer {
-        display: flex;
-        gap: 10px;
-        padding-top: 14px;
-        border-top: 1px solid #232918;
+      .tourney-tab-active {
+        background: #2b2410 !important;
+        border-color: var(--tourney-gold) !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.25) !important;
       }
       .btn-tourney-primary {
-        flex: 1;
         background: #f59e0b;
         color: #11140e;
         border: 1px solid #fbbf24;
-        padding: 10px 14px;
-        font: 800 11.5px var(--body);
+        padding: 8px 16px;
+        font: 800 12px var(--body);
         text-transform: uppercase;
-        letter-spacing: 0.6px;
+        letter-spacing: 0.5px;
         cursor: pointer;
         border-radius: 2px;
-        text-align: center;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
         gap: 6px;
         transition: all 0.2s;
       }
       .btn-tourney-primary:hover {
-        background: #fbbf24;
-        box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
+        background: #d97706;
+        color: #ffffff;
       }
       .btn-tourney-outline {
         background: transparent;
-        color: #d1d5db;
-        border: 1px solid #3b442b;
-        padding: 10px 14px;
-        font: 800 11.5px var(--body);
+        border: 1px solid #3d472c;
+        color: #cbd5e1;
+        padding: 8px 16px;
+        font: 800 12px var(--body);
         text-transform: uppercase;
-        letter-spacing: 0.6px;
+        letter-spacing: 0.5px;
         cursor: pointer;
         border-radius: 2px;
-        transition: all 0.2s;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
         gap: 6px;
+        transition: all 0.2s;
       }
       .btn-tourney-outline:hover {
-        border-color: #fbbf24;
+        border-color: var(--tourney-gold);
         color: #ffffff;
       }
-
-      /* Status Badges */
-      .badge-tourney-status {
-        position: relative;
-        z-index: 2;
-        font: 800 10px var(--body);
-        letter-spacing: 0.8px;
+      /* Match Private Chat Styling */
+      .match-chat-container {
+        margin-top: 18px;
+        background: #0d0f0a;
+        border: 1px solid #2d361c;
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .match-chat-header {
+        background: #14170e;
+        border-bottom: 1px solid #2d361c;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .match-chat-header-title {
+        font: 800 12px var(--body);
+        color: #fbbf24;
         text-transform: uppercase;
-        padding: 4px 9px;
+        letter-spacing: 0.8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .match-chat-badge-private {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 2px 7px;
         border-radius: 2px;
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.35);
         display: inline-flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
       }
-      .badge-tourney-status.open {
-        background: rgba(34, 197, 94, 0.2);
-        color: #4ade80;
-        border: 1px solid rgba(34, 197, 94, 0.5);
-      }
-      .badge-tourney-status.live {
-        background: rgba(239, 68, 68, 0.25);
-        color: #f87171;
-        border: 1px solid rgba(239, 68, 68, 0.6);
-        animation: tourneyPulse 2s infinite;
-      }
-      .badge-tourney-status.upcoming {
-        background: rgba(56, 189, 248, 0.2);
-        color: #38bdf8;
-        border: 1px solid rgba(56, 189, 248, 0.5);
-      }
-      .badge-tourney-status.completed {
-        background: rgba(148, 163, 184, 0.2);
-        color: #94a3b8;
-        border: 1px solid rgba(148, 163, 184, 0.4);
-      }
-
-      @keyframes tourneyPulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.65; }
-      }
-
-      /* Modals */
-      .tourney-modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.85);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        padding: 20px;
-      }
-      .tourney-modal-card {
-        background: #141712;
-        border: 1px solid #3e3d22;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 20px rgba(245, 158, 11, 0.15);
-        max-width: 640px;
-        width: 100%;
-        max-height: 90vh;
+      .match-chat-box {
+        height: 230px;
         overflow-y: auto;
-        border-radius: 4px;
-        padding: 28px;
-        position: relative;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #090b07;
+        font-size: 13px;
       }
-      .tourney-modal-close {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: transparent;
-        border: none;
-        color: #9ca3af;
-        font-size: 20px;
+      .match-chat-msg {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        max-width: 90%;
+        padding: 8px 11px;
+        border-radius: 4px;
+        border: 1px solid #1f2615;
+        background: #12150e;
+      }
+      .match-chat-msg.msg-self {
+        align-self: flex-end;
+        background: #192010;
+        border-color: #3f4e24;
+      }
+      .match-chat-msg.msg-staff {
+        background: #241c0e;
+        border-color: #5c4718;
+      }
+      .match-chat-msg-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+      }
+      .match-chat-msg-author {
+        font-weight: 800;
+        color: #fbbf24;
+      }
+      .match-chat-msg-role-tag {
+        font-size: 9.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border-radius: 2px;
+      }
+      .role-tag-staff {
+        background: #f59e0b;
+        color: #000;
+      }
+      .role-tag-team {
+        background: #2b361a;
+        color: #d9f99d;
+        border: 1px solid #4d602e;
+      }
+      .match-chat-msg-time {
+        color: #64748b;
+        font-size: 10px;
+        margin-left: auto;
+      }
+      .match-chat-msg-text {
+        color: #f1f5f9;
+        font-size: 13px;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      .match-chat-footer {
+        border-top: 1px solid #2d361c;
+        padding: 10px 14px;
+        background: #11140e;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .match-chat-input {
+        flex: 1;
+        background: #090b07;
+        border: 1px solid #2d361c;
+        color: #fff;
+        padding: 8px 12px;
+        font: 500 13px var(--body);
+        border-radius: 2px;
+        outline: none;
+      }
+      .match-chat-input:focus {
+        border-color: #fbbf24;
+      }
+      .match-chat-send-btn {
+        background: #f59e0b;
+        color: #111;
+        font: 800 12px var(--body);
+        text-transform: uppercase;
+        border: 1px solid #fbbf24;
+        padding: 8px 14px;
         cursor: pointer;
-        padding: 4px;
-        line-height: 1;
+        border-radius: 2px;
+        white-space: nowrap;
+        transition: all 0.2s;
       }
-      .tourney-modal-close:hover {
-        color: #ffffff;
+      .match-chat-send-btn:hover {
+        background: #d97706;
+        color: #fff;
       }
-
-      /* Offline / Maintenance View */
-      #tournaments-maintenance-view {
-        display: none;
-        padding: 60px 30px;
-        background: #141712;
-        border: 1px dashed #423d24;
-        text-align: center;
-        max-width: 680px;
-        margin: 40px auto;
+      .match-chat-denied-notice {
+        padding: 18px 16px;
+        background: #10120d;
+        border: 1px dashed #3a4427;
         border-radius: 4px;
+        text-align: center;
+        margin-top: 16px;
       }
     </style>
-      <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
   </head>
   <body>
-    <!-- Top Navigation Header -->
+    <!-- Top Header & Navigation -->
     <header class="header">
       <div class="wrap nav">
         <a class="brand" href="/home/">
-          <img src="/images/leaguelogo_1.png" alt="Frontline League Emblem" class="brand-logo" />
+          <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
           <div class="brand-text">
             <span class="brand-title">FRONTLINE</span>
-            <small class="brand-sub">COMMUNITY LEAGUE</small>
-            <div class="brand-status status-tournaments">
-              <span class="nav-beacon"></span>
-              <span>TOURNAMENTS HUB</span>
+            <small class="brand-sub">TOURNAMENTS CIRCUIT</small>
+            <div class="brand-status">
+              <span class="nav-beacon" style="background:#fbbf24;"></span>
+              <span style="color:#fbbf24;">TOURNAMENT BRACKETS</span>
             </div>
           </div>
         </a>
 
         <!-- Header Center Hub with Mode Switcher -->
         <div class="header-center-hub">
-          <h1 class="header-welcome">WELCOME TO <span class="welcome-accent tournaments">TOURNAMENTS</span></h1>
+          <h1 class="header-welcome">TOURNAMENT <span class="welcome-accent" style="color:#fbbf24;">BRACKETS</span></h1>
           <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
-            <a href="/home/" class="mode-switch-btn" data-mode="league" title="Frontline Franchised League">
+            <a href="/brackets/" class="mode-switch-btn" data-mode="league" title="Frontline Franchised League Playoff Brackets">
               <span>🛡</span> <span>League</span>
             </a>
             <a href="/arena/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Circuit">
               <span>⚔</span> <span>Arena</span>
             </a>
-            <a href="/tournaments/" class="mode-switch-btn active-tournaments" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <a href="/tournaments/" class="mode-switch-btn active-league" data-mode="tournaments" title="Frontline Tournaments Hub" style="background:#2b2512; border-color:#fbbf24; color:#fbbf24;">
               <span>🏆</span> <span>Tournaments</span>
             </a>
           </div>
@@ -467,10 +286,10 @@
               <div class="nav-dropdown-grid">
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Matches &amp; Tournaments</div>
+                  <a href="/tournaments/" style="color:#fbbf24;"><span class="nav-icon">🏆</span> Tournaments Hub</a>
+                  <a href="/tournaments/bracket/" style="color:#fbbf24;"><span class="nav-icon">⚔</span> Tournament Brackets</a>
+                  <a href="/brackets/"><span class="nav-icon">🛡</span> League Playoffs</a>
                   <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
-                  <a href="/brackets/"><span class="nav-icon">⚔</span> Playoff Brackets</a>
-                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
-                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
                 </div>
                 <div class="nav-dropdown-col">
                   <div class="nav-category-title">Franchises &amp; Players</div>
@@ -509,906 +328,1016 @@
       <div class="wrap" style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);">
         <a href="/home/" style="color:var(--muted); text-decoration:none;">Frontline Home</a>
         <span>/</span>
-        <strong style="color:#fbbf24;">Competitive Tournaments Hub</strong>
+        <a href="/tournaments/" style="color:var(--muted); text-decoration:none;">Tournaments Hub</a>
+        <span>/</span>
+        <strong style="color:#fbbf24;">Live Tournament Brackets</strong>
       </div>
     </div>
 
-    <!-- Main Content Area -->
-    <main class="wrap" style="padding-top:28px; padding-bottom:70px;">
-
-      <!-- Commissioner Maintenance View (Hidden by default, shown if commissioner toggled off public access) -->
-      <section id="tournaments-maintenance-view">
-        <div style="font-size:38px; margin-bottom:12px;">🛡️</div>
-        <div class="tourney-eyebrow" style="margin-bottom:14px;">DIRECTIVE SUSPENDED · COMMISSIONER OFFLINE MODE</div>
-        <h2 style="font:800 28px var(--display); color:#fff; text-transform:uppercase; margin:0 0 10px;">
-          Tournament Hub <span style="color:#fbbf24;">Temporarily Offline</span>
+    <main class="wrap">
+      <!-- Page Header -->
+      <section class="bracket-header-section" style="border-bottom:1px solid #232918; padding-bottom:24px;">
+        <div class="kicker" style="color:#fbbf24;">🏆 TOURNAMENT CIRCUIT // ELIMINATION BRACKET PROGRESSION</div>
+        <h2 style="font: 800 44px/0.95 var(--display); text-transform: uppercase; margin: 10px 0 14px;">
+          TOURNAMENT <span style="color:#fbbf24;">LIVE BRACKETS</span>
         </h2>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; max-width:520px; margin:0 auto 24px;">
-          The Frontline Commissioner desk has placed public tournament registrations on standby while new seasonal brackets and prize distributions are staged. Please return to the League or Arena circuits.
+        <p class="intro">
+          Sanctioned single- and double-elimination brackets for Frontline open cups, weekend variant showdowns, and cash majors. Follow seeded match progressions, map vetoes, and live scores in real time.
         </p>
-        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-          <a href="/home/" class="btn" style="text-decoration:none;">Go to Franchised League</a>
-          <a href="/arena/" class="btn" style="background:#ff1e44; border-color:#ff1e44; color:#fff; text-decoration:none;">Go to Arena Circuit</a>
+      </section>
+
+      <!-- Tournament Selector Bar -->
+      <div style="margin-top:24px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <span style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">
+            SELECT TOURNAMENT EVENT:
+          </span>
+          <a href="/tournaments/" class="btn-tourney-outline" style="font-size:11px; padding:4px 10px;">
+            <span>←</span> Back to Tournament Hub
+          </a>
+        </div>
+        <nav class="division-selector-bar" id="tournaments-selector-bar" aria-label="Tournament Events" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:6px;">
+          <button type="button" class="div-tab-btn active" id="tab-loading-tourneys" style="opacity:0.7;">
+            <span>Loading Tournaments...</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Active Tournament Overview Banner -->
+      <section class="division-info-banner" id="tourney-banner-section" aria-label="Tournament Details" style="border-color:#384325; background:linear-gradient(135deg, #181d11 0%, #10130d 100%);">
+        <div class="div-banner-left">
+          <div style="font: 800 11.5px var(--body); color:#fbbf24; letter-spacing: 1.5px; margin-bottom: 4px;">
+            // ACTIVE TOURNAMENT BRACKET TELEMETRY
+          </div>
+          <div style="display:flex; align-items:center; gap: 12px; flex-wrap: wrap;">
+            <h2 id="tourney-banner-title" style="margin:0; font:800 28px var(--display); color:#fff; text-transform:uppercase;">Frontline Championship</h2>
+            <span class="pill" id="tourney-banner-badge" style="color:#fbbf24; border-color:#fbbf2480; background:rgba(245,158,11,0.1);">LIVE BRACKET</span>
+          </div>
+          <p id="tourney-banner-desc" style="color:#9ca3af; font-size:13px; line-height:1.5; margin-top:8px; max-width:640px;">
+            Official competitive bracket.
+          </p>
+        </div>
+
+        <div class="div-banner-stats">
+          <div>
+            <div class="stat-chip-label">BRACKET FORMAT</div>
+            <div class="stat-chip-value" id="tourney-banner-format" style="color:#ffffff;">Double Elimination</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">PRIZE POOL</div>
+            <div class="stat-chip-value" id="tourney-banner-prize" style="color:#fbbf24;">$500 USD</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">SQUADS SEEDED</div>
+            <div class="stat-chip-value" id="tourney-banner-teams" style="color:#38bdf8;">8 Squads</div>
+          </div>
+          <div>
+            <div class="stat-chip-label">HOST PROTOCOL</div>
+            <div class="stat-chip-value" id="tourney-banner-rules" style="font-size:13px; color:#cbd5e1;">Central 60Hz CDL</div>
+          </div>
         </div>
       </section>
 
-      <!-- Active Tournaments View -->
-      <div id="tournaments-active-view">
-        <!-- Hero Section -->
-        <section class="tourney-hero">
-          <div class="tourney-eyebrow">
-            🏆 FRONTLINE TOURNAMENT CIRCUIT · OPEN &amp; INVITATIONAL CUPS
-          </div>
-          <h1 class="tourney-hero-title">
-            COMPETITIVE <span>TOURNAMENTS HUB</span>
-          </h1>
-          <p class="tourney-hero-desc">
-            Enlist your squad in sanctioned weekend brackets, open variant cups, and high-stakes championship majors. Experience official CDL rulesets, dedicated Central host standards, and cash prize payouts.
-          </p>
+      <!-- Bracket Controls & View Modes Toolbar -->
+      <div class="bracket-toolbar">
+        <div class="stage-filter-group" id="stage-filter-container" aria-label="Stage Filter">
+          <button type="button" class="stage-filter-btn active" data-stage="all">All Stages</button>
+        </div>
 
-          <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <a href="#browse-tournaments" class="btn-tourney-primary" style="padding:11px 22px; font-size:12px;">
-              <span>🏆</span> <span>Browse Active Tournaments</span>
-            </a>
-            <a href="/rules/" class="btn-tourney-outline" style="padding:11px 20px; font-size:12px;">
-              <span>📜</span> <span>CDL Official Ruleset</span>
-            </a>
-            <a href="/tournaments/bracket/" class="btn-tourney-outline" style="padding:11px 20px; font-size:12px;">
-              <span>⚔</span> <span>Live Tournament Brackets ↗</span>
-            </a>
-          </div>
-
-          <!-- Quick Telemetry Row -->
-          <div class="tourney-telemetry-row">
-            <div>
-              <div class="tourney-metric-label">Total Cash Pool</div>
-              <div class="tourney-metric-val gold" id="metric-total-pool">$3,750 USD</div>
-            </div>
-            <div>
-              <div class="tourney-metric-label">Active Tournaments</div>
-              <div class="tourney-metric-val" id="metric-active-count">4 Events</div>
-            </div>
-            <div>
-              <div class="tourney-metric-label">Supported Formats</div>
-              <div class="tourney-metric-val" style="color:var(--lime);">4v4 / 2v2 / 1v1</div>
-            </div>
-            <div>
-              <div class="tourney-metric-label">Host Protocol</div>
-              <div class="tourney-metric-val" style="color:#38bdf8;">Dallas / Central 60Hz</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Filter & Search Toolbar -->
-        <section class="tourney-toolbar" id="browse-tournaments">
-          <div class="tourney-search-row">
-            <input
-              type="text"
-              id="tourney-search"
-              class="tourney-search-input"
-              placeholder="Search tournaments by name, format, or mode..."
-            />
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
-            <!-- Format Filter -->
-            <div class="tourney-filter-group">
-              <span class="tourney-filter-label">Format:</span>
-              <button type="button" class="tourney-pill-btn active" data-format="all" onclick="setFormatFilter('all', this)">All</button>
-              <button type="button" class="tourney-pill-btn" data-format="4v4" onclick="setFormatFilter('4v4', this)">4v4 Variant</button>
-              <button type="button" class="tourney-pill-btn" data-format="2v2" onclick="setFormatFilter('2v2', this)">2v2 SnD</button>
-              <button type="button" class="tourney-pill-btn" data-format="1v1" onclick="setFormatFilter('1v1', this)">1v1 Duels</button>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="tourney-filter-group">
-              <span class="tourney-filter-label">Status:</span>
-              <button type="button" class="tourney-pill-btn active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
-              <button type="button" class="tourney-pill-btn" data-status="open" onclick="setStatusFilter('open', this)">Registration Open</button>
-              <button type="button" class="tourney-pill-btn" data-status="live" onclick="setStatusFilter('live', this)">Live</button>
-              <button type="button" class="tourney-pill-btn" data-status="upcoming" onclick="setStatusFilter('upcoming', this)">Upcoming</button>
-              <button type="button" class="tourney-pill-btn" data-status="completed" onclick="setStatusFilter('completed', this)">Completed</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Tournament Cards Grid -->
-        <section class="tourneys-grid" id="tournaments-grid">
-          <!-- Populated by JavaScript from LeagueDB -->
-          <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--muted);">
-            Connecting to Frontline Tournament registry...
-          </div>
-        </section>
+        <div class="view-mode-group" aria-label="Display View">
+          <button type="button" class="view-mode-btn active" id="view-btn-tree" title="Interactive visual tree">
+            ☷ Tree View
+          </button>
+          <button type="button" class="view-mode-btn" id="view-btn-list" title="Chronological schedule view">
+            ☰ Schedule View
+          </button>
+        </div>
       </div>
 
+      <!-- Main Bracket Container (Populated dynamically) -->
+      <section id="bracket-display-root" aria-label="Interactive Tournament Bracket" style="min-height:360px;">
+        <div style="text-align:center; padding: 70px 0; color:var(--muted);">
+          Connecting to Frontline Tournament Bracket Engine...
+        </div>
+      </section>
+
+      <!-- Tournament Rules & Format Explainer -->
+      <section id="tournament-explainer-section" style="margin: 40px 0 60px; background:var(--panel); border:1px solid #28301c; padding: 32px; border-radius:3px;">
+        <div class="kicker" id="explainer-kicker" style="color:#fbbf24;">TOURNAMENT DIRECTIVE // CDL RULES</div>
+        <h3 id="explainer-title" style="font: 800 24px var(--display); text-transform: uppercase; margin: 8px 0 16px; color:var(--text);">
+          How Frontline <span style="color:#fbbf24;">Tournament Brackets Work</span>
+        </h3>
+        <div id="explainer-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">1. Automated Seeding &amp; BYE Progression</strong>
+            Squads are seeded according to official check-in order and regional standing. In uneven brackets, top seeds receive automatic round 1 BYEs advancing directly to round 2.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">2. Map Vetoes &amp; Host Rotation</strong>
+            Higher-seeded squad elects Map 1 host on dedicated Central servers (Dallas, TX / Chicago, IL). Standard veto order: HP veto, SnD veto, Control pick, HP pick, SnD remaining.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">3. Real-Time Score Verification</strong>
+            Referees verify match screenshots and stream timestamps in Discord. The bracket updates automatically and moves winners forward into their next scheduled matchup.
+          </div>
+          <div>
+            <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">4. Instant Prize Payouts</strong>
+            Cash pools are disbursed to winning captains immediately after Grand Finals conclusion via PayPal, CashApp, or Venmo.
+          </div>
+        </div>
+      </section>
     </main>
 
-    <!-- Tournament Details Modal -->
-    <div id="modal-tourney-details" class="tourney-modal-overlay">
-      <div class="tourney-modal-card">
-        <button type="button" class="tourney-modal-close" onclick="closeTourneyDetailsModal()">&times;</button>
-        <div id="modal-detail-banner-wrap" style="display:none; width:100%; aspect-ratio:16/9; background-size:contain; background-position:center; background-repeat:no-repeat; background-color:#0b0d09; border-radius:3px; margin-bottom:16px; border:1px solid #2d3520; position:relative; overflow:hidden;"></div>
-        <div style="margin-bottom:14px;">
-          <span class="badge-tourney-status open" id="modal-detail-badge">REGISTRATION OPEN</span>
-        </div>
-        <h2 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin:0 0 10px;" id="modal-detail-title">
-          Tournament Details
-        </h2>
-        <div style="font-size:13px; color:#cbd5e1; line-height:1.6; margin-bottom:18px;" id="modal-detail-desc">
-          Full tournament overview and rules.
-        </div>
-
-        <div class="tourney-meta-grid" style="margin-bottom:20px;">
-          <div class="tourney-meta-item">
-            <small>Prize Pool</small>
-            <strong id="modal-detail-prize" style="color:#fbbf24;">$1,000 USD</strong>
-          </div>
-          <div class="tourney-meta-item">
-            <small>Entry Fee</small>
-            <strong id="modal-detail-entry" style="color:#22c55e;">FREE ENTRY</strong>
-          </div>
-          <div class="tourney-meta-item">
-            <small>Format &amp; Bracket</small>
-            <strong id="modal-detail-format">4v4 CDL Variant</strong>
-          </div>
-          <div class="tourney-meta-item">
-            <small>Schedule &amp; Check-In</small>
-            <strong id="modal-detail-date">Sat, Nov 14 · 6:00 PM EST</strong>
-          </div>
-        </div>
-
-        <div style="background:#0c0e09; border:1px solid #232918; padding:16px; border-radius:2px; margin-bottom:20px;">
-          <h4 style="font:800 13px var(--body); color:#fbbf24; text-transform:uppercase; margin:0 0 8px; letter-spacing:0.5px;">
-            Official CDL Rules &amp; Map Veto Directive
-          </h4>
-          <ul id="modal-detail-rules-list" style="font-size:12px; color:#9ca3af; margin:0; padding-left:18px; line-height:1.6;">
-            <li>Matches conducted under official CDL 2026 Competitive Ruleset.</li>
-            <li>Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.</li>
-            <li>Dedicated Central host location (Dallas, TX / Chicago, IL) required.</li>
-            <li>Check-in opens 45 minutes prior to bracket start in Discord.</li>
-          </ul>
-        </div>
-
-        <!-- Enlisted Squads List in Details Modal -->
-        <div style="background:#0c0e09; border:1px solid #232918; padding:16px; border-radius:2px; margin-bottom:20px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="font:800 13px var(--body); color:#fbbf24; text-transform:uppercase; margin:0; letter-spacing:0.5px;">
-              📋 Enlisted Squads &amp; Competitors
-            </h4>
-            <span id="modal-detail-squads-count" style="font-size:11px; color:var(--muted); font-weight:700;">Loading squads...</span>
-          </div>
-          <div id="modal-detail-squads-list" style="max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
-            <!-- Populated dynamically -->
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <!-- Modal Dialog: Match Details & Maps -->
+    <dialog id="modal-match-details" class="bracket-modal" closedby="any">
+      <div class="modal-inner">
+        <div class="modal-header">
           <div>
-            <a id="modal-detail-bracket-link" href="#" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none; display:none; padding:10px 16px;">
-              <span>⚔</span> View Live Bracket ↗
-            </a>
+            <span class="modal-code" id="modal-match-code">MATCH</span>
+            <span class="modal-stage" id="modal-match-stage">STAGE</span>
           </div>
-          <div style="display:flex; gap:10px;">
-            <button type="button" class="btn-tourney-outline" onclick="closeTourneyDetailsModal()">Close</button>
-            <button type="button" class="btn-tourney-primary" id="modal-detail-register-btn" onclick="openRegistrationFromDetails()">
-              Register Squad ↗
-            </button>
-          </div>
+          <button type="button" class="modal-close-btn" id="modal-close-btn" aria-label="Close match details dialog">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-match-body">
+          <!-- Populated dynamically -->
         </div>
       </div>
-    </div>
-
-    <!-- Squad Registration Modal -->
-    <div id="modal-tourney-register" class="tourney-modal-overlay">
-      <div class="tourney-modal-card">
-        <button type="button" class="tourney-modal-close" onclick="closeTourneyRegisterModal()">&times;</button>
-        <div class="tourney-eyebrow" style="margin-bottom:12px;">SQUAD ENLISTMENT DIRECTIVE</div>
-        <div id="reg-modal-duplicate-warning" style="display:none; background:#291414; border:1px solid #7f1d1d; color:#fca5a5; padding:10px 14px; border-radius:2px; font-size:12px; margin-bottom:14px; line-height:1.5;"></div>
-        <h2 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin:0 0 6px;" id="reg-modal-title">
-          Register for Tournament
-        </h2>
-        <p style="font-size:12.5px; color:#9ca3af; margin:0 0 18px;">
-          Submit your squad details to confirm entry into the bracket. Free agents may assemble custom teams.
-        </p>
-
-        <form id="form-squad-registration" onsubmit="handleSquadRegistrationSubmit(event)">
-          <input type="hidden" id="reg-tournament-id" />
-
-          <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:20px;">
-            <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Squad / Team Name *</label>
-              <input type="text" id="reg-team-name" required placeholder="e.g. Dallas Outlaws" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <div>
-                <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Team Captain Gamertag *</label>
-                <input type="text" id="reg-captain-tag" required placeholder="Captain Gamertag" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
-              </div>
-              <div>
-                <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Captain Discord Handle *</label>
-                <input type="text" id="reg-captain-discord" required placeholder="Discord#0000" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
-              </div>
-            </div>
-
-            <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Captain Activision ID (Optional / Recommended)</label>
-              <input type="text" id="reg-captain-actid" placeholder="e.g. Captain#1234567" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
-            </div>
-
-            <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Player Roster (Gamertags separated by commas) *</label>
-              <input type="text" id="reg-roster" required placeholder="Player 1, Player 2, Player 3, Player 4" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
-            </div>
-
-            <div style="font-size:11.5px; color:#9ca3af;">
-              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                <input type="checkbox" required checked />
-                <span>We agree to Frontline Tournament directives, CDL rules, and Discord check-in times.</span>
-              </label>
-            </div>
-          </div>
-
-          <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button type="button" class="btn-tourney-outline" onclick="closeTourneyRegisterModal()">Cancel</button>
-            <button type="submit" class="btn-tourney-primary" id="btn-submit-reg">
-              Confirm Registration ↗
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="tourney-toast" style="display:none; position:fixed; bottom:24px; right:24px; background:#181b12; border:1px solid #fbbf24; color:#fff; padding:12px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.8); z-index:99999; font-size:13px; font-weight:700; align-items:center; gap:10px;">
-      <span id="tourney-toast-icon">✓</span>
-      <span id="tourney-toast-text">Registration confirmed!</span>
-    </div>
+    </dialog>
 
     <!-- Global Footer -->
-    <footer class="footer" style="margin-top:60px;">
+    <footer class="footer">
       <div class="wrap footer-inner">
         <div class="footer-info">
-          <strong>FRONTLINE · TOURNAMENTS HUB</strong>
-          <span>Sanctioned weekend cups &amp; community brackets. Not affiliated with or endorsed by Activision.</span>
+          <strong>FRONTLINE · TOURNAMENTS CIRCUIT</strong>
+          <span>Sanctioned weekend cups &amp; community elimination brackets. Not affiliated with or endorsed by Activision.</span>
         </div>
         <div class="footer-links">
-          <a href="/home/#league">The League</a>
+          <a href="/tournaments/" style="color:#fbbf24;">Tournament Hub</a>
+          <a href="/tournaments/bracket/" style="color:#fbbf24;" class="active">Tournament Brackets</a>
+          <a href="/brackets/">League Playoffs</a>
           <a href="/home/#standings">Standings</a>
           <a href="/schedule/">Schedule</a>
           <a href="/teams/">Teams</a>
           <a href="/players/">Players</a>
-          <a href="/brackets/">Playoff Brackets</a>
-          <a href="/tournaments/" style="color:#fbbf24;" class="active">Tournaments</a>
-          <a href="/draft/">Draft HQ</a>
           <a href="/rules/">Rulebook</a>
           <a href="/livestreams/">Livestreams</a>
-          <a href="/vods/">VODs</a>
           <a href="/signup/">Sign Up</a>
         </div>
       </div>
     </footer>
 
-    <!-- Logic Script -->
+    <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase.js?v=20261012b"></script>
+    <script src="/bullet-sparks.js"></script>
     <script>
-      let currentTournaments = [];
-      let activeFormat = 'all';
-      let activeStatus = 'all';
-      let currentSelectedTourney = null;
+      (function() {
+        let currentTournaments = [];
+        let activeTournament = null;
+        let activeBracketData = null;
+        let currentStageFilter = 'all';
+        let currentViewMode = 'tree';
 
-      function showToast(msg, isError = false) {
-        const toast = document.getElementById('tourney-toast');
-        const icon = document.getElementById('tourney-toast-icon');
-        const text = document.getElementById('tourney-toast-text');
-        if (!toast || !text) return;
-        text.textContent = msg;
-        if (icon) icon.textContent = isError ? '✕' : '✓';
-        toast.style.borderColor = isError ? '#ef4444' : '#fbbf24';
-        toast.style.display = 'inline-flex';
-        clearTimeout(window.__tourneyToastTimer);
-        window.__tourneyToastTimer = setTimeout(() => {
-          toast.style.display = 'none';
-        }, 4000);
-      }
-
-      function escapeHtml(str) {
-        if (!str) return "";
-        return String(str).replace(/[&<>"']/g, (m) => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        })[m]);
-      }
-
-      async function initTournamentsPage() {
-        // 1. Check Platform Switcher & Commissioner Maintenance State
-        if (window.LeagueDB && typeof window.LeagueDB.getPlatformSwitcherSettings === 'function') {
-          try {
-            const settings = await window.LeagueDB.getPlatformSwitcherSettings();
-            if (settings && settings.tournaments_page_enabled === false) {
-              // Check if viewer is admin/commissioner
-              const authRes = await window.LeagueDB.getAuthUser().catch(() => null);
-              const email = authRes?.user?.email || '';
-              const isAdmin = (window.LeagueDB.STAFF_ROLES && (window.LeagueDB.STAFF_ROLES.commissioner?.emails?.includes(email) || window.LeagueDB.STAFF_ROLES.admin?.emails?.includes(email)));
-              if (!isAdmin) {
-                const activeView = document.getElementById('tournaments-active-view');
-                const maintView = document.getElementById('tournaments-maintenance-view');
-                if (activeView) activeView.style.display = 'none';
-                if (maintView) maintView.style.display = 'block';
-                return;
-              }
-            }
-          } catch(e) {}
+        function escapeHtml(str) {
+          if (!str) return '';
+          return String(str).replace(/[&<>"']/g, m => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          })[m]);
         }
 
-        // 2. Fetch tournaments from LeagueDB
-        if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-          try {
-            currentTournaments = await window.LeagueDB.getTournaments();
-          } catch(e) {
-            console.error('Error fetching tournaments:', e);
-            currentTournaments = [];
-          }
-        }
+        async function initTournamentBracketPage() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const requestedTourneyId = urlParams.get('tournament');
 
-        renderTournaments();
-        updateMetrics();
-      }
-
-      function updateMetrics() {
-        const countEl = document.getElementById('metric-active-count');
-        const poolEl = document.getElementById('metric-total-pool');
-        if (!currentTournaments || !currentTournaments.length) {
-          if (countEl) countEl.textContent = '0 Events';
-          if (poolEl) poolEl.textContent = '$0 USD';
-          return;
-        }
-        const activeCount = currentTournaments.filter(t => (t.status || '').toLowerCase() !== 'completed').length;
-        if (countEl) countEl.textContent = `${activeCount} Events`;
-
-        let totalPrize = 0;
-        currentTournaments.forEach(t => {
-          const m = String(t.prize_pool || '').replace(/[^0-9]/g, '');
-          if (m) totalPrize += parseInt(m, 10);
-        });
-        if (poolEl) {
-          poolEl.textContent = totalPrize > 0 ? `$${totalPrize.toLocaleString()} USD` : '$0 USD';
-        }
-      }
-
-      function setFormatFilter(format, btn) {
-        activeFormat = format;
-        document.querySelectorAll('[data-format]').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-        renderTournaments();
-      }
-
-      function setStatusFilter(status, btn) {
-        activeStatus = status;
-        document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-        renderTournaments();
-      }
-
-      function renderTournaments() {
-        const grid = document.getElementById('tournaments-grid');
-        if (!grid) return;
-
-        const searchVal = (document.getElementById('tourney-search')?.value || '').toLowerCase().trim();
-
-        const filtered = currentTournaments.filter(t => {
-          // Format filter
-          if (activeFormat !== 'all') {
-            const f = (t.format || '').toLowerCase();
-            if (!f.includes(activeFormat.toLowerCase())) return false;
-          }
-          // Status filter
-          if (activeStatus !== 'all') {
-            const s = (t.status || '').toLowerCase();
-            if (activeStatus === 'open' && !s.includes('open') && !s.includes('registration')) return false;
-            if (activeStatus === 'live' && !s.includes('live')) return false;
-            if (activeStatus === 'upcoming' && !s.includes('upcoming')) return false;
-            if (activeStatus === 'completed' && !s.includes('completed')) return false;
-          }
-          // Search filter
-          if (searchVal) {
-            const str = `${t.title || ''} ${t.format || ''} ${t.bracket_type || ''} ${t.description || ''}`.toLowerCase();
-            if (!str.includes(searchVal)) return false;
-          }
-          return true;
-        });
-
-        if (filtered.length === 0) {
-          grid.innerHTML = `
-            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; background:#131610; border:1px dashed #303723;">
-              <h3 style="font:800 20px var(--display); color:#fff; text-transform:uppercase; margin:0 0 8px;">No Tournaments Found</h3>
-              <p style="color:var(--muted); font-size:13px; margin:0 0 16px;">Try adjusting your search criteria or filter tags.</p>
-              <button type="button" class="btn-tourney-outline" onclick="resetTourneyFilters()">Reset Filters</button>
-            </div>
-          `;
-          return;
-        }
-
-        grid.innerHTML = filtered.map(t => {
-          const rawStatus = (t.status || 'Registration Open').toLowerCase();
-          let statusClass = 'open';
-          let statusLabel = 'REGISTRATION OPEN';
-          if (rawStatus.includes('live')) {
-            statusClass = 'live';
-            statusLabel = '🔴 LIVE BRACKET';
-          } else if (rawStatus.includes('upcoming')) {
-            statusClass = 'upcoming';
-            statusLabel = 'UPCOMING EVENT';
-          } else if (rawStatus.includes('completed')) {
-            statusClass = 'completed';
-            statusLabel = 'COMPLETED';
-          }
-
-          const bannerUrl = t.banner_url || t.image_url;
-          const hasImage = !!bannerUrl;
-          const fitMode = t.banner_fit || 'contain';
-          const bannerBg = hasImage
-            ? `background-image: url('${escapeHtml(bannerUrl)}'); background-size: ${fitMode}; background-color: #0b0d09;`
-            : `background: linear-gradient(135deg, #241c0c 0%, #151810 100%);`;
-
-          const teamsCount = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
-          const maxTeams = t.max_teams || 32;
-
-          return `
-            <article class="tourney-card" data-tourney-id="${escapeHtml(t.id)}">
-              <div class="tourney-card-banner ${hasImage ? 'has-custom-image' : ''}" style="${bannerBg}">
-                <span class="badge-tourney-status ${statusClass}">${statusLabel}</span>
-                <span style="font:800 11px var(--body); background:rgba(0,0,0,0.7); border:1px solid #ffffff20; color:#fbbf24; padding:3px 8px; border-radius:2px; z-index:2;">
-                  ${escapeHtml(t.format || '4v4 CDL Variant')}
-                </span>
-              </div>
-              <div class="tourney-card-body">
-                <div>
-                  <h3 class="tourney-card-title">${escapeHtml(t.title || 'Frontline Championship')}</h3>
-                  <div class="tourney-card-desc">${escapeHtml((t.description && t.description.toLowerCase() !== (t.format || '').toLowerCase() && t.description.toLowerCase() !== '4v4 cdl variant' && !t.description.includes('\n')) ? t.description : 'Official community tournament bracket.')}</div>
-                </div>
-
-                <div class="tourney-meta-grid">
-                  <div class="tourney-meta-item">
-                    <small>Prize Pool</small>
-                    <strong style="color:#fbbf24;">${escapeHtml(t.prize_pool || '$500 USD')}</strong>
-                  </div>
-                  <div class="tourney-meta-item">
-                    <small>Entry Fee</small>
-                    <strong style="color:#22c55e;">${escapeHtml(t.entry_fee || 'FREE ENTRY')}</strong>
-                  </div>
-                  <div class="tourney-meta-item">
-                    <small>Date &amp; Time</small>
-                    <strong>${escapeHtml(t.date || 'TBD')} ${escapeHtml(t.time ? '· ' + t.time : '')}</strong>
-                  </div>
-                  <div class="tourney-meta-item">
-                    <small>Enlisted</small>
-                    <strong>${teamsCount} / ${maxTeams} Teams</strong>
-                  </div>
-                </div>
-
-                <div class="tourney-card-footer">
-                  <button type="button" class="btn-tourney-outline" onclick="openTourneyDetails('${escapeHtml(t.id)}')">
-                    <span>🔍</span> Details
-                  </button>
-                  ${(rawStatus.includes('live') || t.bracket_data) ? `
-                    <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none;">
-                      <span>⚔</span> View Bracket ↗
-                    </a>
-                  ` : (rawStatus.includes('completed') ? `
-                    <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-outline" style="text-decoration:none;">
-                      <span>⚔</span> Final Bracket ↗
-                    </a>
-                  ` : `
-                    <button type="button" class="btn-tourney-primary" onclick="openTourneyRegister('${escapeHtml(t.id)}')">
-                      <span>Register Squad ↗</span>
-                    </button>
-                  `)}
-                </div>
-              </div>
-            </article>
-          `;
-        }).join('');
-      }
-
-      function resetTourneyFilters() {
-        const searchInput = document.getElementById('tourney-search');
-        if (searchInput) searchInput.value = '';
-        activeFormat = 'all';
-        activeStatus = 'all';
-        document.querySelectorAll('[data-format]').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
-        document.querySelector('[data-format="all"]')?.classList.add('active');
-        document.querySelector('[data-status="all"]')?.classList.add('active');
-        renderTournaments();
-      }
-
-      async function openTourneyDetails(id) {
-        const t = currentTournaments.find(item => String(item.id) === String(id));
-        if (!t) return;
-        currentSelectedTourney = t;
-
-        document.getElementById('modal-detail-title').textContent = t.title || 'Tournament Details';
-        // Handle optional tournament subtitle beneath the headline
-        const descEl = document.getElementById('modal-detail-desc');
-        if (descEl) {
-          const d = (t.description || '').trim();
-          const formatStr = (t.format || '').trim().toLowerCase();
-          const isRedundant = !d ||
-            d.toLowerCase() === 'official competitive bracket rules and details.' ||
-            d.toLowerCase() === formatStr ||
-            d.toLowerCase() === '4v4 cdl variant' ||
-            d.toLowerCase() === (t.rules_notes || '').trim().toLowerCase() ||
-            d.includes('\n');
-
-          if (!isRedundant) {
-            descEl.textContent = d;
-            descEl.style.display = 'block';
-          } else {
-            descEl.textContent = '';
-            descEl.style.display = 'none';
-          }
-        }
-        document.getElementById('modal-detail-prize').textContent = t.prize_pool || '$500 USD';
-        document.getElementById('modal-detail-entry').textContent = t.entry_fee || 'FREE ENTRY';
-        document.getElementById('modal-detail-format').textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Double Elimination'}`;
-        document.getElementById('modal-detail-date').textContent = `${t.date || t.start_date || 'TBD'} ${t.time || t.start_time ? '· ' + (t.time || t.start_time) : ''}`;
-
-        // Render Official CDL Rules & Map Veto Directive
-        const rulesListEl = document.getElementById('modal-detail-rules-list');
-        if (rulesListEl) {
-          const defaultRules = [
-            'Matches conducted under official CDL 2026 Competitive Ruleset.',
-            'Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.',
-            'Dedicated Central host location (Dallas, TX / Chicago, IL) required.',
-            'Check-in opens 45 minutes prior to bracket start in Discord.'
-          ];
-
-          let rulesItems = defaultRules;
-          const rulesSource = (t.rules_notes && t.rules_notes.trim()) ? t.rules_notes : (t.description && t.description.includes('\n') ? t.description : '');
-          if (rulesSource.trim()) {
-            const lines = rulesSource.split(/\r?\n/).map(l => l.replace(/^[\s•\-\*]+/, '').trim()).filter(Boolean);
-            if (lines.length > 0) rulesItems = lines;
-          }
-
-          rulesListEl.innerHTML = rulesItems.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-        }
-
-        const bannerWrap = document.getElementById('modal-detail-banner-wrap');
-        if (bannerWrap) {
-          const bUrl = t.banner_url || t.image_url;
-          if (bUrl) {
-            bannerWrap.style.backgroundImage = `url('${escapeHtml(bUrl)}')`;
-            bannerWrap.style.backgroundSize = t.banner_fit || 'contain';
-            bannerWrap.style.backgroundColor = '#0b0d09';
-            bannerWrap.style.display = 'block';
-          } else {
-            bannerWrap.style.display = 'none';
-          }
-        }
-
-        const badge = document.getElementById('modal-detail-badge');
-        if (badge) {
-          const s = (t.status || 'open').toLowerCase();
-          badge.className = 'badge-tourney-status ' + (s.includes('live') ? 'live' : (s.includes('upcoming') ? 'upcoming' : (s.includes('completed') ? 'completed' : 'open')));
-          badge.textContent = (t.status || 'REGISTRATION OPEN').toUpperCase();
-        }
-
-        const regBtn = document.getElementById('modal-detail-register-btn');
-        if (regBtn) {
-          if ((t.status || '').toLowerCase().includes('completed') || (t.status || '').toLowerCase().includes('closed')) {
-            regBtn.style.display = 'none';
-          } else {
-            regBtn.style.display = 'inline-flex';
-          }
-        }
-
-        const bracketLink = document.getElementById('modal-detail-bracket-link');
-        if (bracketLink) {
-          const isLiveOrBracket = (t.status || '').toLowerCase().includes('live') || !!t.bracket_data || (t.status || '').toLowerCase().includes('completed');
-          if (isLiveOrBracket) {
-            bracketLink.href = `/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}`;
-            bracketLink.style.display = 'inline-flex';
-          } else {
-            bracketLink.style.display = 'none';
-          }
-        }
-
-        // Display modal immediately on click for instant zero-latency feedback
-        document.getElementById('modal-tourney-details').style.display = 'flex';
-
-        // Load enlisted squads into details modal asynchronously
-        const squadsCountEl = document.getElementById('modal-detail-squads-count');
-        const squadsListEl = document.getElementById('modal-detail-squads-list');
-        const userStatusBox = document.getElementById('modal-detail-user-enlist-status');
-
-        if (squadsListEl) {
-          squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px; padding:6px 0;">Loading enlisted squads from database...</div>';
-          try {
-            let squads = [];
-            if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function') {
-              squads = await window.LeagueDB.getTournamentRegistrations(t.id);
-            } else {
-              const local = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
-              squads = local.filter(r => String(r.tournament_id) === String(t.id));
-            }
-
-            const maxTeams = t.max_teams || 32;
-            if (squadsCountEl) {
-              squadsCountEl.textContent = `${squads.length} / ${maxTeams} Squad${squads.length === 1 ? '' : 's'} Enlisted`;
-            }
-
-            // Detect if logged-in user is already enrolled in a squad for this tournament
-            let userEnlistedSquad = null;
+          // Fetch tournaments from LeagueDB
+          if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
             try {
-              const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
-              const authUser = JSON.parse(localStorage.getItem('frontline_auth_user'));
-              const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
-              const uTag = norm(card?.gamertag || authUser?.gamertag || authUser?.username);
-              const uDisc = norm(card?.discord || authUser?.discord);
-              const uActId = norm(card?.activision_id || authUser?.activision_id);
-
-              if (uTag || uDisc || uActId) {
-                userEnlistedSquad = squads.find(sq => {
-                  if (uTag && norm(sq.captain_gamertag) === uTag) return true;
-                  if (uDisc && norm(sq.captain_discord) === uDisc) return true;
-                  if (uActId && norm(sq.captain_activision_id) === uActId) return true;
-                  let roster = [];
-                  if (Array.isArray(sq.roster)) roster = sq.roster;
-                  else if (typeof sq.roster === 'string') {
-                    try { roster = JSON.parse(sq.roster); } catch (_) { roster = sq.roster.split(/,\s*/); }
-                  } else if (sq.roster_text) {
-                    roster = sq.roster_text.split(/,\s*/);
-                  }
-                  return roster.some(m => norm(typeof m === 'object' ? (m.gamertag || m.name) : m) === uTag);
-                });
-              }
-            } catch (_) {}
-
-            if (userEnlistedSquad) {
-              if (regBtn) {
-                regBtn.textContent = '✓ Squad Enlisted';
-                regBtn.disabled = true;
-                regBtn.style.opacity = '0.6';
-                regBtn.style.cursor = 'not-allowed';
-                regBtn.title = `You are already enlisted with squad "${userEnlistedSquad.team_name}". Players may only register for one squad per tournament.`;
-              }
-              if (userStatusBox) {
-                userStatusBox.style.display = 'block';
-                userStatusBox.innerHTML = `🛡️ You are confirmed in this tournament with squad <strong style="color:#fbbf24;">${escapeHtml(userEnlistedSquad.team_name)}</strong> (Captain: ${escapeHtml(userEnlistedSquad.captain_gamertag)}). Each player may only register for one squad.`;
-              }
-            } else {
-              const isClosed = (t.status || '').toLowerCase().includes('completed') || (t.status || '').toLowerCase().includes('closed');
-              if (regBtn) {
-                if (isClosed) {
-                  regBtn.style.display = 'none';
-                } else {
-                  regBtn.style.display = 'inline-flex';
-                  regBtn.textContent = 'Register Squad ↗';
-                  regBtn.disabled = false;
-                  regBtn.style.opacity = '1';
-                  regBtn.style.cursor = 'pointer';
-                  regBtn.title = '';
-                }
-              }
-              if (userStatusBox) {
-                userStatusBox.style.display = 'none';
-              }
+              currentTournaments = await window.LeagueDB.getTournaments();
+            } catch(e) {
+              console.error('Error fetching tournaments:', e);
+              currentTournaments = [];
             }
+          }
+          if (!currentTournaments || !currentTournaments.length) {
+            currentTournaments = JSON.parse(localStorage.getItem('frontline_tournaments_data')) || [];
+          }
 
-            if (!squads || squads.length === 0) {
-              squadsListEl.innerHTML = `
-                <div style="color:var(--muted); font-size:12px; padding:12px 0; text-align:center; background:#10130d; border:1px dashed #242c18;">
-                  No squads registered yet. Be the first to enlist!
+          renderTournamentSelectorTabs(requestedTourneyId);
+
+          // View mode toggle
+          document.getElementById('view-btn-tree')?.addEventListener('click', () => {
+            if (currentViewMode === 'tree') return;
+            currentViewMode = 'tree';
+            document.getElementById('view-btn-tree')?.classList.add('active');
+            document.getElementById('view-btn-list')?.classList.remove('active');
+            renderActiveBracket();
+          });
+
+          document.getElementById('view-btn-list')?.addEventListener('click', () => {
+            if (currentViewMode === 'list') return;
+            currentViewMode = 'list';
+            document.getElementById('view-btn-list')?.classList.add('active');
+            document.getElementById('view-btn-tree')?.classList.remove('active');
+            renderActiveBracket();
+          });
+
+          // Match details modal close handlers
+          const dialog = document.getElementById('modal-match-details');
+          document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+            dialog?.close();
+            document.documentElement.classList.remove('modal-open');
+            document.body.classList.remove('modal-open');
+          });
+          dialog?.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+              dialog.close();
+              document.documentElement.classList.remove('modal-open');
+              document.body.classList.remove('modal-open');
+            }
+          });
+        }
+
+        function renderTournamentSelectorTabs(preferredId) {
+          const tabContainer = document.getElementById('tournaments-selector-bar');
+          if (!tabContainer) return;
+
+          if (!currentTournaments.length) {
+            tabContainer.innerHTML = `
+              <div style="color:var(--muted); font-size:13px; padding:10px 0;">
+                No active tournaments currently recorded in the registry.
+              </div>
+            `;
+            const rootEl = document.getElementById('bracket-display-root');
+            if (rootEl) {
+              rootEl.innerHTML = `
+                <div class="empty-bracket-state" style="padding:70px 20px; text-align:center; background:#12150e; border:1px dashed #2e3620; margin:24px 0; border-radius:3px;">
+                  <div style="font-size:42px; margin-bottom:14px;">🏆</div>
+                  <h3 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin-bottom:10px;">
+                    No Active Tournaments Found
+                  </h3>
+                  <p style="color:#9ca3af; max-width:540px; margin:0 auto 22px; font-size:13.5px; line-height:1.6;">
+                    There are currently no scheduled tournaments or live brackets published. Check back soon or visit the Tournaments Hub.
+                  </p>
+                  <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                    <a href="/tournaments/" class="btn-tourney-primary" style="padding:11px 20px;">
+                      <span>←</span> Tournaments Hub
+                    </a>
+                  </div>
                 </div>
               `;
-            } else {
-              squadsListEl.innerHTML = squads.map((sq, idx) => {
-                const rosterArr = Array.isArray(sq.roster) ? sq.roster : (sq.roster_text ? sq.roster_text.split(/,\s*/) : []);
-                return `
-                  <div style="background:#13160f; border:1px solid #232918; border-left:3px solid #fbbf24; padding:8px 12px; border-radius:2px; font-size:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                      <strong style="color:#ffffff;">#${idx + 1} ${escapeHtml(sq.team_name || 'Squad')}</strong>
-                      <span style="color:#fbbf24; font-size:11px;">Captain: ${escapeHtml(sq.captain_gamertag || 'Captain')}</span>
-                    </div>
-                    ${rosterArr.length ? `
-                      <div style="color:#9ca3af; font-size:11px;">
-                        Roster: ${rosterArr.map(p => escapeHtml(typeof p === 'object' ? (p.gamertag || p.name) : p)).join(' • ')}
-                      </div>
-                    ` : ''}
-                  </div>
-                `;
-              }).join('');
             }
-          } catch(e) {
-            if (squadsListEl) squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px;">Enlisted roster details available in Discord.</div>';
-          }
-        }
-      }
-
-      function closeTourneyDetailsModal() {
-        document.getElementById('modal-tourney-details').style.display = 'none';
-      }
-
-      function openRegistrationFromDetails() {
-        const tid = currentSelectedTourney?.id;
-        closeTourneyDetailsModal();
-        if (tid) {
-          openTourneyRegister(tid);
-        }
-      }
-
-      async function openTourneyRegister(id) {
-        const t = currentTournaments.find(item => String(item.id) === String(id));
-        if (!t) return;
-        currentSelectedTourney = t;
-
-        document.getElementById('reg-tournament-id').value = t.id;
-        document.getElementById('reg-modal-title').textContent = `Enlist: ${t.title || 'Tournament'}`;
-
-        const warningEl = document.getElementById('reg-modal-duplicate-warning');
-        const submitBtn = document.getElementById('btn-submit-reg');
-        if (warningEl) warningEl.style.display = 'none';
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
-
-        // Check if player is already registered
-        try {
-          let squads = [];
-          if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function') {
-            squads = await window.LeagueDB.getTournamentRegistrations(t.id);
-          } else {
-            const local = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
-            squads = local.filter(r => String(r.tournament_id) === String(t.id));
+            return;
           }
 
-          const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
-          const authUser = JSON.parse(localStorage.getItem('frontline_auth_user'));
-          const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
-          const uTag = norm(card?.gamertag || authUser?.gamertag || authUser?.username);
-          const uDisc = norm(card?.discord || authUser?.discord);
+          // Choose active tournament: prefer query param, then first with bracket, or first tournament
+          let selected = null;
+          if (preferredId) {
+            selected = currentTournaments.find(t => String(t.id) === String(preferredId));
+          }
+          if (!selected) {
+            selected = currentTournaments.find(t => t.bracket_data) || currentTournaments[0];
+          }
 
-          if (uTag || uDisc) {
-            const existing = squads.find(sq => {
-              if (uTag && norm(sq.captain_gamertag) === uTag) return true;
-              if (uDisc && norm(sq.captain_discord) === uDisc) return true;
-              let roster = [];
-              if (Array.isArray(sq.roster)) roster = sq.roster;
-              else if (sq.roster_text) roster = sq.roster_text.split(/,\s*/);
-              return roster.some(m => norm(typeof m === 'object' ? (m.gamertag || m.name) : m) === uTag);
+          tabContainer.innerHTML = currentTournaments.map(t => {
+            const isSel = selected && String(selected.id) === String(t.id);
+            const status = (t.status || 'open').toLowerCase();
+            let pillClass = 'open';
+            let pillText = 'OPEN';
+            if (status.includes('live')) {
+              pillClass = 'live';
+              pillText = 'LIVE';
+            } else if (status.includes('completed')) {
+              pillClass = 'completed';
+              pillText = 'FINAL';
+            }
+
+            return `
+              <button type="button" class="div-tab-btn ${isSel ? 'tourney-tab-active active' : ''}" data-tid="${escapeHtml(t.id)}" style="flex-shrink:0;">
+                <span>🏆 ${escapeHtml(t.title || 'Tournament')}</span>
+                <span class="tourney-badge-pill ${pillClass}">${pillText}</span>
+              </button>
+            `;
+          }).join('');
+
+          tabContainer.querySelectorAll('.div-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const tid = btn.getAttribute('data-tid');
+              selectTournament(tid);
             });
+          });
 
-            if (existing && warningEl && submitBtn) {
-              warningEl.style.display = 'block';
-              warningEl.innerHTML = `⚠️ <strong>Already Enlisted:</strong> You are already registered for this tournament in squad <strong style="color:#ffffff;">"${escapeHtml(existing.team_name)}"</strong>. Each player may only register for one squad per tournament.`;
-              submitBtn.disabled = true;
-              submitBtn.style.opacity = '0.5';
-            }
+          if (selected) {
+            selectTournament(selected.id);
           }
-        } catch (_) {}
-
-        // Autofill with logged in user if available
-        try {
-          const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
-          if (card) {
-            if (card.gamertag && card.gamertag !== 'Operative') {
-              document.getElementById('reg-captain-tag').value = card.gamertag;
-            }
-            if (card.team && card.team !== 'Free Agent') {
-              document.getElementById('reg-team-name').value = card.team;
-            }
-            if (card.discord) {
-              document.getElementById('reg-captain-discord').value = card.discord;
-            }
-            if (card.activision_id) {
-              document.getElementById('reg-captain-actid').value = card.activision_id;
-            }
-          }
-        } catch(e) {}
-
-        document.getElementById('modal-tourney-register').style.display = 'flex';
-      }
-
-      function closeTourneyRegisterModal() {
-        document.getElementById('modal-tourney-register').style.display = 'none';
-      }
-
-      async function handleSquadRegistrationSubmit(e) {
-        e.preventDefault();
-        const tourneyId = document.getElementById('reg-tournament-id').value;
-        const teamName = document.getElementById('reg-team-name').value.trim();
-        const captainTag = document.getElementById('reg-captain-tag').value.trim();
-        const captainDiscord = document.getElementById('reg-captain-discord').value.trim();
-        const captainActId = (document.getElementById('reg-captain-actid')?.value || '').trim();
-        const rosterStr = document.getElementById('reg-roster').value.trim();
-
-        if (!teamName || !captainTag || !captainDiscord || !rosterStr) {
-          showToast('Please fill out all required fields.', true);
-          return;
         }
 
-        const submitBtn = document.getElementById('btn-submit-reg');
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Enlisting Squad...';
+        async function selectTournament(tid) {
+          const tourney = currentTournaments.find(t => String(t.id) === String(tid));
+          if (!tourney) return;
+          activeTournament = tourney;
+
+          // Update active tab visuals
+          document.querySelectorAll('#tournaments-selector-bar .div-tab-btn').forEach(btn => {
+            const match = btn.getAttribute('data-tid') === String(tid);
+            btn.classList.toggle('active', match);
+            btn.classList.toggle('tourney-tab-active', match);
+          });
+
+          // Update URL query param smoothly
+          try {
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('tournament', tourney.id);
+            window.history.replaceState({}, '', newUrl);
+          } catch(e) {}
+
+          // Update banner
+          updateBanner(tourney);
+
+          // Fetch fresh bracket data
+          activeBracketData = tourney.bracket_data;
+          if (!activeBracketData && window.LeagueDB && typeof window.LeagueDB.getTournamentBracket === 'function') {
+            activeBracketData = await window.LeagueDB.getTournamentBracket(tourney.id);
+          }
+
+          currentStageFilter = 'all';
+          updateStageFilterButtons();
+          renderActiveBracket();
         }
 
-        try {
-          const squadData = {
-            team_name: teamName,
-            captain_gamertag: captainTag,
-            captain_discord: captainDiscord,
-            captain_activision_id: captainActId,
-            roster: rosterStr.split(',').map(s => s.trim()).filter(Boolean),
-            roster_text: rosterStr,
-            registered_at: new Date().toISOString()
-          };
+        function updateBanner(t) {
+          const titleEl = document.getElementById('tourney-banner-title');
+          const badgeEl = document.getElementById('tourney-banner-badge');
+          const descEl = document.getElementById('tourney-banner-desc');
+          const formatEl = document.getElementById('tourney-banner-format');
+          const prizeEl = document.getElementById('tourney-banner-prize');
+          const teamsEl = document.getElementById('tourney-banner-teams');
+          const rulesEl = document.getElementById('tourney-banner-rules');
 
-          if (window.LeagueDB && typeof window.LeagueDB.registerSquadForTournament === 'function') {
-            const regRes = await window.LeagueDB.registerSquadForTournament(tourneyId, squadData);
-            if (!regRes || !regRes.success) {
-              showToast(regRes?.error || 'Registration denied. Each player may only register for one squad per tournament.', true);
+          if (titleEl) titleEl.textContent = t.title || 'Frontline Championship';
+          if (badgeEl) {
+            const s = (t.status || 'open').toLowerCase();
+            badgeEl.className = 'pill ' + (s.includes('live') ? 'tourney-badge-pill live' : (s.includes('completed') ? 'tourney-badge-pill completed' : 'tourney-badge-pill open'));
+            badgeEl.textContent = (t.status || 'REGISTRATION OPEN').toUpperCase();
+          }
+          if (descEl) descEl.textContent = t.description || 'Official competitive elimination bracket. Matches verified on Dallas / Central 60Hz servers.';
+          if (formatEl) formatEl.textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Single Elimination'}`;
+          if (prizeEl) prizeEl.textContent = t.prize_pool || '$500 USD';
+          if (teamsEl) {
+            const count = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
+            const max = t.max_teams || 16;
+            teamsEl.textContent = `${count} / ${max} Squads`;
+          }
+          if (rulesEl) rulesEl.textContent = `${t.date || 'TBD'} ${t.time ? '· ' + t.time : ''}`;
+
+          const bannerSec = document.getElementById('tourney-banner-section');
+          if (bannerSec) {
+            const bUrl = t.banner_url || t.image_url;
+            if (bUrl) {
+              bannerSec.style.backgroundImage = `linear-gradient(180deg, rgba(16, 19, 13, 0.82) 0%, rgba(16, 19, 13, 0.95) 100%), url('${escapeHtml(bUrl)}')`;
+              bannerSec.style.backgroundSize = 'cover';
+              bannerSec.style.backgroundPosition = 'center';
+              bannerSec.style.backgroundRepeat = 'no-repeat';
+            } else {
+              bannerSec.style.backgroundImage = 'linear-gradient(135deg, #181d11 0%, #10130d 100%)';
+            }
+          }
+        }
+
+        function updateStageFilterButtons() {
+          const container = document.getElementById('stage-filter-container');
+          if (!container) return;
+
+          if (!activeBracketData || !activeBracketData.stages || !activeBracketData.stages.length) {
+            container.innerHTML = `<button type="button" class="stage-filter-btn active" data-stage="all">All Stages</button>`;
+            return;
+          }
+
+          const stages = [
+            { id: 'all', name: 'All Stages' },
+            ...activeBracketData.stages.map(s => ({ id: s.id, name: s.name }))
+          ];
+
+          container.innerHTML = stages.map(s => `
+            <button type="button" class="stage-filter-btn ${s.id === currentStageFilter ? 'active' : ''}" data-stage="${escapeHtml(s.id)}">
+              ${escapeHtml(s.name)}
+            </button>
+          `).join('');
+
+          container.querySelectorAll('.stage-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const sid = btn.getAttribute('data-stage');
+              if (sid === currentStageFilter) return;
+              container.querySelectorAll('.stage-filter-btn').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              currentStageFilter = sid;
+              renderActiveBracket();
+            });
+          });
+        }
+
+        function renderActiveBracket() {
+          const rootEl = document.getElementById('bracket-display-root');
+          if (!rootEl) return;
+
+          if (!activeBracketData || !activeBracketData.stages || !activeBracketData.stages.length) {
+            // Bracket pending generation
+            const count = activeTournament?.teams_registered_count || 0;
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:70px 20px; text-align:center; background:#12150e; border:1px dashed #2e3620; margin:24px 0; border-radius:3px;">
+                <div style="font-size:42px; margin-bottom:14px;">⏳</div>
+                <h3 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin-bottom:10px;">
+                  Live Bracket Pending Generation
+                </h3>
+                <p style="color:#9ca3af; max-width:540px; margin:0 auto 22px; font-size:13.5px; line-height:1.6;">
+                  Registrations for <strong>${escapeHtml(activeTournament?.title || 'this tournament')}</strong> are currently open! 
+                  ${count > 0 ? `Currently <strong>${count} squads</strong> have enlisted.` : 'Be the first squad to register!'}
+                  Once registrations close and teams are seeded, the live bracket will be generated right here.
+                </p>
+                <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                  <a href="/tournaments/" class="btn-tourney-primary" style="padding:11px 20px;">
+                    <span>📋</span> Register Squad in Tournament Hub ↗
+                  </a>
+                  <a href="/rules/" class="btn-tourney-outline" style="padding:11px 20px;">
+                    <span>📜</span> View CDL Ruleset
+                  </a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          if (currentViewMode === 'tree') {
+            renderBracketTree();
+          } else {
+            renderBracketList();
+          }
+        }
+
+        function renderMatchCard(match) {
+          const isCompleted = match.status === 'Completed';
+          const isLive = match.status === 'Live';
+
+          let statusBadge = '';
+          if (isLive) {
+            statusBadge = `<span class="badge-match-live"><span class="live-pulse-dot"></span>LIVE</span>`;
+          } else if (isCompleted) {
+            statusBadge = `<span class="badge-match-finished" style="background:#142918; color:#4ade80; border:1px solid #22c55e;">FINAL</span>`;
+          } else {
+            statusBadge = `<span class="badge-match-time">${escapeHtml(match.time || 'TBD')}</span>`;
+          }
+
+          return `
+            <div class="bracket-match-card ${isLive ? 'is-live-match' : ''}" data-match-id="${escapeHtml(match.id)}" role="button" tabindex="0" aria-label="Match ${escapeHtml(match.code)}: ${escapeHtml(match.team1?.name)} vs ${escapeHtml(match.team2?.name)}">
+              <div class="bmc-header">
+                <span class="bmc-code" style="color:#fbbf24; font-weight:800;">${escapeHtml(match.code || match.id)}</span>
+                ${statusBadge}
+              </div>
+              <div class="bmc-teams">
+                <!-- Team 1 -->
+                <div class="bmc-team-row ${match.team1?.winner ? 'winner-row' : ''}">
+                  <div class="bmc-team-info">
+                    ${match.team1?.seed ? `<span class="bmc-seed" style="color:#fbbf24;">${match.team1.seed}</span>` : ''}
+                    <span class="bmc-name" title="${escapeHtml(match.team1?.name)}" style="font-weight:700;">${escapeHtml(match.team1?.name || 'TBD')}</span>
+                  </div>
+                  <span class="bmc-score" style="font-weight:800;">${match.team1?.score ?? 0}</span>
+                </div>
+                <!-- Team 2 -->
+                <div class="bmc-team-row ${match.team2?.winner ? 'winner-row' : ''}">
+                  <div class="bmc-team-info">
+                    ${match.team2?.seed ? `<span class="bmc-seed" style="color:#fbbf24;">${match.team2.seed}</span>` : ''}
+                    <span class="bmc-name" title="${escapeHtml(match.team2?.name)}" style="font-weight:700;">${escapeHtml(match.team2?.name || 'TBD')}</span>
+                  </div>
+                  <span class="bmc-score" style="font-weight:800;">${match.team2?.score ?? 0}</span>
+                </div>
+              </div>
+              <div class="bmc-footer">
+                <span class="bmc-bestof">${escapeHtml(match.bestOf || 'BO5')}</span>
+                <span class="bmc-action-hint">Match Intel &amp; Chat 💬</span>
+              </div>
+            </div>
+          `;
+        }
+
+        function renderBracketTree() {
+          const rootEl = document.getElementById('bracket-display-root');
+          if (!rootEl || !activeBracketData) return;
+
+          let stagesToRender = activeBracketData.stages || [];
+          if (currentStageFilter !== 'all') {
+            stagesToRender = stagesToRender.filter(s => s.id === currentStageFilter);
+          }
+
+          if (!stagesToRender.length) {
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:50px 20px; text-align:center;">
+                <h3>NO MATCHES IN THIS STAGE</h3>
+                <p style="color:var(--muted); font-size:13px;">Please select another stage filter above.</p>
+              </div>
+            `;
+            return;
+          }
+
+          rootEl.innerHTML = `
+            <div class="bracket-tree-container">
+              ${stagesToRender.map(stage => `
+                <div class="bracket-stage-block" id="stage-${stage.id}">
+                  <div class="bracket-stage-title-bar" style="border-left:3px solid #fbbf24;">
+                    <span class="stage-tag" style="color:#fbbf24;">// TOURNAMENT STAGE</span>
+                    <h3 class="stage-name">${escapeHtml(stage.name)}</h3>
+                  </div>
+                  <div class="bracket-rounds-track">
+                    ${(stage.rounds || []).map((round, rIndex) => `
+                      <div class="bracket-round-column" data-round-index="${rIndex}">
+                        <div class="round-header" style="border-top:2px solid #fbbf24;">
+                          <span class="round-badge" style="color:#fbbf24;">${escapeHtml(round.badge || `Round ${rIndex + 1}`)}</span>
+                          <h4 class="round-title">${escapeHtml(round.name)}</h4>
+                          <span class="round-rule">${escapeHtml(round.bestOf || 'BO5')}</span>
+                        </div>
+                        <div class="round-matches-list">
+                          ${(round.matches || []).map(m => renderMatchCard(m)).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+
+          attachCardClicks();
+        }
+
+        function renderBracketList() {
+          const rootEl = document.getElementById('bracket-display-root');
+          if (!rootEl || !activeBracketData) return;
+
+          let allMatches = [];
+          (activeBracketData.stages || []).forEach(stage => {
+            if (currentStageFilter !== 'all' && stage.id !== currentStageFilter) return;
+            (stage.rounds || []).forEach(round => {
+              (round.matches || []).forEach(m => {
+                allMatches.push({ ...m, stageName: stage.name, roundName: round.name });
+              });
+            });
+          });
+
+          if (!allMatches.length) {
+            rootEl.innerHTML = `
+              <div class="empty-bracket-state" style="padding:50px 20px; text-align:center;">
+                <h3>NO MATCHES RECORDED</h3>
+              </div>
+            `;
+            return;
+          }
+
+          rootEl.innerHTML = `
+            <div class="bracket-list-container">
+              <div class="schedule-grid">
+                ${allMatches.map(m => `
+                  <div class="schedule-card-item">
+                    <div class="sci-header">
+                      <span class="sci-stage" style="color:#fbbf24;">${escapeHtml(m.stageName)} · ${escapeHtml(m.roundName)}</span>
+                      <span class="sci-time">${escapeHtml(m.time || 'Scheduled')}</span>
+                    </div>
+                    ${renderMatchCard(m)}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+
+          attachCardClicks();
+        }
+
+        function attachCardClicks() {
+          const matchMap = new Map();
+          (activeBracketData?.stages || []).forEach(s => {
+            (s.rounds || []).forEach(r => {
+              (r.matches || []).forEach(m => {
+                matchMap.set(m.id, { ...m, stageName: s.name, roundName: r.name });
+              });
+            });
+          });
+
+          document.querySelectorAll('.bracket-match-card').forEach(card => {
+            const mid = card.getAttribute('data-match-id');
+            const match = matchMap.get(mid);
+            if (!match) return;
+
+            card.addEventListener('click', () => openMatchDetailsModal(match));
+            card.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openMatchDetailsModal(match);
+              }
+            });
+          });
+        }
+
+        let activeChatMatch = null;
+        let chatPollInterval = null;
+
+        async function openMatchDetailsModal(match) {
+          activeChatMatch = match;
+          const dialog = document.getElementById('modal-match-details');
+          const codeEl = document.getElementById('modal-match-code');
+          const stageEl = document.getElementById('modal-match-stage');
+          const bodyEl = document.getElementById('modal-match-body');
+
+          if (!dialog || !bodyEl) return;
+
+          if (codeEl) codeEl.textContent = match.code || match.id;
+          if (stageEl) stageEl.textContent = `${match.stageName || 'Stage'} · ${match.roundName || 'Round'}`;
+
+          const t1 = match.team1 || { name: 'TBD', score: 0 };
+          const t2 = match.team2 || { name: 'TBD', score: 0 };
+          const isDone = match.status === 'Completed';
+
+          // Determine current user identity
+          let user = null;
+          if (window.LeagueDB && typeof window.LeagueDB.getCurrentPlayer === 'function') {
+            user = window.LeagueDB.getCurrentPlayer();
+          }
+          if (!user) {
+            try {
+              user = JSON.parse(localStorage.getItem('frontline_arena_user')) || 
+                     JSON.parse(localStorage.getItem('frontline_auth_user')) || 
+                     JSON.parse(localStorage.getItem('frontline_arena_auth_user')) || 
+                     JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
+                     JSON.parse(localStorage.getItem('frontline_league_player_card'));
+            } catch (_) {}
+          }
+
+          // Check if user is staff / admin
+          let isStaff = false;
+          let adminSession = false;
+          try {
+            adminSession = (sessionStorage.getItem('frontline_admin_session') === 'authorized') ||
+                           (localStorage.getItem('frontline_admin_session') === 'authorized');
+          } catch (_) {}
+
+          const userEmail = (user?.email || '').toLowerCase().trim();
+          const adminEmail = (sessionStorage.getItem('frontline_admin_email') || localStorage.getItem('frontline_admin_email') || '').toLowerCase().trim();
+
+          if (user?.is_staff || user?.is_commissioner || adminSession ||
+              userEmail === 'todd061496@gmail.com' || userEmail === 'admin@frontlineleague.com' ||
+              adminEmail === 'todd061496@gmail.com' || adminEmail === 'admin@frontlineleague.com' ||
+              (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === 'function' && window.LeagueDB.isAccountAdmin(user))) {
+            isStaff = true;
+          }
+
+          // Check tournament registrations to verify team membership
+          let tourneyRegs = [];
+          if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function' && activeTournament?.id) {
+            try {
+              tourneyRegs = await window.LeagueDB.getTournamentRegistrations(activeTournament.id);
+            } catch (_) {}
+          }
+          if (!tourneyRegs.length) {
+            try {
+              const allRegs = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
+              tourneyRegs = allRegs.filter(r => String(r.tournament_id) === String(activeTournament?.id));
+            } catch (_) {}
+          }
+
+          const t1NameClean = String(t1.name || '').trim().toLowerCase();
+          const t2NameClean = String(t2.name || '').trim().toLowerCase();
+
+          // Find registration for Team 1 and Team 2
+          const reg1 = tourneyRegs.find(r => String(r.team_name || '').trim().toLowerCase() === t1NameClean);
+          const reg2 = tourneyRegs.find(r => String(r.team_name || '').trim().toLowerCase() === t2NameClean);
+
+          function isUserInReg(reg, u) {
+            if (!reg || !u) return false;
+            const norm = s => String(s || '').replace(/^@/, '').trim().toLowerCase();
+            const uGamertag = norm(u.gamertag || u.username);
+            const uDiscord = norm(u.discord);
+            const uActId = norm(u.activision_id);
+
+            // Match captain
+            if (uGamertag && norm(reg.captain_gamertag) === uGamertag) return true;
+            if (uDiscord && norm(reg.captain_discord) === uDiscord) return true;
+            if (uActId && norm(reg.captain_activision_id) === uActId) return true;
+
+            // Match roster
+            let roster = [];
+            if (Array.isArray(reg.roster)) roster = reg.roster;
+            else if (typeof reg.roster === 'string') {
+              try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
+            } else if (reg.roster_text) {
+              roster = reg.roster_text.split(/,\s*/);
+            }
+            if (Array.isArray(roster)) {
+              for (const member of roster) {
+                const mTag = norm(typeof member === 'object' ? (member.gamertag || member.name) : member);
+                if (mTag && uGamertag && mTag === uGamertag) return true;
+              }
+            }
+            return false;
+          }
+
+          const inTeam1 = isUserInReg(reg1, user) || 
+            (user?.team_name && String(user.team_name).trim().toLowerCase() === t1NameClean) ||
+            (user?.team && String(user.team).trim().toLowerCase() === t1NameClean);
+          const inTeam2 = isUserInReg(reg2, user) || 
+            (user?.team_name && String(user.team_name).trim().toLowerCase() === t2NameClean) ||
+            (user?.team && String(user.team).trim().toLowerCase() === t2NameClean);
+          const hasAccess = isStaff || inTeam1 || inTeam2;
+
+          let userTeamName = null;
+          let userRole = 'combatant';
+          if (isStaff) {
+            userRole = 'staff';
+            userTeamName = 'League Official';
+          } else if (inTeam1) {
+            userTeamName = t1.name;
+          } else if (inTeam2) {
+            userTeamName = t2.name;
+          }
+
+          // Build Match Chat HTML Section
+          let chatSectionHtml = '';
+          if (hasAccess) {
+            const roleLabel = isStaff ? '🛡 LEAGUE STAFF / OFFICIAL' : `⚔ ${escapeHtml(userTeamName || 'COMBATANT')}`;
+            chatSectionHtml = `
+              <div class="match-chat-container">
+                <div class="match-chat-header">
+                  <div class="match-chat-header-title">
+                    <span>💬 Match Communications</span>
+                    <span class="match-chat-badge-private">🔒 Private Matchup Chat</span>
+                  </div>
+                  <div style="font-size:11px; color:#cbd5e1;">
+                    Access: <strong style="color:${isStaff ? '#fbbf24' : '#4ade80'};">${roleLabel}</strong>
+                  </div>
+                </div>
+                <div class="match-chat-box" id="match-chat-box-${escapeHtml(match.id)}">
+                  <div style="color:#64748b; font-size:12px; text-align:center; padding:20px 0;">
+                    Loading secure match communications...
+                  </div>
+                </div>
+                <form class="match-chat-footer" id="match-chat-form" onsubmit="return false;">
+                  <input type="text" class="match-chat-input" id="match-chat-input" placeholder="Type match message to ${escapeHtml(t1.name)} & ${escapeHtml(t2.name)}..." autocomplete="off" maxlength="500" />
+                  <button type="submit" class="match-chat-send-btn" id="match-chat-send-btn">
+                    <span>Send</span> ✈
+                  </button>
+                </form>
+              </div>
+            `;
+          } else {
+            chatSectionHtml = `
+              <div class="match-chat-denied-notice">
+                <div style="font-size:20px; margin-bottom:6px;">🔒</div>
+                <div style="font:800 12px var(--body); color:#f87171; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  PRIVATE MATCH CHAT RESTRICTED
+                </div>
+                <p style="color:#94a3b8; font-size:12px; max-width:440px; margin:0 auto; line-height:1.5;">
+                  This match channel is private and encrypted exclusively for combatants on <strong>${escapeHtml(t1.name || 'Team 1')}</strong>, <strong>${escapeHtml(t2.name || 'Team 2')}</strong>, and verified League Staff.
+                </p>
+                ${!user ? `
+                  <div style="margin-top:10px;">
+                    <a href="/login/" class="btn-tourney-outline" style="font-size:11px; padding:5px 12px;">
+                      Log In to Verify Team Identity
+                    </a>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }
+
+          bodyEl.innerHTML = `
+            <div class="modal-teams-head" style="margin-bottom:20px;">
+              <div class="modal-team-side ${t1.winner ? 'winner' : ''}">
+                <div class="modal-team-name" style="font-size:18px; font-weight:800;">${escapeHtml(t1.name)}</div>
+                ${t1.seed ? `<div class="modal-team-seed" style="color:#fbbf24;">Seed #${t1.seed}</div>` : ''}
+                <div class="modal-big-score" style="color:#ffffff;">${t1.score ?? 0}</div>
+              </div>
+              <div class="modal-vs-divider">
+                <span style="color:#fbbf24;">VS</span>
+                <small>${escapeHtml(match.bestOf || 'BO5')}</small>
+              </div>
+              <div class="modal-team-side ${t2.winner ? 'winner' : ''}">
+                <div class="modal-team-name" style="font-size:18px; font-weight:800;">${escapeHtml(t2.name)}</div>
+                ${t2.seed ? `<div class="modal-team-seed" style="color:#fbbf24;">Seed #${t2.seed}</div>` : ''}
+                <div class="modal-big-score" style="color:#ffffff;">${t2.score ?? 0}</div>
+              </div>
+            </div>
+
+            <div style="background:#10130d; border:1px solid #232a18; padding:14px; border-radius:3px; margin-bottom:16px;">
+              <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:6px;">MATCH STATUS &amp; PROTOCOL</div>
+              <div style="font-size:13px; color:#cbd5e1; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <span>Status: <strong style="color:${isDone ? '#22c55e' : '#fbbf24'};">${isDone ? '✓ Completed (Official)' : (match.status || 'Scheduled')}</strong></span>
+                <span>Ruleset: <strong>CDL 2026 Competitive</strong></span>
+                <span>Host: <strong>Dedicated Central Host</strong></span>
+              </div>
+            </div>
+
+            <div id="tournament-map-reports"></div>
+            ${chatSectionHtml}
+
+            <div style="text-align:right; margin-top:16px;">
+              <button type="button" class="btn-tourney-outline" onclick="document.getElementById('modal-match-details').close()">
+                Close Intel
+              </button>
+            </div>
+          `;
+
+          document.documentElement.classList.add('modal-open');
+          document.body.classList.add('modal-open');
+          dialog.showModal();
+          await window.TournamentReports.mount(document.getElementById("tournament-map-reports"), activeTournament.id, match);
+
+          // Initialize chat interactions if authorized
+          if (hasAccess && activeTournament?.id) {
+            setupMatchChat({
+              tournamentId: activeTournament.id,
+              matchId: match.id,
+              user,
+              isStaff,
+              userTeamName,
+              userRole
+            });
+          }
+        }
+
+        function setupMatchChat({ tournamentId, matchId, user, isStaff, userTeamName, userRole }) {
+          if (chatPollInterval) clearInterval(chatPollInterval);
+
+          const chatBox = document.getElementById(`match-chat-box-${matchId}`);
+          const chatForm = document.getElementById('match-chat-form');
+          const chatInput = document.getElementById('match-chat-input');
+          const sendBtn = document.getElementById('match-chat-send-btn');
+          if (!chatBox) return;
+
+          // Stable client identifier for sender recognition
+          let myClientId = localStorage.getItem('frontline_chat_client_id');
+          if (!myClientId) {
+            myClientId = 'cid_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('frontline_chat_client_id', myClientId);
+          }
+          const mySenderId = user?.id || user?.sub || myClientId;
+          const mySenderName = user?.gamertag || user?.username || (user?.email ? user.email.split('@')[0] : (isStaff ? 'League Staff' : 'Combatant'));
+
+          let lastLoadedHash = '';
+
+          async function loadMessages() {
+            let messages = [];
+            if (window.LeagueDB && typeof window.LeagueDB.getTournamentMatchChat === 'function') {
+              try {
+                messages = await window.LeagueDB.getTournamentMatchChat(tournamentId, matchId);
+              } catch (_) {}
+            } else {
+              try {
+                const key = `frontline_match_chat_${tournamentId}_${matchId}`;
+                messages = JSON.parse(localStorage.getItem(key)) || [];
+              } catch (_) {}
+            }
+
+            const currentHash = JSON.stringify(messages || []);
+            if (currentHash === lastLoadedHash) {
               return;
             }
+            lastLoadedHash = currentHash;
+
+            if (!messages || messages.length === 0) {
+              chatBox.innerHTML = `
+                <div style="color:#64748b; font-size:12px; text-align:center; padding:35px 0;">
+                  No messages in this matchup yet. Only teams and staff can see this channel.
+                </div>
+              `;
+              return;
+            }
+
+            chatBox.innerHTML = messages.map(m => {
+              const isMe = (m.sender_id && m.sender_id === mySenderId) || (m.sender_name === mySenderName);
+              const isStaffMsg = m.sender_role === 'staff';
+              const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+              return `
+                <div class="match-chat-msg ${isMe ? 'msg-self' : ''} ${isStaffMsg ? 'msg-staff' : ''}">
+                  <div class="match-chat-msg-head">
+                    <span class="match-chat-msg-author">${escapeHtml(m.sender_name || 'Combatant')}</span>
+                    ${isStaffMsg ? `
+                      <span class="match-chat-msg-role-tag role-tag-staff">🛡 STAFF</span>
+                    ` : (m.sender_team ? `
+                      <span class="match-chat-msg-role-tag role-tag-team">${escapeHtml(m.sender_team)}</span>
+                    ` : '')}
+                    <span class="match-chat-msg-time">${timeStr}</span>
+                  </div>
+                  <div class="match-chat-msg-text">${escapeHtml(m.message || '')}</div>
+                </div>
+              `;
+            }).join('');
+
+            chatBox.scrollTop = chatBox.scrollHeight;
           }
 
-          closeTourneyRegisterModal();
-          showToast(`Squad "${teamName}" successfully enlisted! See you in the bracket.`);
+          async function sendMessage() {
+            if (!chatInput) return;
+            const text = chatInput.value.trim();
+            if (!text) return;
 
-          // Re-fetch and update UI
-          if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-            currentTournaments = await window.LeagueDB.getTournaments();
-            renderTournaments();
+            chatInput.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
+
+            const payload = {
+              tournamentId,
+              matchId,
+              senderId: mySenderId,
+              senderName: mySenderName,
+              senderTeam: userTeamName,
+              senderRole: isStaff ? 'staff' : 'combatant',
+              message: text
+            };
+
+            try {
+              if (window.LeagueDB && typeof window.LeagueDB.sendTournamentMatchChat === 'function') {
+                const res = await window.LeagueDB.sendTournamentMatchChat(payload);
+                if (res && res.messages) {
+                  lastLoadedHash = '';
+                }
+              } else {
+                const key = `frontline_match_chat_${tournamentId}_${matchId}`;
+                const local = JSON.parse(localStorage.getItem(key)) || [];
+                local.push({
+                  id: 'tmc_' + Date.now(),
+                  ...payload,
+                  created_at: new Date().toISOString()
+                });
+                localStorage.setItem(key, JSON.stringify(local));
+                lastLoadedHash = '';
+              }
+              chatInput.value = '';
+              await loadMessages();
+            } catch (err) {
+              console.error('Failed to send match chat:', err);
+            } finally {
+              chatInput.disabled = false;
+              if (sendBtn) sendBtn.disabled = false;
+              chatInput.focus();
+            }
           }
-        } catch(err) {
-          console.error(err);
-          showToast(err.message || 'Failed to register squad. Please contact an admin in Discord.', true);
-        } finally {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Confirm Registration ↗';
+
+          if (chatForm) {
+            chatForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              sendMessage();
+            });
+          }
+
+          // Initial load and live polling
+          loadMessages();
+          chatPollInterval = setInterval(loadMessages, 1500);
+
+          // Clear interval when modal closes
+          const dialog = document.getElementById('modal-match-details');
+          if (dialog) {
+            const onChatMessage = (e) => {
+              if (!e.detail?.matchId || String(e.detail.matchId) === String(matchId)) {
+                lastLoadedHash = '';
+                loadMessages();
+              }
+            };
+            window.addEventListener('frontline_match_chat_message', onChatMessage);
+
+            const onDialogClose = () => {
+              if (chatPollInterval) {
+                clearInterval(chatPollInterval);
+                chatPollInterval = null;
+              }
+              window.removeEventListener('frontline_match_chat_message', onChatMessage);
+              dialog.removeEventListener('close', onDialogClose);
+            };
+            dialog.addEventListener('close', onDialogClose);
           }
         }
-      }
 
-      // Event Listeners
-      document.getElementById('tourney-search')?.addEventListener('input', renderTournaments);
+        // Init on DOM ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTournamentBracketPage);
+        } else {
+          initTournamentBracketPage();
+        }
 
-      // Close modals on overlay click or Escape
-      document.querySelectorAll('.tourney-modal-overlay').forEach(overlay => {
-        overlay.addEventListener('click', (e) => {
-          if (e.target === overlay) {
-            overlay.style.display = 'none';
+        // User Navigation: Close dropdown on outside click or Escape key
+        document.addEventListener('click', (e) => {
+          const toggle = document.getElementById('menu-toggle');
+          const menuWrap = document.querySelector('.menu-toggle');
+          if (toggle && toggle.checked && menuWrap && !menuWrap.contains(e.target)) {
+            toggle.checked = false;
           }
         });
-      });
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeTourneyDetailsModal();
-          closeTourneyRegisterModal();
-        }
-      });
-
-      // Init on load
-      window.addEventListener('frontline_tournament_registered', async () => {
-        if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-          currentTournaments = await window.LeagueDB.getTournaments();
-          renderTournaments();
-        }
-      });
-      window.addEventListener('frontline_tournament_registration_deleted', async () => {
-        if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-          currentTournaments = await window.LeagueDB.getTournaments();
-          renderTournaments();
-        }
-      });
-
-      document.addEventListener('DOMContentLoaded', initTournamentsPage);
-      if (document.readyState === 'interactive' || document.readyState === 'complete') {
-        initTournamentsPage();
-      }
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            const toggle = document.getElementById('menu-toggle');
+            if (toggle) toggle.checked = false;
+          }
+        });
+      })();
     </script>
-  </body>
+  <script src="/tournament-reports.js"></script>
+</body>
 </html>
-

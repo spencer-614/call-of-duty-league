@@ -1000,7 +1000,8 @@
           <button type="button" class="admin-nav-btn" data-tab="tab-platform-switcher" id="nav-btn-platform-switcher" onclick="switchActiveTab('tab-platform-switcher')" style="border-color:#38bdf8; color:#38bdf8;">
             ⚡ Platform Switcher Menu
           </button>
-          <button type="button" class="admin-nav-btn" data-tab="tab-tournaments-hub" id="nav-btn-tournaments-hub" onclick="switchActiveTab('tab-tournaments-hub')" style="border-color:#fbbf24; color:#fbbf24;">
+          <button type="button" class="admin-nav-btn" data-tab="tab-tournament-disputes" onclick="switchActiveTab('tab-tournament-disputes'); TournamentReports.admin(document.getElementById('tournament-disputes-list'))">Tournament Disputes</button>
+<button type="button" class="admin-nav-btn" data-tab="tab-tournaments-hub" id="nav-btn-tournaments-hub" onclick="switchActiveTab('tab-tournaments-hub')" style="border-color:#fbbf24; color:#fbbf24;">
             🏆 Tournaments Hub
           </button>
         </nav>
@@ -2675,7 +2676,8 @@
         <!-- ======================================================== -->
         <!-- TAB 14: TOURNAMENTS HUB MANAGEMENT (COMMISSIONER)         -->
         <!-- ======================================================== -->
-        <div id="tab-tournaments-hub" class="admin-tab-content" style="display:none;">
+        <section class="admin-tab-content" id="tab-tournament-disputes" style="display:none"><h2>Tournament Disputes</h2><button type="button" onclick="TournamentReports.admin(document.getElementById('tournament-disputes-list'))">Refresh disputes</button><div id="tournament-disputes-list"></div></section>
+<div id="tab-tournaments-hub" class="admin-tab-content" style="display:none;">
           <!-- Live Preview HUD (Mirrors Announcements Live Preview) -->
           <div class="admin-panel-card" style="border-left: 4px solid #fbbf24;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
@@ -9345,6 +9347,7 @@
         }
       });
     </script>
-  </body>
+  <script src="/tournament-reports.js"></script>
+</body>
 </html>
 
