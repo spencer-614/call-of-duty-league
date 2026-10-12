@@ -1831,8 +1831,7 @@ dialog.player-modal:not([open]) {
 }
 
 dialog.player-modal::backdrop {
-  background-color: rgba(17, 18, 15, 0.85);
-  backdrop-filter: blur(8px);
+  background-color: rgba(9, 10, 8, 0.88);
 }
 
 /* Modal Header Bar */
@@ -2203,8 +2202,7 @@ dialog.team-modal:not([open]) {
 }
 
 dialog.team-modal::backdrop {
-  background-color: rgba(17, 18, 15, 0.85);
-  backdrop-filter: blur(8px);
+  background-color: rgba(9, 10, 8, 0.88);
 }
 
 .team-modal .modal-header {
@@ -3232,8 +3230,7 @@ tr.clickable-team {
 }
 
 .bracket-modal::backdrop {
-  background: rgba(10, 11, 8, 0.88);
-  backdrop-filter: blur(8px);
+  background: rgba(8, 9, 7, 0.90);
 }
 
 .modal-scoreboard-banner {
@@ -5208,7 +5205,6 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
   display: none;
   align-items: center;
   justify-content: center;

@@ -108,11 +108,11 @@
       });
     }
 
-    // 3. Dense Metal Shrapnel & Spark Spray (20-28 flying sparks)
-    const sparkCount = 20 + Math.floor(Math.random() * 8);
+    // 3. Dense Metal Shrapnel & Spark Spray (crisp 10-14 sparks for maximum performance)
+    const sparkCount = 10 + Math.floor(Math.random() * 5);
     for (let i = 0; i < sparkCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 3.5 + Math.random() * 9.5;
+      const speed = 3.5 + Math.random() * 8.5;
       const color = sparkPalette[Math.floor(Math.random() * sparkPalette.length)];
       particles.push({
         x,
@@ -122,8 +122,8 @@
         gravity: 0.16 + Math.random() * 0.14,
         friction: 0.91,
         alpha: 1.0,
-        decay: 0.022 + Math.random() * 0.028,
-        size: 1.4 + Math.random() * 1.8,
+        decay: 0.026 + Math.random() * 0.03,
+        size: 1.4 + Math.random() * 1.6,
         color
       });
     }
@@ -137,20 +137,26 @@
   function render() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    // A. Render Kinetic Shockwaves
+    // A. Render Kinetic Shockwaves (dual-stroke GPU hardware glow, zero CPU shadowBlur)
     for (let i = shockwaves.length - 1; i >= 0; i--) {
       const sw = shockwaves[i];
       sw.radius += (sw.maxRadius - sw.radius) * 0.28;
       sw.alpha *= 0.84;
 
       ctx.save();
+      // Outer glow ring
       ctx.beginPath();
       ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
       ctx.strokeStyle = sw.color;
+      ctx.globalAlpha = Math.max(0, sw.alpha * 0.35);
+      ctx.lineWidth = sw.lineWidth * 2.2;
+      ctx.stroke();
+
+      // Sharp inner core ring
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
       ctx.globalAlpha = Math.max(0, sw.alpha);
       ctx.lineWidth = sw.lineWidth;
-      ctx.shadowColor = sw.color;
-      ctx.shadowBlur = 10;
       ctx.stroke();
       ctx.restore();
 
@@ -159,7 +165,7 @@
       }
     }
 
-    // B. Render Supersonic Ricochet Tracers (high-energy laser-like streaks)
+    // B. Render Supersonic Ricochet Tracers (dual-stroke laser core, 100% GPU accelerated)
     for (let i = ricochets.length - 1; i >= 0; i--) {
       const r = ricochets[i];
       r.x += r.vx;
@@ -168,16 +174,26 @@
       r.vy *= 0.93;
       r.alpha -= r.decay;
 
+      const tailX = r.x - r.vx * (r.length / 5);
+      const tailY = r.y - r.vy * (r.length / 5);
+
       ctx.save();
+      // Outer luminous glow streak
       ctx.beginPath();
       ctx.moveTo(r.x, r.y);
-      ctx.lineTo(r.x - r.vx * (r.length / 5), r.y - r.vy * (r.length / 5));
+      ctx.lineTo(tailX, tailY);
       ctx.strokeStyle = r.color;
+      ctx.globalAlpha = Math.max(0, r.alpha * 0.35);
+      ctx.lineWidth = r.width * 2.5;
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      // Sharp core streak
+      ctx.beginPath();
+      ctx.moveTo(r.x, r.y);
+      ctx.lineTo(tailX, tailY);
       ctx.globalAlpha = Math.max(0, r.alpha);
       ctx.lineWidth = r.width;
-      ctx.lineCap = "round";
-      ctx.shadowColor = r.color;
-      ctx.shadowBlur = 12;
       ctx.stroke();
       ctx.restore();
 
@@ -186,7 +202,7 @@
       }
     }
 
-    // C. Render Molten Sparks Spray (elongated sparks with gravity & air friction)
+    // C. Render Molten Sparks Spray (elongated sparks with zero CPU blur overhead)
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       const oldX = p.x;
@@ -206,8 +222,6 @@
       ctx.lineWidth = p.size;
       ctx.lineCap = "round";
       ctx.globalAlpha = Math.max(0, p.alpha);
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
       ctx.stroke();
       ctx.restore();
 
@@ -225,9 +239,19 @@
     }
   }
 
-  // Universal trigger on pointerdown and mousedown with 25ms deduplication
+  // Universal trigger on pointerdown with modal and form filtering
   let lastImpactTime = 0;
   function onImpactEvent(e) {
+    // Skip sparks if clicking inside any modal, dialog, or form controls
+    if (e && e.target) {
+      if (
+        e.target.closest("dialog, .tourney-modal-overlay, .modal-overlay, .tourney-modal-card, .ladder-modal-box, form, input, textarea, select, button[type='submit'], .modal-close-btn, .tourney-modal-close") ||
+        document.querySelector("dialog[open], .tourney-modal-overlay[style*='flex'], .modal-overlay.active")
+      ) {
+        return;
+      }
+    }
+
     const now = performance.now ? performance.now() : Date.now();
     if (now - lastImpactTime < 25) return;
     lastImpactTime = now;
@@ -238,7 +262,6 @@
   }
 
   window.addEventListener("pointerdown", onImpactEvent, { passive: true });
-  window.addEventListener("mousedown", onImpactEvent, { passive: true });
 
   // Initialize on load
   if (document.readyState === "loading") {

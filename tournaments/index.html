@@ -374,7 +374,6 @@
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(5px);
         display: none;
         align-items: center;
         justify-content: center;
@@ -1079,7 +1078,10 @@
           }
         }
 
-        // Load enlisted squads into details modal
+        // Display modal immediately on click for instant zero-latency feedback
+        document.getElementById('modal-tourney-details').style.display = 'flex';
+
+        // Load enlisted squads into details modal asynchronously
         const squadsCountEl = document.getElementById('modal-detail-squads-count');
         const squadsListEl = document.getElementById('modal-detail-squads-list');
         if (squadsListEl) {
@@ -1125,8 +1127,6 @@
             if (squadsListEl) squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px;">Enlisted roster details available in Discord.</div>';
           }
         }
-
-        document.getElementById('modal-tourney-details').style.display = 'flex';
       }
 
       function closeTourneyDetailsModal() {
