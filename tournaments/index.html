@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/styles.css" />
     <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=4"></script>
+    <script src="/supabase.js?v=20261012d"></script>
     <script src="/bullet-sparks.js" defer></script>
     <style>
       /* Page-specific styling for Tournaments Hub */
@@ -408,6 +408,63 @@
         color: #ffffff;
       }
 
+      /* Squad Teammate Selector & Autocomplete */
+      .teammate-dropdown-item {
+        padding: 9px 12px;
+        border-bottom: 1px solid #1a2012;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.15s;
+        cursor: pointer;
+      }
+      .teammate-dropdown-item:hover:not(.disabled) {
+        background: #1b2214;
+      }
+      .teammate-dropdown-item.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: rgba(20, 24, 18, 0.4);
+      }
+      .teammate-dropdown-item:last-child {
+        border-bottom: none;
+      }
+      #teammate-dropdown-results::-webkit-scrollbar {
+        width: 6px;
+      }
+      #teammate-dropdown-results::-webkit-scrollbar-track {
+        background: #10130d;
+      }
+      #teammate-dropdown-results::-webkit-scrollbar-thumb {
+        background: #2d351c;
+        border-radius: 3px;
+      }
+      .roster-slot-card {
+        background: #131710;
+        border: 1px solid #222917;
+        border-radius: 2px;
+        padding: 8px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.15s;
+      }
+      .roster-slot-card.captain {
+        border-left: 3px solid #fbbf24;
+      }
+      .roster-slot-card.filled {
+        border-left: 3px solid #4ade80;
+      }
+      .roster-slot-card.empty {
+        background: #0e110c;
+        border: 1px dashed #2b351e;
+        cursor: pointer;
+      }
+      .roster-slot-card.empty:hover {
+        border-color: #fbbf24;
+        background: #131710;
+      }
+
       /* Offline / Maintenance View */
       #tournaments-maintenance-view {
         display: none;
@@ -737,8 +794,62 @@
             </div>
 
             <div>
-              <label style="display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Player Roster (Gamertags separated by commas) *</label>
-              <input type="text" id="reg-roster" required placeholder="Player 1, Player 2, Player 3, Player 4" class="tourney-search-input" style="width:100%; box-sizing:border-box;" />
+              <div class="squad-roster-builder-wrap" style="background:#0c0f0a; border:1px solid #232a18; border-radius:3px; padding:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div>
+                    <label style="display:block; font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px; margin:0;">
+                      SQUAD ROSTER &amp; TEAMMATES *
+                    </label>
+                    <div style="font-size:10.5px; color:#94a3af; margin-top:2px;" id="reg-roster-format-hint">
+                      Format requires 4 players (1 Captain + 3 Teammates)
+                    </div>
+                  </div>
+                  <span id="reg-roster-count-badge" style="font-size:10.5px; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.25); padding:3px 9px; border-radius:12px;">
+                    1 / 4 Players
+                  </span>
+                </div>
+
+                <!-- Teammate Search & Quick Add Bar -->
+                <div id="teammate-search-box-wrap" style="position:relative; margin-bottom:10px;">
+                  <div style="display:flex; gap:8px;">
+                    <div style="position:relative; flex:1;">
+                      <input 
+                        type="text" 
+                        id="teammate-search-input" 
+                        placeholder="Search player directory by gamertag or Discord..." 
+                        autocomplete="off"
+                        class="tourney-search-input" 
+                        style="width:100%; box-sizing:border-box; padding-left:32px; font-size:12px;" 
+                      />
+                      <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; opacity:0.6; pointer-events:none;">⌖</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      id="btn-add-teammate" 
+                      class="btn-tourney-outline" 
+                      onclick="handleAddTeammateClick()" 
+                      style="white-space:nowrap; padding:0 12px; font-size:11.5px; font-weight:800; border-color:#fbbf24; color:#fbbf24; background:rgba(251,191,36,0.05);"
+                    >
+                      + Add Player
+                    </button>
+                  </div>
+
+                  <!-- Live Autocomplete Dropdown List -->
+                  <div 
+                    id="teammate-dropdown-results" 
+                    style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:#10130d; border:1px solid #2d351c; border-radius:3px; max-height:220px; overflow-y:auto; z-index:999; box-shadow:0 14px 30px rgba(0,0,0,0.9);"
+                  ></div>
+                </div>
+
+                <!-- Warning / Notice Banner for Teammate Collisions -->
+                <div id="teammate-warning-banner" style="display:none; background:#291414; border:1px solid #7f1d1d; color:#fca5a5; padding:7px 10px; border-radius:2px; font-size:11.5px; margin-bottom:10px; line-height:1.4;"></div>
+
+                <!-- Interactive Roster Slots Container -->
+                <div id="squad-roster-slots-container" style="display:flex; flex-direction:column; gap:6px;"></div>
+
+                <!-- Hidden field maintaining comma-separated string for compatibility -->
+                <input type="hidden" id="reg-roster" required />
+              </div>
             </div>
 
             <div style="font-size:11.5px; color:#9ca3af;">
@@ -1143,18 +1254,13 @@
             // Detect if logged-in user is already enrolled in a squad for this tournament
             let userEnlistedSquad = null;
             try {
-              const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
-              const authUser = JSON.parse(localStorage.getItem('frontline_auth_user'));
-              const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
-              const uTag = norm(card?.gamertag || authUser?.gamertag || authUser?.username);
-              const uDisc = norm(card?.discord || authUser?.discord);
-              const uActId = norm(card?.activision_id || authUser?.activision_id);
-
-              if (uTag || uDisc || uActId) {
+              const myUser = getCurrentUserIdentity();
+              if (myUser.normTag || myUser.normDisc || myUser.normAct) {
                 userEnlistedSquad = squads.find(sq => {
-                  if (uTag && norm(sq.captain_gamertag) === uTag) return true;
-                  if (uDisc && norm(sq.captain_discord) === uDisc) return true;
-                  if (uActId && norm(sq.captain_activision_id) === uActId) return true;
+                  if (myUser.normTag && norm(sq.captain_gamertag) === myUser.normTag) return true;
+                  if (myUser.normDisc && norm(sq.captain_discord) === myUser.normDisc) return true;
+                  if (myUser.normAct && norm(sq.captain_activision_id) === myUser.normAct) return true;
+                  if (myUser.id && sq.registered_by === myUser.id) return true;
                   let roster = [];
                   if (Array.isArray(sq.roster)) roster = sq.roster;
                   else if (typeof sq.roster === 'string') {
@@ -1162,7 +1268,10 @@
                   } else if (sq.roster_text) {
                     roster = sq.roster_text.split(/,\s*/);
                   }
-                  return roster.some(m => norm(typeof m === 'object' ? (m.gamertag || m.name) : m) === uTag);
+                  return roster.some(m => {
+                    const mTag = norm(typeof m === 'object' ? (m.gamertag || m.name) : m);
+                    return (myUser.normTag && mTag === myUser.normTag) || (myUser.normDisc && mTag === myUser.normDisc);
+                  });
                 });
               }
             } catch (_) {}
@@ -1240,6 +1349,386 @@
         }
       }
 
+      // State for Squad Teammate Selector & Autocomplete
+      let cachedCommunityPlayers = [];
+      let currentRosterTeammates = [];
+      let maxSquadSize = 4;
+      let enlistedPlayersInThisTourney = new Map(); // normGamertag -> teamName
+
+      function getFormatSquadSize(formatStr) {
+        const fmt = String(formatStr || '').toLowerCase();
+        if (fmt.includes('1v1')) return 1;
+        if (fmt.includes('2v2')) return 2;
+        if (fmt.includes('3v3')) return 3;
+        return 4; // default CDL 4v4
+      }
+
+      function getCurrentUserIdentity() {
+        let player = null;
+        if (window.LeagueDB && typeof window.LeagueDB.getCurrentPlayer === 'function') {
+          try { player = window.LeagueDB.getCurrentPlayer(); } catch (_) {}
+        }
+        let card = null;
+        try { card = JSON.parse(localStorage.getItem('frontline_league_player_card')); } catch (_) {}
+        let authUser = null;
+        try {
+          authUser = JSON.parse(localStorage.getItem('frontline_auth_user')) ||
+                     JSON.parse(localStorage.getItem('frontline_arena_user')) ||
+                     JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
+                     JSON.parse(localStorage.getItem('frontline_arena_auth_user'));
+        } catch (_) {}
+
+        const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+        const gamertag = player?.gamertag || player?.username || card?.gamertag || card?.username || authUser?.gamertag || authUser?.username || '';
+        const discord = player?.discord || card?.discord || authUser?.discord || '';
+        const activisionId = player?.activision_id || card?.activision_id || authUser?.activision_id || '';
+        const email = (player?.email || authUser?.email || '').toLowerCase().trim();
+        const id = player?.id || authUser?.id || '';
+
+        return {
+          raw: player || card || authUser,
+          gamertag,
+          discord,
+          activisionId,
+          email,
+          id,
+          normTag: norm(gamertag),
+          normDisc: norm(discord),
+          normAct: norm(activisionId)
+        };
+      }
+
+      async function fetchCommunityPlayersDirectory() {
+        if (cachedCommunityPlayers.length > 0) return cachedCommunityPlayers;
+        const map = new Map();
+
+        // 1. Supabase / LeagueDB players
+        if (window.LeagueDB && typeof window.LeagueDB.getPlayers === 'function') {
+          try {
+            const dbPlayers = await window.LeagueDB.getPlayers();
+            if (Array.isArray(dbPlayers)) {
+              dbPlayers.forEach(p => {
+                const tag = (p.gamertag || p.username || '').trim();
+                if (tag && tag.toLowerCase() !== 'operative') {
+                  map.set(tag.toLowerCase(), {
+                    gamertag: tag,
+                    discord: p.discord_name || p.discord || '',
+                    team: p.teams?.name || p.team_name || 'Free Agent',
+                    avatar: p.avatar_url || null
+                  });
+                }
+              });
+            }
+          } catch (_) {}
+        }
+
+        // 2. Custom registered accounts
+        try {
+          const custom = JSON.parse(localStorage.getItem('frontline_arena_registered_accounts')) || [];
+          custom.forEach(p => {
+            const tag = (p.gamertag || p.username || '').trim();
+            if (tag && !map.has(tag.toLowerCase())) {
+              map.set(tag.toLowerCase(), {
+                gamertag: tag,
+                discord: p.discord || '',
+                team: p.team || 'Free Agent',
+                avatar: p.avatar_url || null
+              });
+            }
+          });
+        } catch (_) {}
+
+        // 3. Known profiles (Spencer & Savory)
+        [
+          { gamertag: 'Commissioner Spencer', discord: 'todd061496', team: 'Frontline HQ' },
+          { gamertag: 'Savory', discord: 'savorypanda8645', team: 'Frontline Staff' }
+        ].forEach(p => {
+          if (!map.has(p.gamertag.toLowerCase())) {
+            map.set(p.gamertag.toLowerCase(), p);
+          }
+        });
+
+        cachedCommunityPlayers = Array.from(map.values()).sort((a, b) => a.gamertag.localeCompare(b.gamertag));
+        return cachedCommunityPlayers;
+      }
+
+      function renderSquadRosterSlots() {
+        const container = document.getElementById('squad-roster-slots-container');
+        const badge = document.getElementById('reg-roster-count-badge');
+        const hint = document.getElementById('reg-roster-format-hint');
+        const searchInput = document.getElementById('teammate-search-input');
+        const addBtn = document.getElementById('btn-add-teammate');
+        const hiddenRoster = document.getElementById('reg-roster');
+        const captainTag = (document.getElementById('reg-captain-tag')?.value || '').trim();
+
+        const neededTeammates = Math.max(0, maxSquadSize - 1);
+        if (hint) {
+          if (maxSquadSize === 1) {
+            hint.textContent = 'Solo Duel format (1 Captain only)';
+          } else {
+            hint.textContent = `Format requires ${maxSquadSize} players (1 Captain + ${neededTeammates} Teammate${neededTeammates === 1 ? '' : 's'})`;
+          }
+        }
+
+        const totalEnlisted = 1 + currentRosterTeammates.length;
+        const isComplete = totalEnlisted >= maxSquadSize;
+
+        if (badge) {
+          badge.textContent = isComplete ? `✓ ${maxSquadSize} / ${maxSquadSize} Players` : `${totalEnlisted} / ${maxSquadSize} Players`;
+          if (isComplete) {
+            badge.style.color = '#4ade80';
+            badge.style.background = 'rgba(74,222,128,0.12)';
+            badge.style.borderColor = 'rgba(74,222,128,0.3)';
+          } else {
+            badge.style.color = '#fbbf24';
+            badge.style.background = 'rgba(251,191,36,0.12)';
+            badge.style.borderColor = 'rgba(251,191,36,0.25)';
+          }
+        }
+
+        // Update search input state
+        if (searchInput && addBtn) {
+          if (isComplete) {
+            searchInput.placeholder = `✓ Squad Roster Full (${maxSquadSize} / ${maxSquadSize} Combatants)`;
+            searchInput.disabled = true;
+            addBtn.disabled = true;
+            addBtn.style.opacity = '0.5';
+            hideTeammatesDropdown();
+          } else {
+            searchInput.placeholder = 'Search player directory by gamertag or Discord...';
+            searchInput.disabled = false;
+            addBtn.disabled = false;
+            addBtn.style.opacity = '1';
+          }
+        }
+
+        // Build roster slots HTML
+        if (!container) return;
+
+        let html = '';
+        // Slot 1: Captain
+        html += `
+          <div class="roster-slot-card captain">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <span style="font-size:13px; color:#fbbf24;">👑</span>
+              <div>
+                <span style="font-size:10px; color:#fbbf24; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot 1 · Squad Captain</span>
+                <strong style="font-size:13px; color:#ffffff;" id="roster-slot-captain-tag">${escapeHtml(captainTag || 'Captain')}</strong>
+              </div>
+            </div>
+            <span style="font-size:10px; font-weight:800; color:#cbd5e1; background:#1b2214; border:1px solid #2d381c; padding:3px 7px; border-radius:2px;">
+              SQUAD LEADER
+            </span>
+          </div>
+        `;
+
+        // Teammates slots
+        for (let i = 0; i < neededTeammates; i++) {
+          const teammateTag = currentRosterTeammates[i];
+          const slotNum = i + 2;
+          if (teammateTag) {
+            const playerDetails = cachedCommunityPlayers.find(p => p.gamertag.toLowerCase() === teammateTag.toLowerCase());
+            html += `
+              <div class="roster-slot-card filled">
+                <div style="display:flex; align-items:center; gap:9px;">
+                  <span style="font-size:13px; color:#4ade80;">⚔</span>
+                  <div>
+                    <span style="font-size:10px; color:#4ade80; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${slotNum} · Teammate</span>
+                    <strong style="font-size:13px; color:#ffffff;">${escapeHtml(teammateTag)}</strong>
+                    ${playerDetails?.discord ? `<span style="font-size:10.5px; color:#9ca3af; margin-left:6px;">(${escapeHtml(playerDetails.discord)})</span>` : ''}
+                  </div>
+                </div>
+                <button type="button" onclick="removeTeammate(${i})" title="Remove teammate" style="background:#291414; border:1px solid #7f1d1d; color:#f87171; font-size:11px; font-weight:700; padding:4px 9px; border-radius:2px; cursor:pointer;">
+                  ✕ Remove
+                </button>
+              </div>
+            `;
+          } else {
+            html += `
+              <div class="roster-slot-card empty" onclick="focusTeammateSearch()">
+                <div style="display:flex; align-items:center; gap:9px;">
+                  <span style="font-size:13px; color:#64748b;">+</span>
+                  <div>
+                    <span style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${slotNum} · Teammate (Open)</span>
+                    <span style="font-size:12px; color:#64748b; font-style:italic;">Empty Slot — Search or type a player name above</span>
+                  </div>
+                </div>
+                <span style="font-size:10.5px; color:#fbbf24; font-weight:700;">+ Select Player</span>
+              </div>
+            `;
+          }
+        }
+
+        container.innerHTML = html;
+
+        // Keep hidden input in sync
+        const fullRoster = [captainTag, ...currentRosterTeammates].filter(Boolean);
+        if (hiddenRoster) {
+          hiddenRoster.value = fullRoster.join(', ');
+        }
+      }
+
+      function renderTeammatesDropdown(query = '') {
+        const dropdown = document.getElementById('teammate-dropdown-results');
+        if (!dropdown) return;
+
+        if (currentRosterTeammates.length >= maxSquadSize - 1) {
+          dropdown.style.display = 'none';
+          return;
+        }
+
+        const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+        const captainTagNorm = norm(document.getElementById('reg-captain-tag')?.value);
+        const currentRosterNorms = currentRosterTeammates.map(norm);
+        const q = norm(query);
+
+        const filtered = (cachedCommunityPlayers || []).filter(p => {
+          const pTagNorm = norm(p.gamertag);
+          // Exclude captain and players already on this squad
+          if (pTagNorm === captainTagNorm || currentRosterNorms.includes(pTagNorm)) return false;
+          if (!q) return true;
+          return pTagNorm.includes(q) || norm(p.discord).includes(q) || norm(p.team).includes(q);
+        });
+
+        if (filtered.length === 0) {
+          if (q) {
+            dropdown.innerHTML = `
+              <div style="padding:10px 12px; font-size:12px; color:#9ca3af; display:flex; justify-content:space-between; align-items:center;">
+                <span>No directory match for "<strong>${escapeHtml(query)}</strong>"</span>
+                <button type="button" class="btn-tourney-outline" onclick="addCustomTeammate('${escapeHtml(query)}')" style="font-size:10.5px; padding:3px 9px; border-color:#fbbf24; color:#fbbf24;">
+                  + Add "${escapeHtml(query)}"
+                </button>
+              </div>
+            `;
+            dropdown.style.display = 'block';
+          } else {
+            dropdown.style.display = 'none';
+          }
+          return;
+        }
+
+        dropdown.innerHTML = filtered.slice(0, 15).map(p => {
+          const pTagNorm = norm(p.gamertag);
+          const alreadyInSquad = enlistedPlayersInThisTourney.get(pTagNorm);
+
+          if (alreadyInSquad) {
+            return `
+              <div class="teammate-dropdown-item disabled" title="Player is already registered in squad '${escapeHtml(alreadyInSquad)}'">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="color:#64748b;">👤</span>
+                  <div>
+                    <strong style="color:#94a3b8; font-size:12.5px;">${escapeHtml(p.gamertag)}</strong>
+                    ${p.discord ? `<span style="font-size:10px; color:#64748b; margin-left:6px;">(${escapeHtml(p.discord)})</span>` : ''}
+                  </div>
+                </div>
+                <span style="font-size:10px; font-weight:800; color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 7px; border-radius:3px;">
+                  ⚠️ In Squad "${escapeHtml(alreadyInSquad)}"
+                </span>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="teammate-dropdown-item" onclick="selectTeammate('${escapeHtml(p.gamertag)}')">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="color:#4ade80;">👤</span>
+                <div>
+                  <strong style="color:#ffffff; font-size:12.5px;">${escapeHtml(p.gamertag)}</strong>
+                  ${p.team && p.team !== 'Free Agent' ? `<span style="font-size:10px; color:#a3e635; margin-left:6px; background:#1b2313; padding:1px 5px; border-radius:2px;">${escapeHtml(p.team)}</span>` : (p.discord ? `<span style="font-size:10px; color:#9ca3af; margin-left:6px;">(${escapeHtml(p.discord)})</span>` : '')}
+                </div>
+              </div>
+              <button type="button" class="btn-tourney-primary" style="font-size:10px; padding:2px 8px; pointer-events:none; background:#16a34a; border-color:#22c55e; color:#fff;">
+                + Enlist
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        dropdown.style.display = 'block';
+      }
+
+      function hideTeammatesDropdown() {
+        const dropdown = document.getElementById('teammate-dropdown-results');
+        if (dropdown) dropdown.style.display = 'none';
+      }
+
+      function focusTeammateSearch() {
+        const searchInput = document.getElementById('teammate-search-input');
+        if (searchInput && !searchInput.disabled) {
+          searchInput.focus();
+          renderTeammatesDropdown(searchInput.value);
+        }
+      }
+
+      function showTeammateWarning(msg) {
+        const banner = document.getElementById('teammate-warning-banner');
+        if (banner) {
+          banner.textContent = msg;
+          banner.style.display = 'block';
+          setTimeout(() => { if (banner) banner.style.display = 'none'; }, 6000);
+        }
+      }
+
+      function selectTeammate(gamertag) {
+        const cleanTag = String(gamertag || '').trim();
+        if (!cleanTag) return;
+
+        const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+        const normTag = norm(cleanTag);
+        const captainTagNorm = norm(document.getElementById('reg-captain-tag')?.value);
+
+        if (currentRosterTeammates.length >= maxSquadSize - 1) {
+          showTeammateWarning(`Squad roster is already full for this format (${maxSquadSize} players max).`);
+          return;
+        }
+
+        if (normTag === captainTagNorm) {
+          showTeammateWarning(`Captain is already Player 1.`);
+          return;
+        }
+
+        if (currentRosterTeammates.some(t => norm(t) === normTag)) {
+          showTeammateWarning(`"${cleanTag}" is already in your squad roster.`);
+          return;
+        }
+
+        const alreadyInSquad = enlistedPlayersInThisTourney.get(normTag);
+        if (alreadyInSquad) {
+          showTeammateWarning(`Cannot enlist "${cleanTag}": Already registered in squad "${alreadyInSquad}" for this tournament.`);
+          return;
+        }
+
+        currentRosterTeammates.push(cleanTag);
+        const searchInput = document.getElementById('teammate-search-input');
+        if (searchInput) searchInput.value = '';
+        hideTeammatesDropdown();
+        renderSquadRosterSlots();
+        showToast(`"${cleanTag}" enlisted in squad roster.`);
+      }
+
+      function addCustomTeammate(gamertag) {
+        selectTeammate(gamertag);
+      }
+
+      function handleAddTeammateClick() {
+        const searchInput = document.getElementById('teammate-search-input');
+        if (!searchInput) return;
+        const val = searchInput.value.trim();
+        if (!val) {
+          focusTeammateSearch();
+          return;
+        }
+        selectTeammate(val);
+      }
+
+      function removeTeammate(index) {
+        if (index >= 0 && index < currentRosterTeammates.length) {
+          const removed = currentRosterTeammates.splice(index, 1)[0];
+          renderSquadRosterSlots();
+          showToast(`"${removed}" removed from squad.`);
+        }
+      }
+
       async function openTourneyRegister(id) {
         const t = currentTournaments.find(item => String(item.id) === String(id));
         if (!t) return;
@@ -1253,65 +1742,133 @@
         if (warningEl) warningEl.style.display = 'none';
         if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
 
-        // Check if player is already registered
+        // Setup format squad size
+        maxSquadSize = getFormatSquadSize(t.format);
+        currentRosterTeammates = [];
+
+        // Fetch directory of players
+        await fetchCommunityPlayersDirectory();
+
+        // Fetch all registrations for this tournament
+        let squads = [];
         try {
-          let squads = [];
           if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function') {
             squads = await window.LeagueDB.getTournamentRegistrations(t.id);
           } else {
             const local = JSON.parse(localStorage.getItem('frontline_tournament_registrations')) || [];
             squads = local.filter(r => String(r.tournament_id) === String(t.id));
           }
-
-          const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
-          const authUser = JSON.parse(localStorage.getItem('frontline_auth_user'));
-          const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
-          const uTag = norm(card?.gamertag || authUser?.gamertag || authUser?.username);
-          const uDisc = norm(card?.discord || authUser?.discord);
-
-          if (uTag || uDisc) {
-            const existing = squads.find(sq => {
-              if (uTag && norm(sq.captain_gamertag) === uTag) return true;
-              if (uDisc && norm(sq.captain_discord) === uDisc) return true;
-              let roster = [];
-              if (Array.isArray(sq.roster)) roster = sq.roster;
-              else if (sq.roster_text) roster = sq.roster_text.split(/,\s*/);
-              return roster.some(m => norm(typeof m === 'object' ? (m.gamertag || m.name) : m) === uTag);
-            });
-
-            if (existing && warningEl && submitBtn) {
-              warningEl.style.display = 'block';
-              warningEl.innerHTML = `⚠️ <strong>Already Enlisted:</strong> You are already registered for this tournament in squad <strong style="color:#ffffff;">"${escapeHtml(existing.team_name)}"</strong>. Each player may only register for one squad per tournament.`;
-              submitBtn.disabled = true;
-              submitBtn.style.opacity = '0.5';
-            }
-          }
         } catch (_) {}
 
-        // Autofill with logged in user if available
-        try {
-          const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
-          if (card) {
-            if (card.gamertag && card.gamertag !== 'Operative') {
-              document.getElementById('reg-captain-tag').value = card.gamertag;
-            }
-            if (card.team && card.team !== 'Free Agent') {
-              document.getElementById('reg-team-name').value = card.team;
-            }
-            if (card.discord) {
-              document.getElementById('reg-captain-discord').value = card.discord;
-            }
-            if (card.activision_id) {
-              document.getElementById('reg-captain-actid').value = card.activision_id;
-            }
+        // Populate enlistedPlayersInThisTourney map (normTag -> squadName)
+        enlistedPlayersInThisTourney.clear();
+        const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+        (squads || []).forEach(sq => {
+          const squadName = sq.team_name || 'Enlisted Squad';
+          if (sq.captain_gamertag) {
+            enlistedPlayersInThisTourney.set(norm(sq.captain_gamertag), squadName);
           }
-        } catch(e) {}
+          if (sq.captain_discord) {
+            enlistedPlayersInThisTourney.set(norm(sq.captain_discord), squadName);
+          }
+          let roster = [];
+          if (Array.isArray(sq.roster)) roster = sq.roster;
+          else if (typeof sq.roster === 'string') {
+            try { roster = JSON.parse(sq.roster); } catch (_) { roster = sq.roster.split(/,\s*/); }
+          } else if (sq.roster_text) {
+            roster = sq.roster_text.split(/,\s*/);
+          }
+          (roster || []).forEach(m => {
+            const mTag = norm(typeof m === 'object' ? (m.gamertag || m.name) : m);
+            if (mTag) enlistedPlayersInThisTourney.set(mTag, squadName);
+          });
+        });
+
+        // Check if CURRENT USER is already registered in this tournament (as captain OR as roster teammate)
+        const myUser = getCurrentUserIdentity();
+        let myEnlistedSquad = null;
+
+        if (myUser.normTag || myUser.normDisc || myUser.normAct) {
+          myEnlistedSquad = squads.find(sq => {
+            if (myUser.normTag && norm(sq.captain_gamertag) === myUser.normTag) return true;
+            if (myUser.normDisc && norm(sq.captain_discord) === myUser.normDisc) return true;
+            if (myUser.normAct && norm(sq.captain_activision_id) === myUser.normAct) return true;
+            if (myUser.id && sq.registered_by === myUser.id) return true;
+
+            let roster = [];
+            if (Array.isArray(sq.roster)) roster = sq.roster;
+            else if (typeof sq.roster === 'string') {
+              try { roster = JSON.parse(sq.roster); } catch (_) { roster = sq.roster.split(/,\s*/); }
+            } else if (sq.roster_text) {
+              roster = sq.roster_text.split(/,\s*/);
+            }
+            return roster.some(m => {
+              const mTag = norm(typeof m === 'object' ? (m.gamertag || m.name) : m);
+              return (myUser.normTag && mTag === myUser.normTag) || (myUser.normDisc && mTag === myUser.normDisc);
+            });
+          });
+        }
+
+        if (myEnlistedSquad && warningEl && submitBtn) {
+          warningEl.style.display = 'block';
+          warningEl.innerHTML = `⚠️ <strong>Already Enlisted:</strong> You are already registered for this tournament in squad <strong style="color:#ffffff;">"${escapeHtml(myEnlistedSquad.team_name)}"</strong>. Each player may only register for one squad per tournament.`;
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.5';
+        }
+
+        // Autofill captain details
+        if (myUser.gamertag && myUser.gamertag !== 'Operative') {
+          document.getElementById('reg-captain-tag').value = myUser.gamertag;
+        }
+        if (myUser.raw?.team && myUser.raw?.team !== 'Free Agent') {
+          document.getElementById('reg-team-name').value = myUser.raw.team;
+        }
+        if (myUser.discord) {
+          document.getElementById('reg-captain-discord').value = myUser.discord;
+        }
+        if (myUser.activisionId) {
+          document.getElementById('reg-captain-actid').value = myUser.activisionId;
+        }
+
+        // Setup live listener on captain tag input to update Slot 1 dynamically
+        const capInput = document.getElementById('reg-captain-tag');
+        if (capInput) {
+          capInput.oninput = () => {
+            const slotCapEl = document.getElementById('roster-slot-captain-tag');
+            if (slotCapEl) slotCapEl.textContent = capInput.value.trim() || 'Captain';
+            const full = [capInput.value.trim(), ...currentRosterTeammates].filter(Boolean);
+            const hid = document.getElementById('reg-roster');
+            if (hid) hid.value = full.join(', ');
+          };
+        }
+
+        // Render roster slots
+        renderSquadRosterSlots();
+
+        // Setup teammate search input listeners
+        const searchInput = document.getElementById('teammate-search-input');
+        if (searchInput) {
+          searchInput.value = '';
+          searchInput.oninput = (e) => {
+            renderTeammatesDropdown(e.target.value);
+          };
+          searchInput.onfocus = (e) => {
+            renderTeammatesDropdown(e.target.value);
+          };
+          searchInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAddTeammateClick();
+            }
+          };
+        }
 
         document.getElementById('modal-tourney-register').style.display = 'flex';
       }
 
       function closeTourneyRegisterModal() {
         document.getElementById('modal-tourney-register').style.display = 'none';
+        hideTeammatesDropdown();
       }
 
       async function handleSquadRegistrationSubmit(e) {
@@ -1321,11 +1878,29 @@
         const captainTag = document.getElementById('reg-captain-tag').value.trim();
         const captainDiscord = document.getElementById('reg-captain-discord').value.trim();
         const captainActId = (document.getElementById('reg-captain-actid')?.value || '').trim();
-        const rosterStr = document.getElementById('reg-roster').value.trim();
 
-        if (!teamName || !captainTag || !captainDiscord || !rosterStr) {
-          showToast('Please fill out all required fields.', true);
+        if (!teamName || !captainTag || !captainDiscord) {
+          showToast('Please fill out all required squad details.', true);
           return;
+        }
+
+        const fullRoster = [captainTag, ...currentRosterTeammates].filter(Boolean);
+
+        // Verify squad size matches format
+        if (fullRoster.length < maxSquadSize) {
+          const needed = maxSquadSize - fullRoster.length;
+          showToast(`Please enlist all ${maxSquadSize} players for this tournament format (${needed} more teammate${needed === 1 ? '' : 's'} needed).`, true);
+          return;
+        }
+
+        // Verify no player is already registered in another squad for this tournament
+        const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+        for (const p of fullRoster) {
+          const existingSquad = enlistedPlayersInThisTourney.get(norm(p));
+          if (existingSquad) {
+            showToast(`Player "${p}" is already registered in squad "${existingSquad}" for this tournament.`, true);
+            return;
+          }
         }
 
         const submitBtn = document.getElementById('btn-submit-reg');
@@ -1340,8 +1915,8 @@
             captain_gamertag: captainTag,
             captain_discord: captainDiscord,
             captain_activision_id: captainActId,
-            roster: rosterStr.split(',').map(s => s.trim()).filter(Boolean),
-            roster_text: rosterStr,
+            roster: fullRoster,
+            roster_text: fullRoster.join(', '),
             registered_at: new Date().toISOString()
           };
 
@@ -1374,6 +1949,14 @@
 
       // Event Listeners
       document.getElementById('tourney-search')?.addEventListener('input', renderTournaments);
+
+      // Close teammate autocomplete dropdown on outside click
+      document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('teammate-search-box-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+          hideTeammatesDropdown();
+        }
+      });
 
       // Close modals on overlay click or Escape
       document.querySelectorAll('.tourney-modal-overlay').forEach(overlay => {
