@@ -3511,10 +3511,18 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
+    // Use verified Supabase Auth identity for tournament registration ownership.
+    if (!dbClient) return { success: false, error: "Sign in before registering your team." };
+    const { data: registrationAuth, error: registrationAuthError } = await dbClient.auth.getUser();
+    if (registrationAuthError || !registrationAuth?.user) {
+      return { success: false, error: "Sign in before registering your team." };
+    }
+
     // Build new registration record
     const regId = "reg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
     const regRecord = {
       id: regId,
+      registered_by: registrationAuth.user.id,
       tournament_id: String(tournamentId),
       tournament_title: item.title || "Frontline Tournament",
       team_name: String(squadData.team_name || "Squad").trim(),
@@ -3526,6 +3534,13 @@ if (dbClient && cleanPayload.user_id) {
       status: "registered",
       registered_at: squadData.registered_at || new Date().toISOString()
     };
+
+    // Save the authoritative registration before updating the display registry.
+    const { error: registrationSaveError } = await dbClient
+      .from("tournament_registrations").insert([regRecord]);
+    if (registrationSaveError) {
+      return { success: false, error: "Could not save team registration: " + registrationSaveError.message };
+    }
 
     // Prepend to all registrations
     const updatedAllRegs = allExistingRegs.filter(r => r.id !== regId);
@@ -3544,9 +3559,7 @@ if (dbClient && cleanPayload.user_id) {
         console.warn("league_settings registrations upsert notice:", e);
       }
 
-      try {
-        await dbClient.from("tournament_registrations").insert([regRecord]);
-      } catch (_) {}
+
     }
 
     try {
@@ -4048,20 +4061,12 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     const rowId = this._getMatchChatRowId(tournamentId, matchId);
-    let cleanSenderName = String(senderName || "").trim();
-    if (!cleanSenderName || cleanSenderName.includes("@")) {
-      const p = this.getCurrentPlayer();
-      if (p?.gamertag && !p.gamertag.includes("@")) cleanSenderName = p.gamertag;
-      else if (senderRole === "staff") cleanSenderName = "League Official";
-      else cleanSenderName = senderTeam || "Combatant";
-    }
-
     const chatMsg = {
       id: "tmc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
       tournament_id: String(tournamentId),
       match_id: String(matchId),
       sender_id: senderId || null,
-      sender_name: cleanSenderName,
+      sender_name: String(senderName || "Combatant").trim(),
       sender_team: senderTeam || null,
       sender_role: senderRole || "combatant",
       message: message.trim(),
@@ -7126,7 +7131,7 @@ isDiscordLinkedToEmail(target) {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes"]
     },
     referee: {
       key: "referee",
@@ -8663,16 +8668,7 @@ window.LadderDB = {
     if (authUser) {
       const meta = authUser.user_metadata || {};
       const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.getDiscordIdentity(authUser) : null;
-      let gamertag = meta.gamertag || meta.username || meta.display_name || meta.global_name || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || meta.full_name || meta.name;
-      if (!gamertag || (typeof gamertag === "string" && gamertag.includes("@"))) {
-        try {
-          const card = JSON.parse(localStorage.getItem("frontline_league_player_card"));
-          if (card?.gamertag && !card.gamertag.includes("@")) gamertag = card.gamertag;
-        } catch (_) {}
-      }
-      if (!gamertag || (typeof gamertag === "string" && gamertag.includes("@"))) {
-        gamertag = "Combatant";
-      }
+      const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
       return {
         id: authUser.id,
         gamertag: gamertag,
