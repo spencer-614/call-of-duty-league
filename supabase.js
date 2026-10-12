@@ -3203,13 +3203,33 @@ if (dbClient && cleanPayload.user_id) {
 
     const currentList = await this.getTournaments();
     const tourneyId = tournamentData.id || ("t_" + Date.now());
+    const existingIdx = currentList.findIndex(t => String(t.id) === String(tourneyId));
+    const existingObj = existingIdx !== -1 ? currentList[existingIdx] : {};
+
+    const primaryDate = tournamentData.date || tournamentData.start_date || existingObj.date || existingObj.start_date || "";
+    const primaryTime = tournamentData.time || tournamentData.start_time || existingObj.time || existingObj.start_time || "8:00 PM EST";
+    const primaryBanner = tournamentData.banner_url || tournamentData.image_url || existingObj.banner_url || existingObj.image_url || "";
+    const primaryFit = tournamentData.banner_fit || existingObj.banner_fit || "contain";
+
     const tourneyItem = {
+      ...existingObj,
       ...tournamentData,
       id: tourneyId,
+      date: primaryDate,
+      start_date: primaryDate,
+      time: primaryTime,
+      start_time: primaryTime,
+      banner_url: primaryBanner,
+      image_url: primaryBanner,
+      banner_fit: primaryFit,
+      max_teams: Number(tournamentData.max_teams || existingObj.max_teams || 32),
+      registered_teams: Number(tournamentData.registered_teams !== undefined ? tournamentData.registered_teams : (existingObj.registered_teams || 0)),
+      teams_registered_count: Number(tournamentData.teams_registered_count !== undefined ? tournamentData.teams_registered_count : (existingObj.teams_registered_count || existingObj.registered_teams || 0)),
+      pinned: !!(tournamentData.pinned !== undefined ? tournamentData.pinned : existingObj.pinned),
+      is_active: tournamentData.is_active !== undefined ? tournamentData.is_active : (existingObj.is_active !== false),
       updated_at: new Date().toISOString()
     };
 
-    const existingIdx = currentList.findIndex(t => String(t.id) === String(tourneyId));
     if (existingIdx !== -1) {
       currentList[existingIdx] = tourneyItem;
     } else {
@@ -3234,16 +3254,22 @@ if (dbClient && cleanPayload.user_id) {
           entry_fee: tourneyItem.entry_fee || 'FREE ENTRY',
           max_teams: Number(tourneyItem.max_teams) || 16,
           registered_teams: Number(tourneyItem.registered_teams) || 0,
-          start_date: tourneyItem.date || tourneyItem.start_date || '',
-          start_time: tourneyItem.time || tourneyItem.start_time || '',
+          start_date: tourneyItem.start_date || '',
+          start_time: tourneyItem.start_time || '',
           status: tourneyItem.status || 'Registration Open',
-          image_url: tourneyItem.image_url || tourneyItem.banner_url || '',
+          image_url: tourneyItem.image_url || '',
+          banner_url: tourneyItem.banner_url || '',
+          banner_fit: tourneyItem.banner_fit || 'contain',
           registration_url: tourneyItem.registration_url || '',
           bracket_url: tourneyItem.bracket_url || '/tournaments/bracket/',
           description: tourneyItem.description || '',
           rules_notes: tourneyItem.rules_notes || '',
           updated_at: new Date().toISOString()
         };
+
+        if (tourneyItem.bracket_data) {
+          payload.bracket_data = tourneyItem.bracket_data;
+        }
 
         const { error: directErr } = await dbClient.from("tournaments").upsert(payload, { onConflict: "id" });
         if (directErr) {

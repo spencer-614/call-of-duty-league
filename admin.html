@@ -3203,6 +3203,169 @@
       </div>
     </dialog>
 
+    <!-- MODAL: EDIT TOURNAMENT DETAILS -->
+    <dialog id="modal-edit-tournament-details" class="admin-modal" closedby="any" style="max-width:860px; width:95%;">
+      <div class="admin-modal-header" style="border-bottom:1px solid #2a311e; padding-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">COMMISSIONER EVENT ENGINE // EDIT TOURNAMENT DIRECTIVE</div>
+          <h3 class="admin-modal-title" id="edit-tourney-modal-header-title" style="margin:0; font:800 20px var(--display); color:#ffffff;">✏️ Edit Tournament Details</h3>
+        </div>
+        <button type="button" class="btn-action-sm" onclick="closeEditTournamentModal()">✕ Close</button>
+      </div>
+      <form id="form-modal-edit-tournament" onsubmit="handleModalSaveTournamentDetails(event)">
+        <input type="hidden" id="modal-edit-tourney-id" />
+        <div class="admin-modal-body" style="max-height:70vh; overflow-y:auto; padding-top:16px;">
+          <div class="admin-form-grid">
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label" for="modal-edit-tourney-title">Tournament Title / Headline *</label>
+              <input type="text" id="modal-edit-tourney-title" class="form-control" required placeholder="e.g. Saturday Night SnD Prime Cup or Frontline Premier Major #1" />
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label" for="modal-edit-tourney-desc">Tournament Brief / Directives &amp; Rules *</label>
+              <textarea id="modal-edit-tourney-desc" class="form-control" rows="3" required placeholder="Rules summary, check-in instructions, map veto guidelines, host protocols..." style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-format">Format / Game Mode *</label>
+              <select id="modal-edit-tourney-format" class="form-control" required>
+                <option value="4v4 CDL Variant">4v4 CDL Variant (HP / SnD / Ctrl)</option>
+                <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
+                <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
+                <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
+                <option value="Open CDL Bracket">Open CDL Multi-Stage Bracket</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-bracket-type">Bracket Elimination Type *</label>
+              <select id="modal-edit-tourney-bracket-type" class="form-control" required>
+                <option value="Double Elimination">Double Elimination</option>
+                <option value="Single Elimination">Single Elimination</option>
+                <option value="Swiss System">Swiss System</option>
+                <option value="Round Robin">Round Robin Groups</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-prize">Prize Pool *</label>
+              <input type="text" id="modal-edit-tourney-prize" class="form-control" required placeholder="e.g. $1,500 USD or Custom Rings" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-entry">Entry Fee</label>
+              <input type="text" id="modal-edit-tourney-entry" class="form-control" placeholder="e.g. FREE ENTRY or $25 / Team" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-max-teams">Max Teams / Bracket Cap</label>
+              <input type="number" id="modal-edit-tourney-max-teams" class="form-control" min="2" max="256" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-status">Status / Stage *</label>
+              <select id="modal-edit-tourney-status" class="form-control" required>
+                <option value="Registration Open">Registration Open</option>
+                <option value="Live">🔴 Live Bracket</option>
+                <option value="Upcoming">Upcoming Event</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-date">Scheduled Date *</label>
+              <input type="text" id="modal-edit-tourney-date" class="form-control" required placeholder="e.g. Saturday, Oct 17, 2026 or 2026-10-17" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-time">Start / Check-In Time *</label>
+              <input type="text" id="modal-edit-tourney-time" class="form-control" required placeholder="e.g. 8:00 PM EST" />
+            </div>
+
+            <!-- Graphic Banner -->
+            <div class="form-group" style="grid-column: 1 / -1; background:#141611; border:1px dashed #3a4022; padding:16px; border-radius:4px;">
+              <label class="form-label" style="font-size:13px; font-weight:800; color:#fbbf24; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+                <span>📸 Graphic Banner / Flyer Image (1200 × 675 px · 16:9)</span>
+              </label>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; align-items:flex-start;">
+                <div>
+                  <label class="form-label" for="modal-edit-tourney-banner-file" style="font-size:11.5px; margin-bottom:2px;">Upload 1200×675 Image File</label>
+                  <input type="file" id="modal-edit-tourney-banner-file" accept="image/*" class="form-control" style="padding:6px; font-size:12px;" />
+                </div>
+                <div>
+                  <label class="form-label" for="modal-edit-tourney-banner" style="font-size:11.5px; margin-bottom:2px;">Direct Image URL</label>
+                  <input type="url" id="modal-edit-tourney-banner" class="form-control" placeholder="https://... or /images/..." style="font-size:12px;" />
+                </div>
+              </div>
+
+              <div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">
+                <span style="font-size:11px; color:var(--muted); font-weight:700;">1200×675 Presets:</span>
+                <button type="button" class="btn-action-sm" onclick="setModalTourneyBannerPreset('https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80')">🏆 Major Trophy</button>
+                <button type="button" class="btn-action-sm" onclick="setModalTourneyBannerPreset('https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&h=675&auto=format&fit=crop&q=80')">🎯 SnD Combat</button>
+                <button type="button" class="btn-action-sm" onclick="setModalTourneyBannerPreset('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&h=675&auto=format&fit=crop&q=80')">⚔ Arena Duel</button>
+                <button type="button" class="btn-action-sm" onclick="setModalTourneyBannerPreset('https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1200&h=675&auto=format&fit=crop&q=80')">⚡ Champions</button>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:16px; margin-top:12px; padding:10px 14px; background:#0b0d08; border:1px solid #232817; border-radius:3px; flex-wrap:wrap;">
+                <span style="font-size:11.5px; font-weight:800; color:#fbbf24;">Banner Scaling Fit:</span>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:#ffffff;">
+                  <input type="radio" name="modal-edit-tourney-banner-fit" id="modal-edit-tourney-fit-contain" value="contain" checked style="accent-color:#fbbf24;" />
+                  <span><strong>Fit Full Image (Contain)</strong> · Zero Cropping</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:#9ca3af;">
+                  <input type="radio" name="modal-edit-tourney-banner-fit" id="modal-edit-tourney-fit-cover" value="cover" style="accent-color:#fbbf24;" />
+                  <span><strong>Fill Banner (Cover)</strong> · Edge-to-edge crop</span>
+                </label>
+              </div>
+
+              <!-- Banner Preview Box -->
+              <div id="modal-edit-tourney-preview-box" style="display:none; align-items:center; gap:14px; margin-top:12px; padding:12px 14px; background:#0e100c; border:1px solid #282d18; border-radius:3px;">
+                <img id="modal-edit-tourney-thumb" src="" alt="Banner Preview" style="width:104px; height:58.5px; aspect-ratio:16/9; object-fit:cover; background:#050604; border-radius:3px; border:1px solid #3c4225;" />
+                <div style="flex:1;">
+                  <span style="font-size:12px; font-weight:700; color:#d4d8c2; display:block; margin-bottom:2px;">Graphic Banner Attached</span>
+                  <div style="display:inline-block; font-size:11px; color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.25); padding:1px 6px; border-radius:2px;">✓ Formatted for 1200 × 675 px</div>
+                </div>
+                <button type="button" class="btn-action-sm btn-action-danger" style="padding:4px 10px; font-size:11px;" onclick="removeModalTourneyBanner()">✕ Remove</button>
+              </div>
+            </div>
+
+            <!-- Optional Link Routes -->
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-reg-url">Custom Registration URL (Optional)</label>
+              <input type="text" id="modal-edit-tourney-reg-url" class="form-control" placeholder="Leave empty for built-in squad roster modal" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modal-edit-tourney-bracket-url">Bracket Page Route / URL</label>
+              <input type="text" id="modal-edit-tourney-bracket-url" class="form-control" value="/tournaments/bracket/" />
+            </div>
+
+            <!-- Toggles -->
+            <div class="form-group" style="display:flex; align-items:center; gap:24px; padding-top:10px; grid-column: 1 / -1;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
+                <input type="checkbox" id="modal-edit-tourney-is-active" checked style="accent-color:#fbbf24; width:18px; height:18px;" />
+                <span>Active (Display on Live Tournaments Hub)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
+                <input type="checkbox" id="modal-edit-tourney-pinned" style="accent-color:#fbbf24; width:18px; height:18px;" />
+                <span>Pin Tournament (Featured Top Placement on Hub)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
+          <button type="button" class="btn-action-sm btn-action-danger" id="btn-modal-delete-tourney" onclick="handleModalDeleteTourney()" style="color:#ef4444; border-color:#ef4444;">🗑 Delete Tournament</button>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-action-sm" onclick="closeEditTournamentModal()">Cancel</button>
+            <button type="submit" class="btn-paypal-submit" id="btn-modal-save-tourney" style="width:auto; padding:8px 22px; font-size:13px;">
+              💾 Save Tournament Details
+            </button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+
     <!-- Modal: Staff Custom Permissions -->
     <dialog id="modal-staff-custom-perms" class="admin-modal" closedby="any" style="max-width:680px; width:95%;">
       <div class="admin-modal-header" style="border-bottom:1px solid #2a311e; padding-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start;">
@@ -8153,6 +8316,209 @@
           }
         });
 
+        
+        // =========================================================================
+        // EDIT TOURNAMENT DETAILS MODAL CONTROLLERS
+        // =========================================================================
+        function openEditTournamentModal(id) {
+          const tourney = cachedAdminTournaments.find(t => String(t.id) === String(id));
+          if (!tourney) return;
+
+          const modal = document.getElementById("modal-edit-tournament-details");
+          if (!modal) return;
+
+          document.getElementById("modal-edit-tourney-id").value = tourney.id || "";
+          document.getElementById("edit-tourney-modal-header-title").textContent = "✏️ Edit Tournament: " + (tourney.title || 'Event');
+          document.getElementById("modal-edit-tourney-title").value = tourney.title || "";
+          document.getElementById("modal-edit-tourney-desc").value = tourney.description || "";
+          document.getElementById("modal-edit-tourney-format").value = tourney.format || "4v4 CDL Variant";
+          document.getElementById("modal-edit-tourney-bracket-type").value = tourney.bracket_type || "Double Elimination";
+          document.getElementById("modal-edit-tourney-prize").value = tourney.prize_pool || "$1,500 USD";
+          document.getElementById("modal-edit-tourney-entry").value = tourney.entry_fee || "FREE ENTRY";
+          document.getElementById("modal-edit-tourney-max-teams").value = tourney.max_teams || 32;
+          document.getElementById("modal-edit-tourney-status").value = tourney.status || "Registration Open";
+          document.getElementById("modal-edit-tourney-date").value = tourney.date || tourney.start_date || "";
+          document.getElementById("modal-edit-tourney-time").value = tourney.time || tourney.start_time || "8:00 PM EST";
+          document.getElementById("modal-edit-tourney-banner").value = tourney.banner_url || tourney.image_url || "";
+          document.getElementById("modal-edit-tourney-reg-url").value = tourney.registration_url || "";
+          document.getElementById("modal-edit-tourney-bracket-url").value = tourney.bracket_url || "/tournaments/bracket/";
+
+          const pinEl = document.getElementById("modal-edit-tourney-pinned");
+          if (pinEl) pinEl.checked = !!tourney.pinned;
+
+          const actEl = document.getElementById("modal-edit-tourney-is-active");
+          if (actEl) actEl.checked = tourney.is_active !== false;
+
+          const fitMode = tourney.banner_fit || "contain";
+          const fitRadio = document.getElementById("modal-edit-tourney-fit-" + fitMode);
+          if (fitRadio) fitRadio.checked = true;
+
+          // Thumbnail preview
+          const bUrl = tourney.banner_url || tourney.image_url;
+          const prevBox = document.getElementById("modal-edit-tourney-preview-box");
+          const thumb = document.getElementById("modal-edit-tourney-thumb");
+          if (bUrl && prevBox && thumb) {
+            thumb.src = bUrl;
+            prevBox.style.display = "flex";
+          } else if (prevBox) {
+            prevBox.style.display = "none";
+          }
+
+          // File upload listener in modal
+          const fileInput = document.getElementById("modal-edit-tourney-banner-file");
+          if (fileInput) {
+            fileInput.onchange = function(e) {
+              const file = e.target.files && e.target.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = function(evt) {
+                const dataUrl = evt.target.result;
+                document.getElementById("modal-edit-tourney-banner").value = dataUrl;
+                if (thumb && prevBox) {
+                  thumb.src = dataUrl;
+                  prevBox.style.display = "flex";
+                }
+              };
+              reader.readAsDataURL(file);
+            };
+          }
+
+          modal.showModal();
+        }
+        window.openEditTournamentModal = openEditTournamentModal;
+
+        function closeEditTournamentModal() {
+          const modal = document.getElementById("modal-edit-tournament-details");
+          if (modal) modal.close();
+        }
+        window.closeEditTournamentModal = closeEditTournamentModal;
+
+        function setModalTourneyBannerPreset(url) {
+          const input = document.getElementById("modal-edit-tourney-banner");
+          if (input) input.value = url;
+          const thumb = document.getElementById("modal-edit-tourney-thumb");
+          const prevBox = document.getElementById("modal-edit-tourney-preview-box");
+          if (thumb && prevBox) {
+            thumb.src = url;
+            prevBox.style.display = "flex";
+          }
+        }
+        window.setModalTourneyBannerPreset = setModalTourneyBannerPreset;
+
+        function removeModalTourneyBanner() {
+          const input = document.getElementById("modal-edit-tourney-banner");
+          if (input) input.value = "";
+          const prevBox = document.getElementById("modal-edit-tourney-preview-box");
+          if (prevBox) prevBox.style.display = "none";
+          const fileInput = document.getElementById("modal-edit-tourney-banner-file");
+          if (fileInput) fileInput.value = "";
+        }
+        window.removeModalTourneyBanner = removeModalTourneyBanner;
+
+        async function handleModalSaveTournamentDetails(e) {
+          e.preventDefault();
+          const id = document.getElementById("modal-edit-tourney-id") && document.getElementById("modal-edit-tourney-id").value;
+          if (!id) return;
+
+          const existingTourney = cachedAdminTournaments.find(t => String(t.id) === String(id)) || {};
+
+          const title = document.getElementById("modal-edit-tourney-title").value.trim();
+          const desc = document.getElementById("modal-edit-tourney-desc").value.trim();
+          const format = document.getElementById("modal-edit-tourney-format").value;
+          const bracketType = document.getElementById("modal-edit-tourney-bracket-type").value;
+          const prizePool = document.getElementById("modal-edit-tourney-prize").value.trim();
+          const entryFee = document.getElementById("modal-edit-tourney-entry").value.trim() || "FREE ENTRY";
+          const maxTeams = parseInt(document.getElementById("modal-edit-tourney-max-teams").value || "32", 10);
+          const status = document.getElementById("modal-edit-tourney-status").value || "Registration Open";
+          const date = document.getElementById("modal-edit-tourney-date").value.trim();
+          const time = document.getElementById("modal-edit-tourney-time").value.trim();
+          const bannerUrl = document.getElementById("modal-edit-tourney-banner").value.trim() || "";
+          const regUrl = document.getElementById("modal-edit-tourney-reg-url").value.trim() || "";
+          const bracketUrl = document.getElementById("modal-edit-tourney-bracket-url").value.trim() || "/tournaments/bracket/";
+          const isPinned = !!(document.getElementById("modal-edit-tourney-pinned") && document.getElementById("modal-edit-tourney-pinned").checked);
+          const isActive = !document.getElementById("modal-edit-tourney-is-active") || document.getElementById("modal-edit-tourney-is-active").checked;
+          const bannerFitRadio = document.querySelector('input[name="modal-edit-tourney-banner-fit"]:checked');
+          const bannerFit = bannerFitRadio ? bannerFitRadio.value : "contain";
+
+          if (!title || !format || !prizePool || !date) {
+            showToast("Please fill out all required fields.", true);
+            return;
+          }
+
+          const saveBtn = document.getElementById("btn-modal-save-tourney");
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Saving Details...";
+          }
+
+          const updatedTourney = {
+            ...existingTourney,
+            id,
+            title,
+            description: desc,
+            format,
+            bracket_type: bracketType,
+            prize_pool: prizePool,
+            entry_fee: entryFee,
+            max_teams: maxTeams,
+            status,
+            date,
+            start_date: date,
+            time,
+            start_time: time,
+            banner_url: bannerUrl,
+            image_url: bannerUrl,
+            banner_fit: bannerFit,
+            registration_url: regUrl,
+            bracket_url: bracketUrl,
+            pinned: isPinned,
+            is_active: isActive
+          };
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.saveTournament === "function") {
+              const res = await window.LeagueDB.saveTournament(updatedTourney);
+              if (res.success) {
+                showToast("✓ Tournament details updated and published to Hub!");
+                closeEditTournamentModal();
+                await loadAdminTournaments();
+                if (document.getElementById("tourney-id") && document.getElementById("tourney-id").value === id) {
+                  editTournament(id);
+                }
+              } else {
+                showToast("Failed: " + (res.error || "Database error"), true);
+              }
+            } else {
+              let currentList = JSON.parse(localStorage.getItem("frontline_tournaments_data")) || [...cachedAdminTournaments];
+              const idx = currentList.findIndex(t => String(t.id) === String(id));
+              if (idx !== -1) currentList[idx] = updatedTourney;
+              else currentList.unshift(updatedTourney);
+              localStorage.setItem("frontline_tournaments_data", JSON.stringify(currentList));
+              showToast("✓ Tournament details updated locally!");
+              closeEditTournamentModal();
+              await loadAdminTournaments();
+            }
+          } catch (err) {
+            console.error("Save tournament details error:", err);
+            showToast("Failed to save tournament details.", true);
+          } finally {
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.textContent = "💾 Save Tournament Details";
+            }
+          }
+        }
+        window.handleModalSaveTournamentDetails = handleModalSaveTournamentDetails;
+
+        async function handleModalDeleteTourney() {
+          const id = document.getElementById("modal-edit-tourney-id") && document.getElementById("modal-edit-tourney-id").value;
+          const title = (document.getElementById("modal-edit-tourney-title") && document.getElementById("modal-edit-tourney-title").value) || "Tournament";
+          if (!id) return;
+          closeEditTournamentModal();
+          await adminDeleteTourney(id, title);
+        }
+        window.handleModalDeleteTourney = handleModalDeleteTourney;
+
         function editTournament(id) {
           const tourney = cachedAdminTournaments.find(t => String(t.id) === String(id));
           if (!tourney) return;
@@ -8343,7 +8709,7 @@
                   </td>
                   <td>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="editTournament('${escapeHtml(t.id)}')">✏️ Edit</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="openEditTournamentModal('${escapeHtml(t.id)}')">✏️ Edit Details</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
                       <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
