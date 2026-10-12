@@ -470,11 +470,16 @@
     </footer>
 
     <script>
+      let currentFilterCat = 'all';
+
       function filterTourneys(cat, btn) {
-        document.querySelectorAll('#active-tournaments button').forEach(b => {
-          b.className = 'btn-crimson-outline';
-        });
-        btn.className = 'btn-crimson';
+        currentFilterCat = cat;
+        if (btn) {
+          document.querySelectorAll('#active-tournaments button').forEach(b => {
+            b.className = 'btn-crimson-outline';
+          });
+          btn.className = 'btn-crimson';
+        }
 
         const cards = document.querySelectorAll('.tourney-card');
         cards.forEach(c => {
@@ -484,6 +489,135 @@
             c.style.display = 'none';
           }
         });
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function deriveCategory(format) {
+        const f = (format || '').toLowerCase();
+        if (f.includes('1v1') || f.includes('solo') || f.includes('radar')) return '1v1';
+        if (f.includes('2v2') || f.includes('duo')) return '2v2';
+        return '4v4';
+      }
+
+      async function loadArenaTournaments() {
+        const container = document.getElementById('tourney-cards-container');
+        if (!container) return;
+
+        try {
+          let list = [];
+          if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
+            list = await window.LeagueDB.getTournaments();
+          } else {
+            const raw = localStorage.getItem('frontline_tournaments_data');
+            if (raw) {
+              try { list = JSON.parse(raw); } catch (e) {}
+            }
+          }
+
+          const arenaTourneys = (list || []).filter(t => {
+            if (t.is_active === false) return false;
+            const c = (t.circuit || 'arena').toLowerCase();
+            return c === 'arena' || c === 'both';
+          });
+
+          if (arenaTourneys && arenaTourneys.length > 0) {
+            container.innerHTML = arenaTourneys.map(t => {
+              const cat = deriveCategory(t.format);
+              const banner = t.banner_url || t.image_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80';
+              const enlisted = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
+              const max = t.max_teams || 32;
+              const statusRaw = (t.status || 'Registration Open').toLowerCase();
+              let badgeBg = '#0f2918';
+              let badgeColor = '#22c55e';
+              let badgeBorder = '#1b4d2c';
+              let badgeText = 'REGISTRATION OPEN';
+
+              if (statusRaw.includes('live')) {
+                badgeBg = '#3b0d14';
+                badgeColor = '#ef4444';
+                badgeBorder = '#7f1d1d';
+                badgeText = '🔴 LIVE BRACKET';
+              } else if (statusRaw.includes('upcoming')) {
+                badgeBg = '#082f49';
+                badgeColor = '#38bdf8';
+                badgeBorder = '#075985';
+                badgeText = 'UPCOMING EVENT';
+              } else if (statusRaw.includes('completed')) {
+                badgeBg = '#1e2017';
+                badgeColor = '#94a3b8';
+                badgeBorder = '#333';
+                badgeText = 'COMPLETED';
+              }
+
+              const circuitTag = t.pinned ? 'FEATURED PRIME' : 'ARENA LADDER CUP';
+
+              return `
+                <div class="gb-card-box tourney-card" data-category="${escapeHtml(cat)}" style="display:flex; flex-direction:column; overflow:hidden;">
+                  <div style="position:relative; height:160px; overflow:hidden; background:#080a0f;">
+                    <img src="${escapeHtml(banner)}" style="width:100%; height:100%; object-fit:${escapeHtml(t.banner_fit || 'cover')}; filter:brightness(0.65);" alt="${escapeHtml(t.title)}" />
+                    <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
+                      <span class="gb-meta-tag accent">${escapeHtml(circuitTag)}</span>
+                      <span class="val-badge" style="background:${badgeBg}; color:${badgeColor}; border-color:${badgeBorder};">${escapeHtml(badgeText)}</span>
+                    </div>
+                    <div style="position:absolute; bottom:12px; left:14px; right:14px;">
+                      <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">${escapeHtml(t.title)}</h3>
+                      <span style="font-size:12px; color:#cbd5e1;">${escapeHtml(t.format || '4v4 CDL Variant')} · ${escapeHtml(t.bracket_type || 'Double Elimination')}</span>
+                    </div>
+                  </div>
+
+                  <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
+                        <div>
+                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
+                          <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">${escapeHtml(t.prize_pool || '$500 Cash')}</div>
+                        </div>
+                        <div>
+                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
+                          <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">${enlisted} / ${max} Squads</div>
+                        </div>
+                        <div>
+                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
+                          <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">${escapeHtml(t.date || t.start_date || 'TBD')} · ${escapeHtml(t.time || t.start_time || '8:00 PM EST')}</div>
+                        </div>
+                        <div>
+                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Entry Fee</span>
+                          <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">${escapeHtml(t.entry_fee || 'FREE ENTRY')}</div>
+                        </div>
+                      </div>
+
+                      <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+                        ${escapeHtml(t.description || 'Sanctioned Frontline Arena competitive tournament played under official CDL rules and automated map veto.')}
+                      </p>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                      <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('${escapeHtml(t.title)}')">
+                        <span>⚔</span> <span>Register Squad</span>
+                      </button>
+                      <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">
+                        View Bracket
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+            filterTourneys(currentFilterCat, null);
+          }
+        } catch (err) {
+          console.warn('Could not load dynamic Arena tournaments:', err);
+        }
       }
 
       function registerForTourney(title) {
@@ -499,6 +633,10 @@
       function showBracketPreview(type) {
         alert('Displaying live bracket telemetry for ' + type.toUpperCase() + '.\nMatches update automatically as scores are verified in the Arena Match Rooms.');
       }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        loadArenaTournaments();
+      });
     </script>
   </body>
 </html>
