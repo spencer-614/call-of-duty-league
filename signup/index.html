@@ -368,7 +368,7 @@
                   <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
                   <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
-                  <a href="/signup/" class="nav-link-highlight" style="color:var(--lime);"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="/signup/" class="nav-link-highlight" style="color:var(--lime);"><span class="nav-icon">✳</span> League Draft Sign Up</a>
                 </div>
               </div>
             </nav>
@@ -395,13 +395,24 @@
           <!-- STEP 01: COMBATANT ACCOUNT GATE (SHOWN WHEN LOGGED OUT)  -->
           <!-- ======================================================== -->
           <div id="account-gate-container" class="account-gate-card">
+            <!-- Open Tournaments Callout Banner -->
+            <div style="background:rgba(88,101,242,0.12); border:1px solid #5865F2; padding:12px 16px; border-radius:4px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; text-align:left;">
+              <div>
+                <span style="font-weight:800; color:#8ea1e1; font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px;">⚡ Playing in Open Tournaments?</span>
+                <div style="font-size:12.5px; color:#cbd5e1; margin-top:2px;">Open tournaments do <strong>not</strong> require seasonal draft registration! Sign in with Discord and you're ready to enlist your squad.</div>
+              </div>
+              <a href="/tournaments/" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:11px; padding:7px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:5px; font-weight:800;">
+                <span>Go to Tournaments</span> <span>↗</span>
+              </a>
+            </div>
+
             <div class="gate-icon-badge">
               <span class="gate-icon-lock">🔒</span>
             </div>
-            <div class="gate-kicker">RECRUITMENT PROTOCOL // STEP 01</div>
-            <h2 class="gate-title">COMBATANT <span style="color:var(--lime);">ACCOUNT PORTAL</span></h2>
+            <div class="gate-kicker">SEASON 1 DRAFT ELIGIBILITY // RECRUITMENT PROTOCOL</div>
+            <h2 class="gate-title">LEAGUE DRAFT <span style="color:var(--lime);">REGISTRATION</span></h2>
             <p class="gate-subtitle">
-              To verify tournament eligibility and track your squad dossier, create or sign into your official Frontline combatant account below. Once authenticated, the Season 1 Registration Terminal will unlock automatically.
+              Sign into your combatant account or connect with Discord to register for the official Season 1 Franchise Draft Pool. (Note: League registration is specifically for seasonal draft eligibility — Open tournaments do not require draft registration).
             </p>
 
             <!-- 1-Click Discord OAuth Login -->
@@ -628,6 +639,17 @@
               </button>
             </div>
 
+            <!-- Open Tournaments Quick Nav Banner -->
+            <div style="background:rgba(88,101,242,0.12); border:1px solid rgba(88,101,242,0.4); padding:12px 18px; border-radius:4px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+              <div style="text-align:left;">
+                <span style="font-weight:800; color:#8ea1e1; font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px;">🏆 Playing in Open Tournaments?</span>
+                <div style="font-size:12.5px; color:#cbd5e1; margin-top:2px;">You are already signed in! You do <strong>not</strong> need to register for the league draft to play in open tournaments.</div>
+              </div>
+              <a href="/tournaments/" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:11.5px; padding:8px 16px; text-decoration:none; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+                <span>Enlist Squad in Tournaments</span> <span>↗</span>
+              </a>
+            </div>
+
             <!-- Pathway Selector Protocol Bar -->
             <div class="signup-pathway-nav">
               <span class="pathway-nav-label">Select Protocol:</span>
@@ -635,21 +657,21 @@
                 <button type="button" class="pathway-btn active" id="tab-btn-solo" role="tab" aria-selected="true" onclick="switchTab('solo')">
                   <span class="pathway-icon">🎯</span>
                   <span class="pathway-text">
-                    <strong>Player Registration</strong>
+                    <strong>Player Draft Registration</strong>
                     <small>Solo / Free Agent</small>
                   </span>
                 </button>
                 <button type="button" class="pathway-btn btn-team" id="tab-btn-team" role="tab" aria-selected="false" onclick="switchTab('team')">
                   <span class="pathway-icon">🛡</span>
                   <span class="pathway-text">
-                    <strong>Team Registration</strong>
+                    <strong>Team Franchise Entry</strong>
                     <small>Free &amp; Paid Options</small>
                   </span>
                 </button>
                 <button type="button" class="pathway-btn btn-org" id="tab-btn-org" role="tab" aria-selected="false" onclick="switchTab('org')">
                   <span class="pathway-icon">⚡</span>
                   <span class="pathway-text">
-                    <strong>Org Registration</strong>
+                    <strong>Org Franchise Entry</strong>
                     <small>All Divisions + Open</small>
                   </span>
                 </button>
@@ -657,10 +679,10 @@
             </div>
 
             <div class="signup-header">
-              <div class="kicker" id="signup-header-kicker">RECRUITMENT PROTOCOL // OPTION 1 OF 3</div>
-              <h2 id="signup-header-title">Player <span style="color:var(--lime);">Registration</span></h2>
+              <div class="kicker" id="signup-header-kicker">SEASON 1 DRAFT ELIGIBILITY // OPTION 1 OF 3</div>
+              <h2 id="signup-header-title">Draft <span style="color:var(--lime);">Registration</span></h2>
               <p id="signup-header-desc">
-                Register as an individual combatant or unassigned Free Agent looking for a squad or community draft placement.
+                Register as an individual combatant or unassigned Free Agent looking for a franchised squad or community draft placement. (Open tournament play does not require this form).
               </p>
             </div>
 
@@ -1392,7 +1414,7 @@
           <a href="/rules/">Rulebook</a>
           <a href="/livestreams/">Livestreams</a>
           <a href="/vods/">VODs</a>
-          <a href="/signup/" style="color:var(--lime);" class="active">Sign Up</a>
+          <a href="/signup/" style="color:var(--lime);" class="active">Draft Registration</a>
         </div>
       </div>
     </footer>

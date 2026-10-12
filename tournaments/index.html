@@ -562,7 +562,7 @@
                   <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
                   <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
                   <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
-                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> League Draft Sign Up</a>
                 </div>
               </div>
             </nav>
@@ -635,6 +635,9 @@
               <span>⚔</span> <span>Live Tournament Brackets ↗</span>
             </a>
           </div>
+
+          <!-- Discord Authentication Quick Status Banner -->
+          <div id="tourney-hero-auth-bar" style="margin-top:18px;"></div>
 
           <!-- Quick Telemetry Row -->
           <div class="tourney-telemetry-row">
@@ -785,9 +788,12 @@
         <h2 style="font:800 24px var(--display); color:#fff; text-transform:uppercase; margin:0 0 6px;" id="reg-modal-title">
           Register for Tournament
         </h2>
-        <p style="font-size:12.5px; color:#9ca3af; margin:0 0 18px;">
-          Submit your squad details to confirm entry into the bracket. Free agents may assemble custom teams.
+        <p style="font-size:12.5px; color:#9ca3af; margin:0 0 14px;">
+          Submit your squad details to confirm entry into the bracket. Free agents may assemble custom teams. Open to all combatants — no league draft registration required.
         </p>
+
+        <!-- Discord Quick Sign In / Status Bar -->
+        <div id="tourney-modal-auth-bar" style="margin-bottom:16px;"></div>
 
         <form id="form-squad-registration" onsubmit="handleSquadRegistrationSubmit(event)">
           <input type="hidden" id="reg-tournament-id" />
@@ -916,7 +922,7 @@
           <a href="/rules/">Rulebook</a>
           <a href="/livestreams/">Livestreams</a>
           <a href="/vods/">VODs</a>
-          <a href="/signup/">Sign Up</a>
+          <a href="/signup/">Draft Registration</a>
         </div>
       </div>
     </footer>
@@ -987,6 +993,56 @@
 
         renderTournaments();
         updateMetrics();
+        updateTourneyAuthUI();
+
+        // Check if returning from Discord OAuth redirect with pending tournament registration
+        const pendingTourney = sessionStorage.getItem('frontline_pending_tourney_reg');
+        if (pendingTourney) {
+          sessionStorage.removeItem('frontline_pending_tourney_reg');
+          setTimeout(() => {
+            openTourneyRegister(pendingTourney);
+          }, 350);
+        }
+      }
+
+      function updateTourneyAuthUI() {
+        const user = getCurrentUserIdentity();
+        const heroBar = document.getElementById('tourney-hero-auth-bar');
+        if (heroBar) {
+          if (user.id || (user.gamertag && user.gamertag !== 'Operative')) {
+            heroBar.innerHTML = `
+              <div style="display:inline-flex; align-items:center; gap:10px; background:rgba(88,101,242,0.12); border:1px solid #5865F2; padding:7px 14px; border-radius:3px; font-size:12px; color:#cbd5e1;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e;"></span>
+                <span>Signed in as <strong style="color:#ffffff;">${escapeHtml(user.gamertag || user.discord || 'Combatant')}</strong> <span style="color:#8ea1e1;">(Discord: ${escapeHtml(user.discord || 'Connected')})</span></span>
+                <span style="color:#64748b;">·</span>
+                <span style="color:#4ade80; font-weight:700;">Open Tournament Ready</span>
+              </div>
+            `;
+          } else {
+            heroBar.innerHTML = `
+              <div style="display:inline-flex; align-items:center; gap:12px; background:rgba(88,101,242,0.1); border:1px solid rgba(88,101,242,0.35); padding:8px 16px; border-radius:3px; font-size:12px; flex-wrap:wrap;">
+                <span style="color:#cbd5e1;">⚡ <strong>Open Tournaments:</strong> Sign in with Discord to auto-fill Captain details and enlist your squad (No draft registration needed):</span>
+                <button type="button" onclick="signInWithDiscordFromTourney()" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:11px; padding:5px 12px; cursor:pointer; font-weight:800; display:inline-flex; align-items:center; gap:5px;">
+                  <span>💬 1-Click Discord Sign In</span>
+                </button>
+              </div>
+            `;
+          }
+        }
+      }
+
+      async function signInWithDiscordFromTourney(tourneyId = null) {
+        if (tourneyId) {
+          sessionStorage.setItem('frontline_pending_tourney_reg', String(tourneyId));
+        } else if (currentSelectedTourney?.id) {
+          sessionStorage.setItem('frontline_pending_tourney_reg', String(currentSelectedTourney.id));
+        }
+        const redirectUrl = window.location.origin + window.location.pathname;
+        if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === 'function') {
+          await window.LeagueDB.signInWithDiscord(redirectUrl);
+        } else {
+          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
+        }
       }
 
       function updateMetrics() {
@@ -1837,6 +1893,28 @@
           submitBtn.style.opacity = '0.5';
         }
 
+        // Render modal auth status banner
+        const modalAuthBar = document.getElementById('tourney-modal-auth-bar');
+        if (modalAuthBar) {
+          if (myUser.id || (myUser.gamertag && myUser.gamertag !== 'Operative')) {
+            modalAuthBar.innerHTML = `
+              <div style="background:rgba(88,101,242,0.1); border:1px solid rgba(88,101,242,0.3); padding:8px 12px; border-radius:3px; display:flex; align-items:center; justify-content:space-between; font-size:11.5px;">
+                <span style="color:#8ea1e1; font-weight:700;">🟢 Signed in as <strong style="color:#fff;">${escapeHtml(myUser.gamertag || myUser.discord)}</strong></span>
+                <span style="color:#4ade80; font-weight:700; font-size:10.5px;">✓ Open Tournament Verified</span>
+              </div>
+            `;
+          } else {
+            modalAuthBar.innerHTML = `
+              <div style="background:rgba(88,101,242,0.12); border:1px solid #5865F2; padding:10px 14px; border-radius:3px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <span style="color:#cbd5e1; font-size:12px;">Sign in with Discord to auto-fill Captain details (No draft registration needed):</span>
+                <button type="button" onclick="signInWithDiscordFromTourney('${id}')" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:11px; padding:5px 12px; cursor:pointer; font-weight:800; display:inline-flex; align-items:center; gap:5px;">
+                  <span>💬 1-Click Discord Sign In</span>
+                </button>
+              </div>
+            `;
+          }
+        }
+
         // Autofill captain details
         if (myUser.gamertag && myUser.gamertag !== 'Operative') {
           document.getElementById('reg-captain-tag').value = myUser.gamertag;
@@ -2006,6 +2084,9 @@
           currentTournaments = await window.LeagueDB.getTournaments();
           renderTournaments();
         }
+      });
+      window.addEventListener('frontline_auth_changed', () => {
+        if (typeof updateTourneyAuthUI === 'function') updateTourneyAuthUI();
       });
 
       document.addEventListener('DOMContentLoaded', initTournamentsPage);

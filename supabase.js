@@ -4566,7 +4566,7 @@ if (dbClient && cleanPayload.user_id) {
       merged.push(p);
     });
 
-    // Ensure active logged-in Discord user is automatically represented in Free Agents (unless unlinked admin)
+    // If the active logged-in user is already an officially registered draft free agent, sync their latest avatar
     try {
       const authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
       if (authUser && !this.shouldBlockAdminCombatant(authUser)) {
@@ -4576,31 +4576,11 @@ if (dbClient && cleanPayload.user_id) {
         if (authTag) {
           const lower = authTag.toLowerCase().trim();
           const existing = merged.find(p => (p.gamertag || "").toLowerCase().trim() === lower);
-          if (existing) {
-            if (!existing.avatar_url && discordAvatar) {
-              existing.avatar_url = discordAvatar;
-            }
-          } else {
-            merged.unshift({
-              id: `auth-${authUser.id || Date.now()}`,
-              gamertag: authTag,
-              discord_name: meta.discord_name || authTag,
-              activision_id: meta.activision_id || `${authTag}#1234567`,
-              role: meta.role || meta.tactical_role || "Flex",
-              platform: meta.platform || "PC",
-              region: meta.region || "NA East",
-              avatar_url: discordAvatar || null,
-              notes: "Verified League Member",
-              rank: "1.0",
-              status: "Free Agent",
-              kdr: null,
-              total_kills: 0,
-              total_deaths: 0,
-              team_name: "Free Agent",
-              source: "auth",
-              isDrafted: false
-            });
+          if (existing && !existing.avatar_url && discordAvatar) {
+            existing.avatar_url = discordAvatar;
           }
+          // Note: Users signing in with Discord are NOT auto-injected into the draft pool.
+          // League registration (league_signups) is strictly required for draft eligibility.
         }
       }
     } catch(e) {}
@@ -9014,24 +8994,7 @@ window.LadderDB = {
       : false;
 
     if (!isBlockedAdmin) {
-      try {
-        if (window.LeagueDB && typeof window.LeagueDB.submitSignup === "function") {
-          await window.LeagueDB.submitSignup({
-            gamertag: cleanGamertag,
-            activision_id: cleanActivision,
-            discord_username: discord ? discord.trim() : `${cleanGamertag.toLowerCase()}#0001`,
-            role: "Starter",
-            platform: "Crossplay",
-            region: "NA East",
-            registration_type: "Arena Combatant",
-            team_name: `${cleanTag} Squad`,
-            notes: `[Account: ${cleanEmail}] Frontline Arena combatant registration`,
-            status: "Pending"
-          });
-        }
-      } catch (_) {}
-
-      // Auto-sync into Arena Free Agents directory
+      // Auto-sync into Arena Free Agents directory (does NOT auto-register for League Draft)
       try {
         await this.registerFreeAgentFromAccount(newPlayer);
       } catch (faErr) {
