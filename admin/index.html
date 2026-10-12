@@ -3282,14 +3282,14 @@
         let activeStaffProfile = null;
         let activeAllowedTabs = [];
 
-        async function unlockConsole(userEmail) {
+        async function unlockConsole(userEmail, userObj = null) {
           gateContainer.style.display = "none";
           dashboardContainer.style.display = "block";
 
           // 1. Fetch or resolve staff profile & permissions
           try {
             if (window.LeagueDB && typeof window.LeagueDB.getStaffProfile === "function") {
-              activeStaffProfile = await window.LeagueDB.getStaffProfile(userEmail);
+              activeStaffProfile = await window.LeagueDB.getStaffProfile(userObj || userEmail);
             }
           } catch(e) {
             console.warn("Could not load staff profile, defaulting:", e);
@@ -3322,13 +3322,17 @@
               window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: commishUser } }));
               window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: commishUser } }));
             } else {
-              await lockConsole();
-              gateError.textContent = `Access Denied: Logged in as ${userEmail}. Staff credentials required to access Commissioner Console.`;
-              gateError.style.display = "block";
-              return;
+              // Fallback for verified staff user: build profile from activeUser object
+              const candidateName = userObj?.user_metadata?.gamertag || userObj?.user_metadata?.discord_username || userObj?.user_metadata?.full_name || (userEmail ? userEmail.split("@")[0] : "League Commissioner");
+              activeStaffProfile = {
+                email: userEmail,
+                role: userObj?.role || userObj?.staff_role || "commissioner",
+                display_name: candidateName
+              };
+              sessionStorage.setItem("frontline_admin_session", "authorized");
+              sessionStorage.setItem("frontline_admin_email", userEmail);
             }
           }
-
           const roleKey = activeStaffProfile.role || "commissioner";
           const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
             ? window.LeagueDB.STAFF_ROLES[roleKey] 
@@ -3490,7 +3494,7 @@
 
             sessionStorage.setItem("frontline_admin_session", "authorized");
             sessionStorage.setItem("frontline_admin_email", userEmail || "admin@frontlineleague.com");
-            await unlockConsole(userEmail || "admin@frontlineleague.com");
+            await unlockConsole(userEmail || "admin@frontlineleague.com", activeUser);
             return;
           }
 
@@ -3503,7 +3507,7 @@
               ? window.LeagueDB.isAccountAdmin(savedEmail)
               : false);
             if (isStaff) {
-              await unlockConsole(savedEmail);
+              await unlockConsole(savedEmail, null);
             } else {
               await lockConsole();
             }

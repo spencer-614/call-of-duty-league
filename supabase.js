@@ -5458,6 +5458,134 @@ if (dbClient && cleanPayload.user_id) {
   // ==========================================
   // STAFF ADMIN & DISCORD EMAIL LINKING CHECKS
   // ==========================================
+    // ==========================================
+  // STAFF ADMIN & DISCORD MULTI-IDENTIFIER AUTH CHECKS
+  // ==========================================
+  _extractUserIdentifiers(target) {
+    const emails = new Set();
+    const names = new Set();
+    const discordIds = new Set();
+    let authUserId = null;
+
+    if (!target) return { emails, names, discordIds, authUserId };
+
+    if (typeof target === "string") {
+      const clean = target.toLowerCase().trim();
+      if (clean.includes("@")) {
+        emails.add(clean);
+      } else {
+        names.add(clean);
+        if (clean.includes("#")) names.add(clean.split("#")[0].trim());
+      }
+      return { emails, names, discordIds, authUserId };
+    }
+
+    if (typeof target === "object" && target !== null) {
+      if (target.email) emails.add(String(target.email).toLowerCase().trim());
+      if (target.user_email) emails.add(String(target.user_email).toLowerCase().trim());
+      if (target.user_metadata?.email) emails.add(String(target.user_metadata.email).toLowerCase().trim());
+
+      const identities = Array.isArray(target.identities) ? target.identities : [];
+      identities.forEach(ident => {
+        if (ident.identity_data?.email) emails.add(String(ident.identity_data.email).toLowerCase().trim());
+        if (ident.id) discordIds.add(String(ident.id).trim());
+        if (ident.identity_data) {
+          [
+            ident.identity_data.custom_claims?.global_name,
+            ident.identity_data.full_name,
+            ident.identity_data.name,
+            ident.identity_data.user_name,
+            ident.identity_data.username,
+            ident.identity_data.discord_username
+          ].forEach(n => {
+            if (n && typeof n === "string" && n.trim()) {
+              const lc = n.toLowerCase().trim();
+              names.add(lc);
+              if (lc.includes("#")) names.add(lc.split("#")[0].trim());
+            }
+          });
+        }
+      });
+
+      authUserId = target.userId || target.user_id || target.id || null;
+
+      [
+        target.user_metadata?.provider_id,
+        target.user_metadata?.discord_user_id,
+        target.user_metadata?.discord_id,
+        target.discord_id,
+        target.discordId
+      ].forEach(did => {
+        if (did) discordIds.add(String(did).trim());
+      });
+
+      [
+        target.user_metadata?.gamertag,
+        target.user_metadata?.username,
+        target.user_metadata?.discord_username,
+        target.user_metadata?.discord_name,
+        target.user_metadata?.custom_claims?.global_name,
+        target.user_metadata?.full_name,
+        target.user_metadata?.name,
+        target.display_name,
+        target.gamertag,
+        target.username,
+        target.discord
+      ].forEach(n => {
+        if (n && typeof n === "string" && n.trim()) {
+          const lc = n.toLowerCase().trim();
+          names.add(lc);
+          if (lc.includes("#")) names.add(lc.split("#")[0].trim());
+        }
+      });
+    }
+
+    return { emails, names, discordIds, authUserId };
+  },
+
+  _matchStaffRow(s, idents, staffRoleKeys) {
+    if (!s) return false;
+    const sRole = (s.role || "").toLowerCase().trim();
+    if (staffRoleKeys && !staffRoleKeys.includes(sRole)) return false;
+
+    const sEmail = (s.email || "").toLowerCase().trim();
+    const sUser = s.user_id ? String(s.user_id).toLowerCase().trim() : null;
+    const sDisplay = (s.display_name || "").toLowerCase().trim();
+    const sNotes = (s.notes || "").toLowerCase().trim();
+
+    // 1. Email exact match
+    if (sEmail && idents.emails.has(sEmail)) return true;
+
+    // 2. Auth user_id match
+    if (idents.authUserId && sUser && sUser === String(idents.authUserId).toLowerCase().trim()) return true;
+
+    // 3. Display name / gamertag match
+    if (sDisplay) {
+      if (idents.names.has(sDisplay)) return true;
+      if (sDisplay.includes("#") && idents.names.has(sDisplay.split("#")[0].trim())) return true;
+    }
+
+    // 4. Generated frontlineleague.com email match (e.g. gamertag@frontlineleague.com)
+    if (sEmail.includes("@frontlineleague.com")) {
+      const slug = sEmail.split("@")[0].replace(/[^a-z0-9]/g, "");
+      for (const n of idents.names) {
+        if (n.replace(/[^a-z0-9]/g, "") === slug) return true;
+      }
+    }
+
+    // 5. Discord snowflake ID in notes
+    for (const did of idents.discordIds) {
+      if (did && sNotes.includes(did)) return true;
+    }
+
+    // 6. Discord handle / username in notes
+    for (const n of idents.names) {
+      if (n && n.length >= 3 && sNotes.includes(n)) return true;
+    }
+
+    return false;
+  },
+
   isAccountAdmin(target) {
     if (!target) return false;
 
@@ -5467,112 +5595,43 @@ if (dbClient && cleanPayload.user_id) {
       "administrator", "mod", "moderator"
     ];
 
-    const getStaffEmails = () => {
-      const set = new Set([
-        "todd061496@gmail.com",
-        "admin@frontlineleague.com",
-        "referee@frontlineleague.com",
-        "roster@frontlineleague.com",
-        "recruiter@frontlineleague.com",
-        "broadcast@frontlineleague.com"
-      ]);
-      try {
-        const cached = localStorage.getItem("frontline_staff_roles_cache");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) {
-            parsed.forEach(s => {
-              if (s.email) set.add(String(s.email).toLowerCase().trim());
-            });
-          }
-        }
-      } catch (e) {}
+    const idents = this._extractUserIdentifiers(target);
 
-      try {
-        if (typeof MOCK_DATA !== "undefined" && Array.isArray(MOCK_DATA?.staffRoles)) {
-          MOCK_DATA.staffRoles.forEach(s => {
-            if (s.email) set.add(String(s.email).toLowerCase().trim());
-          });
-        }
-      } catch (e) {}
-
-      try {
-        const adminEmail = sessionStorage.getItem("frontline_admin_email");
-        if (adminEmail) set.add(String(adminEmail).toLowerCase().trim());
-      } catch (e) {}
-
-      return set;
-    };
-
-    if (typeof target === "string") {
-      const clean = target.toLowerCase().trim();
-      if (clean.includes("@")) {
-        return getStaffEmails().has(clean);
+    // Hardcoded primary commissioners
+    for (const e of idents.emails) {
+      if (e === "todd061496@gmail.com" || e === "admin@frontlineleague.com" ||
+          e === "referee@frontlineleague.com" || e === "roster@frontlineleague.com" ||
+          e === "recruiter@frontlineleague.com" || e === "broadcast@frontlineleague.com") {
+        return true;
       }
-      try {
-        const cached = localStorage.getItem("frontline_staff_roles_cache");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.some(s => s.user_id && String(s.user_id) === clean)) {
-            return true;
-          }
-        }
-      } catch (e) {}
-      return false;
     }
 
+    // Cached staff roles in localStorage
+    try {
+      const cached = localStorage.getItem("frontline_staff_roles_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          for (const s of parsed) {
+            if (this._matchStaffRow(s, idents, staffRoleKeys)) return true;
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Check direct target object roles
     if (typeof target === "object" && target !== null) {
-      const allEmails = new Set();
-      if (target.email) allEmails.add(String(target.email).toLowerCase().trim());
-      if (target.user_email) allEmails.add(String(target.user_email).toLowerCase().trim());
-      if (target.user_metadata?.email) allEmails.add(String(target.user_metadata.email).toLowerCase().trim());
-      const discordIdent = Array.isArray(target.identities) ? target.identities.find(i => i.provider === "discord") : null;
-      if (discordIdent?.identity_data?.email) allEmails.add(String(discordIdent.identity_data.email).toLowerCase().trim());
+      const appRole = (target.app_metadata?.role || "").toLowerCase();
+      const metaRole = (target.user_metadata?.role || "").toLowerCase();
+      const directRole = (target.role || "").toLowerCase();
+      const staffRole = (target.staff_role || "").toLowerCase();
 
-      const staffEmails = getStaffEmails();
-      for (const e of allEmails) {
-        if (e && staffEmails.has(e)) return true;
+      if (staffRoleKeys.includes(appRole) || staffRoleKeys.includes(metaRole) || 
+          staffRoleKeys.includes(directRole) || staffRoleKeys.includes(staffRole)) {
+        return true;
       }
 
-      const uid = target.userId || target.user_id || target.id;
-      const discordId = discordIdent?.id || target.user_metadata?.provider_id || target.user_metadata?.discord_user_id;
-
-      if (uid || discordId) {
-        try {
-          const cached = localStorage.getItem("frontline_staff_roles_cache");
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.some(s => 
-              (uid && s.user_id && String(s.user_id) === String(uid)) ||
-              (discordId && s.discord_id && String(s.discord_id) === String(discordId))
-            )) {
-              return true;
-            }
-          }
-        } catch (e) {}
-
-        try {
-          const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-          const matchedAcc = accounts.find(a => 
-            (uid && (a.id === uid || a.user_id === uid)) ||
-            (discordId && (a.discord_id === discordId || a.id === discordId)) ||
-            Array.from(allEmails).some(e => a.email && a.email.toLowerCase() === e)
-          );
-          if (matchedAcc && (matchedAcc.is_staff === true || matchedAcc.staff_role || (matchedAcc.role && staffRoleKeys.includes(String(matchedAcc.role).toLowerCase())))) {
-            return true;
-          }
-        } catch (e) {}
-      }
-
-      const appRole = target.app_metadata?.role;
-      const metaRole = target.user_metadata?.role;
-      const directRole = target.role;
-
-      if (appRole && staffRoleKeys.includes(String(appRole).toLowerCase())) return true;
-      if (metaRole && staffRoleKeys.includes(String(metaRole).toLowerCase())) return true;
-      if (directRole && staffRoleKeys.includes(String(directRole).toLowerCase())) return true;
-
-      if (target.is_staff === true || target.is_admin === true || target.app_metadata?.claims_admin === true) {
+      if (target.is_staff === true || target.is_admin === true || target.is_commissioner === true || target.app_metadata?.claims_admin === true) {
         return true;
       }
     }
@@ -5583,71 +5642,77 @@ if (dbClient && cleanPayload.user_id) {
   async isAccountAdminAsync(target) {
     if (this.isAccountAdmin(target)) return true;
 
+    const staffRoleKeys = [
+      "commissioner", "referee", "stats_official", "roster_manager",
+      "recruiter", "broadcaster", "rulebook_admin", "admin", "staff",
+      "administrator", "mod", "moderator"
+    ];
+
+    const idents = this._extractUserIdentifiers(target);
+
+    // Primary hardcoded commissioners
+    for (const e of idents.emails) {
+      if (e === "todd061496@gmail.com" || e === "admin@frontlineleague.com") return true;
+    }
+
     if (dbClient) {
-      let emailToCheck = "";
-      let idToCheck = null;
-
-      if (typeof target === "string" && target.includes("@")) {
-        emailToCheck = target.toLowerCase().trim();
-      } else if (typeof target === "object" && target !== null) {
-        const discordIdent = Array.isArray(target.identities) ? target.identities.find(i => i.provider === "discord") : null;
-        emailToCheck = (
-          target.email || 
-          target.user_email || 
-          target.user_metadata?.email || 
-          discordIdent?.identity_data?.email || 
-          ""
-        ).toLowerCase().trim();
-        idToCheck = target.userId || target.user_id || target.id;
-      }
-
       try {
-        if (emailToCheck) {
-          const { data, error } = await dbClient
-            .from("staff_roles")
-            .select("id, email, role, user_id, custom_permissions, notes")
-            .ilike("email", emailToCheck)
-            .maybeSingle();
-
-          if (!error && data) {
-            try {
-              const cached = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
-              if (!cached.some(c => (c.email || "").toLowerCase() === emailToCheck)) {
-                cached.push(data);
-                localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(cached));
+        // 1. Query staff_roles table in Supabase
+        const { data: staffList, error } = await dbClient.from("staff_roles").select("*");
+        if (!error && Array.isArray(staffList)) {
+          for (const s of staffList) {
+            if (this._matchStaffRow(s, idents, staffRoleKeys)) {
+              // Auto-link real auth user_id and email if missing/slug
+              if (idents.authUserId && (!s.user_id || s.user_id !== idents.authUserId)) {
+                const primaryEmail = Array.from(idents.emails)[0] || null;
+                const updates = { user_id: idents.authUserId, updated_at: new Date().toISOString() };
+                if (primaryEmail && s.email.includes("@frontlineleague.com")) {
+                  updates.email = primaryEmail;
+                }
+                dbClient.from("staff_roles").update(updates).eq("id", s.id).catch(() => {});
               }
-            } catch (e) {}
-            return true;
-          }
-        }
 
-        if (idToCheck) {
-          const { data, error } = await dbClient
-            .from("staff_roles")
-            .select("id, email, role, user_id, custom_permissions, notes")
-            .eq("user_id", String(idToCheck))
-            .maybeSingle();
+              // Update cache
+              try {
+                const cached = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
+                if (!cached.some(c => String(c.id) === String(s.id))) {
+                  cached.push(s);
+                  localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(cached));
+                }
+              } catch (e) {}
 
-          if (!error && data) {
-            try {
-              const cached = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
-              if (!cached.some(c => String(c.id) === String(data.id))) {
-                cached.push(data);
-                localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(cached));
-              }
-            } catch (e) {}
-            return true;
+              return true;
+            }
           }
         }
       } catch (err) {
-        console.warn("isAccountAdminAsync query notice:", err);
+        console.warn("isAccountAdminAsync staff_roles query notice:", err);
+      }
+
+      // 2. Query players table in Supabase
+      try {
+        let pQuery = dbClient.from("players").select("id, user_id, email, gamertag, discord, role, is_staff, is_commissioner");
+        if (idents.authUserId) pQuery = pQuery.eq("user_id", idents.authUserId);
+        else if (idents.emails.size > 0) pQuery = pQuery.in("email", Array.from(idents.emails));
+        else if (idents.names.size > 0) pQuery = pQuery.in("gamertag", Array.from(idents.names));
+
+        const { data: players } = await pQuery.limit(5);
+        if (Array.isArray(players)) {
+          for (const p of players) {
+            const pRole = (p.role || "").toLowerCase().trim();
+            if (p.is_staff === true || p.is_commissioner === true || staffRoleKeys.includes(pRole)) {
+              return true;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("isAccountAdminAsync players query notice:", err);
       }
     }
 
     return false;
   },
-
-  isDiscordLinkedToEmail(target) {
+isDiscordLinkedToEmail(target) {
     if (!target) return false;
 
     let userObj = (typeof target === "object" && target !== null) ? target : null;
@@ -6867,64 +6932,50 @@ if (dbClient && cleanPayload.user_id) {
 
   async getStaffProfile(target) {
     if (!target) return null;
+    const staffRoleKeys = [
+      "commissioner", "referee", "stats_official", "roster_manager",
+      "recruiter", "broadcaster", "rulebook_admin", "admin", "staff",
+      "administrator", "mod", "moderator"
+    ];
 
-    let cleanEmail = "";
-    let userId = null;
-    let discordId = null;
+    const idents = this._extractUserIdentifiers(target);
 
-    if (typeof target === "string") {
-      cleanEmail = target.toLowerCase().trim();
-    } else if (typeof target === "object") {
-      const discordIdent = Array.isArray(target.identities) ? target.identities.find(i => i.provider === "discord") : null;
-      cleanEmail = (
-        target.email ||
-        target.user_email ||
-        target.user_metadata?.email ||
-        discordIdent?.identity_data?.email ||
-        ""
-      ).toLowerCase().trim();
-      userId = target.userId || target.user_id || target.id || null;
-      discordId = discordIdent?.id || target.user_metadata?.provider_id || null;
+    // Hardcoded primary commissioners
+    for (const e of idents.emails) {
+      if (e === "todd061496@gmail.com" || e === "admin@frontlineleague.com") {
+        return {
+          email: e,
+          role: "commissioner",
+          display_name: e === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner"
+        };
+      }
     }
 
-    // 1. Try Supabase staff_roles table by email or user_id
+    // 1. Query Supabase staff_roles table
     if (dbClient) {
       try {
-        if (cleanEmail) {
-          const { data, error } = await dbClient
-            .from("staff_roles")
-            .select("*")
-            .ilike("email", cleanEmail)
-            .maybeSingle();
-
-          if (!error && data) {
-            return {
-              id: data.id,
-              email: data.email,
-              display_name: data.display_name || cleanEmail.split("@")[0],
-              role: data.role || "commissioner",
-              custom_permissions: data.custom_permissions || null,
-              notes: data.notes || ""
-            };
-          }
-        }
-
-        if (userId) {
-          const { data, error } = await dbClient
-            .from("staff_roles")
-            .select("*")
-            .eq("user_id", String(userId))
-            .maybeSingle();
-
-          if (!error && data) {
-            return {
-              id: data.id,
-              email: data.email || cleanEmail,
-              display_name: data.display_name || cleanEmail.split("@")[0],
-              role: data.role || "commissioner",
-              custom_permissions: data.custom_permissions || null,
-              notes: data.notes || ""
-            };
+        const { data: staffList, error } = await dbClient.from("staff_roles").select("*");
+        if (!error && Array.isArray(staffList)) {
+          for (const s of staffList) {
+            if (this._matchStaffRow(s, idents, staffRoleKeys)) {
+              // Auto-link real auth user_id and email if missing
+              if (idents.authUserId && (!s.user_id || s.user_id !== idents.authUserId)) {
+                const primaryEmail = Array.from(idents.emails)[0] || null;
+                const updates = { user_id: idents.authUserId, updated_at: new Date().toISOString() };
+                if (primaryEmail && s.email.includes("@frontlineleague.com")) {
+                  updates.email = primaryEmail;
+                }
+                dbClient.from("staff_roles").update(updates).eq("id", s.id).catch(() => {});
+              }
+              return {
+                id: s.id,
+                email: s.email || Array.from(idents.emails)[0] || "",
+                display_name: s.display_name || Array.from(idents.names)[0] || (s.email ? s.email.split("@")[0] : "Staff Member"),
+                role: s.role || "commissioner",
+                custom_permissions: s.custom_permissions || null,
+                notes: s.notes || ""
+              };
+            }
           }
         }
       } catch (err) {
@@ -6932,20 +6983,47 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
-    // 2. Try localStorage cache
+    // 2. Query Supabase players table
+    if (dbClient) {
+      try {
+        let pQuery = dbClient.from("players").select("id, user_id, email, gamertag, discord, role, is_staff, is_commissioner");
+        if (idents.authUserId) pQuery = pQuery.eq("user_id", idents.authUserId);
+        else if (idents.emails.size > 0) pQuery = pQuery.in("email", Array.from(idents.emails));
+        else if (idents.names.size > 0) pQuery = pQuery.in("gamertag", Array.from(idents.names));
+
+        const { data: pList } = await pQuery.limit(5);
+        if (Array.isArray(pList)) {
+          for (const p of pList) {
+            const pRole = (p.role || "").toLowerCase().trim();
+            if (p.is_staff === true || p.is_commissioner === true || staffRoleKeys.includes(pRole)) {
+              return {
+                id: p.id,
+                email: p.email || Array.from(idents.emails)[0] || "",
+                display_name: p.gamertag || Array.from(idents.names)[0] || "Staff Member",
+                role: p.is_commissioner ? "commissioner" : (staffRoleKeys.includes(pRole) ? pRole : "referee"),
+                custom_permissions: null,
+                notes: "Promoted from players directory"
+              };
+            }
+          }
+        }
+      } catch (err) {}
+    }
+
+    // 3. Fallback to localStorage cache
     try {
       const cached = localStorage.getItem("frontline_staff_roles_cache");
       if (cached) {
         const parsed = JSON.parse(cached);
-        const match = parsed.find(s => 
-          (cleanEmail && s.email && s.email.toLowerCase() === cleanEmail) ||
-          (userId && s.user_id && String(s.user_id) === String(userId)) ||
-          (discordId && s.discord_id && String(s.discord_id) === String(discordId))
-        );
-        if (match) return match;
+        if (Array.isArray(parsed)) {
+          for (const s of parsed) {
+            if (this._matchStaffRow(s, idents, staffRoleKeys)) {
+              return s;
+            }
+          }
+        }
       }
     } catch (e) {}
-
     // 2b. Check frontline_arena_registered_accounts for assigned staff role
     try {
       const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
@@ -7024,12 +7102,21 @@ if (dbClient && cleanPayload.user_id) {
       return { success: false, error: "Valid staff email is required." };
     }
 
+    const notesParts = [];
+    if (staffData.notes && staffData.notes.trim()) notesParts.push(staffData.notes.trim());
+    if (staffData.discord && !notesParts.some(p => p.toLowerCase().includes(staffData.discord.toLowerCase()))) {
+      notesParts.push(`Discord: ${staffData.discord}`);
+    }
+    if (staffData.discord_id && !notesParts.some(p => p.includes(String(staffData.discord_id)))) {
+      notesParts.push(`DiscordID: ${staffData.discord_id}`);
+    }
+
     const payload = {
       email: cleanEmail,
       display_name: staffData.display_name?.trim() || cleanEmail.split("@")[0],
       role: staffData.role || "referee",
       custom_permissions: staffData.custom_permissions || null,
-      notes: staffData.notes?.trim() || (staffData.discord ? `Staff account for Discord @${staffData.discord}` : null),
+      notes: notesParts.join(" · ") || null,
       updated_at: new Date().toISOString()
     };
 
@@ -7065,6 +7152,23 @@ if (dbClient && cleanPayload.user_id) {
       }
     } catch (e) {}
 
+    // Also sync role to public.players table in Supabase so player row is updated
+    if (dbClient) {
+      try {
+        const isCommissioner = payload.role === "commissioner";
+        const pUpdates = { is_staff: true, role: payload.role };
+        if (isCommissioner) pUpdates.is_commissioner = true;
+        if (payload.user_id) {
+          dbClient.from("players").update(pUpdates).eq("user_id", payload.user_id).catch(() => {});
+        }
+        if (payload.display_name) {
+          dbClient.from("players").update(pUpdates).ilike("gamertag", payload.display_name).catch(() => {});
+        }
+        if (cleanEmail && !cleanEmail.includes("@frontlineleague.com")) {
+          dbClient.from("players").update(pUpdates).ilike("email", cleanEmail).catch(() => {});
+        }
+      } catch (err) {}
+    }
     if (dbClient) {
       try {
         const { data, error } = await dbClient
