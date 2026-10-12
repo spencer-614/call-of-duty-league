@@ -429,6 +429,27 @@
       .teammate-dropdown-item:last-child {
         border-bottom: none;
       }
+      .btn-enlist-mini {
+        flex: none !important;
+        background: #16a34a;
+        border: 1px solid #22c55e;
+        color: #ffffff;
+        font: 800 10px var(--body);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 3px 8px;
+        border-radius: 2px;
+        line-height: 1.2;
+        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+      }
+      .teammate-dropdown-item:hover:not(.disabled) .btn-enlist-mini {
+        background: #22c55e;
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+      }
       #teammate-dropdown-results::-webkit-scrollbar {
         width: 6px;
       }
@@ -1621,7 +1642,7 @@
                     ${p.discord ? `<span style="font-size:10px; color:#64748b; margin-left:6px;">(${escapeHtml(p.discord)})</span>` : ''}
                   </div>
                 </div>
-                <span style="font-size:10px; font-weight:800; color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 7px; border-radius:3px;">
+                <span style="flex:none; font-size:10px; font-weight:800; color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 7px; border-radius:3px; white-space:nowrap;">
                   ⚠️ In Squad "${escapeHtml(alreadyInSquad)}"
                 </span>
               </div>
@@ -1637,9 +1658,9 @@
                   ${p.team && p.team !== 'Free Agent' ? `<span style="font-size:10px; color:#a3e635; margin-left:6px; background:#1b2313; padding:1px 5px; border-radius:2px;">${escapeHtml(p.team)}</span>` : (p.discord ? `<span style="font-size:10px; color:#9ca3af; margin-left:6px;">(${escapeHtml(p.discord)})</span>` : '')}
                 </div>
               </div>
-              <button type="button" class="btn-tourney-primary" style="font-size:10px; padding:2px 8px; pointer-events:none; background:#16a34a; border-color:#22c55e; color:#fff;">
+              <span class="btn-enlist-mini">
                 + Enlist
-              </button>
+              </span>
             </div>
           `;
         }).join('');
