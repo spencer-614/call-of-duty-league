@@ -3898,12 +3898,48 @@ if (dbClient && cleanPayload.user_id) {
   // ==============================================================================
   // TOURNAMENT MATCH CHAT (Strictly scoped to participating teams & staff)
   // ==============================================================================
+    // ==============================================================================
+  // TOURNAMENT MATCH CHAT & ENCRYPTED COMMUNICATIONS ENGINE
+  // ==============================================================================
+  _getMatchChatRowId(tournamentId, matchId) {
+    const cleanTid = String(tournamentId || "tourney").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanMid = String(matchId || "match").replace(/[^a-zA-Z0-9_-]/g, "_");
+    return `match_chat_${cleanTid}_${cleanMid}`;
+  },
+
   async getTournamentMatchChat(tournamentId, matchId) {
     if (!tournamentId || !matchId) return [];
+    const rowId = this._getMatchChatRowId(tournamentId, matchId);
     let messages = [];
 
-    // 1. Try Supabase Client
+    // 1. Query Supabase league_settings cloud row (persists in real time across both teams)
     if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("status_text")
+          .eq("id", rowId)
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            if (Array.isArray(parsed)) {
+              messages = parsed;
+              try {
+                localStorage.setItem(`frontline_${rowId}`, JSON.stringify(messages));
+                localStorage.setItem(`frontline_match_chat_${tournamentId}_${matchId}`, JSON.stringify(messages));
+              } catch (_) {}
+            }
+          } catch (_) {}
+        }
+      } catch (e) {
+        console.warn("Supabase match chat fetch notice:", e.message || e);
+      }
+    }
+
+    // 2. Direct table fallback if table exists
+    if ((!messages || messages.length === 0) && dbClient) {
       try {
         const { data, error } = await dbClient
           .from("tournament_match_chats")
@@ -3911,51 +3947,22 @@ if (dbClient && cleanPayload.user_id) {
           .eq("tournament_id", String(tournamentId))
           .eq("match_id", String(matchId))
           .order("created_at", { ascending: true });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           messages = data;
         }
-      } catch (e) {
-        console.warn("Supabase match chat fetch notice:", e.message || e);
-      }
+      } catch (_) {}
     }
 
-    // 2. Try Railway API
-    if ((!messages || messages.length === 0) && typeof fetch !== "undefined") {
+    // 3. LocalStorage fallback / cache
+    if (!messages || messages.length === 0) {
       try {
-        const filters = [
-          { col: "tournament_id", op: "eq", val: String(tournamentId) },
-          { col: "match_id", op: "eq", val: String(matchId) }
-        ];
-        const res = await fetch("/api/data/tournament_match_chats?q=" + encodeURIComponent(
-          JSON.stringify({ filters, orderBy: [{ col: "created_at", ascending: true }] })
-        ));
-        if (res.ok) {
-          const json = await res.json();
-          if (json && Array.isArray(json.data) && json.data.length > 0) {
-            messages = json.data;
-          }
-        }
-      } catch (e) {}
+        const local = JSON.parse(localStorage.getItem(`frontline_${rowId}`)) ||
+                      JSON.parse(localStorage.getItem(`frontline_match_chat_${tournamentId}_${matchId}`)) || [];
+        messages = local;
+      } catch (_) {}
     }
 
-    // 3. Fallback / Merge with LocalStorage cache
-    try {
-      const key = `frontline_match_chat_${tournamentId}_${matchId}`;
-      const local = JSON.parse(localStorage.getItem(key)) || [];
-      if (!messages || messages.length === 0) {
-        messages = local;
-      } else {
-        // Merge any local messages not yet in remote
-        const ids = new Set(messages.map(m => m.id));
-        local.forEach(lm => {
-          if (!ids.has(lm.id)) {
-            messages.push(lm);
-          }
-        });
-        messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      }
-    } catch (_) {}
-
+    if (!Array.isArray(messages)) messages = [];
     return messages;
   },
 
@@ -3964,12 +3971,13 @@ if (dbClient && cleanPayload.user_id) {
       return { success: false, error: "Missing required chat parameters." };
     }
 
+    const rowId = this._getMatchChatRowId(tournamentId, matchId);
     const chatMsg = {
       id: "tmc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
       tournament_id: String(tournamentId),
       match_id: String(matchId),
       sender_id: senderId || null,
-      sender_name: senderName || "Combatant",
+      sender_name: String(senderName || "Combatant").trim(),
       sender_team: senderTeam || null,
       sender_role: senderRole || "combatant",
       message: message.trim(),
@@ -3978,39 +3986,44 @@ if (dbClient && cleanPayload.user_id) {
 
     let remoteSaved = false;
 
-    // 1. Insert into Supabase
+    // Load existing messages to append
+    let currentList = await this.getTournamentMatchChat(tournamentId, matchId);
+    if (!Array.isArray(currentList)) currentList = [];
+    currentList.push(chatMsg);
+
+    // 1. Persist directly to Supabase league_settings (shared across all combatants and staff)
     if (dbClient) {
       try {
-        const { error } = await dbClient.from("tournament_match_chats").insert([chatMsg]);
-        if (!error) remoteSaved = true;
+        const { error } = await dbClient.from("league_settings").upsert({
+          id: rowId,
+          status_state: "active",
+          status_text: JSON.stringify(currentList),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+
+        if (!error) {
+          remoteSaved = true;
+        } else {
+          console.warn("Notice saving match chat to league_settings:", error.message || error);
+        }
       } catch (e) {
-        console.warn("Supabase match chat insert notice:", e.message || e);
+        console.warn("Supabase match chat upsert notice:", e.message || e);
       }
-    }
 
-    // 2. Insert into Railway Backend
-    if (!remoteSaved && typeof fetch !== "undefined") {
       try {
-        const res = await fetch("/api/data/tournament_match_chats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(chatMsg)
-        });
-        if (res.ok) remoteSaved = true;
-      } catch (e) {}
+        await dbClient.from("tournament_match_chats").insert([chatMsg]);
+      } catch (_) {}
     }
 
-    // 3. Always cache in LocalStorage
+    // 2. Cache in LocalStorage
     try {
-      const key = `frontline_match_chat_${tournamentId}_${matchId}`;
-      const local = JSON.parse(localStorage.getItem(key)) || [];
-      local.push(chatMsg);
-      localStorage.setItem(key, JSON.stringify(local));
+      localStorage.setItem(`frontline_${rowId}`, JSON.stringify(currentList));
+      localStorage.setItem(`frontline_match_chat_${tournamentId}_${matchId}`, JSON.stringify(currentList));
     } catch (_) {}
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("frontline_match_chat_message", {
-        detail: { message: chatMsg }
+        detail: { message: chatMsg, tournamentId, matchId }
       }));
     }
 

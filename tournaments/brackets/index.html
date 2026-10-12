@@ -965,8 +965,10 @@
           if (!user) {
             try {
               user = JSON.parse(localStorage.getItem('frontline_arena_user')) || 
+                     JSON.parse(localStorage.getItem('frontline_auth_user')) || 
                      JSON.parse(localStorage.getItem('frontline_arena_auth_user')) || 
-                     JSON.parse(localStorage.getItem('frontline_league_auth_user'));
+                     JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
+                     JSON.parse(localStorage.getItem('frontline_league_player_card'));
             } catch (_) {}
           }
 
@@ -1011,32 +1013,39 @@
 
           function isUserInReg(reg, u) {
             if (!reg || !u) return false;
-            const uGamertag = String(u.gamertag || u.username || '').trim().toLowerCase();
-            const uDiscord = String(u.discord || '').trim().toLowerCase();
-            const uActId = String(u.activision_id || '').trim().toLowerCase();
+            const norm = s => String(s || '').replace(/^@/, '').trim().toLowerCase();
+            const uGamertag = norm(u.gamertag || u.username);
+            const uDiscord = norm(u.discord);
+            const uActId = norm(u.activision_id);
 
             // Match captain
-            if (uGamertag && String(reg.captain_gamertag || '').trim().toLowerCase() === uGamertag) return true;
-            if (uDiscord && String(reg.captain_discord || '').trim().toLowerCase() === uDiscord) return true;
-            if (uActId && String(reg.captain_activision_id || '').trim().toLowerCase() === uActId) return true;
+            if (uGamertag && norm(reg.captain_gamertag) === uGamertag) return true;
+            if (uDiscord && norm(reg.captain_discord) === uDiscord) return true;
+            if (uActId && norm(reg.captain_activision_id) === uActId) return true;
 
             // Match roster
             let roster = [];
             if (Array.isArray(reg.roster)) roster = reg.roster;
             else if (typeof reg.roster === 'string') {
-              try { roster = JSON.parse(reg.roster); } catch (_) {}
+              try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
+            } else if (reg.roster_text) {
+              roster = reg.roster_text.split(/,\s*/);
             }
             if (Array.isArray(roster)) {
               for (const member of roster) {
-                const mTag = String(typeof member === 'object' ? (member.gamertag || member.name || '') : member).trim().toLowerCase();
+                const mTag = norm(typeof member === 'object' ? (member.gamertag || member.name) : member);
                 if (mTag && uGamertag && mTag === uGamertag) return true;
               }
             }
             return false;
           }
 
-          const inTeam1 = isUserInReg(reg1, user) || (user?.team_name && String(user.team_name).trim().toLowerCase() === t1NameClean);
-          const inTeam2 = isUserInReg(reg2, user) || (user?.team_name && String(user.team_name).trim().toLowerCase() === t2NameClean);
+          const inTeam1 = isUserInReg(reg1, user) || 
+            (user?.team_name && String(user.team_name).trim().toLowerCase() === t1NameClean) ||
+            (user?.team && String(user.team).trim().toLowerCase() === t1NameClean);
+          const inTeam2 = isUserInReg(reg2, user) || 
+            (user?.team_name && String(user.team_name).trim().toLowerCase() === t2NameClean) ||
+            (user?.team && String(user.team).trim().toLowerCase() === t2NameClean);
           const hasAccess = isStaff || inTeam1 || inTeam2;
 
           let userTeamName = null;
@@ -1161,6 +1170,13 @@
           const sendBtn = document.getElementById('match-chat-send-btn');
           if (!chatBox) return;
 
+          // Stable client identifier for sender recognition
+          let myClientId = localStorage.getItem('frontline_chat_client_id');
+          if (!myClientId) {
+            myClientId = 'cid_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('frontline_chat_client_id', myClientId);
+          }
+          const mySenderId = user?.id || myClientId;
           const mySenderName = user?.gamertag || user?.username || (user?.email ? user.email.split('@')[0] : (isStaff ? 'League Staff' : 'Combatant'));
 
           async function loadMessages() {
@@ -1186,7 +1202,7 @@
             }
 
             chatBox.innerHTML = messages.map(m => {
-              const isMe = (user?.id && m.sender_id === user.id) || (m.sender_name === mySenderName);
+              const isMe = (m.sender_id && m.sender_id === mySenderId) || (m.sender_name === mySenderName);
               const isStaffMsg = m.sender_role === 'staff';
               const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -1260,16 +1276,24 @@
 
           // Initial load and live polling
           loadMessages();
-          chatPollInterval = setInterval(loadMessages, 3000);
+          chatPollInterval = setInterval(loadMessages, 2000);
 
           // Clear interval when modal closes
           const dialog = document.getElementById('modal-match-details');
           if (dialog) {
+            const onChatMessage = (e) => {
+              if (!e.detail?.matchId || String(e.detail.matchId) === String(matchId)) {
+                loadMessages();
+              }
+            };
+            window.addEventListener('frontline_match_chat_message', onChatMessage);
+
             const onDialogClose = () => {
               if (chatPollInterval) {
                 clearInterval(chatPollInterval);
                 chatPollInterval = null;
               }
+              window.removeEventListener('frontline_match_chat_message', onChatMessage);
               dialog.removeEventListener('close', onDialogClose);
             };
             dialog.addEventListener('close', onDialogClose);
