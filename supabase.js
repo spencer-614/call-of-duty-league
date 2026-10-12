@@ -3907,12 +3907,30 @@ if (dbClient && cleanPayload.user_id) {
     return `match_chat_${cleanTid}_${cleanMid}`;
   },
 
-  async getTournamentMatchChat(tournamentId, matchId) {
-    if (!tournamentId || !matchId) return [];
-    const rowId = this._getMatchChatRowId(tournamentId, matchId);
-    let messages = [];
+  async _fetchMatchChatRemote(rowId) {
+    // Strategy A: Direct REST fetch with anon key (fast, reliable, immune to expired user tokens)
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      try {
+        const cleanBase = SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+        const res = await fetch(`${cleanBase}/rest/v1/league_settings?id=eq.${encodeURIComponent(rowId)}&select=status_text`, {
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (Array.isArray(rows) && rows.length > 0 && rows[0].status_text) {
+            const parsed = JSON.parse(rows[0].status_text);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Direct REST fetch notice for match chat:", e.message || e);
+      }
+    }
 
-    // 1. Query Supabase league_settings cloud row (persists in real time across both teams)
+    // Strategy B: dbClient fallback
     if (dbClient) {
       try {
         const { data, error } = await dbClient
@@ -3920,50 +3938,108 @@ if (dbClient && cleanPayload.user_id) {
           .select("status_text")
           .eq("id", rowId)
           .maybeSingle();
-
         if (!error && data && data.status_text) {
-          try {
-            const parsed = JSON.parse(data.status_text);
-            if (Array.isArray(parsed)) {
-              messages = parsed;
-              try {
-                localStorage.setItem(`frontline_${rowId}`, JSON.stringify(messages));
-                localStorage.setItem(`frontline_match_chat_${tournamentId}_${matchId}`, JSON.stringify(messages));
-              } catch (_) {}
-            }
-          } catch (_) {}
+          const parsed = JSON.parse(data.status_text);
+          if (Array.isArray(parsed)) return parsed;
         }
       } catch (e) {
-        console.warn("Supabase match chat fetch notice:", e.message || e);
+        console.warn("dbClient fetch notice for match chat:", e.message || e);
       }
     }
 
-    // 2. Direct table fallback if table exists
-    if ((!messages || messages.length === 0) && dbClient) {
+    return null;
+  },
+
+  async _upsertMatchChatRemote(rowId, list) {
+    let saved = false;
+    const bodyStr = JSON.stringify(list);
+
+    // Strategy A: Direct REST POST with anon key & merge-duplicates (reliable across all browser sessions)
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       try {
-        const { data, error } = await dbClient
-          .from("tournament_match_chats")
-          .select("*")
-          .eq("tournament_id", String(tournamentId))
-          .eq("match_id", String(matchId))
-          .order("created_at", { ascending: true });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          messages = data;
-        }
-      } catch (_) {}
+        const cleanBase = SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+        const res = await fetch(`${cleanBase}/rest/v1/league_settings`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=representation"
+          },
+          body: JSON.stringify({
+            id: rowId,
+            status_state: "active",
+            status_text: bodyStr,
+            updated_at: new Date().toISOString()
+          })
+        });
+        if (res.ok) saved = true;
+      } catch (e) {
+        console.warn("Direct REST upsert notice for match chat:", e.message || e);
+      }
     }
 
-    // 3. LocalStorage fallback / cache
-    if (!messages || messages.length === 0) {
+    // Strategy B: dbClient upsert
+    if (!saved && dbClient) {
       try {
-        const local = JSON.parse(localStorage.getItem(`frontline_${rowId}`)) ||
-                      JSON.parse(localStorage.getItem(`frontline_match_chat_${tournamentId}_${matchId}`)) || [];
-        messages = local;
-      } catch (_) {}
+        const { error } = await dbClient.from("league_settings").upsert({
+          id: rowId,
+          status_state: "active",
+          status_text: bodyStr,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+        if (!error) saved = true;
+      } catch (e) {
+        console.warn("dbClient upsert notice for match chat:", e.message || e);
+      }
     }
 
-    if (!Array.isArray(messages)) messages = [];
-    return messages;
+    return saved;
+  },
+
+  async getTournamentMatchChat(tournamentId, matchId) {
+    if (!tournamentId || !matchId) return [];
+    const rowId = this._getMatchChatRowId(tournamentId, matchId);
+
+    // 1. Local storage cache read
+    let localMessages = [];
+    try {
+      const stored = localStorage.getItem(`frontline_${rowId}`) ||
+                     localStorage.getItem(`frontline_match_chat_${tournamentId}_${matchId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) localMessages = parsed;
+      }
+    } catch (_) {}
+
+    // 2. Query Supabase cloud row
+    const remoteMessages = await this._fetchMatchChatRemote(rowId);
+
+    let finalMessages = [];
+    if (Array.isArray(remoteMessages)) {
+      // Merge remote and any un-synced local messages by unique message ID
+      const map = new Map();
+      localMessages.forEach(m => { if (m && m.id) map.set(m.id, m); });
+      remoteMessages.forEach(m => { if (m && m.id) map.set(m.id, m); });
+      finalMessages = Array.from(map.values()).sort((a, b) => {
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      });
+
+      // Update local storage cache
+      try {
+        localStorage.setItem(`frontline_${rowId}`, JSON.stringify(finalMessages));
+        localStorage.setItem(`frontline_match_chat_${tournamentId}_${matchId}`, JSON.stringify(finalMessages));
+      } catch (_) {}
+
+      // If local had unsynced messages not yet in remote, push merged back to cloud!
+      if (finalMessages.length > remoteMessages.length) {
+        this._upsertMatchChatRemote(rowId, finalMessages).catch(() => {});
+      }
+    } else {
+      finalMessages = localMessages;
+    }
+
+    return finalMessages;
   },
 
   async sendTournamentMatchChat({ tournamentId, matchId, senderId, senderName, senderTeam, senderRole, message }) {
@@ -3984,53 +4060,36 @@ if (dbClient && cleanPayload.user_id) {
       created_at: new Date().toISOString()
     };
 
-    let remoteSaved = false;
-
-    // Load existing messages to append
-    let currentList = await this.getTournamentMatchChat(tournamentId, matchId);
-    if (!Array.isArray(currentList)) currentList = [];
-    currentList.push(chatMsg);
-
-    // 1. Persist directly to Supabase league_settings (shared across all combatants and staff)
-    if (dbClient) {
-      try {
-        const { error } = await dbClient.from("league_settings").upsert({
-          id: rowId,
-          status_state: "active",
-          status_text: JSON.stringify(currentList),
-          updated_at: new Date().toISOString()
-        }, { onConflict: "id" });
-
-        if (!error) {
-          remoteSaved = true;
-        } else {
-          console.warn("Notice saving match chat to league_settings:", error.message || error);
-        }
-      } catch (e) {
-        console.warn("Supabase match chat upsert notice:", e.message || e);
-      }
-
-      try {
-        await dbClient.from("tournament_match_chats").insert([chatMsg]);
-      } catch (_) {}
+    // Load existing messages and merge
+    const currentList = await this.getTournamentMatchChat(tournamentId, matchId);
+    const map = new Map();
+    if (Array.isArray(currentList)) {
+      currentList.forEach(m => { if (m && m.id) map.set(m.id, m); });
     }
+    map.set(chatMsg.id, chatMsg);
+    const mergedList = Array.from(map.values()).sort((a, b) => {
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+
+    // 1. Persist directly to Supabase league_settings cloud row
+    const remoteSaved = await this._upsertMatchChatRemote(rowId, mergedList);
 
     // 2. Cache in LocalStorage
     try {
-      localStorage.setItem(`frontline_${rowId}`, JSON.stringify(currentList));
-      localStorage.setItem(`frontline_match_chat_${tournamentId}_${matchId}`, JSON.stringify(currentList));
+      localStorage.setItem(`frontline_${rowId}`, JSON.stringify(mergedList));
+      localStorage.setItem(`frontline_match_chat_${tournamentId}_${matchId}`, JSON.stringify(mergedList));
     } catch (_) {}
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("frontline_match_chat_message", {
-        detail: { message: chatMsg, tournamentId, matchId }
+        detail: { message: chatMsg, tournamentId, matchId, allMessages: mergedList }
       }));
     }
 
-    return { success: true, message: chatMsg, remoteSaved };
+    return { success: true, message: chatMsg, remoteSaved, messages: mergedList };
   },
 
-  async deleteTournamentRegistration(registrationId, tournamentId = null) {
+    async deleteTournamentRegistration(registrationId, tournamentId = null) {
     if (!registrationId) return { success: false, error: "Registration ID required" };
 
     const allRegs = await this.getTournamentRegistrations(null);

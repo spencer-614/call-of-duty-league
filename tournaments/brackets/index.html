@@ -488,7 +488,7 @@
 
     <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=4"></script>
+    <script src="/supabase.js?v=20261012b"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -1176,8 +1176,10 @@
             myClientId = 'cid_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('frontline_chat_client_id', myClientId);
           }
-          const mySenderId = user?.id || myClientId;
+          const mySenderId = user?.id || user?.sub || myClientId;
           const mySenderName = user?.gamertag || user?.username || (user?.email ? user.email.split('@')[0] : (isStaff ? 'League Staff' : 'Combatant'));
+
+          let lastLoadedHash = '';
 
           async function loadMessages() {
             let messages = [];
@@ -1191,6 +1193,12 @@
                 messages = JSON.parse(localStorage.getItem(key)) || [];
               } catch (_) {}
             }
+
+            const currentHash = JSON.stringify(messages || []);
+            if (currentHash === lastLoadedHash) {
+              return;
+            }
+            lastLoadedHash = currentHash;
 
             if (!messages || messages.length === 0) {
               chatBox.innerHTML = `
@@ -1236,7 +1244,7 @@
             const payload = {
               tournamentId,
               matchId,
-              senderId: user?.id || null,
+              senderId: mySenderId,
               senderName: mySenderName,
               senderTeam: userTeamName,
               senderRole: isStaff ? 'staff' : 'combatant',
@@ -1245,7 +1253,10 @@
 
             try {
               if (window.LeagueDB && typeof window.LeagueDB.sendTournamentMatchChat === 'function') {
-                await window.LeagueDB.sendTournamentMatchChat(payload);
+                const res = await window.LeagueDB.sendTournamentMatchChat(payload);
+                if (res && res.messages) {
+                  lastLoadedHash = '';
+                }
               } else {
                 const key = `frontline_match_chat_${tournamentId}_${matchId}`;
                 const local = JSON.parse(localStorage.getItem(key)) || [];
@@ -1255,6 +1266,7 @@
                   created_at: new Date().toISOString()
                 });
                 localStorage.setItem(key, JSON.stringify(local));
+                lastLoadedHash = '';
               }
               chatInput.value = '';
               await loadMessages();
@@ -1276,13 +1288,14 @@
 
           // Initial load and live polling
           loadMessages();
-          chatPollInterval = setInterval(loadMessages, 2000);
+          chatPollInterval = setInterval(loadMessages, 1500);
 
           // Clear interval when modal closes
           const dialog = document.getElementById('modal-match-details');
           if (dialog) {
             const onChatMessage = (e) => {
               if (!e.detail?.matchId || String(e.detail.matchId) === String(matchId)) {
+                lastLoadedHash = '';
                 loadMessages();
               }
             };
