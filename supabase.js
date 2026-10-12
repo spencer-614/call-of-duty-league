@@ -8622,22 +8622,63 @@ window.LadderDB = {
     return matches;
   },
 
-  getMatchChat(matchId) {
+  async getMatchChat(matchId) {
+    if (!matchId) return [];
+    if (window.LeagueDB && typeof window.LeagueDB.getTournamentMatchChat === "function") {
+      try {
+        const msgs = await window.LeagueDB.getTournamentMatchChat("arena_ladder", String(matchId));
+        if (Array.isArray(msgs) && msgs.length > 0) return msgs;
+      } catch (_) {}
+    }
     try {
-      const saved = localStorage.getItem("frontline_match_chat_" + matchId);
+      const saved = localStorage.getItem("frontline_match_chat_arena_ladder_" + matchId) ||
+                    localStorage.getItem("frontline_match_chat_" + matchId);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return [
-      { sender: "System", tag: "SYS", text: "Match room initialized. Good luck, have fun!", isSystem: true, timestamp: "Just now" }
+      { id: "sys_init", sender_name: "System", sender_team: "SYS", message: "Match room initialized. Good luck, have fun!", sender_role: "system", isSystem: true, created_at: new Date().toISOString() }
     ];
   },
 
-  sendMatchChat(matchId, message) {
-    const list = this.getMatchChat(matchId);
-    list.push(message);
+  async sendMatchChat(matchId, messagePayload) {
+    if (window.LeagueDB && typeof window.LeagueDB.sendTournamentMatchChat === "function") {
+      try {
+        const res = await window.LeagueDB.sendTournamentMatchChat({
+          tournamentId: "arena_ladder",
+          matchId: String(matchId),
+          senderId: messagePayload.senderId || messagePayload.sender_id || null,
+          senderName: messagePayload.senderName || messagePayload.sender_name || messagePayload.sender || "Combatant",
+          senderTeam: messagePayload.senderTeam || messagePayload.sender_team || messagePayload.tag || null,
+          senderRole: messagePayload.senderRole || messagePayload.sender_role || "combatant",
+          message: messagePayload.message || messagePayload.text || ""
+        });
+        if (res && res.messages) return res.messages;
+      } catch (_) {}
+    }
+
+    const list = await this.getMatchChat(matchId);
+    const newMsg = {
+      id: "mc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+      tournament_id: "arena_ladder",
+      match_id: String(matchId),
+      sender_id: messagePayload.senderId || messagePayload.sender_id || null,
+      sender_name: messagePayload.senderName || messagePayload.sender_name || messagePayload.sender || "Combatant",
+      sender_team: messagePayload.senderTeam || messagePayload.sender_team || messagePayload.tag || null,
+      sender_role: messagePayload.senderRole || messagePayload.sender_role || "combatant",
+      message: messagePayload.message || messagePayload.text || "",
+      created_at: new Date().toISOString()
+    };
+    list.push(newMsg);
     try {
+      localStorage.setItem("frontline_match_chat_arena_ladder_" + matchId, JSON.stringify(list));
       localStorage.setItem("frontline_match_chat_" + matchId, JSON.stringify(list));
     } catch (e) {}
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_match_chat_message", {
+        detail: { message: newMsg, tournamentId: "arena_ladder", matchId, allMessages: list }
+      }));
+    }
     return list;
   },
 
