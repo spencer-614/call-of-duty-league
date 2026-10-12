@@ -663,10 +663,17 @@
             activeBracketData = await window.LeagueDB.getTournamentBracket(tourney.id);
           }
 
+          if(activeBracketData) activeBracketData=await window.TournamentReports.overlay(tourney.id,activeBracketData);
           currentStageFilter = 'all';
           updateStageFilterButtons();
           renderActiveBracket();
         }
+
+        window.addEventListener('frontline_map_results_updated',async event=>{
+          if(String(event.detail.tournamentId)!==String(activeTournament?.id)||!activeBracketData)return;
+          try{activeBracketData=await window.TournamentReports.overlay(activeTournament.id,activeBracketData);renderActiveBracket();}catch(e){console.error('Could not refresh series scores:',e);}
+        });
+        setInterval(async()=>{if(!activeTournament?.id||!activeBracketData||document.hidden)return;try{await window.TournamentReports.overlay(activeTournament.id,activeBracketData);renderActiveBracket();}catch(e){console.warn('Series score refresh:',e.message);}},10000);
 
         function updateBanner(t) {
           const titleEl = document.getElementById('tourney-banner-title');
@@ -1129,7 +1136,7 @@
             <div style="background:#10130d; border:1px solid #232a18; padding:14px; border-radius:3px; margin-bottom:16px;">
               <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:6px;">MATCH STATUS &amp; PROTOCOL</div>
               <div style="font-size:13px; color:#cbd5e1; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                <span>Status: <strong style="color:${isDone ? '#22c55e' : '#fbbf24'};">${isDone ? '✓ Completed (Official)' : (match.status || 'Scheduled')}</strong></span>
+                <span>Status: <strong data-report-match-status style="color:${isDone ? '#22c55e' : '#fbbf24'};">${isDone ? '✓ Completed (Official)' : (match.status || 'Scheduled')}</strong></span>
                 <span>Ruleset: <strong>CDL 2026 Competitive</strong></span>
                 <span>Host: <strong>Dedicated Central Host</strong></span>
               </div>
