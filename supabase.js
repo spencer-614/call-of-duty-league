@@ -3571,6 +3571,33 @@ if (dbClient && cleanPayload.user_id) {
     item.teams_registered_count = newCount;
     await this.saveTournament(item);
 
+    // Auto-record captain and roster members into tournament_players
+    try {
+      if (typeof this.syncTournamentPlayer === "function") {
+        if (squadData.captain_gamertag) {
+          this.syncTournamentPlayer({
+            gamertag: squadData.captain_gamertag,
+            discordName: squadData.captain_discord || squadData.captain_gamertag,
+            activisionId: squadData.captain_activision_id || "",
+            teamName: squadData.team_name || "Free Agent"
+          }).catch(() => {});
+        }
+        if (Array.isArray(squadData.roster)) {
+          for (const m of squadData.roster) {
+            const mTag = typeof m === "object" ? (m.gamertag || m.name) : m;
+            if (mTag && mTag !== squadData.captain_gamertag) {
+              this.syncTournamentPlayer({
+                gamertag: mTag,
+                discordName: typeof m === "object" ? (m.discord || mTag) : mTag,
+                activisionId: typeof m === "object" ? (m.activision_id || "") : "",
+                teamName: squadData.team_name || "Free Agent"
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
     window.dispatchEvent(new CustomEvent("frontline_tournament_registered", { 
       detail: { tournamentId, registration: regRecord, totalEnlisted: newCount } 
     }));
@@ -3637,6 +3664,147 @@ if (dbClient && cleanPayload.user_id) {
     if (tournamentId) {
       return list.filter(r => String(r.tournament_id) === String(tournamentId));
     }
+    return list;
+  },
+
+  // ==========================================
+  // TOURNAMENT PLAYERS (Separate from League Draft)
+  // ==========================================
+  async syncTournamentPlayer(payload = {}) {
+    let user = payload.user || payload;
+    let userId = payload.userId || user?.id || null;
+    let gamertag = (payload.gamertag || user?.user_metadata?.gamertag || user?.user_metadata?.username || user?.user_metadata?.name || "").trim();
+    let discordName = (payload.discordName || user?.user_metadata?.discord_name || user?.user_metadata?.discord_username || "").trim();
+    let discordId = payload.discordId || user?.user_metadata?.discord_user_id || null;
+    let activisionId = (payload.activisionId || user?.user_metadata?.activision_id || "").trim();
+    let avatarUrl = payload.avatarUrl || user?.user_metadata?.avatar_url || "";
+
+    if (!gamertag && user && typeof this.getDiscordIdentity === "function") {
+      const disc = this.getDiscordIdentity(user);
+      if (disc?.primaryName) gamertag = disc.primaryName;
+      else if (disc?.handle) gamertag = disc.handle;
+      if (!discordName && disc?.primaryName) discordName = disc.primaryName;
+      if (!discordId && disc?.discordId) discordId = disc.discordId;
+      if (!avatarUrl && disc?.avatarUrl) avatarUrl = disc.avatarUrl;
+    }
+
+    if (!gamertag || gamertag.toLowerCase() === "operative") {
+      return { success: false, error: "Valid gamertag required" };
+    }
+    if (!discordName) discordName = gamertag;
+
+    const tourneyPlayerRecord = {
+      id: userId || ("tp_" + Date.now()),
+      user_id: (userId && this._isValidUUID(userId)) ? userId : null,
+      gamertag: gamertag,
+      discord_name: discordName,
+      discord_id: discordId,
+      activision_id: activisionId,
+      avatar_url: avatarUrl,
+      role: "Tournament Player",
+      status: "Active",
+      team_name: payload.teamName || "Free Agent",
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Save to Supabase public.tournament_players if table exists
+    if (dbClient) {
+      try {
+        let existingId = null;
+        if (tourneyPlayerRecord.user_id) {
+          const { data: byUser } = await dbClient
+            .from("tournament_players")
+            .select("id")
+            .eq("user_id", tourneyPlayerRecord.user_id)
+            .maybeSingle();
+          if (byUser?.id) existingId = byUser.id;
+        }
+        if (!existingId && gamertag) {
+          const { data: byTag } = await dbClient
+            .from("tournament_players")
+            .select("id")
+            .ilike("gamertag", gamertag)
+            .maybeSingle();
+          if (byTag?.id) existingId = byTag.id;
+        }
+
+        if (existingId) {
+          await dbClient
+            .from("tournament_players")
+            .update({
+              gamertag: tourneyPlayerRecord.gamertag,
+              discord_name: tourneyPlayerRecord.discord_name,
+              discord_id: tourneyPlayerRecord.discord_id,
+              activision_id: tourneyPlayerRecord.activision_id,
+              avatar_url: tourneyPlayerRecord.avatar_url,
+              role: "Tournament Player",
+              updated_at: tourneyPlayerRecord.updated_at
+            })
+            .eq("id", existingId);
+        } else {
+          const insertPayload = {
+            gamertag: tourneyPlayerRecord.gamertag,
+            discord_name: tourneyPlayerRecord.discord_name,
+            discord_id: tourneyPlayerRecord.discord_id,
+            activision_id: tourneyPlayerRecord.activision_id,
+            avatar_url: tourneyPlayerRecord.avatar_url,
+            role: "Tournament Player",
+            status: "Active",
+            team_name: tourneyPlayerRecord.team_name,
+            created_at: new Date().toISOString(),
+            updated_at: tourneyPlayerRecord.updated_at
+          };
+          if (tourneyPlayerRecord.user_id) insertPayload.user_id = tourneyPlayerRecord.user_id;
+          await dbClient.from("tournament_players").insert([insertPayload]);
+        }
+      } catch (err) {
+        console.warn("tournament_players db sync note:", err?.message || err);
+      }
+    }
+
+    // 2. Save to localStorage cache 'frontline_tournament_players'
+    try {
+      const local = JSON.parse(localStorage.getItem("frontline_tournament_players")) || [];
+      const norm = s => String(s || "").trim().toLowerCase();
+      const idx = local.findIndex(p =>
+        (userId && p.user_id === userId) ||
+        (norm(p.gamertag) === norm(gamertag)) ||
+        (norm(p.discord_name) === norm(discordName))
+      );
+      if (idx >= 0) {
+        local[idx] = { ...local[idx], ...tourneyPlayerRecord };
+      } else {
+        local.push(tourneyPlayerRecord);
+      }
+      localStorage.setItem("frontline_tournament_players", JSON.stringify(local));
+    } catch (_) {}
+
+    return { success: true, player: tourneyPlayerRecord };
+  },
+
+  async getTournamentPlayers() {
+    let list = [];
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("tournament_players")
+          .select("*")
+          .order("gamertag", { ascending: true });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          list = data;
+          try {
+            localStorage.setItem("frontline_tournament_players", JSON.stringify(list));
+          } catch (_) {}
+        }
+      } catch (e) {}
+    }
+
+    if (!list || list.length === 0) {
+      try {
+        list = JSON.parse(localStorage.getItem("frontline_tournament_players")) || [];
+      } catch (_) {}
+    }
+
     return list;
   },
 
@@ -6970,6 +7138,21 @@ isDiscordLinkedToEmail(target) {
         });
         if (!syncResult?.success) return;
         onboardingSucceeded = true;
+
+        // Sync into tournament_players table (stores Discord users specifically for open tournaments)
+        try {
+          if (typeof this.syncTournamentPlayer === "function") {
+            await this.syncTournamentPlayer({
+              userId: user.id,
+              gamertag: cleanGamertag,
+              discordName: cleanDiscord,
+              discordId: cleanDiscordId,
+              activisionId: cleanActivision,
+              avatarUrl: cleanAvatar,
+              teamName: currentTeam
+            });
+          }
+        } catch (_) {}
 
         // Update player card in localStorage with owner metadata
         const cardObj = {

@@ -1479,19 +1479,21 @@
         if (cachedCommunityPlayers.length > 0) return cachedCommunityPlayers;
         const map = new Map();
 
-        // 1. Supabase / LeagueDB players
-        if (window.LeagueDB && typeof window.LeagueDB.getPlayers === 'function') {
+        // 1. Supabase Tournament Players (Users who signed in for open tournaments)
+        if (window.LeagueDB && typeof window.LeagueDB.getTournamentPlayers === 'function') {
           try {
-            const dbPlayers = await window.LeagueDB.getPlayers();
-            if (Array.isArray(dbPlayers)) {
-              dbPlayers.forEach(p => {
+            const tourneyPlayers = await window.LeagueDB.getTournamentPlayers();
+            if (Array.isArray(tourneyPlayers)) {
+              tourneyPlayers.forEach(p => {
                 const tag = (p.gamertag || p.username || '').trim();
                 if (tag && tag.toLowerCase() !== 'operative') {
                   map.set(tag.toLowerCase(), {
                     gamertag: tag,
                     discord: p.discord_name || p.discord || '',
-                    team: p.teams?.name || p.team_name || 'Free Agent',
-                    avatar: p.avatar_url || null
+                    team: 'Tournament Player',
+                    role: 'Tournament Player',
+                    avatar: p.avatar_url || null,
+                    isTournamentPlayer: true
                   });
                 }
               });
@@ -1499,7 +1501,47 @@
           } catch (_) {}
         }
 
-        // 2. Custom registered accounts
+        // 2. Local storage tournament players fallback
+        try {
+          const localTourney = JSON.parse(localStorage.getItem('frontline_tournament_players')) || [];
+          localTourney.forEach(p => {
+            const tag = (p.gamertag || p.username || '').trim();
+            if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
+              map.set(tag.toLowerCase(), {
+                gamertag: tag,
+                discord: p.discord_name || p.discord || '',
+                team: 'Tournament Player',
+                role: 'Tournament Player',
+                avatar: p.avatar_url || null,
+                isTournamentPlayer: true
+              });
+            }
+          });
+        } catch (_) {}
+
+        // 3. Supabase / LeagueDB players
+        if (window.LeagueDB && typeof window.LeagueDB.getPlayers === 'function') {
+          try {
+            const dbPlayers = await window.LeagueDB.getPlayers();
+            if (Array.isArray(dbPlayers)) {
+              dbPlayers.forEach(p => {
+                const tag = (p.gamertag || p.username || '').trim();
+                if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
+                  map.set(tag.toLowerCase(), {
+                    gamertag: tag,
+                    discord: p.discord_name || p.discord || '',
+                    team: p.teams?.name || p.team_name || 'Free Agent',
+                    role: p.role || 'Flex',
+                    avatar: p.avatar_url || null,
+                    isTournamentPlayer: false
+                  });
+                }
+              });
+            }
+          } catch (_) {}
+        }
+
+        // 4. Custom registered accounts
         try {
           const custom = JSON.parse(localStorage.getItem('frontline_arena_registered_accounts')) || [];
           custom.forEach(p => {
@@ -1509,16 +1551,18 @@
                 gamertag: tag,
                 discord: p.discord || '',
                 team: p.team || 'Free Agent',
-                avatar: p.avatar_url || null
+                role: p.role || 'Flex',
+                avatar: p.avatar_url || null,
+                isTournamentPlayer: false
               });
             }
           });
         } catch (_) {}
 
-        // 3. Known profiles (Spencer & Savory)
+        // 5. Known profiles (Spencer & Savory)
         [
-          { gamertag: 'Commissioner Spencer', discord: 'todd061496', team: 'Frontline HQ' },
-          { gamertag: 'Savory', discord: 'savorypanda8645', team: 'Frontline Staff' }
+          { gamertag: 'Commissioner Spencer', discord: 'todd061496', team: 'Frontline HQ', role: 'Staff' },
+          { gamertag: 'Savory', discord: 'savorypanda8645', team: 'Frontline Staff', role: 'Staff' }
         ].forEach(p => {
           if (!map.has(p.gamertag.toLowerCase())) {
             map.set(p.gamertag.toLowerCase(), p);
@@ -1705,13 +1749,22 @@
             `;
           }
 
+          let roleBadge = '';
+          if (p.isTournamentPlayer || p.role === 'Tournament Player' || p.team === 'Tournament Player') {
+            roleBadge = `<span style="font-size:10px; color:#38bdf8; margin-left:6px; background:#0c1f2d; border:1px solid #1e3a5f; padding:2px 6px; border-radius:2px; font-weight:700;">TOURNAMENT PLAYER</span>`;
+          } else if (p.team && p.team !== 'Free Agent') {
+            roleBadge = `<span style="font-size:10px; color:#a3e635; margin-left:6px; background:#1b2313; padding:1px 5px; border-radius:2px;">${escapeHtml(p.team)}</span>`;
+          } else if (p.discord) {
+            roleBadge = `<span style="font-size:10px; color:#9ca3af; margin-left:6px;">(${escapeHtml(p.discord)})</span>`;
+          }
+
           return `
             <div class="teammate-dropdown-item" onclick="selectTeammate('${escapeHtml(p.gamertag)}')">
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="color:#4ade80;">👤</span>
                 <div>
                   <strong style="color:#ffffff; font-size:12.5px;">${escapeHtml(p.gamertag)}</strong>
-                  ${p.team && p.team !== 'Free Agent' ? `<span style="font-size:10px; color:#a3e635; margin-left:6px; background:#1b2313; padding:1px 5px; border-radius:2px;">${escapeHtml(p.team)}</span>` : (p.discord ? `<span style="font-size:10px; color:#9ca3af; margin-left:6px;">(${escapeHtml(p.discord)})</span>` : '')}
+                  ${roleBadge}
                 </div>
               </div>
               <span class="btn-enlist-mini">
