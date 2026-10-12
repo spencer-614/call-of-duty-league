@@ -1135,7 +1135,6 @@
               </div>
             </div>
 
-            <div id="tournament-map-reports"></div>
             ${chatSectionHtml}
 
             <div style="text-align:right; margin-top:16px;">
@@ -1148,7 +1147,6 @@
           document.documentElement.classList.add('modal-open');
           document.body.classList.add('modal-open');
           dialog.showModal();
-          await window.TournamentReports.mount(document.getElementById("tournament-map-reports"), activeTournament.id, match);
 
           // Initialize chat interactions if authorized
           if (hasAccess && activeTournament?.id) {
@@ -1338,6 +1336,5 @@
         });
       })();
     </script>
-  <script src="/tournament-reports.js"></script>
-</body>
+  </body>
 </html>
