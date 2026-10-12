@@ -4052,6 +4052,29 @@ if (dbClient && cleanPayload.user_id) {
       finalMessages = localMessages;
     }
 
+    finalMessages = (finalMessages || []).map(m => {
+      if (!m) return m;
+      let sName = m.sender_name || 'Combatant';
+      const sid = String(m.sender_id || '');
+      const lower = String(sName).toLowerCase().trim();
+      if (sid === '00dd56dd-fbc4-4243-b733-ff0a7e4086a3' || 
+          lower === 'savorypanda8645' || 
+          lower === 'savory' || 
+          lower.startsWith('savory@') || 
+          lower.includes('savorypanda') ||
+          (m.sender_email && m.sender_email.toLowerCase().includes('savory'))) {
+        sName = 'Savory';
+      } else if (sid === '82788abf-e013-4aff-8475-673fb390b340' || 
+                 lower === 'todd061496' || 
+                 lower.startsWith('todd061496@') || 
+                 lower.includes('commissioner spencer') || 
+                 lower === 'spencer' ||
+                 (m.sender_email && m.sender_email.toLowerCase().includes('todd061496'))) {
+        sName = 'Commissioner Spencer';
+      }
+      return { ...m, sender_name: sName };
+    });
+
     return finalMessages;
   },
 
@@ -4061,12 +4084,29 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     const rowId = this._getMatchChatRowId(tournamentId, matchId);
+    let cleanSenderName = String(senderName || "Combatant").trim();
+    const sid = String(senderId || "");
+    const lowerSender = cleanSenderName.toLowerCase();
+    if (sid === '00dd56dd-fbc4-4243-b733-ff0a7e4086a3' || 
+        lowerSender === 'savorypanda8645' || 
+        lowerSender === 'savory' || 
+        lowerSender.startsWith('savory@') || 
+        lowerSender.includes('savorypanda')) {
+      cleanSenderName = 'Savory';
+    } else if (sid === '82788abf-e013-4aff-8475-673fb390b340' || 
+               lowerSender === 'todd061496' || 
+               lowerSender.startsWith('todd061496@') || 
+               lowerSender.includes('commissioner') || 
+               lowerSender === 'spencer') {
+      cleanSenderName = 'Commissioner Spencer';
+    }
+
     const chatMsg = {
       id: "tmc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
       tournament_id: String(tournamentId),
       match_id: String(matchId),
       sender_id: senderId || null,
-      sender_name: String(senderName || "Combatant").trim(),
+      sender_name: cleanSenderName,
       sender_team: senderTeam || null,
       sender_role: senderRole || "combatant",
       message: message.trim(),
@@ -8628,27 +8668,27 @@ window.LadderDB = {
                     adminSessionEmail === "admin@frontlineleague.com" || 
                     (isAdminSession && !authUser?.app_metadata?.provider?.includes("discord"));
 
-    // If active session is Admin / Commissioner, build the official Commissioner Dossier
-    // NEVER allow a combatant Discord profile to bleed into an Admin Email session!
+    // If active session is Admin / Commissioner / Staff, build the official Dossier
     if (isStaff) {
-      const isSpencer = (cleanAuthEmail === "todd061496@gmail.com" || adminSessionEmail === "todd061496@gmail.com" || !cleanAuthEmail);
-      const staffGamertag = isSpencer ? "Commissioner Spencer" : (authUser?.user_metadata?.gamertag || "League Commissioner");
+      const isSpencer = (cleanAuthEmail === "todd061496@gmail.com" || adminSessionEmail === "todd061496@gmail.com" || (!cleanAuthEmail && !adminSessionEmail));
+      const isSavory = (authUser?.id === "00dd56dd-fbc4-4243-b733-ff0a7e4086a3" || cleanAuthEmail === "savory@frontlineleague.com" || adminSessionEmail === "savory@frontlineleague.com");
+      const staffGamertag = isSpencer ? "Commissioner Spencer" : (isSavory ? "Savory" : (authUser?.user_metadata?.gamertag || authUser?.user_metadata?.display_name || "League Staff"));
 
       return {
-        id: authUser?.id || "admin_commissioner",
+        id: authUser?.id || (isSpencer ? "admin_commissioner" : "admin_staff"),
         gamertag: staffGamertag,
         username: staffGamertag,
-        email: cleanAuthEmail || adminSessionEmail || "todd061496@gmail.com",
-        tag: "COMM",
-        team_name: "Frontline League HQ",
+        email: cleanAuthEmail || adminSessionEmail || (isSpencer ? "todd061496@gmail.com" : "savory@frontlineleague.com"),
+        tag: isSpencer ? "COMM" : "STAFF",
+        team_name: isSpencer ? "Frontline League HQ" : "Frontline League Staff",
         elo: 1200,
-        tier: "Commissioner",
-        role: "League Commissioner",
+        tier: isSpencer ? "Commissioner" : "Official",
+        role: isSpencer ? "League Commissioner" : "League Staff",
         avatar_url: "/images/leaguelogo_1.png",
-        discord: "—",
-        activision_id: isSpencer ? "Spencer#0001" : "Official#0001",
+        discord: isSavory ? "Savory" : "—",
+        activision_id: isSpencer ? "Spencer#0001" : (isSavory ? "Savory#0001" : "Official#0001"),
         is_staff: true,
-        is_commissioner: true
+        is_commissioner: isSpencer
       };
     }
 
@@ -8668,7 +8708,14 @@ window.LadderDB = {
     if (authUser) {
       const meta = authUser.user_metadata || {};
       const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.getDiscordIdentity(authUser) : null;
-      const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
+      let card = null;
+      try { card = JSON.parse(localStorage.getItem('frontline_league_player_card')); } catch(e){}
+      let gamertag = meta.gamertag || meta.username || card?.gamertag || card?.username || meta.display_name || meta.global_name || meta.full_name || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
+      if (authUser.id === "00dd56dd-fbc4-4243-b733-ff0a7e4086a3" || cleanAuthEmail === "savory@frontlineleague.com" || String(gamertag).toLowerCase().includes("savory")) {
+        gamertag = "Savory";
+      } else if (authUser.id === "82788abf-e013-4aff-8475-673fb390b340" || cleanAuthEmail === "todd061496@gmail.com") {
+        gamertag = "Commissioner Spencer";
+      }
       return {
         id: authUser.id,
         gamertag: gamertag,
@@ -8679,7 +8726,7 @@ window.LadderDB = {
         elo: 1200,
         tier: "Specialist",
         avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-        discord: discordInfo?.primaryName || meta.discord_name || `${gamertag.toLowerCase()}#0001`,
+        discord: discordInfo?.primaryName || meta.discord_name || (gamertag === "Savory" ? "Savory" : `${gamertag.toLowerCase()}#0001`),
         activision_id: meta.activision_id || `${gamertag}#1234567`
       };
     }

@@ -488,7 +488,7 @@
 
     <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=20261012b"></script>
+    <script src="/supabase.js?v=20261012d"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -1165,12 +1165,138 @@
               user,
               isStaff,
               userTeamName,
-              userRole
+              userRole,
+              reg1,
+              reg2
             });
           }
         }
 
-        function setupMatchChat({ tournamentId, matchId, user, isStaff, userTeamName, userRole }) {
+        function resolveAuthorDisplayName(m, r1, r2) {
+          if (!m) return 'Combatant';
+          const sid = String(m.sender_id || '');
+          const raw = String(m.sender_name || '').trim();
+          const lower = raw.toLowerCase();
+
+          // 1. Direct Known Identities (Savory & Spencer)
+          if (sid === '00dd56dd-fbc4-4243-b733-ff0a7e4086a3' || 
+              lower === 'savorypanda8645' || 
+              lower === 'savory' || 
+              lower.startsWith('savory@') || 
+              lower.includes('savorypanda') ||
+              (m.sender_email && m.sender_email.toLowerCase().includes('savory'))) {
+            return 'Savory';
+          }
+
+          if (sid === '82788abf-e013-4aff-8475-673fb390b340' || 
+              lower === 'todd061496' || 
+              lower.startsWith('todd061496@') || 
+              lower.includes('commissioner spencer') || 
+              lower === 'spencer' ||
+              (m.sender_email && m.sender_email.toLowerCase().includes('todd061496'))) {
+            return 'Commissioner Spencer';
+          }
+
+          // 2. Check team registrations if captain gamertag matches sender
+          const regs = [r1, r2].filter(Boolean);
+          for (const reg of regs) {
+            if (reg.captain_gamertag) {
+              const capTag = String(reg.captain_gamertag).trim();
+              const capEmail = String(reg.captain_email || '').toLowerCase().trim();
+              const capDiscord = String(reg.captain_discord || '').replace(/^@/, '').toLowerCase().trim();
+              if ((capEmail && (lower === capEmail.split('@')[0] || lower === capEmail)) ||
+                  (capDiscord && lower === capDiscord) ||
+                  (reg.registered_by && sid && reg.registered_by === sid)) {
+                return capTag;
+              }
+            }
+            // Check roster members
+            let roster = [];
+            if (Array.isArray(reg.roster)) roster = reg.roster;
+            else if (typeof reg.roster === 'string') {
+              try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
+            }
+            if (Array.isArray(roster)) {
+              for (const mem of roster) {
+                const memObj = typeof mem === 'object' && mem ? mem : { gamertag: mem };
+                const gTag = memObj.gamertag || memObj.name;
+                const dTag = (memObj.discord || '').replace(/^@/, '').toLowerCase().trim();
+                const eTag = (memObj.email || '').toLowerCase().trim();
+                if (gTag) {
+                  if ((eTag && (lower === eTag.split('@')[0] || lower === eTag)) ||
+                      (dTag && lower === dTag)) {
+                    return gTag;
+                  }
+                }
+              }
+            }
+          }
+
+          // 3. If raw name contains '@', strip the domain and format
+          if (raw.includes('@')) {
+            const prefix = raw.split('@')[0];
+            return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+          }
+
+          // 4. Return clean raw sender name if present
+          if (raw && raw !== 'Combatant') {
+            return raw;
+          }
+
+          return m.sender_role === 'staff' ? 'League Official' : 'Combatant';
+        }
+
+        function resolvePlayerProfileName(u, isStaffUser, userTeamName, r1, r2) {
+          if (!u && !isStaffUser) return 'Combatant';
+          const uId = u?.id || u?.sub || '';
+          const uEmail = (u?.email || '').toLowerCase().trim();
+          const rawTag = (u?.gamertag || u?.username || '').trim();
+          const lowerTag = rawTag.toLowerCase();
+
+          // Known identities
+          if (uId === '00dd56dd-fbc4-4243-b733-ff0a7e4086a3' || uEmail === 'savory@frontlineleague.com' || lowerTag.includes('savory')) {
+            return 'Savory';
+          }
+          if (uId === '82788abf-e013-4aff-8475-673fb390b340' || uEmail === 'todd061496@gmail.com' || lowerTag.includes('spencer')) {
+            return 'Commissioner Spencer';
+          }
+
+          // If user has a valid gamertag that is NOT an email prefix and not a discord discriminator
+          if (rawTag && !rawTag.includes('@') && rawTag !== 'Combatant' && !rawTag.match(/^[a-z0-9_]+[0-9]{4,}$/i)) {
+            return rawTag;
+          }
+
+          // Check tournament registration captain / roster
+          const regs = [r1, r2].filter(Boolean);
+          for (const reg of regs) {
+            if (reg.registered_by && uId && reg.registered_by === uId && reg.captain_gamertag) {
+              return reg.captain_gamertag;
+            }
+            if (reg.captain_gamertag && uEmail && reg.captain_email && reg.captain_email.toLowerCase() === uEmail) {
+              return reg.captain_gamertag;
+            }
+          }
+
+          // Check player card in localStorage
+          try {
+            const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+            if (card && card.gamertag && !card.gamertag.includes('@')) {
+              return card.gamertag;
+            }
+          } catch (_) {}
+
+          // If user has gamertag
+          if (rawTag && !rawTag.includes('@')) return rawTag;
+
+          if (isStaffUser) return 'League Official';
+          if (uEmail) {
+            const prefix = uEmail.split('@')[0];
+            return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+          }
+          return 'Combatant';
+        }
+
+        function setupMatchChat({ tournamentId, matchId, user, isStaff, userTeamName, userRole, reg1, reg2 }) {
           if (chatPollInterval) clearInterval(chatPollInterval);
 
           const chatBox = document.getElementById(`match-chat-box-${matchId}`);
@@ -1186,7 +1312,7 @@
             localStorage.setItem('frontline_chat_client_id', myClientId);
           }
           const mySenderId = user?.id || user?.sub || myClientId;
-          const mySenderName = user?.gamertag || user?.username || (user?.email ? user.email.split('@')[0] : (isStaff ? 'League Staff' : 'Combatant'));
+          const mySenderName = resolvePlayerProfileName(user, isStaff, userTeamName, reg1, reg2);
 
           let lastLoadedHash = '';
 
@@ -1219,14 +1345,15 @@
             }
 
             chatBox.innerHTML = messages.map(m => {
-              const isMe = (m.sender_id && m.sender_id === mySenderId) || (m.sender_name === mySenderName);
-              const isStaffMsg = m.sender_role === 'staff';
+              const authorName = resolveAuthorDisplayName(m, reg1, reg2);
+              const isMe = (m.sender_id && m.sender_id === mySenderId) || (authorName === mySenderName) || (m.sender_name === mySenderName);
+              const isStaffMsg = m.sender_role === 'staff' || authorName === 'Commissioner Spencer' || (authorName === 'Savory' && isStaff);
               const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
               return `
                 <div class="match-chat-msg ${isMe ? 'msg-self' : ''} ${isStaffMsg ? 'msg-staff' : ''}">
                   <div class="match-chat-msg-head">
-                    <span class="match-chat-msg-author">${escapeHtml(m.sender_name || 'Combatant')}</span>
+                    <span class="match-chat-msg-author">${escapeHtml(authorName)}</span>
                     ${isStaffMsg ? `
                       <span class="match-chat-msg-role-tag role-tag-staff">🛡 STAFF</span>
                     ` : (m.sender_team ? `
