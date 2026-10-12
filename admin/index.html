@@ -2748,8 +2748,8 @@
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1;">
-                  <label class="form-label" for="tourney-desc-input">Tournament Brief / Directives &amp; Rules *</label>
-                  <textarea id="tourney-desc-input" class="form-control" rows="3" placeholder="Brief rules summary, check-in instructions, map veto guidelines, host protocols..." required style="resize:vertical;"></textarea>
+                  <label class="form-label" for="tourney-desc-input">Tournament Subtitle / Overview (Optional)</label>
+                  <textarea id="tourney-desc-input" class="form-control" rows="2" placeholder="Optional brief tagline or overview displayed beneath headline..." style="resize:vertical;"></textarea>
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1; background:#12140d; border:1px solid #2e351d; border-left:3px solid #fbbf24; padding:14px; border-radius:3px;">
@@ -2758,7 +2758,7 @@
                     <small style="color:var(--muted); font-size:11px; text-transform:none; font-weight:normal;">One bullet directive per line</small>
                   </label>
                   <p style="color:#9ca3af; font-size:11.5px; margin:0 0 8px; line-height:1.4;">
-                    These directives render as official bullet points inside the public tournament details modal under <strong>OFFICIAL CDL RULES &amp; MAP VETO DIRECTIVE</strong>.
+                    These directives directly edit the <strong>OFFICIAL CDL RULES &amp; MAP VETO DIRECTIVE</strong> bullet points shown in the tournament details modal.
                   </p>
                   <textarea id="tourney-rules-notes-input" class="form-control" rows="4" placeholder="• Matches conducted under official CDL 2026 Competitive Ruleset.&#10;• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.&#10;• Dedicated Central host location (Dallas, TX / Chicago, IL) required.&#10;• Check-in opens 45 minutes prior to bracket start in Discord." style="resize:vertical; font-size:12.5px;"></textarea>
                 </div>
@@ -3233,8 +3233,8 @@
             </div>
 
             <div class="form-group" style="grid-column: 1 / -1;">
-              <label class="form-label" for="modal-edit-tourney-desc">Tournament Brief / Directives &amp; Rules *</label>
-              <textarea id="modal-edit-tourney-desc" class="form-control" rows="3" required placeholder="Rules summary, check-in instructions, map veto guidelines, host protocols..." style="resize:vertical;"></textarea>
+              <label class="form-label" for="modal-edit-tourney-desc">Tournament Subtitle / Overview (Optional)</label>
+              <textarea id="modal-edit-tourney-desc" class="form-control" rows="2" placeholder="Optional brief tagline or overview displayed beneath headline..." style="resize:vertical;"></textarea>
             </div>
 
             <div class="form-group" style="grid-column: 1 / -1; background:#12140d; border:1px solid #2e351d; border-left:3px solid #fbbf24; padding:14px; border-radius:3px;">
@@ -3243,7 +3243,7 @@
                 <small style="color:var(--muted); font-size:11px; text-transform:none; font-weight:normal;">One bullet directive per line</small>
               </label>
               <p style="color:#9ca3af; font-size:11.5px; margin:0 0 8px; line-height:1.4;">
-                These directives render as official bullet points inside the public tournament details modal under <strong>OFFICIAL CDL RULES &amp; MAP VETO DIRECTIVE</strong>.
+                These directives directly edit the <strong>OFFICIAL CDL RULES &amp; MAP VETO DIRECTIVE</strong> bullet points shown in the tournament details modal.
               </p>
               <textarea id="modal-edit-tourney-rules-notes" class="form-control" rows="4" placeholder="• Matches conducted under official CDL 2026 Competitive Ruleset.&#10;• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.&#10;• Dedicated Central host location (Dallas, TX / Chicago, IL) required.&#10;• Check-in opens 45 minutes prior to bracket start in Discord." style="resize:vertical; font-size:12.5px;"></textarea>
             </div>
@@ -8316,6 +8316,12 @@
           reader.readAsDataURL(file);
         });
 
+        const defaultRulesTemplate = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
+        const initialRulesInput = document.getElementById("tourney-rules-notes-input");
+        if (initialRulesInput && !initialRulesInput.value) {
+          initialRulesInput.value = defaultRulesTemplate;
+        }
+
         // Live input listeners on all composer fields
         [
           "tourney-title-input",
@@ -8352,7 +8358,8 @@
           document.getElementById("modal-edit-tourney-id").value = tourney.id || "";
           document.getElementById("edit-tourney-modal-header-title").textContent = "✏️ Edit Tournament: " + (tourney.title || 'Event');
           document.getElementById("modal-edit-tourney-title").value = tourney.title || "";
-          document.getElementById("modal-edit-tourney-desc").value = tourney.description || "";
+          const existingDesc = (tourney.description && tourney.description.toLowerCase() !== '4v4 cdl variant' && tourney.description.toLowerCase() !== (tourney.format || '').toLowerCase()) ? tourney.description : "";
+          document.getElementById("modal-edit-tourney-desc").value = existingDesc;
           const defaultRules = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
           document.getElementById("modal-edit-tourney-rules-notes").value = tourney.rules_notes || defaultRules;
           document.getElementById("modal-edit-tourney-format").value = tourney.format || "4v4 CDL Variant";
@@ -8551,7 +8558,8 @@
 
           document.getElementById("tourney-id").value = tourney.id || "";
           document.getElementById("tourney-title-input").value = tourney.title || "";
-          document.getElementById("tourney-desc-input").value = tourney.description || "";
+          const existingDescComposer = (tourney.description && tourney.description.toLowerCase() !== '4v4 cdl variant' && tourney.description.toLowerCase() !== (tourney.format || '').toLowerCase()) ? tourney.description : "";
+          document.getElementById("tourney-desc-input").value = existingDescComposer;
           const rulesInput = document.getElementById("tourney-rules-notes-input");
           const defaultRulesComposer = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
           if (rulesInput) rulesInput.value = tourney.rules_notes || defaultRulesComposer;
@@ -8612,7 +8620,8 @@
 
           document.getElementById("tourney-id").value = "";
           const rulesInputClear = document.getElementById("tourney-rules-notes-input");
-          if (rulesInputClear) rulesInputClear.value = "";
+          const defaultRulesTemplate = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
+          if (rulesInputClear) rulesInputClear.value = defaultRulesTemplate;
           
           const formTitle = document.getElementById("tourney-form-title");
           if (formTitle) formTitle.textContent = "🏆 Compose & Publish Tournament";

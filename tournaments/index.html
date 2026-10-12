@@ -968,7 +968,7 @@
               <div class="tourney-card-body">
                 <div>
                   <h3 class="tourney-card-title">${escapeHtml(t.title || 'Frontline Championship')}</h3>
-                  <div class="tourney-card-desc">${escapeHtml(t.description || 'Official community tournament bracket.')}</div>
+                  <div class="tourney-card-desc">${escapeHtml((t.description && t.description.toLowerCase() !== (t.format || '').toLowerCase() && t.description.toLowerCase() !== '4v4 cdl variant' && !t.description.includes('\n')) ? t.description : 'Official community tournament bracket.')}</div>
                 </div>
 
                 <div class="tourney-meta-grid">
@@ -1032,7 +1032,26 @@
         currentSelectedTourney = t;
 
         document.getElementById('modal-detail-title').textContent = t.title || 'Tournament Details';
-        document.getElementById('modal-detail-desc').textContent = t.description || 'Official competitive bracket rules and details.';
+        // Handle optional tournament subtitle beneath the headline
+        const descEl = document.getElementById('modal-detail-desc');
+        if (descEl) {
+          const d = (t.description || '').trim();
+          const formatStr = (t.format || '').trim().toLowerCase();
+          const isRedundant = !d ||
+            d.toLowerCase() === 'official competitive bracket rules and details.' ||
+            d.toLowerCase() === formatStr ||
+            d.toLowerCase() === '4v4 cdl variant' ||
+            d.toLowerCase() === (t.rules_notes || '').trim().toLowerCase() ||
+            d.includes('\n');
+
+          if (!isRedundant) {
+            descEl.textContent = d;
+            descEl.style.display = 'block';
+          } else {
+            descEl.textContent = '';
+            descEl.style.display = 'none';
+          }
+        }
         document.getElementById('modal-detail-prize').textContent = t.prize_pool || '$500 USD';
         document.getElementById('modal-detail-entry').textContent = t.entry_fee || 'FREE ENTRY';
         document.getElementById('modal-detail-format').textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Double Elimination'}`;
@@ -1049,8 +1068,9 @@
           ];
 
           let rulesItems = defaultRules;
-          if (t.rules_notes && t.rules_notes.trim()) {
-            const lines = t.rules_notes.split(/\r?\n/).map(l => l.replace(/^[\s•\-\*]+/, '').trim()).filter(Boolean);
+          const rulesSource = (t.rules_notes && t.rules_notes.trim()) ? t.rules_notes : (t.description && t.description.includes('\n') ? t.description : '');
+          if (rulesSource.trim()) {
+            const lines = rulesSource.split(/\r?\n/).map(l => l.replace(/^[\s•\-\*]+/, '').trim()).filter(Boolean);
             if (lines.length > 0) rulesItems = lines;
           }
 
