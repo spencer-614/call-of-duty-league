@@ -3511,6 +3511,64 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
+    // Check 4: Verify all teammates have a registered account on the website
+    const teammateNorms = proposedRosterNorms.filter(p => p !== captainTagNorm);
+    if (teammateNorms.length > 0) {
+      const registeredTagsSet = new Set();
+      registeredTagsSet.add("commissioner spencer");
+      registeredTagsSet.add("savory");
+
+      if (dbClient) {
+        try {
+          const [tRes, pRes, sRes] = await Promise.all([
+            dbClient.from("tournament_players").select("gamertag, discord_name"),
+            dbClient.from("players").select("gamertag, discord_name"),
+            dbClient.from("league_signups").select("gamertag, discord_username")
+          ]);
+          (tRes?.data || []).forEach(p => {
+            if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+            if (p.discord_name) registeredTagsSet.add(norm(p.discord_name));
+          });
+          (pRes?.data || []).forEach(p => {
+            if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+            if (p.discord_name) registeredTagsSet.add(norm(p.discord_name));
+          });
+          (sRes?.data || []).forEach(p => {
+            if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+            if (p.discord_username) registeredTagsSet.add(norm(p.discord_username));
+          });
+        } catch (_) {}
+      }
+
+      try {
+        const localT = JSON.parse(localStorage.getItem("frontline_tournament_players")) || [];
+        localT.forEach(p => {
+          if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+          if (p.discord_name || p.discord) registeredTagsSet.add(norm(p.discord_name || p.discord));
+        });
+        const localS = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+        localS.forEach(p => {
+          if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+          if (p.discord_username) registeredTagsSet.add(norm(p.discord_username));
+        });
+        const localP = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+        localP.forEach(p => {
+          if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+          if (p.discord) registeredTagsSet.add(norm(p.discord));
+        });
+      } catch (_) {}
+
+      for (const tNorm of teammateNorms) {
+        if (!registeredTagsSet.has(tNorm)) {
+          const originalTag = (rawRoster || []).find(x => norm(typeof x === "object" ? (x.gamertag || x.name) : x) === tNorm) || tNorm;
+          return {
+            success: false,
+            error: `Teammate "${originalTag}" does not have an account on the website. All teammates must create an account / sign in with Discord before being added to a tournament roster.`
+          };
+        }
+      }
+    }
+
     // Use verified Supabase Auth identity for tournament registration ownership.
     if (!dbClient) return { success: false, error: "Sign in before registering your team." };
     const { data: registrationAuth, error: registrationAuthError } = await dbClient.auth.getUser();

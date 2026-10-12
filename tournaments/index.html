@@ -860,6 +860,9 @@
                       + Add Player
                     </button>
                   </div>
+                  <div style="font-size:10.5px; color:#9ca3af; margin-top:5px; display:flex; align-items:center; gap:5px;">
+                    <span style="color:#fbbf24;">ℹ️</span> Teammates must have an account on the website (Discord sign-in or league signup) to be added.
+                  </div>
 
                   <!-- Live Autocomplete Dropdown List -->
                   <div 
@@ -1493,7 +1496,8 @@
                     team: 'Tournament Player',
                     role: 'Tournament Player',
                     avatar: p.avatar_url || null,
-                    isTournamentPlayer: true
+                    isTournamentPlayer: true,
+                    hasAccount: true
                   });
                 }
               });
@@ -1513,13 +1517,14 @@
                 team: 'Tournament Player',
                 role: 'Tournament Player',
                 avatar: p.avatar_url || null,
-                isTournamentPlayer: true
+                isTournamentPlayer: true,
+                hasAccount: true
               });
             }
           });
         } catch (_) {}
 
-        // 3. Supabase / LeagueDB players
+        // 3. Supabase / LeagueDB roster players
         if (window.LeagueDB && typeof window.LeagueDB.getPlayers === 'function') {
           try {
             const dbPlayers = await window.LeagueDB.getPlayers();
@@ -1533,7 +1538,8 @@
                     team: p.teams?.name || p.team_name || 'Free Agent',
                     role: p.role || 'Flex',
                     avatar: p.avatar_url || null,
-                    isTournamentPlayer: false
+                    isTournamentPlayer: false,
+                    hasAccount: true
                   });
                 }
               });
@@ -1541,7 +1547,47 @@
           } catch (_) {}
         }
 
-        // 4. Custom registered accounts
+        // 4. Supabase League Signups / Free Agent accounts
+        if (window.LeagueDB && typeof window.LeagueDB.getSignups === 'function') {
+          try {
+            const dbSignups = await window.LeagueDB.getSignups();
+            if (Array.isArray(dbSignups)) {
+              dbSignups.forEach(p => {
+                const tag = (p.gamertag || p.username || '').trim();
+                if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
+                  map.set(tag.toLowerCase(), {
+                    gamertag: tag,
+                    discord: p.discord_username || p.discord_name || p.discord || '',
+                    team: p.team_name || 'Free Agent',
+                    role: p.role || 'Free Agent',
+                    avatar: p.avatar_url || null,
+                    isTournamentPlayer: false,
+                    hasAccount: true
+                  });
+                }
+              });
+            }
+          } catch (_) {}
+        }
+        try {
+          const localSignups = JSON.parse(localStorage.getItem('frontline_league_signups')) || [];
+          localSignups.forEach(p => {
+            const tag = (p.gamertag || p.username || '').trim();
+            if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
+              map.set(tag.toLowerCase(), {
+                gamertag: tag,
+                discord: p.discord_username || p.discord_name || p.discord || '',
+                team: 'Free Agent',
+                role: 'Free Agent',
+                avatar: p.avatar_url || null,
+                isTournamentPlayer: false,
+                hasAccount: true
+              });
+            }
+          });
+        } catch (_) {}
+
+        // 5. Custom registered accounts in local storage
         try {
           const custom = JSON.parse(localStorage.getItem('frontline_arena_registered_accounts')) || [];
           custom.forEach(p => {
@@ -1553,16 +1599,37 @@
                 team: p.team || 'Free Agent',
                 role: p.role || 'Flex',
                 avatar: p.avatar_url || null,
-                isTournamentPlayer: false
+                isTournamentPlayer: false,
+                hasAccount: true
               });
             }
           });
         } catch (_) {}
 
-        // 5. Known profiles (Spencer & Savory)
+        // 6. Current authenticated user profile
+        try {
+          const authUser = JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
+                           JSON.parse(localStorage.getItem('frontline_auth_user')) || null;
+          if (authUser) {
+            const tag = (authUser.gamertag || authUser.username || authUser.user_metadata?.custom_claims?.global_name || authUser.user_metadata?.full_name || '').trim();
+            if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
+              map.set(tag.toLowerCase(), {
+                gamertag: tag,
+                discord: authUser.discord_name || authUser.discord || '',
+                team: 'Tournament Player',
+                role: 'Tournament Player',
+                avatar: authUser.avatar_url || null,
+                isTournamentPlayer: true,
+                hasAccount: true
+              });
+            }
+          }
+        } catch (_) {}
+
+        // 7. Known staff profiles (Spencer & Savory)
         [
-          { gamertag: 'Commissioner Spencer', discord: 'todd061496', team: 'Frontline HQ', role: 'Staff' },
-          { gamertag: 'Savory', discord: 'savorypanda8645', team: 'Frontline Staff', role: 'Staff' }
+          { gamertag: 'Commissioner Spencer', discord: 'todd061496', team: 'Frontline HQ', role: 'Staff', hasAccount: true },
+          { gamertag: 'Savory', discord: 'savorypanda8645', team: 'Frontline Staff', role: 'Staff', hasAccount: true }
         ].forEach(p => {
           if (!map.has(p.gamertag.toLowerCase())) {
             map.set(p.gamertag.toLowerCase(), p);
@@ -1671,7 +1738,7 @@
                   <span style="font-size:13px; color:#64748b;">+</span>
                   <div>
                     <span style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${slotNum} · Teammate (Open)</span>
-                    <span style="font-size:12px; color:#64748b; font-style:italic;">Empty Slot — Search or type a player name above</span>
+                    <span style="font-size:12px; color:#64748b; font-style:italic;">Empty Slot — Search registered player above</span>
                   </div>
                 </div>
                 <span style="font-size:10.5px; color:#fbbf24; font-weight:700;">+ Select Player</span>
@@ -1714,11 +1781,13 @@
         if (filtered.length === 0) {
           if (q) {
             dropdown.innerHTML = `
-              <div style="padding:10px 12px; font-size:12px; color:#9ca3af; display:flex; justify-content:space-between; align-items:center;">
-                <span>No directory match for "<strong>${escapeHtml(query)}</strong>"</span>
-                <button type="button" class="btn-tourney-outline" onclick="addCustomTeammate('${escapeHtml(query)}')" style="font-size:10.5px; padding:3px 9px; border-color:#fbbf24; color:#fbbf24;">
-                  + Add "${escapeHtml(query)}"
-                </button>
+              <div style="padding:12px 14px; font-size:12px; color:#f87171; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:3px;">
+                <div style="font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:4px; color:#fca5a5;">
+                  <span>⚠️</span> No website account found for "<strong>${escapeHtml(query)}</strong>"
+                </div>
+                <div style="font-size:11px; color:#9ca3af; line-height:1.4;">
+                  Teammates must have an account on the website to be enlisted. Ask them to sign in with Discord first!
+                </div>
               </div>
             `;
             dropdown.style.display = 'block';
@@ -1807,33 +1876,46 @@
         const normTag = norm(cleanTag);
         const captainTagNorm = norm(document.getElementById('reg-captain-tag')?.value);
 
+        // Enforce website account check: teammate must exist in registered community directory
+        const registeredPlayer = (cachedCommunityPlayers || []).find(p => 
+          norm(p.gamertag) === normTag || (p.discord && norm(p.discord) === normTag)
+        );
+
+        if (!registeredPlayer) {
+          showTeammateWarning(`Cannot add "${cleanTag}": Player does not have an account on the website. All teammates must create an account / sign in with Discord first.`);
+          return;
+        }
+
+        const canonicalTag = registeredPlayer.gamertag || cleanTag;
+        const canonicalNorm = norm(canonicalTag);
+
         if (currentRosterTeammates.length >= maxSquadSize - 1) {
           showTeammateWarning(`Squad roster is already full for this format (${maxSquadSize} players max).`);
           return;
         }
 
-        if (normTag === captainTagNorm) {
+        if (canonicalNorm === captainTagNorm) {
           showTeammateWarning(`Captain is already Player 1.`);
           return;
         }
 
-        if (currentRosterTeammates.some(t => norm(t) === normTag)) {
-          showTeammateWarning(`"${cleanTag}" is already in your squad roster.`);
+        if (currentRosterTeammates.some(t => norm(t) === canonicalNorm)) {
+          showTeammateWarning(`"${canonicalTag}" is already in your squad roster.`);
           return;
         }
 
-        const alreadyInSquad = enlistedPlayersInThisTourney.get(normTag);
+        const alreadyInSquad = enlistedPlayersInThisTourney.get(canonicalNorm);
         if (alreadyInSquad) {
-          showTeammateWarning(`Cannot enlist "${cleanTag}": Already registered in squad "${alreadyInSquad}" for this tournament.`);
+          showTeammateWarning(`Cannot enlist "${canonicalTag}": Already registered in squad "${alreadyInSquad}" for this tournament.`);
           return;
         }
 
-        currentRosterTeammates.push(cleanTag);
+        currentRosterTeammates.push(canonicalTag);
         const searchInput = document.getElementById('teammate-search-input');
         if (searchInput) searchInput.value = '';
         hideTeammatesDropdown();
         renderSquadRosterSlots();
-        showToast(`"${cleanTag}" enlisted in squad roster.`);
+        showToast(`"${canonicalTag}" enlisted in squad roster.`);
       }
 
       function addCustomTeammate(gamertag) {
@@ -1876,7 +1958,8 @@
         maxSquadSize = getFormatSquadSize(t.format);
         currentRosterTeammates = [];
 
-        // Fetch directory of players
+        // Reset and fetch fresh directory of registered accounts
+        cachedCommunityPlayers = [];
         await fetchCommunityPlayersDirectory();
 
         // Fetch all registrations for this tournament
@@ -2045,8 +2128,20 @@
           return;
         }
 
-        // Verify no player is already registered in another squad for this tournament
+        // Verify all teammates have a registered website account
         const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
+        for (let i = 1; i < fullRoster.length; i++) {
+          const teammateTag = fullRoster[i];
+          const hasAccount = (cachedCommunityPlayers || []).some(p => 
+            norm(p.gamertag) === norm(teammateTag) || (p.discord && norm(p.discord) === norm(teammateTag))
+          );
+          if (!hasAccount) {
+            showToast(`Teammate "${teammateTag}" does not have an account on the website. All teammates must sign in with Discord or register on the site first.`, true);
+            return;
+          }
+        }
+
+        // Verify no player is already registered in another squad for this tournament
         for (const p of fullRoster) {
           const existingSquad = enlistedPlayersInThisTourney.get(norm(p));
           if (existingSquad) {
