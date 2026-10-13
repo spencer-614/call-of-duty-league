@@ -3990,7 +3990,7 @@ if (dbClient && cleanPayload.user_id) {
       { gamertag: squadData.captain_gamertag, role: "Captain", status: "accepted", accepted_at: new Date().toISOString() }
     ];
 
-    // Build new registration record
+    // Build new registration record (automatically confirmed and accepted immediately upon submission)
     const regId = "reg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
     const regRecord = {
       id: regId,
@@ -4005,7 +4005,9 @@ if (dbClient && cleanPayload.user_id) {
       roster_text: squadData.captain_gamertag,
       pending_roster: proposedTeammates,
       roster_status: rosterStatusList,
-      status: "registered",
+      status: "accepted", // Automatically accepted upon passing all registration checks
+      auto_accepted: true,
+      accepted_at: squadData.registered_at || new Date().toISOString(),
       registered_at: squadData.registered_at || new Date().toISOString()
     };
 
@@ -4096,6 +4098,26 @@ if (dbClient && cleanPayload.user_id) {
           teamName: squadData.team_name || "Free Agent"
         }).catch(() => {});
       }
+    } catch (_) {}
+
+    // Send automatic registration confirmation directive to captain
+    try {
+      await this.sendUserNotification({
+        target_gamertag: squadData.captain_gamertag,
+        target_user_id: registrationAuth.user.id,
+        target_discord: squadData.captain_discord || "",
+        target_activision: squadData.captain_activision_id || "",
+        title: "Tournament Registration Accepted",
+        message: `Your squad "${squadData.team_name}" has been automatically accepted and confirmed for ${item.title || 'Frontline Tournament'}. Teammate invitations have been dispatched.`,
+        type: "tournament_registration_accepted",
+        metadata: {
+          registration_id: regId,
+          tournament_id: String(tournamentId),
+          tournament_title: item.title,
+          team_name: squadData.team_name,
+          captain_gamertag: squadData.captain_gamertag
+        }
+      });
     } catch (_) {}
 
     window.dispatchEvent(new CustomEvent("frontline_tournament_registered", { 
