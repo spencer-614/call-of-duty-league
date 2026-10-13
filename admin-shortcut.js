@@ -416,13 +416,13 @@
         `;
       } else {
         listBody.innerHTML = userNotifs.map(n => {
-          const isAccepted = n.type === 'registration_accepted' || n.type === 'tourney_accepted';
+          const isAccepted = n.type === 'registration_accepted';
           const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recent';
           return `
             <div style="padding:10px 14px; border-bottom:1px solid #1a2012; background:${n.read ? 'transparent' : 'rgba(213,244,91,0.06)'}; display:flex; flex-direction:column; gap:4px;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:10px; font-weight:800; color:${isAccepted ? '#22c55e' : '#d5f45b'}; text-transform:uppercase;">
-                  ${isAccepted ? '✓ ACCEPTED' : 'DIRECTIVE'}
+                  ${isAccepted ? '✓ LEAGUE REGISTRATION ACCEPTED' : 'DIRECTIVE'}
                 </span>
                 <span style="font-size:10px; color:#64748b;">${dateStr}</span>
               </div>

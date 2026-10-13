@@ -9087,73 +9087,42 @@
             container.innerHTML = regs.map((reg, idx) => {
               const rosterList = Array.isArray(reg.roster) ? reg.roster : (reg.roster_text ? reg.roster_text.split(/,\s*/) : []);
               const dateStr = reg.registered_at ? new Date(reg.registered_at).toLocaleString() : 'N/A';
-                    const isApproved = reg.status === 'approved';
-                    return `
-                    <div style="background:#131610; border:1px solid #2a311e; border-left:3px solid ${isApproved ? '#22c55e' : '#fbbf24'}; padding:16px; border-radius:3px; margin-bottom:12px;">
-                      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-                        <div>
-                          <div style="display:inline-flex; align-items:center; gap:6px; background:${isApproved ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)'}; color:${isApproved ? '#22c55e' : '#fbbf24'}; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:2px; margin-bottom:4px;">
-                            <span>#${idx + 1}</span> <span>${escapeHtml(reg.team_name || 'Squad')}</span>
-                            <span style="font-size:10px; opacity:0.9;">· ${isApproved ? '✓ ACCEPTED' : 'PENDING REVIEW'}</span>
-                          </div>
-                          <h4 style="margin:2px 0; color:#ffffff; font-size:15px; font-weight:800;">
-                            Captain: ${escapeHtml(reg.captain_gamertag || 'Captain')}
-                          </h4>
-                          <div style="font-size:11.5px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; margin-top:3px;">
-                            ${reg.captain_discord ? `<span>Discord: <strong style="color:#38bdf8;">${escapeHtml(reg.captain_discord)}</strong></span>` : ''}
-                            ${reg.captain_activision_id ? `<span>Activision: <strong style="color:#ffffff;">${escapeHtml(reg.captain_activision_id)}</strong></span>` : ''}
-                            <span>Enlisted: <strong>${escapeHtml(dateStr)}</strong></span>
-                          </div>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                          ${!isApproved ? `
-                            <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; border-color:#22c55e; color:#22c55e;" onclick="adminApproveTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
-                              ✓ Accept Squad &amp; Notify
-                            </button>
-                          ` : `
-                            <span style="font-size:11px; color:#22c55e; font-weight:800; padding:4px 8px; border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08); border-radius:2px;">
-                              ✓ Accepted &amp; Notified
-                            </span>
-                          `}
-                          <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
-                            🗑 Remove Squad
-                          </button>
-                        </div>
+              return `
+                <div style="background:#131610; border:1px solid #2a311e; border-left:3px solid #fbbf24; padding:16px; border-radius:3px; margin-bottom:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                    <div>
+                      <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(245,158,11,0.15); color:#fbbf24; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:2px; margin-bottom:4px;">
+                        <span>#${idx + 1}</span> <span>${escapeHtml(reg.team_name || 'Squad')}</span>
                       </div>
-                      ${rosterList.length > 0 ? `
-                        <div style="background:#0a0c0e; border:1px solid #1e2430; padding:8px 12px; border-radius:2px; font-size:11.5px; color:#cbd5e1;">
-                          <span style="color:#fbbf24; font-weight:700;">Roster Members:</span> ${rosterList.map(m => escapeHtml(m)).join(' • ')}
-                        </div>
-                      ` : ''}
+                      <h4 style="margin:2px 0; color:#ffffff; font-size:15px; font-weight:800;">
+                        Captain: ${escapeHtml(reg.captain_gamertag || 'Captain')}
+                      </h4>
+                      <div style="font-size:11.5px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; margin-top:3px;">
+                        ${reg.captain_discord ? `<span>Discord: <strong style="color:#38bdf8;">${escapeHtml(reg.captain_discord)}</strong></span>` : ''}
+                        ${reg.captain_activision_id ? `<span>Activision: <strong style="color:#ffffff;">${escapeHtml(reg.captain_activision_id)}</strong></span>` : ''}
+                        <span>Enlisted: <strong>${escapeHtml(dateStr)}</strong></span>
+                      </div>
                     </div>
-                  `;
-                }).join("");
-              } catch(err) {
-                console.error("Error viewing tournament registrations:", err);
-                container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading squads: ${escapeHtml(err.message)}</div>`;
-              }
-            }
-            window.adminViewTourneyRegistrations = adminViewTourneyRegistrations;
+                    <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                      🗑 Remove Squad
+                    </button>
+                  </div>
+                  ${rosterList.length > 0 ? `
+                    <div style="background:#0a0c0e; border:1px solid #1e2430; padding:8px 12px; border-radius:2px; font-size:11.5px; color:#cbd5e1;">
+                      <span style="color:#fbbf24; font-weight:700;">Roster Members:</span> ${rosterList.map(m => escapeHtml(m)).join(' • ')}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join("");
+          } catch(err) {
+            console.error("Error viewing tournament registrations:", err);
+            container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading squads: ${escapeHtml(err.message)}</div>`;
+          }
+        }
+        window.adminViewTourneyRegistrations = adminViewTourneyRegistrations;
 
-            async function adminApproveTourneyRegistration(regId, tourneyId, tourneyTitle) {
-              try {
-                if (window.LeagueDB && typeof window.LeagueDB.approveTournamentRegistration === "function") {
-                  const res = await window.LeagueDB.approveTournamentRegistration(regId, tourneyId);
-                  if (res.success) {
-                    showToast("✓ Squad registration accepted and combatant notification dispatched!");
-                    await adminViewTourneyRegistrations(tourneyId, tourneyTitle);
-                  } else {
-                    showToast(`Failed: ${res.error || "Unknown error"}`, true);
-                  }
-                }
-              } catch (err) {
-                console.error("Approve squad error:", err);
-                showToast("Error accepting squad registration.", true);
-              }
-            }
-            window.adminApproveTourneyRegistration = adminApproveTourneyRegistration;
-
-            async function adminDeleteTourneyRegistration(regId, tourneyId, tourneyTitle) {
+        async function adminDeleteTourneyRegistration(regId, tourneyId, tourneyTitle) {
           if (!confirm("Are you sure you want to remove this squad registration from the tournament?")) return;
           try {
             if (window.LeagueDB && typeof window.LeagueDB.deleteTournamentRegistration === "function") {
