@@ -2340,6 +2340,26 @@ if (dbClient && cleanPayload.user_id) {
         } catch (_) {}
       }
 
+      // 5. Send persistent approval notification to the combatant
+      try {
+        await this.sendUserNotification({
+          target_gamertag: gamertag,
+          target_user_id: newPlayerData.user_id || signup?.user_id || null,
+          target_discord: newPlayerData.discord_name || signup?.discord_username || signup?.discord_name || null,
+          title: "Registration Accepted & Enlisted",
+          message: `Congratulations! Your Frontline League registration for [${gamertag}] has been accepted and officially enlisted into the active roster${signup?.team_name ? ` with squad "${signup.team_name}"` : ' as an Unassigned Free Agent'}.`,
+          type: "registration_accepted",
+          metadata: {
+            gamertag: gamertag,
+            role: newPlayerData.role,
+            team: signup?.team_name || "Free Agent",
+            signup_id: signupId
+          }
+        });
+      } catch (notifErr) {
+        console.warn("Notice: Could not dispatch registration acceptance notification:", notifErr);
+      }
+
       return {
         success: true,
         player: playerResult.data,
@@ -2437,6 +2457,183 @@ if (dbClient && cleanPayload.user_id) {
       if (title) MOCK_DATA.vods[0].title = title;
     }
     return { success: true, mock: true };
+  },
+
+  // ==========================================
+  // USER NOTIFICATIONS & DIRECTIVES SYSTEM
+  // ==========================================
+  async getAllNotificationsRegistry() {
+    let list = [];
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("status_text")
+          .eq("id", "user_notifications_registry")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            if (Array.isArray(parsed)) list = parsed;
+          } catch (_) {}
+        }
+      } catch (_) {}
+    }
+
+    if (!list || list.length === 0) {
+      try {
+        const local = JSON.parse(localStorage.getItem("frontline_user_notifications")) || [];
+        if (Array.isArray(local)) list = local;
+      } catch (_) {}
+    }
+
+    return Array.isArray(list) ? list : [];
+  },
+
+  async saveAllNotificationsRegistry(list) {
+    if (!Array.isArray(list)) list = [];
+    try {
+      localStorage.setItem("frontline_user_notifications", JSON.stringify(list));
+    } catch (_) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "user_notifications_registry",
+          status_state: "active",
+          status_text: JSON.stringify(list),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (err) {
+        console.warn("Could not sync notifications to league_settings:", err);
+      }
+    }
+    return true;
+  },
+
+  async sendUserNotification(notifData = {}) {
+    try {
+      const list = await this.getAllNotificationsRegistry();
+      const notifId = "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+      const newNotif = {
+        id: notifId,
+        target_gamertag: String(notifData.target_gamertag || "").trim(),
+        target_user_id: notifData.target_user_id ? String(notifData.target_user_id) : null,
+        target_discord: notifData.target_discord ? String(notifData.target_discord).trim() : null,
+        target_activision: notifData.target_activision ? String(notifData.target_activision).trim() : null,
+        title: notifData.title || "Official League Notification",
+        message: notifData.message || "",
+        type: notifData.type || "directive", // 'registration_accepted', 'tourney_accepted', 'system', 'match'
+        created_at: new Date().toISOString(),
+        read: false,
+        read_at: null,
+        metadata: notifData.metadata || {}
+      };
+
+      list.unshift(newNotif);
+      // Keep registry trimmed to most recent 500 notifications across platform
+      const trimmed = list.slice(0, 500);
+      await this.saveAllNotificationsRegistry(trimmed);
+
+      // Dispatch cross-window and current tab events
+      try {
+        window.dispatchEvent(new CustomEvent("frontline_notification_received", { detail: newNotif }));
+      } catch (_) {}
+
+      return { success: true, notification: newNotif };
+    } catch (err) {
+      console.error("sendUserNotification error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
+  async getUserNotifications(userIdentifier) {
+    try {
+      const list = await this.getAllNotificationsRegistry();
+      if (!userIdentifier) return [];
+
+      let tag = "";
+      let uid = "";
+      let disc = "";
+      let act = "";
+
+      if (typeof userIdentifier === "string") {
+        tag = userIdentifier.trim().toLowerCase();
+        uid = userIdentifier.trim();
+      } else if (typeof userIdentifier === "object" && userIdentifier !== null) {
+        tag = String(userIdentifier.gamertag || userIdentifier.username || userIdentifier.name || userIdentifier.email || "").trim().toLowerCase();
+        uid = String(userIdentifier.id || userIdentifier.user_id || "").trim();
+        disc = String(userIdentifier.discord || userIdentifier.discord_name || userIdentifier.discord_username || "").trim().toLowerCase();
+        act = String(userIdentifier.activision_id || userIdentifier.activision || "").trim().toLowerCase();
+        if (userIdentifier.user_metadata) {
+          const m = userIdentifier.user_metadata;
+          if (!tag) tag = String(m.gamertag || m.username || m.name || "").trim().toLowerCase();
+          if (!disc) disc = String(m.discord || m.discord_name || m.discord_username || "").trim().toLowerCase();
+          if (!act) act = String(m.activision_id || "").trim().toLowerCase();
+        }
+      }
+
+      return list.filter(n => {
+        const nTag = String(n.target_gamertag || "").trim().toLowerCase();
+        const nUid = String(n.target_user_id || "").trim();
+        const nDisc = String(n.target_discord || "").trim().toLowerCase();
+        const nAct = String(n.target_activision || "").trim().toLowerCase();
+
+        if (tag && nTag && (tag === nTag || tag.includes(nTag) || nTag.includes(tag))) return true;
+        if (uid && nUid && uid === nUid) return true;
+        if (disc && nDisc && (disc === nDisc || disc.includes(nDisc) || nDisc.includes(disc))) return true;
+        if (act && nAct && act === nAct) return true;
+        return false;
+      });
+    } catch (err) {
+      console.error("getUserNotifications error:", err);
+      return [];
+    }
+  },
+
+  async markNotificationRead(notifId) {
+    try {
+      const list = await this.getAllNotificationsRegistry();
+      let changed = false;
+      list.forEach(n => {
+        if (String(n.id) === String(notifId) && !n.read) {
+          n.read = true;
+          n.read_at = new Date().toISOString();
+          changed = true;
+        }
+      });
+      if (changed) {
+        await this.saveAllNotificationsRegistry(list);
+        window.dispatchEvent(new CustomEvent("frontline_notifications_updated", { detail: { markedId: notifId } }));
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message || err };
+    }
+  },
+
+  async markAllNotificationsRead(userIdentifier) {
+    try {
+      const userNotifs = await this.getUserNotifications(userIdentifier);
+      const userIds = new Set(userNotifs.map(n => String(n.id)));
+      const list = await this.getAllNotificationsRegistry();
+      let changed = false;
+      list.forEach(n => {
+        if (userIds.has(String(n.id)) && !n.read) {
+          n.read = true;
+          n.read_at = new Date().toISOString();
+          changed = true;
+        }
+      });
+      if (changed) {
+        await this.saveAllNotificationsRegistry(list);
+        window.dispatchEvent(new CustomEvent("frontline_notifications_updated", { detail: { allRead: true } }));
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message || err };
+    }
   },
 
   // ==========================================
@@ -4368,7 +4565,77 @@ if (dbClient && cleanPayload.user_id) {
     return { success: true, message: chatMsg, remoteSaved, messages: mergedList };
   },
 
-    async deleteTournamentRegistration(registrationId, tournamentId = null) {
+  async approveTournamentRegistration(registrationId, tournamentId = null) {
+    if (!registrationId) return { success: false, error: "Registration ID required" };
+
+    const allRegs = await this.getTournamentRegistrations(null);
+    const targetReg = allRegs.find(r => String(r.id) === String(registrationId));
+    if (!targetReg) return { success: false, error: "Squad registration not found" };
+
+    targetReg.status = "approved";
+    targetReg.approved_at = new Date().toISOString();
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournament_registrations_registry",
+          status_state: "active",
+          status_text: JSON.stringify(allRegs),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (e) {}
+
+      try {
+        await dbClient.from("tournament_registrations").update({ status: "approved" }).eq("id", registrationId);
+      } catch (e) {}
+    }
+
+    try {
+      localStorage.setItem("frontline_tournament_registrations", JSON.stringify(allRegs));
+    } catch (e) {}
+
+    // Send notifications to captain and all roster members
+    try {
+      const tourneyTitle = targetReg.tournament_title || "Official Tournament";
+      const squadName = targetReg.team_name || "Squad";
+      const rosterList = Array.isArray(targetReg.roster) 
+        ? targetReg.roster 
+        : (targetReg.roster_text ? targetReg.roster_text.split(/,\s*/) : []);
+
+      const notifyRecipients = new Set();
+      if (targetReg.captain_gamertag) notifyRecipients.add(targetReg.captain_gamertag);
+      rosterList.forEach(m => {
+        const tag = typeof m === "object" ? (m.gamertag || m.name) : m;
+        if (tag) notifyRecipients.add(tag);
+      });
+
+      for (const recTag of notifyRecipients) {
+        await this.sendUserNotification({
+          target_gamertag: recTag,
+          target_discord: recTag === targetReg.captain_gamertag ? targetReg.captain_discord : null,
+          title: "Tournament Squad Registration Accepted",
+          message: `Your squad registration for [${squadName}] in "${tourneyTitle}" has been accepted and confirmed by League Commissioners! Check the tournament hub for seedings and match schedules.`,
+          type: "tourney_accepted",
+          metadata: {
+            tournament_id: targetReg.tournament_id,
+            tournament_title: tourneyTitle,
+            squad_name: squadName,
+            registration_id: registrationId
+          }
+        });
+      }
+    } catch (notifErr) {
+      console.warn("Notice: Failed to dispatch tournament squad acceptance notification:", notifErr);
+    }
+
+    window.dispatchEvent(new CustomEvent("frontline_tournament_registration_approved", {
+      detail: { registration: targetReg }
+    }));
+
+    return { success: true, registration: targetReg };
+  },
+
+  async deleteTournamentRegistration(registrationId, tournamentId = null) {
     if (!registrationId) return { success: false, error: "Registration ID required" };
 
     const allRegs = await this.getTournamentRegistrations(null);

@@ -2724,10 +2724,15 @@
           </div>
 
           <!-- Tournament Composer (Mirrors Announcements Composer) -->
-          <div class="admin-panel-card">
+            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; font:800 10.5px var(--body); letter-spacing:1px; text-transform:uppercase; padding:3px 8px; margin-bottom:12px; border-radius:2px;">
+              <span>★</span> <span>COMMISSIONER DIRECTIVE // ARENA &amp; HUB TOURNAMENT ENGINE</span>
+            </div>
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
               <h3 id="tourney-form-title" class="admin-card-title" style="margin:0;">🏆 Compose &amp; Publish Tournament</h3>
               <div style="display:flex; gap:10px; align-items:center;">
+                <a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:#ff1e44; border-color:rgba(255,30,68,0.4); background:rgba(255,30,68,0.06);">
+                  ⚔️ View Arena Tournaments ↗
+                </a>
                 <a href="/tournaments/" target="_blank" class="btn-action-sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:#fbbf24; border-color:rgba(251,191,36,0.4); background:rgba(251,191,36,0.06);">
                   🏆 View Live on Hub ↗
                 </a>
@@ -2737,13 +2742,28 @@
               </div>
             </div>
             <p style="color:var(--muted); font-size:12.5px; margin:0 0 20px;">
-              Publish official tournaments, primes, and cash cups to <code>/tournaments/</code> with real-time bracket style, rules directives, entry parameters, and registration tracking.
+              Publish official Arena ladder tournaments, weekend primes, and hub championships. Authorized strictly for League Commissioners.
             </p>
 
             <form id="form-create-tournament" onsubmit="handleAdminCreateTournament(event)">
               <input type="hidden" id="tourney-id" />
               
               <div class="admin-form-grid">
+                <div class="form-group" style="grid-column: 1 / -1; background:#12140e; border:1px solid #303723; border-left:3px solid #ff1e44; padding:12px 14px; border-radius:3px;">
+                  <label class="form-label" for="tourney-circuit-input" style="color:#ff1e44; font-weight:800; display:flex; justify-content:space-between; align-items:center;">
+                    <span>🎯 Target Platform / Tournament Circuit *</span>
+                    <span style="font-size:10.5px; color:#fbbf24; text-transform:uppercase;">Commissioner Authorization Required</span>
+                  </label>
+                  <select id="tourney-circuit-input" class="form-control" style="background:#0b0d09; border-color:#ff1e44; color:#ffffff; font-weight:700;">
+                    <option value="arena" selected>⚔️ Arena Ladder Circuit (/arena/tournaments/)</option>
+                    <option value="both">🌐 Both Platforms (Arena Ladders + Tournaments Hub)</option>
+                    <option value="hub">🏆 Frontline Tournaments Hub (/tournaments/)</option>
+                  </select>
+                  <p style="color:#94a3b8; font-size:11.5px; margin:6px 0 0; line-height:1.4;">
+                    Select <strong>Arena Ladder Circuit</strong> to post competitive ladder tournaments directly to <code>/arena/tournaments/</code>.
+                  </p>
+                </div>
+
                 <div class="form-group" style="grid-column: 1 / -1;">
                   <label class="form-label" for="tourney-title-input">Tournament Title / Headline *</label>
                   <input type="text" id="tourney-title-input" class="form-control" placeholder="e.g. Saturday Night SnD Prime Cup or Frontline Premier Major #1" required />
@@ -3229,6 +3249,18 @@
         <input type="hidden" id="modal-edit-tourney-id" />
         <div class="admin-modal-body" style="max-height:70vh; overflow-y:auto; padding-top:16px;">
           <div class="admin-form-grid">
+            <div class="form-group" style="grid-column: 1 / -1; background:#12140e; border:1px solid #303723; border-left:3px solid #ff1e44; padding:12px 14px; border-radius:3px;">
+              <label class="form-label" for="modal-edit-tourney-circuit" style="color:#ff1e44; font-weight:800; display:flex; justify-content:space-between; align-items:center;">
+                <span>🎯 Target Platform / Tournament Circuit *</span>
+                <span style="font-size:10.5px; color:#fbbf24; text-transform:uppercase;">Commissioner Authorization Required</span>
+              </label>
+              <select id="modal-edit-tourney-circuit" class="form-control" style="background:#0b0d09; border-color:#ff1e44; color:#ffffff; font-weight:700;">
+                <option value="arena">⚔️ Arena Ladder Circuit (/arena/tournaments/)</option>
+                <option value="both">🌐 Both Platforms (Arena Ladders + Tournaments Hub)</option>
+                <option value="hub">🏆 Frontline Tournaments Hub (/tournaments/)</option>
+              </select>
+            </div>
+
             <div class="form-group" style="grid-column: 1 / -1;">
               <label class="form-label" for="modal-edit-tourney-title">Tournament Title / Headline *</label>
               <input type="text" id="modal-edit-tourney-title" class="form-control" required placeholder="e.g. Saturday Night SnD Prime Cup or Frontline Premier Major #1" />
@@ -3520,14 +3552,14 @@
               sessionStorage.setItem("frontline_admin_email", userEmail);
             }
           }
-          const roleKey = activeStaffProfile.role || "commissioner";
-          const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) 
-            ? window.LeagueDB.STAFF_ROLES[roleKey] 
-            : { title: "Staff Member", badgeClass: "role-badge-commissioner" };
+          const isCommissionerRole = (roleKey === "commissioner") || 
+            (userEmail && ["admin@frontlineleague.com", "todd061496@gmail.com"].includes(userEmail.toLowerCase().trim()));
 
           activeAllowedTabs = (window.LeagueDB && typeof window.LeagueDB.getRoleTabs === "function")
             ? window.LeagueDB.getRoleTabs(roleKey, activeStaffProfile.custom_permissions)
-            : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub"];
+            : (isCommissionerRole
+                ? ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub"]
+                : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-ladder-disputes"]);
 
           // 2. Update Top Status Bar
           const staffRoleBadge = document.getElementById("staff-role-badge");
@@ -3547,10 +3579,14 @@
               : `(${activeAllowedTabs.length} Modules Authorized)`;
           }
 
-          // 3. Show/Hide Staff Management Tab (Commissioners only)
+          // 3. Show/Hide Staff Management Tab & Tournaments Hub Tab (Commissioners only)
           const staffNavBtn = document.getElementById("nav-btn-staff");
           if (staffNavBtn) {
-            staffNavBtn.style.display = (roleKey === "commissioner") ? "inline-flex" : "none";
+            staffNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
+          }
+          const tourneysNavBtn = document.getElementById("nav-btn-tournaments-hub");
+          if (tourneysNavBtn) {
+            tourneysNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
           }
 
           // 4. Filter Tab Navigation Buttons based on Role Permissions
@@ -8382,6 +8418,9 @@
           const actEl = document.getElementById("modal-edit-tourney-is-active");
           if (actEl) actEl.checked = tourney.is_active !== false;
 
+          const circuitEl = document.getElementById("modal-edit-tourney-circuit");
+          if (circuitEl) circuitEl.value = tourney.circuit || "arena";
+
           const fitMode = tourney.banner_fit || "contain";
           const fitRadio = document.getElementById("modal-edit-tourney-fit-" + fitMode);
           if (fitRadio) fitRadio.checked = true;
@@ -8448,13 +8487,25 @@
         }
         window.removeModalTourneyBanner = removeModalTourneyBanner;
 
+        function isUserCommissioner() {
+          const role = (activeStaffProfile?.role || "").toLowerCase().trim();
+          const email = (activeStaffProfile?.email || sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+          return role === "commissioner" || email === "admin@frontlineleague.com" || email === "todd061496@gmail.com";
+        }
+        window.isUserCommissioner = isUserCommissioner;
+
         async function handleModalSaveTournamentDetails(e) {
           e.preventDefault();
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to post or edit tournaments.", true);
+            return;
+          }
           const id = document.getElementById("modal-edit-tourney-id") && document.getElementById("modal-edit-tourney-id").value;
           if (!id) return;
 
           const existingTourney = cachedAdminTournaments.find(t => String(t.id) === String(id)) || {};
 
+          const circuit = document.getElementById("modal-edit-tourney-circuit")?.value || "arena";
           const title = document.getElementById("modal-edit-tourney-title").value.trim();
           const desc = document.getElementById("modal-edit-tourney-desc").value.trim();
           const rulesNotes = (document.getElementById("modal-edit-tourney-rules-notes")?.value || "").trim();
@@ -8488,6 +8539,7 @@
           const updatedTourney = {
             ...existingTourney,
             id,
+            circuit,
             title,
             description: desc,
             rules_notes: rulesNotes,
@@ -8559,6 +8611,8 @@
           if (!tourney) return;
 
           document.getElementById("tourney-id").value = tourney.id || "";
+          const circuitInput = document.getElementById("tourney-circuit-input");
+          if (circuitInput) circuitInput.value = tourney.circuit || "arena";
           document.getElementById("tourney-title-input").value = tourney.title || "";
           const existingDescComposer = (tourney.description && tourney.description.toLowerCase() !== '4v4 cdl variant' && tourney.description.toLowerCase() !== (tourney.format || '').toLowerCase()) ? tourney.description : "";
           document.getElementById("tourney-desc-input").value = existingDescComposer;
@@ -8621,6 +8675,8 @@
           if (form) form.reset();
 
           document.getElementById("tourney-id").value = "";
+          const circuitReset = document.getElementById("tourney-circuit-input");
+          if (circuitReset) circuitReset.value = "arena";
           const rulesInputClear = document.getElementById("tourney-rules-notes-input");
           const defaultRulesTemplate = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
           if (rulesInputClear) rulesInputClear.value = defaultRulesTemplate;
@@ -8715,12 +8771,21 @@
                 statusPills.push('<span class="pill" style="color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.35);">PINNED</span>');
               }
 
+              const circuit = (t.circuit || 'arena').toLowerCase();
+              let circuitPill = '<span class="pill" style="color:#ff1e44; background:rgba(255,30,68,0.12); border:1px solid rgba(255,30,68,0.35);">⚔️ ARENA</span>';
+              if (circuit === 'hub') {
+                circuitPill = '<span class="pill" style="color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.35);">🏆 HUB</span>';
+              } else if (circuit === 'both') {
+                circuitPill = '<span class="pill" style="color:#38bdf8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35);">🌐 ARENA + HUB</span>';
+              }
+
               const thumbImg = t.banner_url || t.image_url;
 
               return `
                 <tr>
                   <td>
                     <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+                      ${circuitPill}
                       ${statusPills.join('')}
                     </div>
                   </td>
@@ -8755,7 +8820,8 @@
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
                       <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
-                      <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Live ↗</a>
+                      ${(circuit === 'arena' || circuit === 'both') ? `<a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="font-size:11px; padding:4px 8px; text-decoration:none; color:#ff1e44; border-color:rgba(255,30,68,0.4);">Arena ↗</a>` : ''}
+                      <a href="/tournaments/" target="_blank" class="btn-action-sm" title="View on Live Page" style="font-size:11px; padding:4px 8px; text-decoration:none;">Hub ↗</a>
                       <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
                     </div>
                   </td>
@@ -8771,9 +8837,14 @@
 
         async function handleAdminCreateTournament(e) {
           e.preventDefault();
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to post or manage tournaments.", true);
+            return;
+          }
           const submitBtn = document.getElementById("btn-create-tourney");
           const existingId = document.getElementById("tourney-id")?.value.trim();
 
+          const circuit = document.getElementById("tourney-circuit-input")?.value || "arena";
           const title = document.getElementById("tourney-title-input")?.value.trim();
           const format = document.getElementById("tourney-format-input")?.value;
           const bracketType = document.getElementById("tourney-bracket-type-input")?.value;
@@ -8800,6 +8871,7 @@
 
           const tourneyObj = {
             id: existingId || ('tourney-' + Date.now()),
+            circuit,
             title,
             format,
             bracket_type: bracketType,
@@ -8866,6 +8938,10 @@
         window.handleAdminCreateTournament = handleAdminCreateTournament;
 
         async function adminUpdateTourneyStatus(id, newStatus) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can change tournament status.", true);
+            return;
+          }
           if (!window.LeagueDB || typeof window.LeagueDB.updateTournamentStatus !== 'function') return;
           try {
             const res = await window.LeagueDB.updateTournamentStatus(id, newStatus);
@@ -8883,6 +8959,10 @@
         window.adminUpdateTourneyStatus = adminUpdateTourneyStatus;
 
         async function adminDeleteTourney(id, title) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can delete tournaments.", true);
+            return;
+          }
           if (!confirm(`Are you sure you want to delete tournament "${title}"? This cannot be undone.`)) return;
 
           try {
@@ -8910,6 +8990,10 @@
         window.adminDeleteTourney = adminDeleteTourney;
 
         async function adminDeleteAllTourneys() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can delete tournaments.", true);
+            return;
+          }
           if (!cachedAdminTournaments || cachedAdminTournaments.length === 0) {
             showToast("No tournaments to delete.", true);
             return;
@@ -9003,42 +9087,73 @@
             container.innerHTML = regs.map((reg, idx) => {
               const rosterList = Array.isArray(reg.roster) ? reg.roster : (reg.roster_text ? reg.roster_text.split(/,\s*/) : []);
               const dateStr = reg.registered_at ? new Date(reg.registered_at).toLocaleString() : 'N/A';
-              return `
-                <div style="background:#131610; border:1px solid #2a311e; border-left:3px solid #fbbf24; padding:16px; border-radius:3px; margin-bottom:12px;">
-                  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-                    <div>
-                      <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(245,158,11,0.15); color:#fbbf24; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:2px; margin-bottom:4px;">
-                        <span>#${idx + 1}</span> <span>${escapeHtml(reg.team_name || 'Squad')}</span>
+                    const isApproved = reg.status === 'approved';
+                    return `
+                    <div style="background:#131610; border:1px solid #2a311e; border-left:3px solid ${isApproved ? '#22c55e' : '#fbbf24'}; padding:16px; border-radius:3px; margin-bottom:12px;">
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                        <div>
+                          <div style="display:inline-flex; align-items:center; gap:6px; background:${isApproved ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)'}; color:${isApproved ? '#22c55e' : '#fbbf24'}; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:2px; margin-bottom:4px;">
+                            <span>#${idx + 1}</span> <span>${escapeHtml(reg.team_name || 'Squad')}</span>
+                            <span style="font-size:10px; opacity:0.9;">· ${isApproved ? '✓ ACCEPTED' : 'PENDING REVIEW'}</span>
+                          </div>
+                          <h4 style="margin:2px 0; color:#ffffff; font-size:15px; font-weight:800;">
+                            Captain: ${escapeHtml(reg.captain_gamertag || 'Captain')}
+                          </h4>
+                          <div style="font-size:11.5px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; margin-top:3px;">
+                            ${reg.captain_discord ? `<span>Discord: <strong style="color:#38bdf8;">${escapeHtml(reg.captain_discord)}</strong></span>` : ''}
+                            ${reg.captain_activision_id ? `<span>Activision: <strong style="color:#ffffff;">${escapeHtml(reg.captain_activision_id)}</strong></span>` : ''}
+                            <span>Enlisted: <strong>${escapeHtml(dateStr)}</strong></span>
+                          </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                          ${!isApproved ? `
+                            <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; border-color:#22c55e; color:#22c55e;" onclick="adminApproveTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                              ✓ Accept Squad &amp; Notify
+                            </button>
+                          ` : `
+                            <span style="font-size:11px; color:#22c55e; font-weight:800; padding:4px 8px; border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08); border-radius:2px;">
+                              ✓ Accepted &amp; Notified
+                            </span>
+                          `}
+                          <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                            🗑 Remove Squad
+                          </button>
+                        </div>
                       </div>
-                      <h4 style="margin:2px 0; color:#ffffff; font-size:15px; font-weight:800;">
-                        Captain: ${escapeHtml(reg.captain_gamertag || 'Captain')}
-                      </h4>
-                      <div style="font-size:11.5px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; margin-top:3px;">
-                        ${reg.captain_discord ? `<span>Discord: <strong style="color:#38bdf8;">${escapeHtml(reg.captain_discord)}</strong></span>` : ''}
-                        ${reg.captain_activision_id ? `<span>Activision: <strong style="color:#ffffff;">${escapeHtml(reg.captain_activision_id)}</strong></span>` : ''}
-                        <span>Enlisted: <strong>${escapeHtml(dateStr)}</strong></span>
-                      </div>
+                      ${rosterList.length > 0 ? `
+                        <div style="background:#0a0c0e; border:1px solid #1e2430; padding:8px 12px; border-radius:2px; font-size:11.5px; color:#cbd5e1;">
+                          <span style="color:#fbbf24; font-weight:700;">Roster Members:</span> ${rosterList.map(m => escapeHtml(m)).join(' • ')}
+                        </div>
+                      ` : ''}
                     </div>
-                    <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourneyRegistration('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
-                      🗑 Remove Squad
-                    </button>
-                  </div>
-                  ${rosterList.length > 0 ? `
-                    <div style="background:#0a0c0e; border:1px solid #1e2430; padding:8px 12px; border-radius:2px; font-size:11.5px; color:#cbd5e1;">
-                      <span style="color:#fbbf24; font-weight:700;">Roster Members:</span> ${rosterList.map(m => escapeHtml(m)).join(' • ')}
-                    </div>
-                  ` : ''}
-                </div>
-              `;
-            }).join("");
-          } catch(err) {
-            console.error("Error viewing tournament registrations:", err);
-            container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading squads: ${escapeHtml(err.message)}</div>`;
-          }
-        }
-        window.adminViewTourneyRegistrations = adminViewTourneyRegistrations;
+                  `;
+                }).join("");
+              } catch(err) {
+                console.error("Error viewing tournament registrations:", err);
+                container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading squads: ${escapeHtml(err.message)}</div>`;
+              }
+            }
+            window.adminViewTourneyRegistrations = adminViewTourneyRegistrations;
 
-        async function adminDeleteTourneyRegistration(regId, tourneyId, tourneyTitle) {
+            async function adminApproveTourneyRegistration(regId, tourneyId, tourneyTitle) {
+              try {
+                if (window.LeagueDB && typeof window.LeagueDB.approveTournamentRegistration === "function") {
+                  const res = await window.LeagueDB.approveTournamentRegistration(regId, tourneyId);
+                  if (res.success) {
+                    showToast("✓ Squad registration accepted and combatant notification dispatched!");
+                    await adminViewTourneyRegistrations(tourneyId, tourneyTitle);
+                  } else {
+                    showToast(`Failed: ${res.error || "Unknown error"}`, true);
+                  }
+                }
+              } catch (err) {
+                console.error("Approve squad error:", err);
+                showToast("Error accepting squad registration.", true);
+              }
+            }
+            window.adminApproveTourneyRegistration = adminApproveTourneyRegistration;
+
+            async function adminDeleteTourneyRegistration(regId, tourneyId, tourneyTitle) {
           if (!confirm("Are you sure you want to remove this squad registration from the tournament?")) return;
           try {
             if (window.LeagueDB && typeof window.LeagueDB.deleteTournamentRegistration === "function") {
