@@ -226,8 +226,125 @@
           }).join("")
         : `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted);">No map telemetry recorded yet.</td></tr>`;
 
+      // Fetch player tournament squads & ladder teams
+      let playerTourneyTeams = [];
+      try {
+        if (window.LeagueDB && typeof window.LeagueDB.getPlayerTournamentTeams === "function") {
+          playerTourneyTeams = await window.LeagueDB.getPlayerTournamentTeams(player);
+        }
+      } catch (_) {}
+
+      let playerLadderTeams = [];
+      try {
+        if (window.LadderDB && typeof window.LadderDB.getUserTeams === "function") {
+          const lTeams = window.LadderDB.getUserTeams(player);
+          playerLadderTeams = (lTeams || []).filter(item => item.team);
+        }
+      } catch (_) {}
+
+      // Build "All Teams & Squads" HTML block
+      const hasFranchise = !isFreeAgent && (player.teams || (player.team_name && player.team_name !== "Free Agent" && player.team_name !== "Unassigned" && player.team_name !== "FA"));
+      let allTeamsHtml = "";
+
+      const teamBadges = [];
+
+      // 1. Franchised League Team
+      if (hasFranchise) {
+        const teamLookup = player.teams?.id || player.teams?.name || player.team_name;
+        teamBadges.push(`
+          <div style="background:#13170e; border:1px solid #3d4a22; border-left:3px solid var(--lime); padding:12px 14px; border-radius:3px; flex:1; min-width:240px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:10px; font-weight:800; color:var(--lime); text-transform:uppercase; letter-spacing:0.8px;">🛡️ FRANCHISE TEAM</span>
+              <span class="pill" style="font-size:9.5px; padding:1px 6px;">${escapeHtml(player.division || 'Premier')}</span>
+            </div>
+            <div style="font-size:15px; font-weight:800; color:#fff; font-family:var(--display); cursor:pointer;" class="clickable-team" data-team-id="${escapeHtml(teamLookup)}">
+              ${teamTag ? `${teamTag} ` : ""}${escapeHtml(teamName)} ↗
+            </div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">Role: <strong style="color:#cbd5e1;">${escapeHtml(role)}</strong></div>
+          </div>
+        `);
+      }
+
+      // 2. Tournament Squads
+      if (playerTourneyTeams.length > 0) {
+        playerTourneyTeams.forEach(ts => {
+          const isCap = String(ts.captain_gamertag || "").toLowerCase() === String(gamertag || "").toLowerCase();
+          const rosterArr = Array.isArray(ts.roster) ? ts.roster : (ts.roster_text ? ts.roster_text.split(/,\s*/) : []);
+          teamBadges.push(`
+            <div style="background:#12161a; border:1px solid #23354a; border-left:3px solid #38bdf8; padding:12px 14px; border-radius:3px; flex:1; min-width:240px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.8px;">⚔️ TOURNAMENT SQUAD</span>
+                <span style="background:rgba(56,189,248,0.15); color:#38bdf8; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:2px;">${isCap ? '★ CAPTAIN' : 'ROSTER'}</span>
+              </div>
+              <div style="font-size:15px; font-weight:800; color:#fff; font-family:var(--display);">
+                ${escapeHtml(ts.team_name || 'Tournament Squad')}
+              </div>
+              <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">
+                Event: <strong style="color:#ffffff;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
+              </div>
+              <div style="font-size:10.5px; color:#64748b; margin-top:3px;">
+                Roster (${rosterArr.length}): <span style="color:#cbd5e1;">${escapeHtml(rosterArr.map(m => typeof m === "object" ? (m.gamertag || m.name) : m).join(", "))}</span>
+              </div>
+            </div>
+          `);
+        });
+      }
+
+      // 3. Ladder Squads (if any)
+      if (playerLadderTeams.length > 0) {
+        playerLadderTeams.forEach(lt => {
+          const t = lt.team;
+          teamBadges.push(`
+            <div style="background:#161014; border:1px solid #421e28; border-left:3px solid #ff1e44; padding:12px 14px; border-radius:3px; flex:1; min-width:240px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:10px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.8px;">🎯 ARENA LADDER (${lt.icon || '⚔'})</span>
+                <span style="background:rgba(255,30,68,0.15); color:#ff1e44; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:2px;">${escapeHtml(t.role || 'Member')}</span>
+              </div>
+              <div style="font-size:15px; font-weight:800; color:#fff; font-family:var(--display);">
+                [${escapeHtml(t.tag || 'TAG')}] ${escapeHtml(t.name || 'Arena Team')}
+              </div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                ${escapeHtml(lt.ladder_name || 'Arena Circuit')} • <strong style="color:#fff;">${t.elo || 1200} ELO</strong> (${t.wins || 0}W - ${t.losses || 0}L)
+              </div>
+            </div>
+          `);
+        });
+      }
+
+      if (teamBadges.length > 0) {
+        allTeamsHtml = `
+          <!-- Section 0: All Teams & Squad Affiliations -->
+          <div class="modal-section-title" style="margin-top:0;">
+            <div class="section-title-left">
+              <span class="title-accent">//</span>
+              <span>Squad &amp; Team Affiliations (${teamBadges.length})</span>
+            </div>
+            <span class="title-count">FRANCHISE • TOURNAMENTS • ARENA</span>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px;">
+            ${teamBadges.join("")}
+          </div>
+        `;
+      } else {
+        allTeamsHtml = `
+          <div class="modal-section-title" style="margin-top:0;">
+            <div class="section-title-left">
+              <span class="title-accent">//</span>
+              <span>Squad &amp; Team Affiliations</span>
+            </div>
+            <span class="title-count">FREE AGENT</span>
+          </div>
+          <div style="background:#13150f; border:1px dashed #2e361c; padding:14px 18px; border-radius:3px; margin-bottom:24px; font-size:12px; color:var(--muted); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <span>🛡️ Currently an <strong>Unassigned Free Agent</strong> (No active tournament squad or franchise contract).</span>
+            <span class="pill" style="font-size:10px;">AVAILABLE FOR SIGNING</span>
+          </div>
+        `;
+      }
+
       // Render Modal Body with Season Stats HUD, Mode Telemetry, Map Telemetry, and Match History Table
       bodyEl.innerHTML = `
+        ${allTeamsHtml}
+
         <!-- Section 1: Season Combat Summary HUD -->
         <div class="modal-section-title">
           <div class="section-title-left">

@@ -4189,6 +4189,66 @@ if (dbClient && cleanPayload.user_id) {
     return list;
   },
 
+  async getPlayerTournamentTeams(playerOrGamertag) {
+    if (!playerOrGamertag) return [];
+    let gamertags = [];
+    let userId = null;
+    let discord = null;
+
+    if (typeof playerOrGamertag === "string") {
+      gamertags.push(playerOrGamertag.trim().toLowerCase());
+    } else if (typeof playerOrGamertag === "object") {
+      if (playerOrGamertag.gamertag) gamertags.push(String(playerOrGamertag.gamertag).trim().toLowerCase());
+      if (playerOrGamertag.username) gamertags.push(String(playerOrGamertag.username).trim().toLowerCase());
+      if (playerOrGamertag.name) gamertags.push(String(playerOrGamertag.name).trim().toLowerCase());
+      if (playerOrGamertag.id || playerOrGamertag.user_id) userId = String(playerOrGamertag.id || playerOrGamertag.user_id).trim();
+      if (playerOrGamertag.discord || playerOrGamertag.discord_name) discord = String(playerOrGamertag.discord || playerOrGamertag.discord_name).trim().toLowerCase();
+      if (playerOrGamertag.user_metadata) {
+        const m = playerOrGamertag.user_metadata;
+        if (m.gamertag) gamertags.push(String(m.gamertag).trim().toLowerCase());
+        if (m.username) gamertags.push(String(m.username).trim().toLowerCase());
+        if (m.discord || m.discord_name) discord = String(m.discord || m.discord_name).trim().toLowerCase();
+      }
+    }
+
+    gamertags = Array.from(new Set(gamertags.filter(Boolean)));
+    const allRegs = await this.getTournamentRegistrations(null);
+
+    const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+
+    return allRegs.filter(reg => {
+      // 1. Captain match
+      const capTag = norm(reg.captain_gamertag);
+      if (gamertags.some(g => g === capTag || g.includes(capTag) || capTag.includes(g))) return true;
+      if (userId && reg.registered_by && String(reg.registered_by) === userId) return true;
+      if (discord && reg.captain_discord && norm(reg.captain_discord) === discord) return true;
+
+      // 2. Roster members match
+      let roster = [];
+      if (Array.isArray(reg.roster)) roster = reg.roster;
+      else if (typeof reg.roster === "string") {
+        try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
+      } else if (reg.roster_text) {
+        roster = reg.roster_text.split(/,\s*/);
+      }
+
+      for (const m of roster) {
+        const mTag = norm(typeof m === "object" ? (m.gamertag || m.name) : m);
+        if (gamertags.some(g => g === mTag || g.includes(mTag) || mTag.includes(g))) return true;
+      }
+
+      // 3. Roster status match
+      if (Array.isArray(reg.roster_status)) {
+        for (const st of reg.roster_status) {
+          const sTag = norm(st.gamertag);
+          if (gamertags.some(g => g === sTag || g.includes(sTag) || sTag.includes(g))) return true;
+        }
+      }
+
+      return false;
+    });
+  },
+
   // ==========================================
   // TOURNAMENT PLAYERS (Separate from League Draft)
   // ==========================================
