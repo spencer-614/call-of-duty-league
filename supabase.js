@@ -2787,28 +2787,136 @@ if (dbClient && cleanPayload.user_id) {
           } catch (_) {}
         }
 
+        // Check if this is an Arena Ladder team invite
+        if (invite.ladder_type || invite.type === "ladder_team_invite" || invite.is_ladder) {
+          const ladderType = invite.ladder_type || "4v4_variant";
+          const targetTag = invite.invited_gamertag;
+          const norm = s => String(s || "").trim().toLowerCase();
+
+          // 1. Update team in localStorage frontline_ladder_teams_<ladder_type>
+          try {
+            const listKey = "frontline_ladder_teams_" + ladderType;
+            let teams = JSON.parse(localStorage.getItem(listKey)) || [];
+            let t = teams.find(tm => String(tm.id) === String(invite.team_id) || norm(tm.name) === norm(invite.team_name));
+            if (t) {
+              if (!Array.isArray(t.players)) {
+                t.players = [
+                  {
+                    gamertag: t.captain_name || invite.captain_gamertag,
+                    role: "Captain",
+                    elo: t.elo || 1200,
+                    wins: t.wins || 0,
+                    losses: t.losses || 0,
+                    avatar_url: t.avatar_url,
+                    discord: t.captain_discord || ""
+                  }
+                ];
+              }
+              const alreadyOnRoster = t.players.some(p => norm(p.gamertag) === norm(targetTag));
+              if (!alreadyOnRoster) {
+                t.players.push({
+                  gamertag: targetTag,
+                  role: "Member",
+                  elo: 1200,
+                  wins: 0,
+                  losses: 0,
+                  avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                  discord: invite.invited_discord || `${targetTag.toLowerCase()}#0001`
+                });
+                localStorage.setItem(listKey, JSON.stringify(teams));
+              }
+            }
+
+            // Also update frontline_my_team_<ladder_type> if user is captain or on the team
+            const myTeamKey = "frontline_my_team_" + ladderType;
+            let myT = JSON.parse(localStorage.getItem(myTeamKey));
+            if (myT && (String(myT.id) === String(invite.team_id) || norm(myT.name) === norm(invite.team_name))) {
+              if (!Array.isArray(myT.players)) {
+                myT.players = [
+                  {
+                    gamertag: myT.captain_name || invite.captain_gamertag,
+                    role: "Captain",
+                    elo: myT.elo || 1200,
+                    wins: myT.wins || 0,
+                    losses: myT.losses || 0,
+                    avatar_url: myT.avatar_url,
+                    discord: myT.captain_discord || ""
+                  }
+                ];
+              }
+              if (!myT.players.some(p => norm(p.gamertag) === norm(targetTag))) {
+                myT.players.push({
+                  gamertag: targetTag,
+                  role: "Member",
+                  elo: 1200,
+                  wins: 0,
+                  losses: 0,
+                  avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                  discord: invite.invited_discord || `${targetTag.toLowerCase()}#0001`
+                });
+                localStorage.setItem(myTeamKey, JSON.stringify(myT));
+                window.dispatchEvent(new CustomEvent("frontline_my_team_updated", { detail: { ladderType, team: myT } }));
+              }
+            } else if (userIdentifier && norm(typeof userIdentifier === "object" ? userIdentifier.gamertag : userIdentifier) === norm(targetTag)) {
+              // Current player is the invited member! Save team as their active ladder team
+              if (t) {
+                localStorage.setItem(myTeamKey, JSON.stringify(t));
+                window.dispatchEvent(new CustomEvent("frontline_my_team_updated", { detail: { ladderType, team: t } }));
+              }
+            }
+          } catch (e) {
+            console.warn("Notice: Error updating local ladder team roster:", e);
+          }
+
+          // 2. Supabase ladder_rosters insert / update
+          if (dbClient) {
+            try {
+              await dbClient.from("ladder_rosters").insert([
+                {
+                  team_id: invite.team_id,
+                  gamertag: targetTag,
+                  role: "member",
+                  created_at: new Date().toISOString()
+                }
+              ]);
+            } catch (_) {}
+          }
+        }
+
+        const isLadder = Boolean(invite.ladder_type || invite.type === "ladder_team_invite" || invite.is_ladder);
+        const destinationDesc = isLadder 
+          ? `arena ladder squad "${invite.team_name}" for ${invite.tournament_title || 'Competitive Ladder'}`
+          : `squad "${invite.team_name}" for ${invite.tournament_title}`;
+
         // Notify team captain that their invite was accepted
         await this.sendUserNotification({
           target_gamertag: invite.captain_gamertag,
           title: "Team Invite Accepted",
-          message: `${invite.invited_gamertag} has accepted your team invite and officially joined squad "${invite.team_name}" for ${invite.tournament_title}!`,
+          message: `${invite.invited_gamertag} has accepted your team invite and officially joined ${destinationDesc}!`,
           type: "team_invite_accepted",
           metadata: {
             invite_id: invite.id,
+            team_id: invite.team_id || null,
+            ladder_type: invite.ladder_type || null,
             team_name: invite.team_name,
             tournament_title: invite.tournament_title,
             player_gamertag: invite.invited_gamertag
           }
         });
       } else {
+        const isLadder = Boolean(invite.ladder_type || invite.type === "ladder_team_invite" || invite.is_ladder);
+        const destinationDesc = isLadder ? `arena ladder squad "${invite.team_name}"` : `squad "${invite.team_name}"`;
+
         // Notify team captain that their invite was declined
         await this.sendUserNotification({
           target_gamertag: invite.captain_gamertag,
           title: "Team Invite Declined",
-          message: `${invite.invited_gamertag} has declined your team invite for squad "${invite.team_name}".`,
+          message: `${invite.invited_gamertag} has declined your team invite for ${destinationDesc}.`,
           type: "team_invite_declined",
           metadata: {
             invite_id: invite.id,
+            team_id: invite.team_id || null,
+            ladder_type: invite.ladder_type || null,
             team_name: invite.team_name,
             tournament_title: invite.tournament_title,
             player_gamertag: invite.invited_gamertag
@@ -8862,6 +8970,20 @@ window.LadderDB = {
       created_at: new Date().toISOString()
     };
 
+    // Initialize initial roster with the captain
+    const captainPlayer = {
+      gamertag: newTeam.captain_name,
+      role: "Captain",
+      elo: 1200,
+      wins: 0,
+      losses: 0,
+      avatar_url: newTeam.avatar_url,
+      discord: newTeam.captain_discord || ""
+    };
+    newTeam.players = [captainPlayer];
+
+    let createdTeam = null;
+
     if (dbClient) {
       try {
         const { data, error } = await dbClient
@@ -8869,29 +8991,113 @@ window.LadderDB = {
           .insert([newTeam])
           .select();
         if (!error && data && data.length > 0) {
-          const created = data[0];
-          this.setMyTeam(newTeam.ladder_type, created);
-          return { success: true, team: created };
+          createdTeam = data[0];
+          createdTeam.players = newTeam.players;
+        } else {
+          console.warn("Supabase insert error, saving locally:", error);
         }
-        console.warn("Supabase insert error, saving locally:", error);
       } catch (err) {
         console.warn("Supabase insert failed:", err);
       }
     }
 
-    // LocalStorage Fallback
-    try {
-      const type = newTeam.ladder_type;
-      let existing = await this.getLadderTeams(type);
-      newTeam.id = "mock_" + Date.now();
-      existing.push(newTeam);
-      existing.sort((a, b) => (b.elo || 0) - (a.elo || 0));
-      localStorage.setItem("frontline_ladder_teams_" + type, JSON.stringify(existing));
-      this.setMyTeam(type, newTeam);
-      return { success: true, team: newTeam, local: true };
-    } catch (e) {
-      return { success: false, error: e.message };
+    if (!createdTeam) {
+      // LocalStorage Fallback
+      try {
+        const type = newTeam.ladder_type;
+        let existing = await this.getLadderTeams(type);
+        newTeam.id = "mock_" + Date.now();
+        existing.push(newTeam);
+        existing.sort((a, b) => (b.elo || 0) - (a.elo || 0));
+        localStorage.setItem("frontline_ladder_teams_" + type, JSON.stringify(existing));
+        createdTeam = newTeam;
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
     }
+
+    // Cache locally as active team for this ladder
+    this.setMyTeam(newTeam.ladder_type, createdTeam);
+
+    // Save captain in ladder_rosters table
+    if (dbClient && createdTeam.id) {
+      try {
+        await dbClient.from("ladder_rosters").insert([
+          {
+            team_id: createdTeam.id,
+            gamertag: createdTeam.captain_name,
+            role: "captain",
+            created_at: new Date().toISOString()
+          }
+        ]);
+      } catch (_) {}
+    }
+
+    // Also update frontline_ladder_teams_<ladder_type> to ensure players array exists
+    try {
+      const type = createdTeam.ladder_type;
+      const listKey = "frontline_ladder_teams_" + type;
+      let cached = JSON.parse(localStorage.getItem(listKey)) || [];
+      const idx = cached.findIndex(t => String(t.id) === String(createdTeam.id));
+      if (idx !== -1) {
+        cached[idx] = createdTeam;
+      } else {
+        cached.push(createdTeam);
+      }
+      localStorage.setItem(listKey, JSON.stringify(cached));
+    } catch (_) {}
+
+    // Dispatch Ladder Team Invites to enlisted teammates (CheckMate Gaming style)
+    const teammates = Array.isArray(teamData.teammates) ? teamData.teammates : [];
+    const ladderName = newTeam.ladder_type === "4v4_variant" ? "4v4 CDL Variant" : newTeam.ladder_type === "2v2_snd" ? "2v2 Search & Destroy" : "1v1 Radar Gunfight";
+
+    if (teammates.length > 0 && window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === "function") {
+      try {
+        const allInvites = await window.LeagueDB.getTournamentTeamInvites(null);
+        for (const tTag of teammates) {
+          const invId = "linv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+          const newInvite = {
+            id: invId,
+            team_id: createdTeam.id,
+            ladder_type: createdTeam.ladder_type,
+            tournament_title: `${ladderName} Ladder`,
+            team_name: createdTeam.name,
+            captain_gamertag: createdTeam.captain_name,
+            captain_discord: createdTeam.captain_discord || "",
+            invited_gamertag: tTag,
+            status: "pending",
+            type: "ladder_team_invite",
+            is_ladder: true,
+            created_at: new Date().toISOString()
+          };
+          allInvites.unshift(newInvite);
+
+          // Dispatch notification to invited player with Accept / Decline CTA
+          await window.LeagueDB.sendUserNotification({
+            target_gamertag: tTag,
+            title: "Arena Ladder Team Invite",
+            message: `${createdTeam.captain_name} has invited you to join team "[${createdTeam.tag}] ${createdTeam.name}" on the ${ladderName} ladder! Accept to join the squad roster.`,
+            type: "team_invite",
+            metadata: {
+              invite_id: invId,
+              team_id: createdTeam.id,
+              ladder_type: createdTeam.ladder_type,
+              team_name: createdTeam.name,
+              tournament_title: `${ladderName} Ladder`,
+              captain_gamertag: createdTeam.captain_name,
+              invited_gamertag: tTag,
+              status: "pending",
+              is_ladder: true
+            }
+          });
+        }
+        await window.LeagueDB.saveTournamentTeamInvites(allInvites);
+      } catch (invErr) {
+        console.warn("Notice: Error sending ladder team invites:", invErr);
+      }
+    }
+
+    return { success: true, team: createdTeam };
   },
 
   async getOpenChallenges(ladderType = "4v4_variant") {
