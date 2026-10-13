@@ -1202,47 +1202,47 @@
           const dateStr = ts.registered_at ? new Date(ts.registered_at).toLocaleDateString() : 'Active';
 
           return `
-            <div style="background:#131610; border:1px solid #23354a; border-left:4px solid #38bdf8; padding:18px 20px; border-radius:3px; display:flex; flex-direction:column; justify-content:space-between; gap:14px;">
+            <div style="background:#131822; border:1px solid #293d56; border-left:4px solid #38bdf8; padding:20px 22px; border-radius:4px; display:flex; flex-direction:column; justify-content:space-between; gap:16px; box-shadow:0 6px 20px rgba(0,0,0,0.4);">
               <div>
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
-                  <span style="font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.8px; display:inline-flex; align-items:center; gap:5px;">
-                    <span>⚔️</span> <span>TOURNAMENT SQUAD #${idx + 1}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                  <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; display:inline-flex; align-items:center; gap:6px;">
+                    <span style="font-size:14px;">⚔️</span> <span>TOURNAMENT SQUAD #${idx + 1}</span>
                   </span>
-                  <span style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; font-size:10px; font-weight:800; padding:2px 7px; border-radius:2px; text-transform:uppercase;">
+                  <span style="background:rgba(56,189,248,0.2); border:1px solid #38bdf8; color:#ffffff; font-size:11px; font-weight:800; padding:3px 9px; border-radius:3px; text-transform:uppercase; letter-spacing:0.5px;">
                     ${isCap ? '★ SQUAD CAPTAIN' : 'ROSTER MEMBER'}
                   </span>
                 </div>
-                <h4 style="margin:2px 0 6px; font-size:18px; color:#ffffff; font-weight:800; font-family:var(--display); letter-spacing:0.5px;">
+                <h4 style="margin:4px 0 8px; font-size:22px; color:#ffffff; font-weight:900; font-family:var(--display); letter-spacing:0.5px; text-transform:uppercase;">
                   ${escapeHtml(ts.team_name || 'Tournament Squad')}
                 </h4>
-                <div style="font-size:12.5px; color:#cbd5e1; margin-bottom:10px;">
-                  Event: <strong style="color:#ffffff;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
+                <div style="font-size:14px; color:#e2e8f0; margin-bottom:12px; font-weight:500;">
+                  Event: <strong style="color:#ffffff; font-weight:800;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
                 </div>
 
-                <div style="background:#0a0c0e; border:1px solid #1a2230; padding:10px 12px; border-radius:2px; font-size:11.5px; color:#94a3b8; margin-bottom:10px;">
-                  <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span style="color:#38bdf8; font-weight:800; text-transform:uppercase; font-size:10.5px;">Squad Roster (${rosterList.length})</span>
-                    <span style="font-size:10px; color:#64748b;">Enlisted ${escapeHtml(dateStr)}</span>
+                <div style="background:#0c1017; border:1px solid #202d40; padding:12px 14px; border-radius:4px; font-size:13px; color:#cbd5e1; margin-bottom:12px;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
+                    <span style="color:#38bdf8; font-weight:800; text-transform:uppercase; font-size:11.5px; letter-spacing:0.5px;">Squad Roster (${rosterList.length})</span>
+                    <span style="font-size:11.5px; color:#94a3b8;">Enlisted: <strong style="color:#e2e8f0;">${escapeHtml(dateStr)}</strong></span>
                   </div>
-                  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  <div style="display:flex; flex-wrap:wrap; gap:8px;">
                     ${(ts.roster_status || []).map(st => {
                       const isAcc = st.status === 'accepted';
                       const isMe = String(st.gamertag || '').toLowerCase() === String(gamertag).toLowerCase();
                       return `
-                        <span style="display:inline-flex; align-items:center; gap:4px; background:${isAcc ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)'}; border:1px solid ${isAcc ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}; padding:2px 6px; border-radius:2px; font-size:11px; color:#fff;">
-                          <span style="color:${isAcc ? '#22c55e' : '#eab308'}; font-weight:800;">${isAcc ? '✓' : '⏳'}</span>
-                          <strong style="${isMe ? 'color:var(--lime); text-decoration:underline;' : ''}">${escapeHtml(st.gamertag)}</strong>
-                          <small style="color:${isAcc ? '#4ade80' : '#fef08a'}; font-size:9.5px; text-transform:uppercase;">(${isAcc ? (st.role || 'Accepted') : 'Pending'})</small>
+                        <span style="display:inline-flex; align-items:center; gap:6px; background:${isAcc ? 'rgba(34,197,94,0.18)' : 'rgba(234,179,8,0.18)'}; border:1px solid ${isAcc ? '#22c55e' : '#eab308'}; padding:4px 9px; border-radius:3px; font-size:12.5px; color:#ffffff;">
+                          <span style="color:${isAcc ? '#4ade80' : '#facc15'}; font-weight:900; font-size:13px;">${isAcc ? '✓' : '⏳'}</span>
+                          <strong style="color:#ffffff; font-weight:800; ${isMe ? 'color:var(--lime); text-decoration:underline; text-underline-offset:3px;' : ''}">${escapeHtml(st.gamertag)}</strong>
+                          <span style="color:${isAcc ? '#86efac' : '#fef08a'}; font-size:10.5px; font-weight:800; text-transform:uppercase;">(${isAcc ? (st.role || 'Accepted') : 'Pending'})</span>
                         </span>
                       `;
-                    }).join('') || rosterList.map(m => `<span style="background:#141a24; border:1px solid #233045; padding:2px 6px; border-radius:2px; color:#fff;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
+                    }).join('') || rosterList.map(m => `<span style="background:#172030; border:1px solid #2d3e58; padding:4px 8px; border-radius:3px; color:#ffffff; font-weight:700; font-size:12px;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
                   </div>
                 </div>
               </div>
 
-              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1a2230; padding-top:10px; font-size:11px;">
-                <span style="color:#64748b;">Status: <strong style="color:#22c55e;">Confirmed Entry</strong></span>
-                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(ts.tournament_id)}" target="_blank" style="color:#38bdf8; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #202d40; padding-top:12px; font-size:12.5px;">
+                <span style="color:#94a3b8;">Registration: <strong style="color:#4ade80; font-weight:800;">✓ Confirmed Entry</strong></span>
+                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(ts.tournament_id)}" target="_blank" style="background:#0284c7; border:1px solid #38bdf8; color:#ffffff; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:3px; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
                   <span>View Bracket</span> <span>↗</span>
                 </a>
               </div>

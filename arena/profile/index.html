@@ -940,46 +940,48 @@
           const dateStr = ts.registered_at ? new Date(ts.registered_at).toLocaleDateString() : "Recent";
 
           return `
-            <div class="profile-team-card has-team" style="border-left: 3px solid #38bdf8;">
-              <div class="team-card-ladder-bar">
-                <span class="team-card-ladder-name" style="color:#38bdf8;">
-                  <span>⚔</span> <span>${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</span>
+            <div class="profile-team-card has-team" style="border-left: 4px solid #38bdf8; background:#121824; border-color:#2a3d54;">
+              <div class="team-card-ladder-bar" style="background:#172233; padding:10px 14px;">
+                <span class="team-card-ladder-name" style="color:#38bdf8; font-weight:800; font-size:12.5px; letter-spacing:0.5px;">
+                  <span style="font-size:14px;">⚔</span> <span>${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</span>
                 </span>
-                <span class="val-badge" style="background:#0c1f2e; color:#38bdf8; border-color:#1c4366;">
+                <span class="val-badge" style="background:rgba(56,189,248,0.2); color:#ffffff; border-color:#38bdf8; font-size:11px; font-weight:800; padding:3px 8px;">
                   ${isCap ? '★ SQUAD CAPTAIN' : 'ROSTER MEMBER'}
                 </span>
               </div>
-              <div class="team-card-content">
-                <img src="/images/leaguelogo_1.png" class="team-card-avatar" style="border-color:#38bdf8;" />
+              <div class="team-card-content" style="padding:14px 16px;">
+                <img src="/images/leaguelogo_1.png" class="team-card-avatar" style="border-color:#38bdf8; width:48px; height:48px;" />
                 <div style="flex:1;">
-                  <div class="team-card-role-badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">
+                  <div class="team-card-role-badge" style="background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:10.5px; font-weight:800;">
                     ${isCap ? 'Captain / In-Game Leader' : 'Confirmed Teammate'}
                   </div>
-                  <h4 class="team-card-title">[SQUAD] ${escapeHtml(ts.team_name)}</h4>
-                  <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">
-                    Enlisted: <strong>${escapeHtml(dateStr)}</strong>
+                  <h4 class="team-card-title" style="font-size:18px; color:#ffffff; font-weight:900; margin:4px 0 2px;">
+                    [SQUAD] ${escapeHtml(ts.team_name)}
+                  </h4>
+                  <div style="font-size:12.5px; color:#cbd5e1; margin-top:2px;">
+                    Enlisted: <strong style="color:#ffffff;">${escapeHtml(dateStr)}</strong>
                   </div>
                 </div>
               </div>
-              <div style="background:#090d14; border:1px solid #1c2638; padding:8px 10px; margin:0 12px 12px; border-radius:3px; font-size:11px;">
-                <div style="color:#38bdf8; font-weight:800; font-size:10px; text-transform:uppercase; margin-bottom:4px;">
+              <div style="background:#0a0e16; border:1px solid #1f2c3e; padding:12px 14px; margin:0 14px 14px; border-radius:4px; font-size:12.5px;">
+                <div style="color:#38bdf8; font-weight:800; font-size:11px; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">
                   Active Squad Roster (${rosterList.length})
                 </div>
-                <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
                   ${(ts.roster_status || []).map(st => {
                     const isAcc = st.status === 'accepted';
                     const isMe = String(st.gamertag || '').toLowerCase() === String(gamertag).toLowerCase();
                     return `
-                      <span style="display:inline-flex; align-items:center; gap:3px; background:${isAcc ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)'}; border:1px solid ${isAcc ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'}; padding:2px 5px; border-radius:2px; font-size:10.5px; color:#fff;">
-                        <span style="color:${isAcc ? '#22c55e' : '#eab308'}; font-weight:800;">${isAcc ? '✓' : '⏳'}</span>
-                        <strong style="${isMe ? 'color:#38bdf8; text-decoration:underline;' : ''}">${escapeHtml(st.gamertag)}</strong>
+                      <span style="display:inline-flex; align-items:center; gap:5px; background:${isAcc ? 'rgba(34,197,94,0.18)' : 'rgba(234,179,8,0.18)'}; border:1px solid ${isAcc ? '#22c55e' : '#eab308'}; padding:3px 8px; border-radius:3px; font-size:12px; color:#fff;">
+                        <span style="color:${isAcc ? '#4ade80' : '#facc15'}; font-weight:900;">${isAcc ? '✓' : '⏳'}</span>
+                        <strong style="color:#ffffff; font-weight:800; ${isMe ? 'color:#38bdf8; text-decoration:underline;' : ''}">${escapeHtml(st.gamertag)}</strong>
                       </span>
                     `;
-                  }).join('') || rosterList.map(m => `<span style="background:#131c29; padding:2px 5px; border-radius:2px; color:#fff;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
+                  }).join('') || rosterList.map(m => `<span style="background:#172233; padding:3px 8px; border-radius:3px; color:#fff; font-weight:700; font-size:11.5px;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
                 </div>
               </div>
-              <div class="team-card-actions">
-                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(ts.tournament_id)}" target="_blank" class="btn-crimson" style="padding:8px 10px; font-size:11px; flex:1; justify-content:center; text-decoration:none; background:#0284c7; border-color:#38bdf8;">
+              <div class="team-card-actions" style="padding:0 14px 14px;">
+                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(ts.tournament_id)}" target="_blank" class="btn-crimson" style="padding:10px 14px; font-size:12px; font-weight:800; flex:1; justify-content:center; text-decoration:none; background:#0284c7; border-color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">
                   <span>⚔</span> <span>View Bracket ↗</span>
                 </a>
               </div>

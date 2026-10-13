@@ -271,19 +271,19 @@
           const isCap = String(ts.captain_gamertag || "").toLowerCase() === String(gamertag || "").toLowerCase();
           const rosterArr = Array.isArray(ts.roster) ? ts.roster : (ts.roster_text ? ts.roster_text.split(/,\s*/) : []);
           teamBadges.push(`
-            <div style="background:#12161a; border:1px solid #23354a; border-left:3px solid #38bdf8; padding:12px 14px; border-radius:3px; flex:1; min-width:240px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <span style="font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.8px;">⚔️ TOURNAMENT SQUAD</span>
-                <span style="background:rgba(56,189,248,0.15); color:#38bdf8; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:2px;">${isCap ? '★ CAPTAIN' : 'ROSTER'}</span>
+            <div style="background:#131824; border:1px solid #293d56; border-left:4px solid #38bdf8; padding:16px 18px; border-radius:4px; flex:1; min-width:260px; box-shadow:0 4px 16px rgba(0,0,0,0.4);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11.5px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px;">⚔️ TOURNAMENT SQUAD</span>
+                <span style="background:rgba(56,189,248,0.2); border:1px solid #38bdf8; color:#ffffff; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:3px;">${isCap ? '★ CAPTAIN' : 'ROSTER'}</span>
               </div>
-              <div style="font-size:15px; font-weight:800; color:#fff; font-family:var(--display);">
+              <div style="font-size:18px; font-weight:900; color:#ffffff; font-family:var(--display); letter-spacing:0.5px; text-transform:uppercase;">
                 ${escapeHtml(ts.team_name || 'Tournament Squad')}
               </div>
-              <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">
-                Event: <strong style="color:#ffffff;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
+              <div style="font-size:13px; color:#e2e8f0; margin-top:4px;">
+                Event: <strong style="color:#ffffff; font-weight:800;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
               </div>
-              <div style="font-size:10.5px; color:#64748b; margin-top:3px;">
-                Roster (${rosterArr.length}): <span style="color:#cbd5e1;">${escapeHtml(rosterArr.map(m => typeof m === "object" ? (m.gamertag || m.name) : m).join(", "))}</span>
+              <div style="font-size:12px; color:#cbd5e1; margin-top:6px; background:#0b0f16; border:1px solid #1f2c3e; padding:6px 10px; border-radius:3px;">
+                <span style="color:#38bdf8; font-weight:800;">Roster (${rosterArr.length}):</span> <span style="color:#ffffff; font-weight:600;">${escapeHtml(rosterArr.map(m => typeof m === "object" ? (m.gamertag || m.name) : m).join(", "))}</span>
               </div>
             </div>
           `);
