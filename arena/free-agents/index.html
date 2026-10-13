@@ -666,6 +666,9 @@
           if (window.LadderDB && typeof window.LadderDB.getFreeAgents === "function") {
             list = await window.LadderDB.getFreeAgents({ ladder: "all" });
           }
+          if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+            list = (list || []).filter(fa => !window.LeagueDB.shouldBlockAdminCombatant(fa));
+          }
           allFreeAgents = list || [];
 
           updateLadderPillsAndCounters(allFreeAgents);

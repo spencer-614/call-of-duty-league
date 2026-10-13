@@ -6815,11 +6815,47 @@ isDiscordLinkedToEmail(target) {
   },
 
   shouldBlockAdminCombatant(target) {
-    return false; // Combatants and community players are never blocked
+    if (!target) return false;
+    const cleanEmail = (
+      target.email ||
+      target.user_metadata?.email ||
+      target.sender_email ||
+      (typeof target === "string" && target.includes("@") ? target : "")
+    ).toLowerCase().trim();
+    const cleanGamertag = (
+      target.gamertag ||
+      target.user_metadata?.gamertag ||
+      target.username ||
+      target.name ||
+      target.display_name ||
+      (typeof target === "string" && !target.includes("@") ? target : "")
+    ).toLowerCase().trim();
+    const cleanDiscord = (
+      target.discord ||
+      target.discord_username ||
+      target.user_metadata?.discord_username ||
+      ""
+    ).toLowerCase().trim();
+
+    // Specific Commissioner / Admin accounts requested to be excluded from Free Agents
+    if (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com") {
+      return true;
+    }
+    if (cleanGamertag === "todd061496" || cleanGamertag === "commissioner spencer" || cleanGamertag === "commissioner" || cleanGamertag === "league commissioner") {
+      return true;
+    }
+    if (cleanDiscord === "todd061496" || cleanDiscord.startsWith("todd061496#")) {
+      return true;
+    }
+    if (target.is_commissioner === true || target.role === "commissioner" || target.staff_role === "commissioner" || target.tag === "COMM") {
+      return true;
+    }
+
+    return false;
   },
 
   async shouldBlockAdminCombatantAsync(target) {
-    return false;
+    return this.shouldBlockAdminCombatant(target);
   },
 
   async linkDiscordIdentity(redirectUrl) {
@@ -10787,13 +10823,20 @@ window.LadderDB = {
       try {
         const agents = JSON.parse(fa);
         if (Array.isArray(agents)) {
-          const dummyFA = ["ghostrider", "nyx", "bulletproof", "valkyrie", "staticpulse", "lonereaper"];
+          const dummyFA = ["ghostrider", "nyx", "bulletproof", "valkyrie", "staticpulse", "lonereaper", "todd061496", "commissioner spencer"];
           let cleanedFA = agents.filter(a => !dummyFA.includes((a.gamertag || "").toLowerCase().trim()));
           if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
             cleanedFA = cleanedFA.filter(a => !window.LeagueDB.shouldBlockAdminCombatant(a));
           }
           localStorage.setItem(faKey, JSON.stringify(cleanedFA));
         }
+      } catch(e) {}
+    }
+
+    // Clean from Supabase arena_free_agents table if present
+    if (dbClient) {
+      try {
+        dbClient.from("arena_free_agents").delete().or("gamertag.ilike.%todd061496%,gamertag.ilike.%commissioner%").then(() => {}).catch(() => {});
       } catch(e) {}
     }
   } catch(e) {
