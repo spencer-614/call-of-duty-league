@@ -3552,8 +3552,13 @@
               sessionStorage.setItem("frontline_admin_email", userEmail);
             }
           }
-          const isCommissionerRole = (roleKey === "commissioner") || 
-            (userEmail && ["admin@frontlineleague.com", "todd061496@gmail.com"].includes(userEmail.toLowerCase().trim()));
+          const isPrimary = (userEmail && ["admin@frontlineleague.com", "todd061496@gmail.com"].includes(userEmail.toLowerCase().trim()));
+          const roleKey = activeStaffProfile?.role || (isPrimary ? "commissioner" : "commissioner");
+          const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) || {
+            title: activeStaffProfile?.role ? (activeStaffProfile.role.charAt(0).toUpperCase() + activeStaffProfile.role.slice(1)) : "Commissioner",
+            badgeClass: "role-badge-commissioner"
+          };
+          const isCommissionerRole = (roleKey === "commissioner") || isPrimary;
 
           activeAllowedTabs = (window.LeagueDB && typeof window.LeagueDB.getRoleTabs === "function")
             ? window.LeagueDB.getRoleTabs(roleKey, activeStaffProfile.custom_permissions)
