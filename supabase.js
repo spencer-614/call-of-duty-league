@@ -2637,6 +2637,212 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   // ==========================================
+  // TOURNAMENT TEAM INVITES ENGINE (CHECKMATE GAMING STYLE)
+  // ==========================================
+  async getTournamentTeamInvites(userIdentifier = null) {
+    let list = [];
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("status_text")
+          .eq("id", "tournament_team_invites_registry")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            if (Array.isArray(parsed)) list = parsed;
+          } catch (_) {}
+        }
+      } catch (_) {}
+    }
+
+    if (!list || list.length === 0) {
+      try {
+        const local = JSON.parse(localStorage.getItem("frontline_tournament_team_invites")) || [];
+        if (Array.isArray(local)) list = local;
+      } catch (_) {}
+    }
+
+    if (!Array.isArray(list)) list = [];
+
+    if (!userIdentifier) return list;
+
+    let tag = "";
+    let uid = "";
+    let disc = "";
+    let act = "";
+
+    if (typeof userIdentifier === "string") {
+      tag = userIdentifier.trim().toLowerCase();
+      uid = userIdentifier.trim();
+    } else if (typeof userIdentifier === "object" && userIdentifier !== null) {
+      tag = String(userIdentifier.gamertag || userIdentifier.username || userIdentifier.name || userIdentifier.email || "").trim().toLowerCase();
+      uid = String(userIdentifier.id || userIdentifier.user_id || "").trim();
+      disc = String(userIdentifier.discord || userIdentifier.discord_name || userIdentifier.discord_username || "").trim().toLowerCase();
+      act = String(userIdentifier.activision_id || userIdentifier.activision || "").trim().toLowerCase();
+      if (userIdentifier.user_metadata) {
+        const m = userIdentifier.user_metadata;
+        if (!tag) tag = String(m.gamertag || m.username || m.name || "").trim().toLowerCase();
+        if (!disc) disc = String(m.discord || m.discord_name || m.discord_username || "").trim().toLowerCase();
+        if (!act) act = String(m.activision_id || "").trim().toLowerCase();
+      }
+    }
+
+    return list.filter(inv => {
+      const iTag = String(inv.invited_gamertag || "").trim().toLowerCase();
+      const iUid = String(inv.invited_user_id || "").trim();
+      const iDisc = String(inv.invited_discord || "").trim().toLowerCase();
+      const iAct = String(inv.invited_activision || "").trim().toLowerCase();
+
+      if (tag && iTag && (tag === iTag || tag.includes(iTag) || iTag.includes(tag))) return true;
+      if (uid && iUid && uid === iUid) return true;
+      if (disc && iDisc && (disc === iDisc || disc.includes(iDisc) || iDisc.includes(disc))) return true;
+      if (act && iAct && act === iAct) return true;
+      return false;
+    });
+  },
+
+  async saveTournamentTeamInvites(list) {
+    if (!Array.isArray(list)) list = [];
+    try {
+      localStorage.setItem("frontline_tournament_team_invites", JSON.stringify(list));
+    } catch (_) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournament_team_invites_registry",
+          status_state: "active",
+          status_text: JSON.stringify(list),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (err) {
+        console.warn("Could not sync tournament team invites to league_settings:", err);
+      }
+    }
+    return true;
+  },
+
+  async respondTournamentTeamInvite(inviteId, accept = true, userIdentifier = null) {
+    try {
+      const allInvites = await this.getTournamentTeamInvites(null);
+      const invite = allInvites.find(i => String(i.id) === String(inviteId));
+      if (!invite) return { success: false, error: "Team invite not found." };
+      if (invite.status !== "pending") {
+        return { success: false, error: `Invite is already ${invite.status}.` };
+      }
+
+      invite.status = accept ? "accepted" : "declined";
+      invite.responded_at = new Date().toISOString();
+
+      await this.saveTournamentTeamInvites(allInvites);
+
+      if (accept) {
+        // Add player to the squad's roster in the registrations registry
+        const allRegs = await this.getTournamentRegistrations(null);
+        const reg = allRegs.find(r => String(r.id) === String(invite.registration_id));
+        if (reg) {
+          if (!Array.isArray(reg.roster)) {
+            reg.roster = reg.roster_text ? reg.roster_text.split(/,\s*/) : [];
+          }
+          const norm = s => String(s || "").trim().toLowerCase();
+          const targetTag = invite.invited_gamertag;
+          const alreadyIn = reg.roster.some(m => norm(typeof m === "object" ? (m.gamertag || m.name) : m) === norm(targetTag));
+          if (!alreadyIn) {
+            reg.roster.push(targetTag);
+            reg.roster_text = reg.roster.join(", ");
+          }
+
+          if (Array.isArray(reg.roster_status)) {
+            const memberStat = reg.roster_status.find(s => norm(s.gamertag) === norm(targetTag));
+            if (memberStat) {
+              memberStat.status = "accepted";
+              memberStat.accepted_at = new Date().toISOString();
+            } else {
+              reg.roster_status.push({ gamertag: targetTag, status: "accepted", accepted_at: new Date().toISOString() });
+            }
+          }
+
+          // Persist updated registration
+          if (dbClient) {
+            try {
+              await dbClient.from("league_settings").upsert({
+                id: "tournament_registrations_registry",
+                status_state: "active",
+                status_text: JSON.stringify(allRegs),
+                updated_at: new Date().toISOString()
+              }, { onConflict: "id" });
+            } catch (_) {}
+            try {
+              await dbClient.from("tournament_registrations").update({
+                roster: reg.roster,
+                roster_text: reg.roster_text
+              }).eq("id", reg.id);
+            } catch (_) {}
+          }
+          try {
+            localStorage.setItem("frontline_tournament_registrations", JSON.stringify(allRegs));
+          } catch (_) {}
+        }
+
+        // Notify team captain that their invite was accepted
+        await this.sendUserNotification({
+          target_gamertag: invite.captain_gamertag,
+          title: "Team Invite Accepted",
+          message: `${invite.invited_gamertag} has accepted your team invite and officially joined squad "${invite.team_name}" for ${invite.tournament_title}!`,
+          type: "team_invite_accepted",
+          metadata: {
+            invite_id: invite.id,
+            team_name: invite.team_name,
+            tournament_title: invite.tournament_title,
+            player_gamertag: invite.invited_gamertag
+          }
+        });
+      } else {
+        // Notify team captain that their invite was declined
+        await this.sendUserNotification({
+          target_gamertag: invite.captain_gamertag,
+          title: "Team Invite Declined",
+          message: `${invite.invited_gamertag} has declined your team invite for squad "${invite.team_name}".`,
+          type: "team_invite_declined",
+          metadata: {
+            invite_id: invite.id,
+            team_name: invite.team_name,
+            tournament_title: invite.tournament_title,
+            player_gamertag: invite.invited_gamertag
+          }
+        });
+      }
+
+      // Mark the corresponding notification as read if present
+      const allNotifs = await this.getAllNotificationsRegistry();
+      let notifChanged = false;
+      allNotifs.forEach(n => {
+        if (n.metadata && String(n.metadata.invite_id) === String(inviteId)) {
+          n.read = true;
+          n.metadata.status = invite.status;
+          notifChanged = true;
+        }
+      });
+      if (notifChanged) {
+        await this.saveAllNotificationsRegistry(allNotifs);
+      }
+
+      window.dispatchEvent(new CustomEvent("frontline_tournament_invite_responded", {
+        detail: { invite, accepted: accept }
+      }));
+      window.dispatchEvent(new CustomEvent("frontline_notifications_updated", {}));
+
+      return { success: true, invite, accepted: accept };
+    } catch (err) {
+      console.error("respondTournamentTeamInvite error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
+  // ==========================================
   // LEAGUE ANNOUNCEMENTS & INTEL BROADCAST
   // ==========================================
   _getStoredAnnouncements() {
@@ -3773,6 +3979,17 @@ if (dbClient && cleanPayload.user_id) {
       return { success: false, error: "Sign in before registering your team." };
     }
 
+    // Extract raw roster teammates (excluding captain)
+    const proposedTeammates = (rawRoster || [])
+      .map(p => typeof p === "object" ? (p.gamertag || p.name || "") : p)
+      .map(norm)
+      .filter(p => p && p !== captainTagNorm);
+
+    // Build roster_status tracking each player's invite status (captain is auto-accepted)
+    const rosterStatusList = [
+      { gamertag: squadData.captain_gamertag, role: "Captain", status: "accepted", accepted_at: new Date().toISOString() }
+    ];
+
     // Build new registration record
     const regId = "reg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
     const regRecord = {
@@ -3784,11 +4001,56 @@ if (dbClient && cleanPayload.user_id) {
       captain_gamertag: String(squadData.captain_gamertag || "Captain").trim(),
       captain_discord: String(squadData.captain_discord || "").trim(),
       captain_activision_id: String(squadData.captain_activision_id || "").trim(),
-      roster: Array.isArray(squadData.roster) ? squadData.roster : [squadData.roster].filter(Boolean),
-      roster_text: squadData.roster_text || (Array.isArray(squadData.roster) ? squadData.roster.join(", ") : String(squadData.roster || "")),
+      roster: [squadData.captain_gamertag], // Captain is immediately confirmed on team
+      roster_text: squadData.captain_gamertag,
+      pending_roster: proposedTeammates,
+      roster_status: rosterStatusList,
       status: "registered",
       registered_at: squadData.registered_at || new Date().toISOString()
     };
+
+    // Dispatch Team Invites to all listed teammates (CheckMate Gaming style)
+    try {
+      const allInvites = await this.getTournamentTeamInvites(null);
+      for (const tTag of proposedTeammates) {
+        const invId = "tinv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+        const newInvite = {
+          id: invId,
+          registration_id: regId,
+          tournament_id: String(tournamentId),
+          tournament_title: item.title || "Frontline Tournament",
+          team_name: String(squadData.team_name || "Squad").trim(),
+          captain_gamertag: String(squadData.captain_gamertag || "Captain").trim(),
+          captain_discord: String(squadData.captain_discord || "").trim(),
+          invited_gamertag: tTag,
+          status: "pending", // 'pending', 'accepted', 'declined'
+          created_at: new Date().toISOString()
+        };
+        allInvites.unshift(newInvite);
+        rosterStatusList.push({ gamertag: tTag, role: "Member", status: "pending", invite_id: invId });
+
+        // Dispatch personal notification with CheckMate Gaming style acceptance CTA
+        await this.sendUserNotification({
+          target_gamertag: tTag,
+          title: "Tournament Team Invite",
+          message: `${squadData.captain_gamertag} has invited you to join team "${squadData.team_name}" for the upcoming tournament "${item.title || 'Frontline Tournament'}". Accept to join the squad roster.`,
+          type: "team_invite",
+          metadata: {
+            invite_id: invId,
+            registration_id: regId,
+            tournament_id: String(tournamentId),
+            tournament_title: item.title || "Frontline Tournament",
+            team_name: squadData.team_name,
+            captain_gamertag: squadData.captain_gamertag,
+            invited_gamertag: tTag,
+            status: "pending"
+          }
+        });
+      }
+      await this.saveTournamentTeamInvites(allInvites);
+    } catch (invErr) {
+      console.warn("Notice: Error creating teammate invites:", invErr);
+    }
 
     // Save the authoritative registration before updating the display registry.
     const { error: registrationSaveError } = await dbClient
@@ -3813,8 +4075,6 @@ if (dbClient && cleanPayload.user_id) {
       } catch (e) {
         console.warn("league_settings registrations upsert notice:", e);
       }
-
-
     }
 
     try {
@@ -3826,30 +4086,15 @@ if (dbClient && cleanPayload.user_id) {
     item.teams_registered_count = newCount;
     await this.saveTournament(item);
 
-    // Auto-record captain and roster members into tournament_players
+    // Auto-record captain into tournament_players
     try {
-      if (typeof this.syncTournamentPlayer === "function") {
-        if (squadData.captain_gamertag) {
-          this.syncTournamentPlayer({
-            gamertag: squadData.captain_gamertag,
-            discordName: squadData.captain_discord || squadData.captain_gamertag,
-            activisionId: squadData.captain_activision_id || "",
-            teamName: squadData.team_name || "Free Agent"
-          }).catch(() => {});
-        }
-        if (Array.isArray(squadData.roster)) {
-          for (const m of squadData.roster) {
-            const mTag = typeof m === "object" ? (m.gamertag || m.name) : m;
-            if (mTag && mTag !== squadData.captain_gamertag) {
-              this.syncTournamentPlayer({
-                gamertag: mTag,
-                discordName: typeof m === "object" ? (m.discord || mTag) : mTag,
-                activisionId: typeof m === "object" ? (m.activision_id || "") : "",
-                teamName: squadData.team_name || "Free Agent"
-              }).catch(() => {});
-            }
-          }
-        }
+      if (typeof this.syncTournamentPlayer === "function" && squadData.captain_gamertag) {
+        this.syncTournamentPlayer({
+          gamertag: squadData.captain_gamertag,
+          discordName: squadData.captain_discord || squadData.captain_gamertag,
+          activisionId: squadData.captain_activision_id || "",
+          teamName: squadData.team_name || "Free Agent"
+        }).catch(() => {});
       }
     } catch (_) {}
 

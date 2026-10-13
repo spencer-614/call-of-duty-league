@@ -968,16 +968,63 @@
 
         container.innerHTML = notifs.map(n => {
           const isAccepted = n.type === "registration_accepted";
+          const isInvite = n.type === "team_invite";
+          const inviteId = n.metadata?.invite_id;
+          const inviteStatus = n.metadata?.status || 'pending';
           const dateStr = n.created_at ? new Date(n.created_at).toLocaleString() : "Recent";
-          const borderColor = isAccepted ? "#22c55e" : (n.read ? "#232e42" : "#ff1e44");
-          const bgColor = isAccepted ? "rgba(34,197,94,0.06)" : (n.read ? "#0c0f17" : "rgba(255,30,68,0.06)");
+
+          let borderAccent = "#ff1e44";
+          let badgeText = "DIRECTIVE";
+          let badgeColor = "#ff1e44";
+          let badgeBg = "rgba(255,30,68,0.15)";
+          let cardBg = n.read ? "#0c0f17" : "rgba(255,30,68,0.06)";
+
+          if (isAccepted) {
+            borderAccent = "#22c55e";
+            badgeText = "✓ LEAGUE REGISTRATION ACCEPTED";
+            badgeColor = "#22c55e";
+            badgeBg = "rgba(34,197,94,0.2)";
+            cardBg = "rgba(34,197,94,0.06)";
+          } else if (isInvite) {
+            borderAccent = "#38bdf8";
+            badgeText = "🛡 SQUAD INVITATION";
+            badgeColor = "#38bdf8";
+            badgeBg = "rgba(56,189,248,0.2)";
+            cardBg = "rgba(56,189,248,0.06)";
+          }
+
+          let inviteActionsHtml = '';
+          if (isInvite && inviteStatus === 'pending' && inviteId) {
+            inviteActionsHtml = `
+              <div style="display:flex; gap:10px; margin-top:12px;">
+                <button type="button" class="btn-crimson" style="background:#22c55e; color:#000; font-weight:800; font-size:12px; padding:8px 16px; border:none; cursor:pointer;" onclick="respondArenaInvite('${inviteId}', true, this)">
+                  ✓ Accept Invite
+                </button>
+                <button type="button" class="btn-crimson-outline" style="border-color:#ef4444; color:#ef4444; font-weight:700; font-size:12px; padding:8px 16px; cursor:pointer;" onclick="respondArenaInvite('${inviteId}', false, this)">
+                  ✕ Decline
+                </button>
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'accepted') {
+            inviteActionsHtml = `
+              <div style="margin-top:10px; font-size:12px; font-weight:800; color:#22c55e;">
+                ✓ You accepted this tournament team invite.
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'declined') {
+            inviteActionsHtml = `
+              <div style="margin-top:10px; font-size:12px; font-weight:700; color:#94a3b8;">
+                ✕ You declined this tournament team invite.
+              </div>
+            `;
+          }
 
           return `
-            <div style="background:${bgColor}; border:1px solid ${borderColor}; border-left:4px solid ${isAccepted ? '#22c55e' : '#ff1e44'}; padding:16px 20px; border-radius:4px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div style="background:${cardBg}; border:1px solid ${borderAccent}33; border-left:4px solid ${borderAccent}; padding:16px 20px; border-radius:4px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
               <div style="max-width:760px;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                  <span style="font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:2px; background:${isAccepted ? 'rgba(34,197,94,0.2)' : 'rgba(255,30,68,0.15)'}; color:${isAccepted ? '#22c55e' : '#ff1e44'}; text-transform:uppercase; letter-spacing:0.5px;">
-                    ${isAccepted ? '✓ LEAGUE REGISTRATION ACCEPTED' : 'DIRECTIVE'}
+                  <span style="font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:2px; background:${badgeBg}; color:${badgeColor}; text-transform:uppercase; letter-spacing:0.5px;">
+                    ${badgeText}
                   </span>
                   <span style="font-size:11px; color:#64748b;">${dateStr}</span>
                   ${!n.read ? `<span style="font-size:10px; color:#ff1e44; font-weight:900;">● NEW</span>` : ''}
@@ -988,6 +1035,7 @@
                 <p style="margin:0; font-size:13px; color:#cbd5e1; line-height:1.5;">
                   ${n.message}
                 </p>
+                ${inviteActionsHtml}
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
                 ${!n.read ? `
@@ -1002,6 +1050,27 @@
           `;
         }).join("");
       }
+
+      window.respondArenaInvite = async function(inviteId, accept, btnEl) {
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.textContent = accept ? "Accepting..." : "Declining...";
+        }
+        try {
+          const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+          if (window.LeagueDB && typeof window.LeagueDB.respondTournamentTeamInvite === "function") {
+            const res = await window.LeagueDB.respondTournamentTeamInvite(inviteId, accept, player);
+            if (res && !res.success && res.error) {
+              alert("Error: " + res.error);
+            } else {
+              alert(accept ? "✓ Team invite accepted! You have joined the tournament squad." : "Invite declined.");
+            }
+          }
+        } catch (e) {
+          console.error("respondArenaInvite error:", e);
+        }
+        renderProfilePage();
+      };
 
       window.markArenaNotifRead = async function(notifId) {
         if (window.LeagueDB && typeof window.LeagueDB.markNotificationRead === "function") {

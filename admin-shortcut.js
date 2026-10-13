@@ -267,17 +267,32 @@
       animation:flFadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     `;
 
+    const isInvite = notif.type === 'team_invite';
+    const inviteId = notif.metadata?.invite_id;
+    const inviteStatus = notif.metadata?.status || 'pending';
+
+    let actionButtonsHtml = '';
+    if (isInvite && inviteStatus === 'pending' && inviteId) {
+      actionButtonsHtml = `
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button type="button" onclick="window.__respondToTeamInvite('${inviteId}', true, this)" style="background:#22c55e; border:none; color:#000; font-weight:800; font-size:11px; padding:6px 12px; border-radius:3px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">✓ Accept Invite</button>
+          <button type="button" onclick="window.__respondToTeamInvite('${inviteId}', false, this)" style="background:transparent; border:1px solid #ef4444; color:#ef4444; font-weight:700; font-size:11px; padding:6px 12px; border-radius:3px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">✕ Decline</button>
+        </div>
+      `;
+    }
+
     toast.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:16px;">🔔</span>
-          <strong style="color:#d5f45b; font-size:12.5px; text-transform:uppercase; letter-spacing:0.8px;">${notif.title}</strong>
+          <span style="font-size:16px;">${isInvite ? '🛡' : '🔔'}</span>
+          <strong style="color:${isInvite ? '#22c55e' : '#d5f45b'}; font-size:12.5px; text-transform:uppercase; letter-spacing:0.8px;">${notif.title}</strong>
         </div>
         <button type="button" class="btn-dismiss-toast" style="background:transparent; border:none; color:#888; font-size:14px; cursor:pointer; padding:0 4px; line-height:1;">✕</button>
       </div>
       <div style="font-size:12px; color:#cbd5e1; line-height:1.45;">
         ${notif.message}
       </div>
+      ${actionButtonsHtml}
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
         <small style="font-size:10px; color:#6b7280;">Frontline HQ Directive</small>
         <a href="/profile/" style="font-size:11px; color:#d5f45b; font-weight:800; text-decoration:none;">View Dossier ↗</a>
@@ -299,7 +314,7 @@
         toast.style.transition = "opacity 0.3s ease";
         setTimeout(() => toast.remove(), 300);
       }
-    }, 7000);
+    }, 12000);
   }
 
   // Inject Bell Icon to Navigation Bars
@@ -323,12 +338,12 @@
         <span id="fl-notif-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#ff1e44; color:#ffffff; font-size:10px; font-weight:900; min-width:16px; height:16px; border-radius:8px; line-height:16px; text-align:center; padding:0 3px; border:2px solid #11140e; box-sizing:content-box;">0</span>
       </button>
 
-      <div id="fl-notif-dropdown-menu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; width:340px; background:#12150f; border:1px solid #2a331c; border-radius:4px; box-shadow:0 14px 40px rgba(0,0,0,0.85); z-index:999999; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div id="fl-notif-dropdown-menu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; width:350px; background:#12150f; border:1px solid #2a331c; border-radius:4px; box-shadow:0 14px 40px rgba(0,0,0,0.85); z-index:999999; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #242c16; background:#161a12;">
           <strong style="font-size:12px; color:#d5f45b; text-transform:uppercase; letter-spacing:0.8px;">Directives &amp; Notifications</strong>
           <button type="button" id="fl-btn-mark-all-read" style="background:transparent; border:none; color:#94a3b8; font-size:11px; cursor:pointer; text-decoration:underline;">Mark all read</button>
         </div>
-        <div id="fl-notif-list-body" style="max-height:320px; overflow-y:auto; padding:8px 0;">
+        <div id="fl-notif-list-body" style="max-height:340px; overflow-y:auto; padding:8px 0;">
           <div style="text-align:center; padding:24px 14px; color:#6b7280; font-size:12px;">
             No new notifications.
           </div>
@@ -417,19 +432,48 @@
       } else {
         listBody.innerHTML = userNotifs.map(n => {
           const isAccepted = n.type === 'registration_accepted';
+          const isInvite = n.type === 'team_invite';
+          const inviteId = n.metadata?.invite_id;
+          const inviteStatus = n.metadata?.status || 'pending';
           const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recent';
+
+          let inviteActionHtml = '';
+          if (isInvite && inviteStatus === 'pending' && inviteId) {
+            inviteActionHtml = `
+              <div style="display:flex; gap:6px; margin-top:6px;">
+                <button type="button" onclick="window.__respondToTeamInvite('${inviteId}', true, this)" style="background:#22c55e; border:none; color:#000; font-weight:800; font-size:10px; padding:4px 8px; border-radius:2px; cursor:pointer; text-transform:uppercase;">✓ Accept</button>
+                <button type="button" onclick="window.__respondToTeamInvite('${inviteId}', false, this)" style="background:transparent; border:1px solid #ef4444; color:#ef4444; font-weight:700; font-size:10px; padding:4px 8px; border-radius:2px; cursor:pointer; text-transform:uppercase;">✕ Decline</button>
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'accepted') {
+            inviteActionHtml = `<span style="font-size:10px; color:#22c55e; font-weight:800; margin-top:4px;">✓ Invite Accepted</span>`;
+          } else if (isInvite && inviteStatus === 'declined') {
+            inviteActionHtml = `<span style="font-size:10px; color:#94a3b8; font-weight:700; margin-top:4px;">✕ Invite Declined</span>`;
+          }
+
+          let badgeText = 'DIRECTIVE';
+          let badgeColor = '#d5f45b';
+          if (isAccepted) {
+            badgeText = '✓ LEAGUE REGISTRATION ACCEPTED';
+            badgeColor = '#22c55e';
+          } else if (isInvite) {
+            badgeText = '🛡 SQUAD INVITATION';
+            badgeColor = '#38bdf8';
+          }
+
           return `
             <div style="padding:10px 14px; border-bottom:1px solid #1a2012; background:${n.read ? 'transparent' : 'rgba(213,244,91,0.06)'}; display:flex; flex-direction:column; gap:4px;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:10px; font-weight:800; color:${isAccepted ? '#22c55e' : '#d5f45b'}; text-transform:uppercase;">
-                  ${isAccepted ? '✓ LEAGUE REGISTRATION ACCEPTED' : 'DIRECTIVE'}
+                <span style="font-size:10px; font-weight:800; color:${badgeColor}; text-transform:uppercase;">
+                  ${badgeText}
                 </span>
                 <span style="font-size:10px; color:#64748b;">${dateStr}</span>
               </div>
               <strong style="font-size:12px; color:#ffffff;">${n.title}</strong>
               <p style="font-size:11.5px; color:#94a3b8; margin:2px 0 4px; line-height:1.4;">${n.message}</p>
+              ${inviteActionHtml}
               ${!n.read ? `
-                <button type="button" onclick="window.__markNotificationAsRead('${n.id}')" style="align-self:flex-start; background:transparent; border:none; color:#d5f45b; font-size:10.5px; font-weight:700; cursor:pointer; padding:0; text-decoration:underline;">
+                <button type="button" onclick="window.__markNotificationAsRead('${n.id}')" style="align-self:flex-start; background:transparent; border:none; color:#d5f45b; font-size:10.5px; font-weight:700; cursor:pointer; padding:0; text-decoration:underline; margin-top:2px;">
                   Mark as read
                 </button>
               ` : ''}
@@ -439,6 +483,25 @@
       }
     }
   }
+
+  window.__respondToTeamInvite = async function(inviteId, accept, btnEl) {
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = accept ? "Accepting..." : "Declining...";
+    }
+    try {
+      const user = getCurrentUserIdentity();
+      if (window.LeagueDB && typeof window.LeagueDB.respondTournamentTeamInvite === "function") {
+        const res = await window.LeagueDB.respondTournamentTeamInvite(inviteId, accept, user);
+        if (res && !res.success && res.error) {
+          alert("Invite error: " + res.error);
+        }
+      }
+    } catch (err) {
+      console.error("Error responding to team invite:", err);
+    }
+    await refreshNotificationsUI();
+  };
 
   window.__markNotificationAsRead = async function(notifId) {
     if (window.LeagueDB && typeof window.LeagueDB.markNotificationRead === "function") {
