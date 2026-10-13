@@ -276,11 +276,11 @@
                 <span style="font-size:11.5px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px;">⚔️ TOURNAMENT SQUAD</span>
                 <span style="background:rgba(56,189,248,0.2); border:1px solid #38bdf8; color:#ffffff; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:3px;">${isCap ? '★ CAPTAIN' : 'ROSTER'}</span>
               </div>
-              <div style="font-size:18px; font-weight:900; color:#ffffff; font-family:var(--display); letter-spacing:0.5px; text-transform:uppercase;">
+              <div style="font-size:20px; font-weight:800; color:#ffffff; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing:0.8px; margin:4px 0 2px;">
                 ${escapeHtml(ts.team_name || 'Tournament Squad')}
               </div>
-              <div style="font-size:13px; color:#e2e8f0; margin-top:4px;">
-                Event: <strong style="color:#ffffff; font-weight:800;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
+              <div style="font-size:13.5px; color:#cbd5e1; margin-top:4px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                Event: <strong style="color:#ffffff; font-weight:700;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
               </div>
               <div style="font-size:12px; color:#cbd5e1; margin-top:6px; background:#0b0f16; border:1px solid #1f2c3e; padding:6px 10px; border-radius:3px;">
                 <span style="color:#38bdf8; font-weight:800;">Roster (${rosterArr.length}):</span> <span style="color:#ffffff; font-weight:600;">${escapeHtml(rosterArr.map(m => typeof m === "object" ? (m.gamertag || m.name) : m).join(", "))}</span>
