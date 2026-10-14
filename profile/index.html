@@ -1233,6 +1233,11 @@
                           <span style="color:${isAcc ? '#4ade80' : '#facc15'}; font-weight:900; font-size:13px;">${isAcc ? '✓' : '⏳'}</span>
                           <strong style="color:#ffffff; font-weight:800; ${isMe ? 'color:var(--lime); text-decoration:underline; text-underline-offset:3px;' : ''}">${escapeHtml(st.gamertag)}</strong>
                           <span style="color:${isAcc ? '#86efac' : '#fef08a'}; font-size:10.5px; font-weight:800; text-transform:uppercase;">(${isAcc ? (st.role || 'Accepted') : 'Pending'})</span>
+                          ${(!isAcc && isCap && !isMe) ? `
+                            <button type="button" class="btn-reinvite" onclick="handleReinviteTournamentTeammate('${ts.id}', '${escapeHtml(st.gamertag)}', this)" style="background:rgba(234,179,8,0.25); border:1px solid #fbbf24; color:#fef08a; border-radius:3px; padding:2px 7px; font-size:11px; font-weight:800; cursor:pointer; margin-left:4px; display:inline-flex; align-items:center; gap:3px;" title="Resend invite notification to this player">
+                              <span>↻</span> <span>Resend Invite</span>
+                            </button>
+                          ` : ''}
                         </span>
                       `;
                     }).join('') || rosterList.map(m => `<span style="background:#172030; border:1px solid #2d3e58; padding:4px 8px; border-radius:3px; color:#ffffff; font-weight:700; font-size:12px;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
@@ -1640,6 +1645,54 @@
           window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
         }
       }
+
+      // Reinvite tournament squad member
+      window.handleReinviteTournamentTeammate = async function(regId, targetGamertag, btnEl) {
+        if (!regId || !targetGamertag) return;
+        const origText = btnEl ? btnEl.innerHTML : "";
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.innerHTML = `<span>⏳</span> <span>Sending...</span>`;
+        }
+        try {
+          if (!window.LeagueDB || typeof window.LeagueDB.reinviteTournamentPlayer !== "function") {
+            throw new Error("Reinvite service unavailable.");
+          }
+          const currentUser = userProfile || (window.Auth && window.Auth.currentUser) || null;
+          const res = await window.LeagueDB.reinviteTournamentPlayer(regId, targetGamertag, currentUser);
+          if (res && res.success) {
+            if (btnEl) {
+              btnEl.innerHTML = `<span>✓</span> <span>Invite Sent!</span>`;
+              btnEl.style.background = "rgba(34,197,94,0.3)";
+              btnEl.style.borderColor = "#22c55e";
+              btnEl.style.color = "#86efac";
+              setTimeout(() => {
+                if (btnEl) {
+                  btnEl.innerHTML = origText;
+                  btnEl.disabled = false;
+                  btnEl.style.background = "rgba(234,179,8,0.25)";
+                  btnEl.style.borderColor = "#fbbf24";
+                  btnEl.style.color = "#fef08a";
+                }
+              }, 4000);
+            }
+            showProfileToast("✓ Re-invite sent successfully.");
+          } else {
+            showProfileToast(res?.error || "Could not resend invite.", true);
+            if (btnEl) {
+              btnEl.disabled = false;
+              btnEl.innerHTML = origText;
+            }
+          }
+        } catch (err) {
+          console.error("handleReinviteTournamentTeammate failed:", err);
+          showProfileToast(err.message || "Failed to resend invite.", true);
+          if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origText;
+          }
+        }
+      };
 
       document.addEventListener('DOMContentLoaded', loadLeagueProfile);
       window.addEventListener('frontline_auth_changed', loadLeagueProfile);

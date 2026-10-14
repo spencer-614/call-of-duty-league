@@ -2950,6 +2950,125 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
+  async reinviteTournamentPlayer(registrationId, targetGamertag, callerUser = null) {
+    try {
+      if (!registrationId || !targetGamertag) {
+        return { success: false, error: "Missing squad registration or player gamertag." };
+      }
+
+      const allRegs = await this.getTournamentRegistrations(null);
+      const reg = allRegs.find(r => String(r.id) === String(registrationId));
+      if (!reg) {
+        return { success: false, error: "Squad registration not found." };
+      }
+
+      // Security check: verify caller is captain or admin if callerUser provided
+      const clean = s => String(s || "").trim().toLowerCase();
+      const capTag = clean(reg.captain_gamertag);
+      if (callerUser) {
+        const callerTag = clean(callerUser.gamertag || callerUser.username || callerUser.name);
+        const isCap = callerTag && (callerTag === capTag || callerTag.includes(capTag) || capTag.includes(callerTag));
+        const isAdmin = this.isAccountAdmin ? this.isAccountAdmin(callerUser) : false;
+        if (!isCap && !isAdmin) {
+          return { success: false, error: "Only the squad captain can reinvite teammates." };
+        }
+      }
+
+      const tTag = String(targetGamertag).trim();
+      const newInvId = "tinv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+
+      // 1. Create or update invite record in tournament_team_invites_registry
+      const allInvites = await this.getTournamentTeamInvites(null);
+      // Remove any previous pending/declined invite for this player & registration
+      const filteredInvites = allInvites.filter(inv => {
+        return !(String(inv.registration_id) === String(registrationId) && clean(inv.invited_gamertag) === clean(tTag));
+      });
+
+      const newInvite = {
+        id: newInvId,
+        registration_id: reg.id,
+        tournament_id: String(reg.tournament_id),
+        tournament_title: reg.tournament_title || "Frontline Tournament",
+        team_name: String(reg.team_name || "Squad").trim(),
+        captain_gamertag: String(reg.captain_gamertag || "Captain").trim(),
+        captain_discord: String(reg.captain_discord || "").trim(),
+        invited_gamertag: tTag,
+        status: "pending",
+        created_at: new Date().toISOString()
+      };
+      filteredInvites.unshift(newInvite);
+      await this.saveTournamentTeamInvites(filteredInvites);
+
+      // 2. Update roster_status in registration record
+      if (!Array.isArray(reg.roster_status)) {
+        reg.roster_status = [];
+      }
+      const existingStat = reg.roster_status.find(st => clean(st.gamertag) === clean(tTag));
+      if (existingStat) {
+        existingStat.status = "pending";
+        existingStat.invite_id = newInvId;
+        existingStat.reinvited_at = new Date().toISOString();
+      } else {
+        reg.roster_status.push({
+          gamertag: tTag,
+          role: "Member",
+          status: "pending",
+          invite_id: newInvId,
+          reinvited_at: new Date().toISOString()
+        });
+      }
+
+      // Ensure targetGamertag is in pending_roster
+      if (!Array.isArray(reg.pending_roster)) {
+        reg.pending_roster = [];
+      }
+      if (!reg.pending_roster.some(p => clean(p) === clean(tTag))) {
+        reg.pending_roster.push(tTag);
+      }
+
+      // Save updated registrations
+      if (dbClient) {
+        try {
+          await dbClient.from("league_settings").upsert({
+            id: "tournament_registrations_registry",
+            status_state: "active",
+            status_text: JSON.stringify(allRegs),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        } catch (_) {}
+      }
+      try {
+        localStorage.setItem("frontline_tournament_registrations", JSON.stringify(allRegs));
+      } catch (_) {}
+
+      // 3. Dispatch fresh user notification
+      await this.sendUserNotification({
+        target_gamertag: tTag,
+        title: "Tournament Team Invite (Reinvited)",
+        message: `${reg.captain_gamertag} has reinvited you to join team "${reg.team_name}" for the upcoming tournament "${reg.tournament_title || 'Frontline Tournament'}". Accept to join the squad roster.`,
+        type: "team_invite",
+        metadata: {
+          invite_id: newInvId,
+          registration_id: reg.id,
+          tournament_id: String(reg.tournament_id),
+          tournament_title: reg.tournament_title || "Frontline Tournament",
+          team_name: reg.team_name,
+          captain_gamertag: reg.captain_gamertag,
+          invited_gamertag: tTag,
+          status: "pending"
+        }
+      });
+
+      window.dispatchEvent(new CustomEvent("frontline_notifications_updated", {}));
+      window.dispatchEvent(new CustomEvent("frontline_tournament_registrations_updated", { detail: { registration: reg } }));
+
+      return { success: true, invite: newInvite, registration: reg };
+    } catch (err) {
+      console.error("reinviteTournamentPlayer error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
   // ==========================================
   // LEAGUE ANNOUNCEMENTS & INTEL BROADCAST
   // ==========================================

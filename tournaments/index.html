@@ -1423,6 +1423,9 @@
                   });
                 }
 
+                const myUser = getCurrentUserIdentity();
+                const isCaptainOfSquad = myUser && myUser.normTag && (norm(sq.captain_gamertag) === myUser.normTag);
+
                 return `
                   <div style="background:#13160f; border:1px solid #232918; border-left:3px solid #fbbf24; padding:8px 12px; border-radius:2px; font-size:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
@@ -1430,14 +1433,31 @@
                       <span style="color:#fbbf24; font-size:11px;">Captain: ${escapeHtml(sq.captain_gamertag || 'Captain')}</span>
                     </div>
                     ${members.length ? `
-                      <div style="color:#9ca3af; font-size:11px; line-height:1.5;">
-                        Roster: ${members.map(m => {
+                      <div style="color:#9ca3af; font-size:11px; line-height:1.6; display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:4px;">
+                        <span style="color:#6b7280; font-size:10.5px; font-weight:700; text-transform:uppercase;">Roster:</span>
+                        ${members.map(m => {
                           const escapedName = escapeHtml(m.name || '');
                           if (m.isPending) {
-                            return `<span style="color:#d1d5db;">${escapedName}</span> <span style="display:inline-block; font-size:9.5px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); padding:1px 4px; border-radius:2px; vertical-align:middle;">Pending</span>`;
+                            return `
+                              <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); padding:2px 6px; border-radius:3px;">
+                                <span style="color:#fbbf24;">⏳</span>
+                                <span style="color:#fef08a; font-weight:700;">${escapedName}</span>
+                                <span style="font-size:9.5px; font-weight:800; color:#fbbf24; text-transform:uppercase;">(Pending)</span>
+                                ${isCaptainOfSquad ? `
+                                  <button type="button" onclick="handleReinviteTournamentTeammate('${sq.id}', '${escapedName}', this)" style="background:rgba(251,191,36,0.25); border:1px solid #fbbf24; color:#fff; border-radius:2px; padding:1px 5px; font-size:9.5px; font-weight:800; cursor:pointer; margin-left:3px;" title="Resend invite notification">
+                                    ↻ Resend
+                                  </button>
+                                ` : ''}
+                              </span>
+                            `;
                           }
-                          return `<span style="color:#f3f4f6;">${escapedName}</span>`;
-                        }).join(' • ')}
+                          return `
+                            <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); padding:2px 6px; border-radius:3px;">
+                              <span style="color:#4ade80;">✓</span>
+                              <span style="color:#f3f4f6; font-weight:700;">${escapedName}</span>
+                            </span>
+                          `;
+                        }).join('')}
                       </div>
                     ` : ''}
                   </div>
@@ -2237,6 +2257,54 @@
           hideTeammatesDropdown();
         }
       });
+
+      // Reinvite tournament squad member
+      window.handleReinviteTournamentTeammate = async function(regId, targetGamertag, btnEl) {
+        if (!regId || !targetGamertag) return;
+        const origText = btnEl ? btnEl.innerHTML : "";
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.innerHTML = `⏳ Sending...`;
+        }
+        try {
+          if (!window.LeagueDB || typeof window.LeagueDB.reinviteTournamentPlayer !== "function") {
+            throw new Error("Reinvite service unavailable.");
+          }
+          const currentUser = (window.Auth && window.Auth.currentUser) || null;
+          const res = await window.LeagueDB.reinviteTournamentPlayer(regId, targetGamertag, currentUser);
+          if (res && res.success) {
+            if (btnEl) {
+              btnEl.innerHTML = `✓ Sent!`;
+              btnEl.style.background = "rgba(34,197,94,0.3)";
+              btnEl.style.borderColor = "#22c55e";
+              btnEl.style.color = "#86efac";
+              setTimeout(() => {
+                if (btnEl) {
+                  btnEl.innerHTML = origText;
+                  btnEl.disabled = false;
+                  btnEl.style.background = "rgba(251,191,36,0.25)";
+                  btnEl.style.borderColor = "#fbbf24";
+                  btnEl.style.color = "#fff";
+                }
+              }, 4000);
+            }
+            showToast(`✓ Re-invite notification sent to ${targetGamertag}.`);
+          } else {
+            showToast(res?.error || "Could not resend invite.", true);
+            if (btnEl) {
+              btnEl.disabled = false;
+              btnEl.innerHTML = origText;
+            }
+          }
+        } catch (err) {
+          console.error("handleReinviteTournamentTeammate failed:", err);
+          showToast(err.message || "Failed to resend invite.", true);
+          if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origText;
+          }
+        }
+      };
 
       // Close modals on overlay click or Escape
       document.querySelectorAll('.tourney-modal-overlay').forEach(overlay => {
