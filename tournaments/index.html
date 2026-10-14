@@ -750,6 +750,7 @@
           </ul>
         </div>
 
+        <div id="modal-detail-user-enlist-status" style="display:none; background:#161d0f; border:1px solid #36491e; color:#bbf7d0; padding:10px 14px; border-radius:2px; font-size:12px; margin-bottom:16px; line-height:1.5;"></div>
         <!-- Enlisted Squads List in Details Modal -->
         <div style="background:#0c0e09; border:1px solid #232918; padding:16px; border-radius:2px; margin-bottom:20px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -1331,6 +1332,7 @@
               squadsCountEl.textContent = `${squads.length} / ${maxTeams} Squad${squads.length === 1 ? '' : 's'} Enlisted`;
             }
 
+            const norm = str => String(str || '').replace(/^@/, '').trim().toLowerCase();
             // Detect if logged-in user is already enrolled in a squad for this tournament
             let userEnlistedSquad = null;
             try {
@@ -1465,6 +1467,7 @@
               }).join('');
             }
           } catch(e) {
+            console.error("Error rendering tournament details enlisted squads:", e);
             if (squadsListEl) squadsListEl.innerHTML = '<div style="color:var(--muted); font-size:12px;">Enlisted roster details available in Discord.</div>';
           }
         }
