@@ -1142,6 +1142,7 @@
               </div>
             </div>
 
+            <div id="tournament-map-veto"></div>
             <div id="tournament-map-reports"></div>
             ${chatSectionHtml}
 
@@ -1156,6 +1157,16 @@
           document.body.classList.add('modal-open');
           dialog.showModal();
           await window.TournamentReports.mount(document.getElementById("tournament-map-reports"), activeTournament.id, match);
+          if (window.TournamentVeto && typeof window.TournamentVeto.mount === 'function') {
+            await window.TournamentVeto.mount(document.getElementById("tournament-map-veto"), activeTournament, match, {
+              user,
+              isStaff,
+              userTeamName,
+              userRole,
+              reg1,
+              reg2
+            });
+          }
 
           // Initialize chat interactions if authorized
           if (hasAccess && activeTournament?.id) {
@@ -1473,5 +1484,6 @@
       })();
     </script>
   <script src="/tournament-reports.js"></script>
+  <script src="/tournament-veto.js"></script>
 </body>
 </html>
