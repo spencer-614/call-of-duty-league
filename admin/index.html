@@ -1427,6 +1427,28 @@
         <!-- TAB 4: REVIEW SIGNUPS                      -->
         <!-- ========================================== -->
         <div id="tab-signups" class="admin-tab-content" style="display:none;">
+          <!-- Tournament Squads & Enlistments Quick Desk -->
+          <div class="admin-panel-card" style="border-left:4px solid #fbbf24; background:#12150f; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.35); color:#fbbf24; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  <span>🏆</span> <span>TOURNAMENTS SQUAD DESK</span>
+                </div>
+                <h4 style="margin:2px 0 4px; font-size:16px; color:#ffffff; font-weight:800;">
+                  Tournament Rosters, Invites &amp; Direct Enlistment
+                </h4>
+                <div style="font-size:12px; color:#9ca3af;">
+                  Directly register squads for players, add teammates to any team, or auto-accept pending invites on the spot.
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="btn-action-sm" onclick="switchActiveTab('tab-tournaments-hub')" style="background:#fbbf24; border-color:#fbbf24; color:#0b1109; font-weight:800; padding:7px 14px; font-size:12px;">
+                  🏆 Open Tournaments Hub Manager ↗
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="admin-panel-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; gap:12px;">
               <h3 class="admin-card-title" style="margin:0;">Incoming Registrations (Free Agents &amp; Squads)</h3>
@@ -9196,10 +9218,15 @@
                         ${(reg.roster_status || []).map(st => {
                           const isAcc = st.status === 'accepted';
                           return `
-                            <span style="display:inline-flex; align-items:center; gap:5px; background:${isAcc ? 'rgba(34,197,94,0.12)' : 'rgba(234,179,8,0.12)'}; border:1px solid ${isAcc ? 'rgba(34,197,94,0.35)' : 'rgba(234,179,8,0.35)'}; padding:3px 8px; border-radius:2px; font-size:11px;">
+                            <span style="display:inline-flex; align-items:center; gap:6px; background:${isAcc ? 'rgba(34,197,94,0.12)' : 'rgba(234,179,8,0.12)'}; border:1px solid ${isAcc ? 'rgba(34,197,94,0.35)' : 'rgba(234,179,8,0.35)'}; padding:3px 8px; border-radius:2px; font-size:11px;">
                               <span style="color:${isAcc ? '#22c55e' : '#eab308'}; font-weight:800;">${isAcc ? '✓' : '⏳'}</span>
                               <strong style="color:#ffffff;">${escapeHtml(st.gamertag)}</strong>
                               <small style="color:${isAcc ? '#4ade80' : '#fef08a'}; text-transform:uppercase; font-size:9.5px;">(${isAcc ? (st.added_by_admin ? 'Admin Added' : (st.role || 'Accepted')) : 'Invite Pending'})</small>
+                              ${!isAcc ? `
+                                <button type="button" class="btn-action-sm" onclick="handleAdminAutoAcceptInvite('${escapeHtml(reg.id)}', '${escapeHtml(st.gamertag)}', this)" style="background:rgba(34,197,94,0.25); border:1px solid #22c55e; color:#4ade80; font-size:10px; font-weight:800; padding:1px 6px; border-radius:2px; cursor:pointer; margin-left:2px;" title="Auto-accept this invite and place player directly onto the active confirmed roster">
+                                  ✓ Auto-Accept
+                                </button>
+                              ` : ''}
                             </span>
                           `;
                         }).join("") || rosterList.map(m => `<span style="background:#131610; border:1px solid #232a18; padding:2px 6px; border-radius:2px;">${escapeHtml(m)}</span>`).join("")}
@@ -9328,6 +9355,43 @@
           }
         }
         window.promptAdminAddTeammate = promptAdminAddTeammate;
+
+        // Handle admin auto-accepting an invite
+        async function handleAdminAutoAcceptInvite(regId, targetGamertag, btnEl) {
+          if (!regId || !targetGamertag) return;
+          const origText = btnEl ? btnEl.innerHTML : "";
+          if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = `⏳ Accepting...`;
+          }
+          try {
+            if (!window.LeagueDB || typeof window.LeagueDB.adminAddPlayerToTournamentSquad !== "function") {
+              throw new Error("Service unavailable.");
+            }
+            const res = await window.LeagueDB.adminAddPlayerToTournamentSquad(regId, targetGamertag);
+            if (res && res.success) {
+              showToast(`✓ Accepted: "${targetGamertag}" is now officially on the active roster!`);
+              if (activeAdminTourneyId) {
+                await adminViewTourneyRegistrations(activeAdminTourneyId, activeAdminTourneyTitle);
+                await loadAdminTournaments();
+              }
+            } else {
+              showToast(res?.error || "Could not auto-accept invite.", true);
+              if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = origText;
+              }
+            }
+          } catch (err) {
+            console.error("handleAdminAutoAcceptInvite error:", err);
+            showToast(err.message || "Failed to auto-accept invite.", true);
+            if (btnEl) {
+              btnEl.disabled = false;
+              btnEl.innerHTML = origText;
+            }
+          }
+        }
+        window.handleAdminAutoAcceptInvite = handleAdminAutoAcceptInvite;
 
         async function adminDeleteTourneyRegistration(regId, tourneyId, tourneyTitle) {
           if (!confirm("Are you sure you want to remove this squad registration from the tournament?")) return;
