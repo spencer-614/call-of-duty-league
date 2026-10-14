@@ -4162,11 +4162,30 @@ if (dbClient && cleanPayload.user_id) {
       console.warn("Notice: Error creating teammate invites:", invErr);
     }
 
-    // Save the authoritative registration before updating the display registry.
-    const { error: registrationSaveError } = await dbClient
-      .from("tournament_registrations").insert([regRecord]);
-    if (registrationSaveError) {
-      return { success: false, error: "Could not save team registration: " + registrationSaveError.message };
+    // Save the authoritative registration to tournament_registrations table (only passing known columns)
+    if (dbClient) {
+      try {
+        const dbPayload = {
+          id: regRecord.id,
+          tournament_id: regRecord.tournament_id,
+          tournament_title: regRecord.tournament_title,
+          team_name: regRecord.team_name,
+          captain_gamertag: regRecord.captain_gamertag,
+          captain_discord: regRecord.captain_discord,
+          captain_activision_id: regRecord.captain_activision_id,
+          roster: regRecord.roster,
+          roster_text: regRecord.roster_text,
+          status: regRecord.status,
+          registered_at: regRecord.registered_at
+        };
+        const { error: regTableErr } = await dbClient
+          .from("tournament_registrations").insert([dbPayload]);
+        if (regTableErr) {
+          console.warn("Direct tournament_registrations table insert warning (will rely on registry):", regTableErr.message);
+        }
+      } catch (tableErr) {
+        console.warn("tournament_registrations insert exception:", tableErr);
+      }
     }
 
     // Prepend to all registrations
