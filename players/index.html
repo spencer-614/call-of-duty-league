@@ -645,8 +645,24 @@
         if (resetBtn) resetBtn.style.display = hasActiveFilter ? 'inline-block' : 'none';
 
         const filtered = allPlayers.filter(player => {
-          // 1. Role match
-          const roleMatch = activeRole === 'all' || (player.role && player.role.toLowerCase() === activeRole.toLowerCase());
+          // 1. Role match (supports SMG slayer/entry/sub variants, Main AR, Flex, Sniper)
+          let roleMatch = activeRole === 'all';
+          if (!roleMatch) {
+            const playerRoleStr = [player.role, player.primary_role, player.secondary_role, player.tactical_role].filter(Boolean).join(' ').toLowerCase();
+            const targetRole = activeRole.toLowerCase();
+
+            if (targetRole === 'smg') {
+              roleMatch = playerRoleStr.includes('smg') || playerRoleStr.includes('slayer') || playerRoleStr.includes('entry') || playerRoleStr.includes('sub');
+            } else if (targetRole === 'main ar' || targetRole === 'ar') {
+              roleMatch = playerRoleStr.includes('ar') || playerRoleStr.includes('anchor') || playerRoleStr.includes('assault');
+            } else if (targetRole === 'flex') {
+              roleMatch = playerRoleStr.includes('flex') || playerRoleStr.includes('hybrid');
+            } else if (targetRole === 'sniper') {
+              roleMatch = playerRoleStr.includes('sniper') || playerRoleStr.includes('pick');
+            } else {
+              roleMatch = playerRoleStr.includes(targetRole);
+            }
+          }
 
           // 2. Rank match
           const playerRank = String(player.skill_rank || player.rank || '0.5');

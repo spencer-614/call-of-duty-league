@@ -206,6 +206,7 @@
             <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:4px;">CDL Role</label>
             <select id="filter-role" onchange="handleFilterChange()" style="width:100%; box-sizing:border-box; background:#04060a; border:1px solid #1c2738; border-radius:4px; padding:9px 12px; color:#fff; font-size:12px; outline:none;">
               <option value="all">All Roles</option>
+              <option value="smg">SMG (All / Entry / Slayer)</option>
               <option value="main ar">Main AR (Anchor)</option>
               <option value="slayer">SMG Slayer</option>
               <option value="entry">Entry SMG</option>
@@ -768,13 +769,21 @@
         }
 
         // Role filter
-        const roleVal = document.getElementById("filter-role")?.value || "all";
+        const roleVal = (document.getElementById("filter-role")?.value || "all").toLowerCase();
         if (roleVal !== "all") {
-          filtered = filtered.filter(fa =>
-            (fa.primary_role && fa.primary_role.toLowerCase().includes(roleVal)) ||
-            (fa.secondary_role && fa.secondary_role.toLowerCase().includes(roleVal)) ||
-            (fa.role && fa.role.toLowerCase().includes(roleVal))
-          );
+          filtered = filtered.filter(fa => {
+            const roleStr = [fa.primary_role, fa.secondary_role, fa.role, fa.tactical_role].filter(Boolean).join(' ').toLowerCase();
+            if (roleVal === "smg") {
+              return roleStr.includes("smg") || roleStr.includes("slayer") || roleStr.includes("entry") || roleStr.includes("sub");
+            } else if (roleVal === "slayer") {
+              return roleStr.includes("slayer") || (roleStr.includes("smg") && !roleStr.includes("entry"));
+            } else if (roleVal === "entry") {
+              return roleStr.includes("entry");
+            } else if (roleVal === "main ar" || roleVal === "ar") {
+              return roleStr.includes("ar") || roleStr.includes("anchor");
+            }
+            return roleStr.includes(roleVal);
+          });
         }
 
         // Platform filter
