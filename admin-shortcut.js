@@ -169,11 +169,43 @@
 
   function getCurrentUserIdentity() {
     let authUser = null;
+
+    // 1. Check Supabase auth session in localStorage
+    try {
+      const sessionKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+      for (const k of sessionKeys) {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.user) {
+            authUser = parsed.user;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 2. LadderDB current player
     try {
       if (window.LadderDB && typeof window.LadderDB.getCurrentPlayer === "function") {
         const p = window.LadderDB.getCurrentPlayer();
-        if (p && (p.gamertag || p.username || p.id)) return p;
+        if (p && (p.gamertag || p.username || p.id)) {
+          // If authUser was found, merge them
+          if (authUser) {
+            return Object.assign({}, authUser, p, {
+              gamertag: p.gamertag || p.username || authUser.user_metadata?.gamertag,
+              id: p.id || authUser.id
+            });
+          }
+          return p;
+        }
       }
+    } catch (_) {}
+
+    // 3. Explicit storage keys across platform
+    try {
+      const frontlineAuth = JSON.parse(localStorage.getItem("frontline_auth_user"));
+      if (frontlineAuth && (frontlineAuth.gamertag || frontlineAuth.username || frontlineAuth.id)) return frontlineAuth;
     } catch (_) {}
 
     try {
@@ -190,6 +222,9 @@
       const card = JSON.parse(localStorage.getItem("frontline_league_player_card"));
       if (card && card.gamertag) return card;
     } catch (_) {}
+
+    // 4. Return Supabase authUser if found
+    if (authUser) return authUser;
 
     return null;
   }
@@ -209,32 +244,62 @@
     let disc = "";
     let act = "";
 
+    const clean = s => String(s || "").trim().toLowerCase();
+
     if (typeof userIdent === "string") {
-      tag = userIdent.trim().toLowerCase();
-      uid = userIdent.trim();
+      tag = clean(userIdent);
+      uid = String(userIdent).trim();
     } else if (typeof userIdent === "object" && userIdent !== null) {
-      tag = String(userIdent.gamertag || userIdent.username || userIdent.name || userIdent.email || "").trim().toLowerCase();
+      tag = clean(userIdent.gamertag || userIdent.username || userIdent.name || userIdent.display_name || userIdent.global_name || "");
       uid = String(userIdent.id || userIdent.user_id || "").trim();
-      disc = String(userIdent.discord || userIdent.discord_name || userIdent.discord_username || "").trim().toLowerCase();
-      act = String(userIdent.activision_id || userIdent.activision || "").trim().toLowerCase();
+      disc = clean(userIdent.discord || userIdent.discord_name || userIdent.discord_username || "");
+      act = clean(userIdent.activision_id || userIdent.activision || "");
       if (userIdent.user_metadata) {
         const m = userIdent.user_metadata;
-        if (!tag) tag = String(m.gamertag || m.username || m.name || "").trim().toLowerCase();
-        if (!disc) disc = String(m.discord || m.discord_name || m.discord_username || "").trim().toLowerCase();
-        if (!act) act = String(m.activision_id || "").trim().toLowerCase();
+        if (!tag) tag = clean(m.gamertag || m.username || m.name || m.display_name || m.full_name || "");
+        if (!disc) disc = clean(m.discord || m.discord_name || m.discord_username || "");
+        if (!act) act = clean(m.activision_id || "");
+      }
+      if (!tag && userIdent.email) {
+        tag = clean(userIdent.email.split("@")[0]);
       }
     }
 
     return allList.filter(n => {
-      const nTag = String(n.target_gamertag || "").trim().toLowerCase();
+      const nTag = clean(n.target_gamertag);
       const nUid = String(n.target_user_id || "").trim();
-      const nDisc = String(n.target_discord || "").trim().toLowerCase();
-      const nAct = String(n.target_activision || "").trim().toLowerCase();
+      const nDisc = clean(n.target_discord);
+      const nAct = clean(n.target_activision);
 
-      if (tag && nTag && (tag === nTag || tag.includes(nTag) || nTag.includes(tag))) return true;
+      // Match by gamertag (exact or normalized substring)
+      if (tag && nTag) {
+        if (tag === nTag) return true;
+        // Check if alphanumeric matches (handling symbols/clan tags)
+        const alphaTag = tag.replace(/[^a-z0-9]/g, "");
+        const alphaNTag = nTag.replace(/[^a-z0-9]/g, "");
+        if (alphaTag && alphaNTag && (alphaTag === alphaNTag || alphaTag.includes(alphaNTag) || alphaNTag.includes(alphaTag))) return true;
+      }
+
+      // Match by user ID
       if (uid && nUid && uid === nUid) return true;
-      if (disc && nDisc && (disc === nDisc || disc.includes(nDisc) || nDisc.includes(disc))) return true;
+
+      // Match by Discord handle
+      if (disc && nDisc) {
+        if (disc === nDisc || disc.includes(nDisc) || nDisc.includes(disc)) return true;
+      }
+
+      // Match by Activision ID
       if (act && nAct && act === nAct) return true;
+
+      // Also check notification metadata invited_gamertag if team_invite
+      if (tag && n.metadata && n.metadata.invited_gamertag) {
+        const mInvTag = clean(n.metadata.invited_gamertag);
+        if (tag === mInvTag) return true;
+        const alphaTag = tag.replace(/[^a-z0-9]/g, "");
+        const alphaMInvTag = mInvTag.replace(/[^a-z0-9]/g, "");
+        if (alphaTag && alphaMInvTag && (alphaTag === alphaMInvTag || alphaTag.includes(alphaMInvTag) || alphaMInvTag.includes(alphaTag))) return true;
+      }
+
       return false;
     });
   }
@@ -338,12 +403,12 @@
         <span id="fl-notif-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#ff1e44; color:#ffffff; font-size:10px; font-weight:900; min-width:16px; height:16px; border-radius:8px; line-height:16px; text-align:center; padding:0 3px; border:2px solid #11140e; box-sizing:content-box;">0</span>
       </button>
 
-      <div id="fl-notif-dropdown-menu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; width:350px; background:#12150f; border:1px solid #2a331c; border-radius:4px; box-shadow:0 14px 40px rgba(0,0,0,0.85); z-index:999999; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div id="fl-notif-dropdown-menu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; width:min(350px, calc(100vw - 24px)); background:#12150f; border:1px solid #2a331c; border-radius:4px; box-shadow:0 14px 40px rgba(0,0,0,0.85); z-index:9999999; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #242c16; background:#161a12;">
           <strong style="font-size:12px; color:#d5f45b; text-transform:uppercase; letter-spacing:0.8px;">Directives &amp; Notifications</strong>
           <button type="button" id="fl-btn-mark-all-read" style="background:transparent; border:none; color:#94a3b8; font-size:11px; cursor:pointer; text-decoration:underline;">Mark all read</button>
         </div>
-        <div id="fl-notif-list-body" style="max-height:340px; overflow-y:auto; padding:8px 0;">
+        <div id="fl-notif-list-body" style="max-height:360px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:8px 0;">
           <div style="text-align:center; padding:24px 14px; color:#6b7280; font-size:12px;">
             No new notifications.
           </div>
@@ -364,7 +429,19 @@
     if (bellBtn && dropdown) {
       bellBtn.onclick = (e) => {
         e.stopPropagation();
-        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        const willShow = dropdown.style.display !== "block";
+        dropdown.style.display = willShow ? "block" : "none";
+        if (willShow) {
+          // Adjust position if overflowing screen left on narrow mobile screens
+          const rect = bellContainer.getBoundingClientRect();
+          if (rect.right < 340) {
+            dropdown.style.right = "auto";
+            dropdown.style.left = "0";
+          } else {
+            dropdown.style.right = "0";
+            dropdown.style.left = "auto";
+          }
+        }
         refreshNotificationsUI();
       };
 
@@ -408,6 +485,38 @@
     } else {
       userNotifs = filterUserNotifications(getNotificationsStorage(), user);
     }
+
+    // Also pull active tournament team invites from registry to guarantee tournament invites are NEVER missed
+    try {
+      if (window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === "function") {
+        const directInvites = await window.LeagueDB.getTournamentTeamInvites(user);
+        if (Array.isArray(directInvites) && directInvites.length > 0) {
+          directInvites.forEach(inv => {
+            const alreadyHas = userNotifs.some(n => n.type === 'team_invite' && (n.metadata?.invite_id === inv.id || n.id === inv.id));
+            if (!alreadyHas) {
+              userNotifs.unshift({
+                id: 'synth_' + inv.id,
+                title: 'Tournament Team Invite',
+                message: `${inv.captain_gamertag || 'Team Captain'} has invited you to join team "${inv.team_name || 'Tournament Squad'}" for tournament "${inv.tournament_title || 'Tournament'}". Accept to join the squad roster.`,
+                type: 'team_invite',
+                created_at: inv.created_at || new Date().toISOString(),
+                read: inv.status !== 'pending',
+                metadata: {
+                  invite_id: inv.id,
+                  registration_id: inv.registration_id,
+                  tournament_id: inv.tournament_id,
+                  tournament_title: inv.tournament_title,
+                  team_name: inv.team_name,
+                  captain_gamertag: inv.captain_gamertag,
+                  invited_gamertag: inv.invited_gamertag,
+                  status: inv.status || 'pending'
+                }
+              });
+            }
+          });
+        }
+      }
+    } catch (_) {}
 
     const unreadCount = userNotifs.filter(n => !n.read).length;
     const badge = document.getElementById("fl-notif-badge");
