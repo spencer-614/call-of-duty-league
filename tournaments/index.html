@@ -1395,16 +1395,49 @@
               `;
             } else {
               squadsListEl.innerHTML = squads.map((sq, idx) => {
-                const rosterArr = Array.isArray(sq.roster) ? sq.roster : (sq.roster_text ? sq.roster_text.split(/,\s*/) : []);
+                // Compile full roster list including pending invites
+                let members = [];
+                if (Array.isArray(sq.roster_status) && sq.roster_status.length > 0) {
+                  members = sq.roster_status.map(st => {
+                    const name = typeof st === 'object' ? (st.gamertag || st.name) : st;
+                    const isPending = st && st.status === 'pending';
+                    return { name, isPending };
+                  });
+                } else {
+                  const confirmed = Array.isArray(sq.roster) ? sq.roster : (sq.roster_text ? sq.roster_text.split(/,\s*/) : []);
+                  const pending = Array.isArray(sq.pending_roster) ? sq.pending_roster : [];
+                  const seen = new Set();
+                  confirmed.forEach(p => {
+                    const name = typeof p === 'object' ? (p.gamertag || p.name) : p;
+                    if (name && !seen.has(name.toLowerCase())) {
+                      seen.add(name.toLowerCase());
+                      members.push({ name, isPending: false });
+                    }
+                  });
+                  pending.forEach(p => {
+                    const name = typeof p === 'object' ? (p.gamertag || p.name) : p;
+                    if (name && !seen.has(name.toLowerCase())) {
+                      seen.add(name.toLowerCase());
+                      members.push({ name, isPending: true });
+                    }
+                  });
+                }
+
                 return `
                   <div style="background:#13160f; border:1px solid #232918; border-left:3px solid #fbbf24; padding:8px 12px; border-radius:2px; font-size:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
                       <strong style="color:#ffffff;">#${idx + 1} ${escapeHtml(sq.team_name || 'Squad')}</strong>
                       <span style="color:#fbbf24; font-size:11px;">Captain: ${escapeHtml(sq.captain_gamertag || 'Captain')}</span>
                     </div>
-                    ${rosterArr.length ? `
-                      <div style="color:#9ca3af; font-size:11px;">
-                        Roster: ${rosterArr.map(p => escapeHtml(typeof p === 'object' ? (p.gamertag || p.name) : p)).join(' • ')}
+                    ${members.length ? `
+                      <div style="color:#9ca3af; font-size:11px; line-height:1.5;">
+                        Roster: ${members.map(m => {
+                          const escapedName = escapeHtml(m.name || '');
+                          if (m.isPending) {
+                            return `<span style="color:#d1d5db;">${escapedName}</span> <span style="display:inline-block; font-size:9.5px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); padding:1px 4px; border-radius:2px; vertical-align:middle;">Pending</span>`;
+                          }
+                          return `<span style="color:#f3f4f6;">${escapedName}</span>`;
+                        }).join(' • ')}
                       </div>
                     ` : ''}
                   </div>
