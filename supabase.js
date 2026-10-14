@@ -3069,6 +3069,339 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
+  // ==============================================================================
+  // ADMIN TOURNAMENT ROSTER & SQUAD MANAGEMENT
+  // ==============================================================================
+  async adminAddPlayerToTournamentSquad(registrationId, playerInfo, callerUser = null) {
+    try {
+      if (!registrationId) return { success: false, error: "Registration ID is required." };
+      const gamertag = String(typeof playerInfo === "object" ? (playerInfo.gamertag || playerInfo.name || "") : playerInfo).trim();
+      if (!gamertag) return { success: false, error: "Player gamertag is required." };
+
+      const clean = s => String(s || "").trim().toLowerCase();
+      const allRegs = await this.getTournamentRegistrations(null);
+      const reg = allRegs.find(r => String(r.id) === String(registrationId));
+      if (!reg) return { success: false, error: "Tournament squad registration not found." };
+
+      // Check if player is already in roster or captain
+      if (clean(reg.captain_gamertag) === clean(gamertag)) {
+        return { success: false, error: `"${gamertag}" is already the Captain of this squad.` };
+      }
+
+      if (!Array.isArray(reg.roster)) {
+        reg.roster = reg.roster_text ? reg.roster_text.split(/,\s*/) : [];
+      }
+      const alreadyInConfirmed = reg.roster.some(m => clean(typeof m === "object" ? (m.gamertag || m.name) : m) === clean(gamertag));
+      if (alreadyInConfirmed) {
+        return { success: false, error: `Player "${gamertag}" is already confirmed on this squad's roster.` };
+      }
+
+      // Check duplicate across other squads in the same tournament
+      const otherSquadsInTourney = allRegs.filter(r => String(r.tournament_id) === String(reg.tournament_id) && String(r.id) !== String(reg.id));
+      for (const other of otherSquadsInTourney) {
+        if (clean(other.captain_gamertag) === clean(gamertag)) {
+          return { success: false, error: `Player "${gamertag}" is already the Captain of squad "${other.team_name}" in this tournament.` };
+        }
+        let oRoster = Array.isArray(other.roster) ? other.roster : (other.roster_text ? other.roster_text.split(/,\s*/) : []);
+        if (oRoster.some(m => clean(typeof m === "object" ? (m.gamertag || m.name) : m) === clean(gamertag))) {
+          return { success: false, error: `Player "${gamertag}" is already on the roster of squad "${other.team_name}" in this tournament.` };
+        }
+      }
+
+      // Add to confirmed roster
+      reg.roster.push(gamertag);
+      reg.roster_text = reg.roster.join(", ");
+
+      // Update pending_roster and roster_status
+      if (Array.isArray(reg.pending_roster)) {
+        reg.pending_roster = reg.pending_roster.filter(p => clean(p) !== clean(gamertag));
+      }
+      if (!Array.isArray(reg.roster_status)) {
+        reg.roster_status = [];
+      }
+      const existingStat = reg.roster_status.find(st => clean(st.gamertag) === clean(gamertag));
+      if (existingStat) {
+        existingStat.status = "accepted";
+        existingStat.accepted_at = new Date().toISOString();
+        existingStat.added_by_admin = true;
+      } else {
+        reg.roster_status.push({
+          gamertag,
+          role: "Member",
+          status: "accepted",
+          accepted_at: new Date().toISOString(),
+          added_by_admin: true
+        });
+      }
+
+      // Sync to database and localStorage
+      if (dbClient) {
+        try {
+          await dbClient.from("league_settings").upsert({
+            id: "tournament_registrations_registry",
+            status_state: "active",
+            status_text: JSON.stringify(allRegs),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        } catch (_) {}
+        try {
+          await dbClient.from("tournament_registrations").update({
+            roster: reg.roster,
+            roster_text: reg.roster_text
+          }).eq("id", reg.id);
+        } catch (_) {}
+      }
+
+      try {
+        localStorage.setItem("frontline_tournament_registrations", JSON.stringify(allRegs));
+      } catch (_) {}
+
+      // Clean up any pending invites in tournament_team_invites_registry
+      try {
+        const allInvites = await this.getTournamentTeamInvites(null);
+        let updatedInvites = false;
+        allInvites.forEach(inv => {
+          if (String(inv.registration_id) === String(reg.id) && clean(inv.invited_gamertag) === clean(gamertag)) {
+            inv.status = "accepted";
+            inv.responded_at = new Date().toISOString();
+            updatedInvites = true;
+          }
+        });
+        if (updatedInvites) {
+          await this.saveTournamentTeamInvites(allInvites);
+        }
+      } catch (_) {}
+
+      // Sync player into tournament_players table
+      try {
+        if (typeof this.syncTournamentPlayer === "function") {
+          this.syncTournamentPlayer({
+            gamertag,
+            discordName: (typeof playerInfo === "object" ? (playerInfo.discord || playerInfo.discordName) : "") || gamertag,
+            activisionId: (typeof playerInfo === "object" ? playerInfo.activisionId : "") || "",
+            teamName: reg.team_name
+          }).catch(() => {});
+        }
+      } catch (_) {}
+
+      // Dispatch notifications to the player and the captain
+      try {
+        await this.sendUserNotification({
+          target_gamertag: gamertag,
+          title: "Added to Tournament Squad",
+          message: `An administrator has directly placed you on squad "${reg.team_name}" for tournament "${reg.tournament_title || 'Frontline Tournament'}".`,
+          type: "admin_team_assignment",
+          metadata: {
+            registration_id: reg.id,
+            tournament_id: String(reg.tournament_id),
+            tournament_title: reg.tournament_title,
+            team_name: reg.team_name,
+            captain_gamertag: reg.captain_gamertag
+          }
+        });
+        await this.sendUserNotification({
+          target_gamertag: reg.captain_gamertag,
+          title: "Player Added to Your Squad",
+          message: `Administrator added ${gamertag} directly to your squad "${reg.team_name}" for tournament "${reg.tournament_title || 'Frontline Tournament'}".`,
+          type: "admin_team_assignment",
+          metadata: {
+            registration_id: reg.id,
+            tournament_id: String(reg.tournament_id),
+            tournament_title: reg.tournament_title,
+            team_name: reg.team_name,
+            player_gamertag: gamertag
+          }
+        });
+      } catch (_) {}
+
+      window.dispatchEvent(new CustomEvent("frontline_tournament_registrations_updated", { detail: { registration: reg } }));
+      window.dispatchEvent(new CustomEvent("frontline_notifications_updated", {}));
+
+      return { success: true, registration: reg, player: gamertag };
+    } catch (err) {
+      console.error("adminAddPlayerToTournamentSquad error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
+  async adminRegisterTournamentSquad(tournamentId, squadData) {
+    try {
+      if (!tournamentId) return { success: false, error: "Tournament ID required." };
+      if (!squadData || !squadData.team_name) {
+        return { success: false, error: "Squad / Team Name is required." };
+      }
+      if (!squadData.captain_gamertag) {
+        return { success: false, error: "Captain Gamertag is required." };
+      }
+
+      const list = await this.getTournaments();
+      const item = list.find(t => String(t.id) === String(tournamentId));
+      if (!item) return { success: false, error: "Tournament not found." };
+
+      const allExistingRegs = await this.getTournamentRegistrations(null);
+      const existingTourneyRegs = allExistingRegs.filter(r => String(r.tournament_id) === String(tournamentId));
+
+      const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+      const teamNameNorm = norm(squadData.team_name);
+      const captainTagNorm = norm(squadData.captain_gamertag);
+      const captainDiscordNorm = norm(squadData.captain_discord);
+      const captainActIdNorm = norm(squadData.captain_activision_id);
+
+      // Check duplicate squad name
+      if (existingTourneyRegs.some(r => norm(r.team_name) === teamNameNorm)) {
+        return { success: false, error: `Squad "${squadData.team_name}" is already registered for this tournament.` };
+      }
+
+      // Check captain conflicts
+      for (const reg of existingTourneyRegs) {
+        if (norm(reg.captain_gamertag) === captainTagNorm) {
+          return { success: false, error: `Captain "${squadData.captain_gamertag}" is already captain of squad "${reg.team_name}".` };
+        }
+        let rList = Array.isArray(reg.roster) ? reg.roster : (reg.roster_text ? reg.roster_text.split(/,\s*/) : []);
+        if (rList.some(m => norm(typeof m === "object" ? (m.gamertag || m.name) : m) === captainTagNorm)) {
+          return { success: false, error: `Captain "${squadData.captain_gamertag}" is already on roster of squad "${reg.team_name}".` };
+        }
+      }
+
+      // Parse additional teammates
+      let rawRoster = squadData.roster;
+      if (typeof rawRoster === "string") {
+        rawRoster = rawRoster.split(/,\s*/);
+      } else if (!Array.isArray(rawRoster)) {
+        rawRoster = [rawRoster].filter(Boolean);
+      }
+      const teammates = (rawRoster || [])
+        .map(p => typeof p === "object" ? (p.gamertag || p.name || "") : p)
+        .map(s => String(s || "").trim())
+        .filter(s => s && norm(s) !== captainTagNorm);
+
+      // Full initial confirmed roster (admin registers squad with full confirmed roster)
+      const confirmedRoster = [squadData.captain_gamertag, ...teammates];
+      const rosterStatusList = confirmedRoster.map(tag => ({
+        gamertag: tag,
+        role: norm(tag) === captainTagNorm ? "Captain" : "Member",
+        status: "accepted",
+        accepted_at: new Date().toISOString(),
+        registered_by_admin: true
+      }));
+
+      // Try get current admin user ID if available
+      let adminUserId = null;
+      if (dbClient) {
+        try {
+          const { data: uData } = await dbClient.auth.getUser();
+          if (uData?.user?.id) adminUserId = uData.user.id;
+        } catch (_) {}
+      }
+
+      const regId = "reg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+      const regRecord = {
+        id: regId,
+        registered_by: adminUserId || "admin_direct_registration",
+        tournament_id: String(tournamentId),
+        tournament_title: item.title || "Frontline Tournament",
+        team_name: String(squadData.team_name).trim(),
+        captain_gamertag: String(squadData.captain_gamertag).trim(),
+        captain_discord: String(squadData.captain_discord || "").trim(),
+        captain_activision_id: String(squadData.captain_activision_id || "").trim(),
+        roster: confirmedRoster,
+        roster_text: confirmedRoster.join(", "),
+        pending_roster: [],
+        roster_status: rosterStatusList,
+        status: "accepted",
+        auto_accepted: true,
+        registered_by_admin: true,
+        accepted_at: new Date().toISOString(),
+        registered_at: new Date().toISOString()
+      };
+
+      if (dbClient) {
+        try {
+          await dbClient.from("tournament_registrations").insert([{
+            id: regRecord.id,
+            tournament_id: regRecord.tournament_id,
+            tournament_title: regRecord.tournament_title,
+            team_name: regRecord.team_name,
+            captain_gamertag: regRecord.captain_gamertag,
+            captain_discord: regRecord.captain_discord,
+            captain_activision_id: regRecord.captain_activision_id,
+            roster: regRecord.roster,
+            roster_text: regRecord.roster_text,
+            status: regRecord.status,
+            registered_at: regRecord.registered_at
+          }]);
+        } catch (dbErr) {
+          console.warn("Direct tournament_registrations table insert notice:", dbErr);
+        }
+      }
+
+      const updatedAllRegs = allExistingRegs.filter(r => r.id !== regId);
+      updatedAllRegs.unshift(regRecord);
+
+      if (dbClient) {
+        try {
+          await dbClient.from("league_settings").upsert({
+            id: "tournament_registrations_registry",
+            status_state: "active",
+            status_text: JSON.stringify(updatedAllRegs),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        } catch (_) {}
+      }
+
+      try {
+        localStorage.setItem("frontline_tournament_registrations", JSON.stringify(updatedAllRegs));
+      } catch (_) {}
+
+      const newCount = updatedAllRegs.filter(r => String(r.tournament_id) === String(tournamentId)).length;
+      item.registered_teams = newCount;
+      item.teams_registered_count = newCount;
+      await this.saveTournament(item);
+
+      // Auto-record captain into tournament_players
+      try {
+        if (typeof this.syncTournamentPlayer === "function" && squadData.captain_gamertag) {
+          this.syncTournamentPlayer({
+            gamertag: squadData.captain_gamertag,
+            discordName: squadData.captain_discord || squadData.captain_gamertag,
+            activisionId: squadData.captain_activision_id || "",
+            teamName: squadData.team_name
+          }).catch(() => {});
+        }
+      } catch (_) {}
+
+      // Send registration notification to captain
+      try {
+        await this.sendUserNotification({
+          target_gamertag: squadData.captain_gamertag,
+          target_discord: squadData.captain_discord || "",
+          target_activision: squadData.captain_activision_id || "",
+          title: "Squad Registered by Admin",
+          message: `An administrator has registered your squad "${squadData.team_name}" for ${item.title || 'Frontline Tournament'}. You and your roster are confirmed.`,
+          type: "tournament_registration_accepted",
+          metadata: {
+            registration_id: regId,
+            tournament_id: String(tournamentId),
+            tournament_title: item.title,
+            team_name: squadData.team_name,
+            captain_gamertag: squadData.captain_gamertag,
+            registered_by_admin: true
+          }
+        });
+      } catch (_) {}
+
+      window.dispatchEvent(new CustomEvent("frontline_tournament_registered", {
+        detail: { tournamentId, registration: regRecord, totalEnlisted: newCount }
+      }));
+      window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: item }));
+
+      return { success: true, tournament: item, registration: regRecord, totalEnlisted: newCount };
+    } catch (err) {
+      console.error("adminRegisterTournamentSquad error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
   // ==========================================
   // LEAGUE ANNOUNCEMENTS & INTEL BROADCAST
   // ==========================================
