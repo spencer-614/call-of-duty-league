@@ -3797,6 +3797,340 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
+  // ==========================================
+  // ARENA SEASON STATUS & LIFECYCLE (COMMISSIONER)
+  // ==========================================
+  DEFAULT_ARENA_SEASON_SETTINGS: {
+    season_number: 1,
+    status_state: "active",
+    status_text: "ARENA SEASON 1 ACTIVE"
+  },
+
+  async getArenaSeasonSettings() {
+    let cached = null;
+    try {
+      const saved = localStorage.getItem("frontline_arena_season_settings");
+      if (saved) cached = JSON.parse(saved);
+    } catch (e) {
+      console.warn("Error reading arena season settings from localStorage:", e);
+    }
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", "arena_season")
+          .limit(1);
+
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!error && row) {
+          const settings = {
+            season_number: parseInt(row.season_number, 10) || 1,
+            status_state: row.status_state || "active",
+            status_text: row.status_text || (row.status_state === "coming_soon" ? `ARENA SEASON ${row.season_number || 1} COMING SOON` : `ARENA SEASON ${row.season_number || 1} ACTIVE`)
+          };
+          try {
+            localStorage.setItem("frontline_arena_season_settings", JSON.stringify(settings));
+          } catch (e) {}
+          return settings;
+        }
+      } catch (err) {
+        console.warn("Supabase getArenaSeasonSettings error, using fallback:", err);
+      }
+    }
+
+    if (cached) return cached;
+    return { ...this.DEFAULT_ARENA_SEASON_SETTINGS };
+  },
+
+  async updateArenaSeasonSettings(newSettings) {
+    const seasonNumber = parseInt(newSettings.season_number, 10) || 1;
+    const statusState = newSettings.status_state === "coming_soon" ? "coming_soon" : "active";
+    const statusText = newSettings.status_text || (statusState === "coming_soon"
+      ? `ARENA SEASON ${seasonNumber} COMING SOON`
+      : `ARENA SEASON ${seasonNumber} ACTIVE`);
+
+    const record = {
+      id: "arena_season",
+      season_number: seasonNumber,
+      status_state: statusState,
+      status_text: statusText,
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      localStorage.setItem("frontline_arena_season_settings", JSON.stringify(record));
+    } catch (e) {}
+
+    this.applyArenaSeasonBadge(record);
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .upsert(record)
+          .select();
+
+        if (error) {
+          console.error("Supabase upsert arena_season error:", error);
+          return { success: false, data: record, error: error.message || String(error) };
+        }
+        return { success: true, data: data?.[0] || record };
+      } catch (err) {
+        console.error("Supabase updateArenaSeasonSettings network error:", err);
+        return { success: false, data: record, error: err.message || String(err) };
+      }
+    }
+
+    return { success: true, data: record, mock: true };
+  },
+
+  applyArenaSeasonBadge(settings) {
+    if (!settings) return;
+    const seasonNum = settings.season_number || 1;
+    const isComingSoon = settings.status_state === "coming_soon";
+    const labelText = settings.status_text || (isComingSoon ? `ARENA SEASON ${seasonNum} COMING SOON` : `ARENA SEASON ${seasonNum} ACTIVE`);
+
+    // 1. Update ladders hero tag
+    const heroLabel = document.getElementById("hero-season-label");
+    if (heroLabel) {
+      heroLabel.textContent = `SEASON: SEASON ${seasonNum} (2026)`;
+    }
+
+    // 2. Update arena brand status beacon
+    const arenaBeacons = document.querySelectorAll(".fl-live-beacon");
+    arenaBeacons.forEach(b => {
+      const dot = b.querySelector(".fl-live-dot");
+      const textSpan = b.querySelector("span:not(.fl-live-dot)");
+      if (textSpan) {
+        textSpan.textContent = labelText;
+      }
+      if (dot) {
+        dot.style.background = isComingSoon ? "#f59e0b" : "#ff1e44";
+        dot.style.boxShadow = isComingSoon ? "0 0 10px #f59e0b" : "0 0 10px #ff1e44";
+      }
+    });
+
+    // 3. Broadcast channel
+    try {
+      if (typeof window !== "undefined" && window.BroadcastChannel) {
+        const bc = new BroadcastChannel("frontline_arena_season_channel");
+        bc.postMessage({ type: "ARENA_SEASON_CHANGED", data: settings, timestamp: Date.now() });
+        bc.close();
+      }
+    } catch (_) {}
+  },
+
+  // ==========================================
+  // ARENA ANNOUNCEMENTS & INTEL BROADCAST
+  // ==========================================
+  _getStoredArenaAnnouncements() {
+    try {
+      const stored = localStorage.getItem("frontline_arena_announcements");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  _saveStoredArenaAnnouncements(list) {
+    try {
+      if (Array.isArray(list)) {
+        localStorage.setItem("frontline_arena_announcements", JSON.stringify(list));
+      }
+    } catch (e) {}
+  },
+
+  _notifyArenaAnnouncementChange(ann) {
+    try {
+      if (typeof window !== "undefined") {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel("frontline_arena_announcements_channel");
+          bc.postMessage({ type: "ARENA_ANNOUNCEMENT_CHANGED", data: ann, timestamp: Date.now() });
+          bc.close();
+        }
+        localStorage.setItem("frontline_arena_announcements_last_update", Date.now().toString());
+        window.dispatchEvent(new CustomEvent("frontline_arena_announcement_changed", { detail: ann }));
+      }
+    } catch (_) {}
+  },
+
+  async getArenaAnnouncements(includeInactive = false, includeScheduled = false) {
+    let list = null;
+    if (dbClient) {
+      try {
+        let query = dbClient
+          .from("arena_announcements")
+          .select("*")
+          .order("pinned", { ascending: false })
+          .order("created_at", { ascending: false });
+
+        if (!includeInactive) {
+          query = query.eq("is_active", true);
+        }
+
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          list = data;
+          this._saveStoredArenaAnnouncements(data);
+        } else if (error) {
+          // Table might not exist yet, fallback to league_announcements where circuit/target is arena or local storage
+          console.warn("Supabase arena_announcements table note, falling back:", error.message || error);
+        }
+      } catch (err) {
+        console.warn("Supabase getArenaAnnouncements query error:", err);
+      }
+    }
+
+    if (!list || list.length === 0) {
+      list = this._getStoredArenaAnnouncements();
+    }
+
+    // Default starter mock announcement if completely empty
+    if (!list || list.length === 0) {
+      list = [
+        {
+          id: "arena_ann_1",
+          title: "⚔️ Competitive Arena Season 1 Ladders Open for Challenges",
+          message: "Welcome competitors! The 4v4 CDL Variant, 2v2 SnD, and 1v1 Radar ladders are officially open. Form your squad, check out the Match Finder to accept challenges, and strike maps in CDL veto rooms.",
+          tag: "Arena Launch",
+          tag_color: "red",
+          image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80",
+          image_fit: "contain",
+          link_url: "/match-finder/",
+          link_text: "Open Match Finder ↗",
+          is_active: true,
+          pinned: true,
+          created_at: new Date().toISOString()
+        }
+      ];
+      this._saveStoredArenaAnnouncements(list);
+    }
+
+    if (!includeInactive) {
+      list = list.filter(a => a.is_active !== false);
+    }
+
+    if (!includeScheduled) {
+      const now = new Date();
+      list = list.filter(a => {
+        if (!a.scheduled_for) return true;
+        try {
+          return new Date(a.scheduled_for) <= now;
+        } catch (_) {
+          return true;
+        }
+      });
+    }
+
+    return list.sort((a, b) => {
+      if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+  },
+
+  async createArenaAnnouncement(announcementData) {
+    const record = {
+      title: announcementData.title,
+      message: announcementData.message,
+      tag: announcementData.tag || "Arena Bulletin",
+      tag_color: announcementData.tag_color || "red",
+      image_url: announcementData.image_url || null,
+      image_fit: announcementData.image_fit || "contain",
+      link_url: announcementData.link_url || null,
+      link_text: announcementData.link_text || null,
+      scheduled_for: announcementData.scheduled_for || null,
+      is_active: announcementData.is_active !== undefined ? !!announcementData.is_active : true,
+      pinned: announcementData.pinned !== undefined ? !!announcementData.pinned : false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (dbClient) {
+      try {
+        let insertRecord = { ...record };
+        let { data, error } = await dbClient
+          .from("arena_announcements")
+          .insert([insertRecord])
+          .select();
+
+        if (!error && data && data.length > 0) {
+          const stored = this._getStoredArenaAnnouncements() || [];
+          stored.unshift(data[0]);
+          this._saveStoredArenaAnnouncements(stored);
+          this._notifyArenaAnnouncementChange(data[0]);
+          return { success: true, data: data[0] };
+        }
+      } catch (err) {
+        console.warn("Supabase createArenaAnnouncement error, fallback to local storage:", err);
+      }
+    }
+
+    // Local Storage fallback
+    record.id = "arena_ann_" + Date.now();
+    const stored = this._getStoredArenaAnnouncements() || [];
+    stored.unshift(record);
+    this._saveStoredArenaAnnouncements(stored);
+    this._notifyArenaAnnouncementChange(record);
+    return { success: true, data: record, mock: true };
+  },
+
+  async updateArenaAnnouncement(id, updates) {
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
+    if (dbClient) {
+      try {
+        let { data, error } = await dbClient
+          .from("arena_announcements")
+          .update(cleanUpdates)
+          .eq("id", id)
+          .select();
+
+        if (!error && data && data.length > 0) {
+          const stored = this._getStoredArenaAnnouncements() || [];
+          const idx = stored.findIndex(a => String(a.id) === String(id));
+          if (idx !== -1) stored[idx] = { ...stored[idx], ...cleanUpdates };
+          this._saveStoredArenaAnnouncements(stored);
+          this._notifyArenaAnnouncementChange(data[0]);
+          return { success: true, data: data[0] };
+        }
+      } catch (err) {
+        console.warn("Supabase updateArenaAnnouncement error, updating local storage:", err);
+      }
+    }
+
+    const stored = this._getStoredArenaAnnouncements() || [];
+    const idx = stored.findIndex(a => String(a.id) === String(id));
+    if (idx !== -1) {
+      stored[idx] = { ...stored[idx], ...cleanUpdates };
+      this._saveStoredArenaAnnouncements(stored);
+      this._notifyArenaAnnouncementChange(stored[idx]);
+      return { success: true, data: stored[idx] };
+    }
+    return { success: false, error: "Announcement not found" };
+  },
+
+  async deleteArenaAnnouncement(id) {
+    if (dbClient) {
+      try {
+        await dbClient
+          .from("arena_announcements")
+          .delete()
+          .eq("id", id);
+      } catch (err) {
+        console.warn("Supabase deleteArenaAnnouncement error:", err);
+      }
+    }
+
+    const stored = this._getStoredArenaAnnouncements() || [];
+    const filtered = stored.filter(a => String(a.id) !== String(id));
+    this._saveStoredArenaAnnouncements(filtered);
+    this._notifyArenaAnnouncementChange({ id, deleted: true });
+    return { success: true, id };
+  },
+
   // ==============================================================================
   // PLATFORM SWITCHER & COMMISSIONER VISIBILITY CONTROLS
   // ==============================================================================
@@ -8656,7 +8990,7 @@ isDiscordLinkedToEmail(target) {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command"]
     },
     referee: {
       key: "referee",

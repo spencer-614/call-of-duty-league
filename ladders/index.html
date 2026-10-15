@@ -272,6 +272,13 @@
       </section>
 
       <!-- =======================================================================
+           ARENA COMMISSIONER ANNOUNCEMENTS DISPATCH CONTAINER
+           ======================================================================= -->
+      <aside id="arena-announcements-container" style="margin-bottom:24px; display:none;" aria-label="Arena Commissioner Dispatches">
+        <!-- Rendered dynamically via renderArenaAnnouncements() -->
+      </aside>
+
+      <!-- =======================================================================
            4. TWO-COLUMN GRID: STANDINGS LEADERBOARD vs LADDER DETAILS & TICKER
            ======================================================================= -->
       <div class="fl-ladder-layout">
@@ -1865,15 +1872,133 @@
         if (m) m.classList.remove("active");
       }
 
+      // ==========================================
+      // ARENA COMMISSIONER ANNOUNCEMENTS & SEASON DISPATCH
+      // ==========================================
+      async function renderArenaAnnouncements() {
+        const container = document.getElementById("arena-announcements-container");
+        if (!container) return;
+        try {
+          if (!window.LeagueDB || typeof window.LeagueDB.getArenaAnnouncements !== "function") return;
+          const list = await window.LeagueDB.getArenaAnnouncements(false);
+          if (!list || list.length === 0) {
+            container.style.display = "none";
+            container.innerHTML = "";
+            return;
+          }
+
+          const colorMap = {
+            red: { dot: "#ff1e44", border: "#ff1e44", tagBg: "rgba(255,30,68,0.12)", text: "#ff1e44" },
+            lime: { dot: "var(--lime)", border: "var(--lime)", tagBg: "rgba(213,244,91,0.12)", text: "var(--lime)" },
+            amber: { dot: "#f59e0b", border: "#f59e0b", tagBg: "rgba(245,158,11,0.12)", text: "#f59e0b" },
+            cyan: { dot: "#38bdf8", border: "#38bdf8", tagBg: "rgba(56,189,248,0.12)", text: "#38bdf8" }
+          };
+
+          container.innerHTML = list.map(ann => {
+            const scheme = colorMap[ann.tag_color] || colorMap.red;
+            const dateStr = ann.created_at ? new Date(ann.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+            const linkHtml = ann.link_url ? `
+              <div style="margin-top:12px;">
+                <a href="${escapeHtml(ann.link_url)}" class="fl-join-btn" style="display:inline-flex; align-items:center; gap:8px; padding:7px 14px; font-size:11.5px; text-decoration:none; background:${scheme.border}; border-color:${scheme.border}; color:#fff; border-radius:3px; font-weight:800;">
+                  ${escapeHtml(ann.link_text || "Learn More ↗")}
+                </a>
+              </div>
+            ` : "";
+
+            const mediaHtml = ann.image_url ? `
+              <div style="margin-top:12px; max-height:260px; overflow:hidden; border-radius:3px; border:1px solid #1e293b; background:#070a0f;">
+                <img src="${escapeHtml(ann.image_url)}" alt="${escapeHtml(ann.title)}" style="width:100%; height:100%; object-fit:contain;" loading="lazy" />
+              </div>
+            ` : "";
+
+            return `
+              <div style="background:#0e131d; border:1px solid #1e283a; border-left:4px solid ${scheme.border}; border-radius:4px; padding:16px 20px; margin-bottom:12px; box-shadow:0 6px 20px rgba(0,0,0,0.35);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="width:7px; height:7px; background:${scheme.dot}; border-radius:50%; box-shadow:0 0 10px ${scheme.dot}; display:inline-block;"></span>
+                    <span style="font-size:10.5px; font-weight:800; color:${scheme.text}; background:${scheme.tagBg}; border:1px solid ${scheme.border}40; padding:2px 7px; border-radius:2px; text-transform:uppercase;">
+                      ${escapeHtml(ann.tag || "ARENA DISPATCH")}
+                    </span>
+                    ${ann.pinned ? `<span style="font-size:10.5px; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.35); padding:2px 7px; border-radius:2px; text-transform:uppercase;">PINNED</span>` : ""}
+                  </div>
+                  ${dateStr ? `<span style="font-size:11px; color:#64748b; font-weight:700;">TRANSMITTED ${escapeHtml(dateStr)}</span>` : ""}
+                </div>
+                <h3 style="margin:0 0 6px; font-size:17px; font-weight:800; color:#ffffff; font-family:var(--body); letter-spacing:0.3px;">
+                  ${escapeHtml(ann.title || "")}
+                </h3>
+                <p style="margin:0; font-size:13px; color:#cbd5e1; line-height:1.5;">
+                  ${escapeHtml(ann.message || "")}
+                </p>
+                ${mediaHtml}
+                ${linkHtml}
+              </div>
+            `;
+          }).join("");
+
+          container.style.display = "block";
+        } catch (err) {
+          console.error("Failed to render Arena announcements on ladders:", err);
+          container.style.display = "none";
+        }
+      }
+
+      async function initArenaSeasonStatus() {
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getArenaSeasonSettings === "function") {
+            const settings = await window.LeagueDB.getArenaSeasonSettings();
+            if (window.LeagueDB.applyArenaSeasonBadge) {
+              window.LeagueDB.applyArenaSeasonBadge(settings);
+            }
+          }
+        } catch (e) {}
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
       // INITIALIZATION
       window.addEventListener("DOMContentLoaded", () => {
         selectLadder(currentLadder);
+        renderArenaAnnouncements();
+        initArenaSeasonStatus();
 
         // Check if registration action requested in URL
         if (urlParams.get("action") === "register" || window.location.hash === "#register") {
           setTimeout(openCreateTeamModal, 300);
         }
       });
+
+      // Reactive watchers
+      if (typeof window !== "undefined") {
+        if (window.BroadcastChannel) {
+          try {
+            const annChannel = new BroadcastChannel("frontline_arena_announcements_channel");
+            annChannel.onmessage = () => { renderArenaAnnouncements(); };
+            const seasonChannel = new BroadcastChannel("frontline_arena_season_channel");
+            seasonChannel.onmessage = (e) => {
+              if (e.data && e.data.data && window.LeagueDB && window.LeagueDB.applyArenaSeasonBadge) {
+                window.LeagueDB.applyArenaSeasonBadge(e.data.data);
+              }
+            };
+          } catch (_) {}
+        }
+        window.addEventListener("storage", (e) => {
+          if (e.key === "frontline_arena_announcements" || e.key === "frontline_arena_announcements_last_update") {
+            renderArenaAnnouncements();
+          }
+          if (e.key === "frontline_arena_season_settings") {
+            initArenaSeasonStatus();
+          }
+        });
+        window.addEventListener("frontline_arena_announcement_changed", renderArenaAnnouncements);
+      }
 
       // Close modal on Escape
       document.addEventListener("keydown", (e) => {
