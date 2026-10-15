@@ -564,5 +564,28 @@ ALTER TABLE public.tournament_players ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all tournament_players" ON public.tournament_players;
 CREATE POLICY "Allow public all tournament_players" ON public.tournament_players FOR ALL USING (true) WITH CHECK (true);
 
+-- ------------------------------------------------------------------------------
+-- ROW LEVEL SECURITY (RLS) POLICIES FOR ARENA & LADDER TABLES
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.arena_free_agents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all arena_free_agents" ON public.arena_free_agents;
+CREATE POLICY "Allow public all arena_free_agents" ON public.arena_free_agents FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.ladder_teams ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all ladder_teams" ON public.ladder_teams;
+CREATE POLICY "Allow public all ladder_teams" ON public.ladder_teams FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.ladder_rosters ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all ladder_rosters" ON public.ladder_rosters;
+CREATE POLICY "Allow public all ladder_rosters" ON public.ladder_rosters FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.ladder_matches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all ladder_matches" ON public.ladder_matches;
+CREATE POLICY "Allow public all ladder_matches" ON public.ladder_matches FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.ladder_disputes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all ladder_disputes" ON public.ladder_disputes;
+CREATE POLICY "Allow public all ladder_disputes" ON public.ladder_disputes FOR ALL USING (true) WITH CHECK (true);
+
 
 

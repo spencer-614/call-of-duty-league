@@ -11049,7 +11049,61 @@ window.LadderDB = {
       }
     }
 
-    // 2. Fallback to LocalStorage if Supabase didn't yield results
+    // 2. Query Supabase 'tournament_players' table and merge active Discord accounts
+    if (dbClient) {
+      try {
+        const { data: tpData, error: tpError } = await dbClient
+          .from("tournament_players")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!tpError && Array.isArray(tpData)) {
+          tpData.forEach(row => {
+            if (!row || !row.gamertag) return;
+            if (row.gamertag.toLowerCase() === "operative") return;
+            if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
+              if (window.LeagueDB.shouldBlockAdminCombatant(row)) return;
+            }
+            const lowerGamer = row.gamertag.toLowerCase().trim();
+            const existingIdx = list.findIndex(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() === lowerGamer);
+            if (existingIdx === -1) {
+              list.push({
+                id: row.id || ("tp-" + Date.now()),
+                user_id: row.user_id ? String(row.user_id) : null,
+                gamertag: row.gamertag,
+                clan_tag: "LFT",
+                elo: 1200,
+                tier: this.getTier(1200),
+                kdr: 1.15,
+                ladder_pref: "4v4_variant",
+                role: row.role && row.role !== "Tournament Player" ? row.role : "Flex",
+                primary_role: row.role && row.role !== "Tournament Player" ? row.role : "Flex",
+                secondary_role: "Main AR",
+                platform: "Crossplay",
+                region: "NA East",
+                mic: true,
+                availability: "Active / Daily",
+                discord: row.discord_name || row.discord || `${lowerGamer}#0001`,
+                activision_id: row.activision_id || `${row.gamertag}#1234567`,
+                bio: "Competitive operator verified via Discord. Looking for squad.",
+                avatar_url: row.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                created_at: row.created_at || new Date().toISOString(),
+                isNewUser: true,
+                is_tournament_user: true
+              });
+            } else {
+              if (!list[existingIdx].avatar_url && row.avatar_url) list[existingIdx].avatar_url = row.avatar_url;
+              if (!list[existingIdx].discord && (row.discord_name || row.discord)) list[existingIdx].discord = row.discord_name || row.discord;
+              if (!list[existingIdx].activision_id && row.activision_id) list[existingIdx].activision_id = row.activision_id;
+            }
+          });
+        }
+      } catch (tpErr) {
+        console.warn("LadderDB tournament_players query notice:", tpErr);
+      }
+    }
+
+    // 3. Fallback to LocalStorage if Supabase didn't yield results
     if (!list || list.length === 0) {
       try {
         const stored = localStorage.getItem("frontline_arena_free_agents");
@@ -11063,25 +11117,62 @@ window.LadderDB = {
       } catch (e) {}
     }
 
-    // 3. Fallback to Mock Data if still empty
+    // 4. Fallback to Mock Data if still empty
     if (!list || list.length === 0) {
       list = (MOCK_LADDER_DATA.free_agents || []).slice();
     }
 
-    // Auto-discover and merge any registered website user accounts into Free Agents (unless unlinked admin)
+    // 5. Auto-discover and merge any registered website user accounts, tournament players cache, and auth session
     try {
       const registeredAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const tournamentPlayersLocal = JSON.parse(localStorage.getItem("frontline_tournament_players")) || [];
+      const leagueSignupsLocal = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
       const arenaUser = JSON.parse(localStorage.getItem("frontline_arena_user"));
+      const arenaAuthUser = JSON.parse(localStorage.getItem("frontline_arena_auth_user"));
       const leagueUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
 
       const candidateUsers = [...registeredAccounts];
+      tournamentPlayersLocal.forEach(tp => {
+        if (tp && tp.gamertag) {
+          candidateUsers.push({
+            id: tp.id || tp.user_id,
+            gamertag: tp.gamertag,
+            discord: tp.discord_name || tp.discord,
+            activision_id: tp.activision_id,
+            avatar_url: tp.avatar_url,
+            role: tp.role && tp.role !== "Tournament Player" ? tp.role : "Flex",
+            elo: 1200
+          });
+        }
+      });
+      leagueSignupsLocal.forEach(s => {
+        if (s && s.gamertag) {
+          candidateUsers.push({
+            id: s.id || s.user_id,
+            gamertag: s.gamertag,
+            discord: s.discord_username || s.discord_name || s.discord,
+            activision_id: s.activision_id,
+            avatar_url: s.avatar_url,
+            role: s.role || "Flex",
+            platform: s.platform,
+            region: s.region,
+            elo: 1200
+          });
+        }
+      });
       if (arenaUser) candidateUsers.push(arenaUser);
+      if (arenaAuthUser) candidateUsers.push(arenaAuthUser);
       if (leagueUser) {
         const meta = leagueUser.user_metadata || {};
+        const disc = (window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function") 
+          ? window.LeagueDB.getDiscordIdentity(leagueUser) 
+          : null;
         candidateUsers.push({
           id: leagueUser.id,
-          gamertag: meta.gamertag || meta.username || (leagueUser.email ? leagueUser.email.split("@")[0] : "Recruit"),
+          gamertag: meta.gamertag || meta.username || disc?.primaryName || disc?.handle || (leagueUser.email ? leagueUser.email.split("@")[0] : "Recruit"),
           activision_id: meta.activision_id,
+          discord: meta.discord_name || meta.discord_username || disc?.primaryName,
+          avatar_url: disc?.avatarUrl || meta.avatar_url,
           email: leagueUser.email,
           elo: 1200,
           created_at: leagueUser.created_at
@@ -11090,6 +11181,7 @@ window.LadderDB = {
 
       candidateUsers.forEach(u => {
         if (!u || !u.gamertag) return;
+        if (u.gamertag.toLowerCase() === "operative") return;
         // Skip unlinked admin accounts from Arena Free Agents pool
         if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
           if (window.LeagueDB.shouldBlockAdminCombatant(u)) {
@@ -11117,11 +11209,15 @@ window.LadderDB = {
             availability: "Active / LFT",
             discord: u.discord || `${lowerGamer}#0001`,
             activision_id: u.activision_id || `${u.gamertag}#1234567`,
-            bio: u.bio || `Newly enlisted operator (${u.gamertag}) registered on website. Looking for active CDL team.`,
+            bio: `Newly enlisted operator (${u.gamertag}) registered on website. Looking for active CDL team.`,
             avatar_url: u.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
             created_at: u.created_at || new Date().toISOString(),
             isNewUser: true
           });
+        } else {
+          if (!list[existingIdx].avatar_url && u.avatar_url) list[existingIdx].avatar_url = u.avatar_url;
+          if (!list[existingIdx].discord && u.discord) list[existingIdx].discord = u.discord;
+          if (!list[existingIdx].activision_id && u.activision_id) list[existingIdx].activision_id = u.activision_id;
         }
       });
     } catch (e) {
