@@ -375,11 +375,15 @@
       }
 
       function handleCoinFlip() {
+        if (vetoState.coinFlipped) return;
+        const btn = wrapper.querySelector('#btn-toss-coin');
+        if (btn) btn.disabled = true;
         const coinDisc = wrapper.querySelector('#veto-coin-disc');
         if (coinDisc) {
           coinDisc.style.transform = 'rotateY(1440deg)';
         }
         setTimeout(async () => {
+          if (vetoState.coinFlipped) return;
           const isHeads = Math.random() >= 0.5;
           vetoState.coinFlipped = true;
           vetoState.coinWinner = isHeads ? 'team_a' : 'team_b';
@@ -464,8 +468,15 @@
       const onVetoUpdated = (e) => {
         if (String(e.detail?.tournamentId) === String(tournament.id) && String(e.detail?.matchId) === String(match.id)) {
           if (e.detail.vetoData) {
-            vetoState = e.detail.vetoData;
-            renderVetoUI();
+            const incoming = e.detail.vetoData;
+            const hasChanged = incoming.coinFlipped !== vetoState.coinFlipped ||
+                               incoming.coinWinner !== vetoState.coinWinner ||
+                               incoming.vetoStep !== vetoState.vetoStep ||
+                               JSON.stringify(incoming.series) !== JSON.stringify(vetoState.series);
+            if (hasChanged) {
+              vetoState = incoming;
+              renderVetoUI();
+            }
           }
         }
       };
@@ -474,7 +485,7 @@
       // Initial Render
       renderVetoUI();
 
-      // Periodic poll while dialog is open
+      // Periodic poll while dialog is open (1.5s for fast live sync)
       const pollInterval = setInterval(async () => {
         if (!hostEl.isConnected) {
           clearInterval(pollInterval);
@@ -484,13 +495,19 @@
         if (window.LeagueDB && typeof window.LeagueDB.getTournamentMatchVeto === 'function') {
           try {
             const fresh = await window.LeagueDB.getTournamentMatchVeto(tournament.id, match.id);
-            if (fresh && JSON.stringify(fresh.series) !== JSON.stringify(vetoState.series)) {
-              vetoState = fresh;
-              renderVetoUI();
+            if (fresh) {
+              const hasChanged = fresh.coinFlipped !== vetoState.coinFlipped ||
+                                 fresh.coinWinner !== vetoState.coinWinner ||
+                                 fresh.vetoStep !== vetoState.vetoStep ||
+                                 JSON.stringify(fresh.series) !== JSON.stringify(vetoState.series);
+              if (hasChanged) {
+                vetoState = fresh;
+                renderVetoUI();
+              }
             }
           } catch (_) {}
         }
-      }, 3000);
+      }, 1500);
     }
   };
 })();

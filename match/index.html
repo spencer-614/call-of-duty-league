@@ -796,6 +796,7 @@
         if (isAuthorized) {
           lockScreen.style.display = "none";
           authRoom.style.display = "block";
+          renderCoinState(false);
           renderVetoCards();
           updateVetoTurnBanner();
           renderChat();
@@ -819,15 +820,67 @@
         evaluateAccessAndRender();
       }
 
-      // 3D Coin Flip Logic
-      function flipVetoCoin() {
+      // 3D Coin Flip Logic & Sync
+      function renderCoinState(animateIfChanged = false) {
         const coin = document.getElementById("veto-coin");
         const label = document.getElementById("coin-result-label");
         const btn = document.getElementById("btn-flip-coin");
+        const coinWrap = document.querySelector(".coin-wrapper");
+        if (!coin || !label) return;
+
+        if (coinFlipped) {
+          const isHeads = (coinWinner === "team_a");
+          const winningTeam = isHeads ? activeMatch.team_a : activeMatch.team_b;
+          const finalRotation = isHeads ? 0 : 180;
+          
+          if (animateIfChanged) {
+            coin.style.transform = `rotateY(${1800 + finalRotation}deg)`;
+          } else {
+            coin.style.transform = `rotateY(${finalRotation}deg)`;
+          }
+
+          label.innerHTML = `<span style="color:#22c55e;">${isHeads ? 'HEADS' : 'TAILS'}:</span> ${winningTeam ? winningTeam.name : 'Winner'} won toss!`;
+          if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+            btn.textContent = "🪙 Toss Completed";
+          }
+          if (coinWrap) {
+            coinWrap.style.cursor = "default";
+            coinWrap.onclick = null;
+          }
+        } else {
+          coin.style.transform = "rotateY(0deg)";
+          label.textContent = "Click coin to flip";
+          if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+            btn.textContent = "🪙 Flip Coin";
+          }
+          if (coinWrap) {
+            coinWrap.style.cursor = "pointer";
+            coinWrap.onclick = flipVetoCoin;
+          }
+        }
+      }
+
+      function flipVetoCoin() {
+        if (coinFlipped) return; // Prevent double flip
+
+        const coin = document.getElementById("veto-coin");
+        const label = document.getElementById("coin-result-label");
+        const btn = document.getElementById("btn-flip-coin");
+        const coinWrap = document.querySelector(".coin-wrapper");
         if (!coin) return;
 
-        if (btn) btn.disabled = true;
-        label.textContent = "Flipping coin...";
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = "0.5";
+        }
+        if (coinWrap) coinWrap.onclick = null;
+        if (label) label.textContent = "Flipping coin live...";
 
         const isHeads = Math.random() >= 0.5;
         const spins = 5;
@@ -835,16 +888,14 @@
 
         coin.style.transform = `rotateY(${finalRotation}deg)`;
 
-        setTimeout(() => {
+        setTimeout(async () => {
+          if (coinFlipped) return;
           coinFlipped = true;
           coinWinner = isHeads ? "team_a" : "team_b";
-          const winningTeam = coinWinner === "team_a" ? activeMatch.team_a : activeMatch.team_b;
-
-          label.innerHTML = `<span style="color:#22c55e;">${isHeads ? 'HEADS' : 'TAILS'}:</span> ${winningTeam.name} won toss!`;
-          if (btn) btn.disabled = false;
-
+          renderCoinState(false);
           updateVetoTurnBanner();
-          saveMatchVetoState();
+          renderVetoCards();
+          await saveMatchVetoState();
         }, 1100);
       }
 
@@ -1327,6 +1378,33 @@
 
       // Initialize on Load
       initMatchRoom();
+
+      // Periodic live sync for match room veto state & coin flip (1.5s interval)
+      let matchVetoPollInterval = setInterval(async () => {
+        if (!activeMatch || !activeMatch.id) return;
+        try {
+          const freshMatch = await window.LadderDB.getMatch(activeMatch.id);
+          if (freshMatch && freshMatch.veto_data) {
+            const v = freshMatch.veto_data;
+            const coinChanged = (v.coinFlipped !== coinFlipped) || (v.coinWinner !== coinWinner);
+            const stepChanged = (v.vetoStep !== vetoStep);
+            const seriesChanged = (v.series && JSON.stringify(v.series) !== JSON.stringify(vetoSeries));
+
+            if (coinChanged || stepChanged || seriesChanged) {
+              const previousCoinFlipped = coinFlipped;
+              coinFlipped = v.coinFlipped || false;
+              coinWinner = v.coinWinner || "team_a";
+              vetoStep = v.vetoStep || 0;
+              if (v.series) vetoSeries = v.series;
+              activeMatch.veto_data = v;
+
+              renderCoinState(!previousCoinFlipped && coinFlipped);
+              renderVetoCards();
+              updateVetoTurnBanner();
+            }
+          }
+        } catch (_) {}
+      }, 1500);
 
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
