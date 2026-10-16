@@ -5907,118 +5907,30 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   async getTournamentMatchVeto(tournamentId, matchId) {
-    if (!tournamentId || !matchId) return null;
-    const rowId = this._getMatchVetoRowId(tournamentId, matchId);
-
-    // 1. Try local storage cache
-    let localData = null;
-    try {
-      const stored = localStorage.getItem(`frontline_${rowId}`);
-      if (stored) localData = JSON.parse(stored);
-    } catch (_) {}
-
-    // 2. Fetch remote from league_settings row
-    let remoteData = null;
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      try {
-        const cleanBase = SUPABASE_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-        const res = await fetch(`${cleanBase}/rest/v1/league_settings?id=eq.${encodeURIComponent(rowId)}&select=status_text`, {
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`
-          }
-        });
-        if (res.ok) {
-          const rows = await res.json();
-          if (Array.isArray(rows) && rows.length > 0 && rows[0].status_text) {
-            remoteData = JSON.parse(rows[0].status_text);
-          }
-        }
-      } catch (e) {
-        console.warn('Veto remote fetch notice:', e.message || e);
-      }
-    }
-
-    if (!remoteData && dbClient) {
-      try {
-        const { data, error } = await dbClient
-          .from('league_settings')
-          .select('status_text')
-          .eq('id', rowId)
-          .maybeSingle();
-        if (!error && data && data.status_text) {
-          remoteData = JSON.parse(data.status_text);
-        }
-      } catch (_) {}
-    }
-
-    const finalData = remoteData || localData;
-    if (finalData) {
-      try {
-        localStorage.setItem(`frontline_${rowId}`, JSON.stringify(finalData));
-      } catch (_) {}
-    }
-    return finalData;
+    const c = window.supabaseClient || window.dbClient;
+    if (!c) throw new Error('Database unavailable.');
+    const { data, error } = await c.from('tournament_veto_states').select('state')
+      .eq('tournament_id', String(tournamentId)).eq('match_id', String(matchId)).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data?.state || null;
   },
 
-  async saveTournamentMatchVeto(tournamentId, matchId, vetoData) {
-    if (!tournamentId || !matchId || !vetoData) return { success: false };
-    const rowId = this._getMatchVetoRowId(tournamentId, matchId);
-    vetoData.updated_at = new Date().toISOString();
-    const bodyStr = JSON.stringify(vetoData);
+  async tournamentVetoAction(tournamentId, matchId, action, version, game = null, map = null) {
+    const c = window.supabaseClient || window.dbClient;
+    if (!c) throw new Error('Database unavailable.');
+    const { data, error } = await c.rpc('tournament_veto_action', {
+      p_tournament: String(tournamentId), p_match: String(matchId), p_action: action,
+      p_version: version, p_game: game, p_map: map
+    });
+    if (error) throw new Error(error.message);
+    window.dispatchEvent(new CustomEvent('frontline_match_veto_updated', {
+      detail: { tournamentId, matchId, vetoData: data }
+    }));
+    return data;
+  },
 
-    // 1. LocalStorage cache
-    try {
-      localStorage.setItem(`frontline_${rowId}`, bodyStr);
-    } catch (_) {}
-
-    // 2. Push to Supabase league_settings
-    let saved = false;
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      try {
-        const cleanBase = SUPABASE_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-        const res = await fetch(`${cleanBase}/rest/v1/league_settings`, {
-          method: 'POST',
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            Prefer: 'resolution=merge-duplicates,return=representation'
-          },
-          body: JSON.stringify({
-            id: rowId,
-            status_state: 'active',
-            status_text: bodyStr,
-            updated_at: new Date().toISOString()
-          })
-        });
-        if (res.ok) saved = true;
-      } catch (e) {
-        console.warn('Veto save notice:', e.message || e);
-      }
-    }
-
-    if (!saved && dbClient) {
-      try {
-        const { error } = await dbClient.from('league_settings').upsert({
-          id: rowId,
-          status_state: 'active',
-          status_text: bodyStr,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
-        if (!error) saved = true;
-      } catch (e) {
-        console.warn('Veto dbClient save notice:', e.message || e);
-      }
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('frontline_match_veto_updated', {
-        detail: { tournamentId, matchId, vetoData }
-      }));
-    }
-
-    return { success: true, saved, vetoData };
+  async saveTournamentMatchVeto() {
+    throw new Error('Full-state veto writes are disabled. Use tournamentVetoAction.');
   },
 
   async deleteTournamentRegistration(registrationId, tournamentId = null) {

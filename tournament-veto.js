@@ -143,6 +143,7 @@
         coinFlipped: false,
         coinWinner: 'team_a',
         vetoStep: 0,
+        version: 0,
         updated_at: new Date().toISOString()
       };
 
@@ -158,63 +159,27 @@
         console.warn('Could not fetch existing tournament veto:', err);
       }
 
-      const { user, isStaff, userTeamName, combatantTeamName, reg1, reg2 } = userContext || {};
-      const t1Name = String(t1.name || '').trim();
-      const t2Name = String(t2.name || '').trim();
-
-      const norm = s => String(s || '').replace(/^@/, '').trim().toLowerCase();
-      const t1Norm = norm(t1Name);
-      const t2Norm = norm(t2Name);
-
-      function checkUserMembership(reg, teamName) {
-        if (combatantTeamName && norm(combatantTeamName) === norm(teamName)) return true;
-        if (userTeamName && norm(userTeamName) === norm(teamName)) return true;
-        if (!user) return false;
-        if (user.team_name && norm(user.team_name) === norm(teamName)) return true;
-        if (user.team && norm(user.team) === norm(teamName)) return true;
-
-        if (reg) {
-          const uGamertag = norm(user.gamertag || user.username);
-          const uDiscord = norm(user.discord || user.discord_name || user.discord_username);
-          const uActId = norm(user.activision_id || user.activision);
-          const uEmail = norm(user.email);
-
-          if (uGamertag && norm(reg.captain_gamertag) === uGamertag) return true;
-          if (uDiscord && norm(reg.captain_discord) === uDiscord) return true;
-          if (uActId && norm(reg.captain_activision_id) === uActId) return true;
-          if (uEmail && norm(reg.captain_email) === uEmail) return true;
-
-          let roster = [];
-          if (Array.isArray(reg.roster_status)) {
-            for (const member of reg.roster_status) {
-              const mTag = norm(member?.gamertag || member?.username);
-              const mDisc = norm(member?.discord);
-              const mAct = norm(member?.activision_id);
-              if (mTag && uGamertag && mTag === uGamertag) return true;
-              if (mDisc && uDiscord && mDisc === uDiscord) return true;
-              if (mAct && uActId && mAct === uActId) return true;
-            }
-          }
-          if (Array.isArray(reg.roster)) roster = reg.roster;
-          else if (typeof reg.roster === 'string') {
-            try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
-          } else if (reg.roster_text) {
-            roster = reg.roster_text.split(/,\s*/);
-          }
-          if (Array.isArray(roster)) {
-            for (const member of roster) {
-              const mTag = norm(typeof member === 'object' ? (member.gamertag || member.name) : member);
-              if (mTag && ((uGamertag && mTag === uGamertag) || (uDiscord && mTag === uDiscord))) return true;
-            }
-          }
-        }
-        return false;
+      // Never infer veto ownership from display names or client-side staff flags.
+      const c = window.supabaseClient || window.dbClient;
+      let ownTeam = null, isStaff = false;
+      try {
+        if (!c) throw new Error('Database unavailable.');
+        const { data: auth, error: authError } = await c.auth.getUser();
+        if (authError || !auth?.user) throw new Error('Sign in to veto maps.');
+        isStaff = [true, 'true'].includes(auth.user.app_metadata?.tournament_admin);
+        const { data: members, error } = await c.from('tournament_report_members')
+          .select('team').eq('tournament_id', String(tournament.id))
+          .eq('match_id', String(match.id)).eq('user_id', auth.user.id);
+        if (error) throw new Error(error.message);
+        if (members?.length === 1) ownTeam = members[0].team;
+      } catch (error) {
+        hostEl.textContent = 'Map veto: ' + error.message;
+        return;
       }
-
-      const isTeam1 = checkUserMembership(reg1, t1Name);
-      const isTeam2 = checkUserMembership(reg2, t2Name);
+      const isTeam1 = ownTeam === 1, isTeam2 = ownTeam === 2;
       const isCombatant = isTeam1 || isTeam2;
       const canManage = isStaff || isCombatant;
+      let busy = false;
 
       function allDecided() {
         return vetoState.series.every(g => g.status === 'decided');
@@ -231,40 +196,22 @@
       }
 
       function isMyTurn() {
-        if (allDecided()) return false;
-        if (!vetoState.coinFlipped) return false;
-        const cur = getActiveTurnTeam();
-        const curNorm = norm(cur.name);
-
-        // If user belongs to one of the competing teams, strictly check if it's their team's turn!
-        // (Even if the user is an admin, when competing as a combatant on a roster, their turn must be strictly respected)
-        if (isTeam1 && !isTeam2) {
-          return curNorm === t1Norm;
-        }
-        if (isTeam2 && !isTeam1) {
-          return curNorm === t2Norm;
-        }
-        if (isTeam1 && isTeam2) {
-          // In local test mode where user matches both teams, allow active turn
-          return true;
-        }
-
-        // Neutral league staff / tournament referee who is not on either team roster
-        if (isStaff) {
-          return true;
-        }
-
-        return false;
+        if (busy || allDecided() || !vetoState.coinFlipped || !isCombatant) return false;
+        const first = vetoState.coinWinner === 'team_a' ? 1 : 2;
+        return ownTeam === (vetoState.vetoStep % 2 === 0 ? first : 3 - first);
       }
 
-      async function persistVeto() {
-        if (window.LeagueDB && typeof window.LeagueDB.saveTournamentMatchVeto === 'function') {
-          try {
-            await window.LeagueDB.saveTournamentMatchVeto(tournament.id, match.id, vetoState);
-          } catch (e) {
-            console.error('Failed to save veto state:', e);
-          }
-        }
+      async function applyAction(action, game = null, map = null) {
+        if (busy) return;
+        busy = true;
+        renderVetoUI();
+        try {
+          vetoState = await window.LeagueDB.tournamentVetoAction(
+            tournament.id, match.id, action, vetoState.version || 0, game, map);
+        } catch (error) {
+          alert(error.message);
+          try { const latest = await window.LeagueDB.getTournamentMatchVeto(tournament.id, match.id); if(latest) vetoState = latest; } catch (_) {}
+        } finally { busy = false; renderVetoUI(); }
       }
 
       function renderVetoUI() {
@@ -297,7 +244,7 @@
           }
         } else {
           coinText.textContent = `Coin toss required to determine first strike advantage between ${t1.name} and ${t2.name}.`;
-          if (canManage) {
+          if (canManage && !busy) {
             coinActions.innerHTML = `
               <button type="button" class="btn-tourney-primary" id="btn-toss-coin" style="font-size:11px; padding:4px 10px;">
                 Flip Coin 🪙
@@ -341,7 +288,7 @@
         // Admin actions (Reset / Auto-fill)
         if (isStaff) {
           adminActions.innerHTML = `
-            <button type="button" id="btn-veto-auto" class="btn-tourney-outline" style="font-size:10px; padding:2px 8px;" title="Randomly fill remaining picks">Auto-Fill</button>
+
             <button type="button" id="btn-veto-reset" class="btn-tourney-outline" style="font-size:10px; padding:2px 8px; color:#f87171;" title="Reset veto to initial state">Reset All</button>
           `;
           wrapper.querySelector('#btn-veto-auto')?.addEventListener('click', handleAutoVeto);
@@ -417,98 +364,28 @@
         });
       }
 
-      function handleCoinFlip() {
-        if (vetoState.coinFlipped) return;
-        const btn = wrapper.querySelector('#btn-toss-coin');
-        if (btn) btn.disabled = true;
-        const coinDisc = wrapper.querySelector('#veto-coin-disc');
-        if (coinDisc) {
-          coinDisc.style.transform = 'rotateY(1440deg)';
-        }
-        setTimeout(async () => {
-          if (vetoState.coinFlipped) return;
-          const isHeads = Math.random() >= 0.5;
-          vetoState.coinFlipped = true;
-          vetoState.coinWinner = isHeads ? 'team_a' : 'team_b';
-          vetoState.vetoStep = 0;
-          await persistVeto();
-          renderVetoUI();
-        }, 700);
+      async function handleCoinFlip() {
+        if (!canManage || busy || vetoState.coinFlipped) return;
+        await applyAction('coin');
       }
 
       async function handleResetCoin() {
-        if (!isStaff) {
-          alert('Only tournament admins can reset the coin flip.');
-          return;
-        }
-        if (!confirm('Admin Directive: Reset the coin flip for this match? This will also reset pending vetoes.')) return;
-        vetoState.coinFlipped = false;
-        vetoState.vetoStep = 0;
-        vetoState.series = createFreshVetoSeries();
-        renderVetoUI();
-        await persistVeto();
+        if (!isStaff || busy) return;
+        if (confirm('Reset the coin flip and all vetoes for this match?')) await applyAction('reset');
       }
 
       async function handleStrikeMap(gameNumber, mapName) {
-        if (!vetoState.coinFlipped) {
-          alert("The coin toss must be completed before vetoing maps.");
-          return;
-        }
-
-        // Strict sequential order enforcement
-        const currentPendingGame = vetoState.series.find(g => g.status !== 'decided');
-        if (!currentPendingGame || currentPendingGame.game !== gameNumber) {
-          alert(`Maps must be vetoed in strict sequential order. Please complete Game ${currentPendingGame ? currentPendingGame.game : 1} first.`);
-          return;
-        }
-
-        if (!isMyTurn()) {
-          alert("It is not your team's turn to veto.");
-          return;
-        }
-
-        const game = vetoState.series.find(g => g.game === gameNumber);
-        if (!game || game.status === 'decided') return;
-
-        const currentTeam = getActiveTurnTeam();
-        if (!game.struckBy) game.struckBy = [];
-        game.struckBy.push({ mapName, teamName: currentTeam.name });
-
-        game.pool = game.pool.filter(m => m.name !== mapName);
-
-        // If only 1 map remains, lock it as official decided map
-        if (game.pool.length === 1) {
-          game.map = game.pool[0];
-          game.status = 'decided';
-        }
-
-        vetoState.vetoStep++;
-        renderVetoUI();
-        await persistVeto();
+        if (!isMyTurn()) { alert("It is not your team's turn to veto."); return; }
+        const active = vetoState.series.find(g => g.status !== 'decided');
+        if (!active || active.game !== gameNumber || !active.pool.some(m=>m.name===mapName)) return;
+        await applyAction('strike', gameNumber, mapName);
       }
 
       async function handleAutoVeto() {
-        if (!confirm('Randomly complete map selections for remaining undecided games?')) return;
-        vetoState.series.forEach(game => {
-          if (game.status !== 'decided') {
-            const randMap = game.pool[Math.floor(Math.random() * game.pool.length)];
-            game.map = randMap;
-            game.status = 'decided';
-          }
-        });
-        vetoState.coinFlipped = true;
-        renderVetoUI();
-        await persistVeto();
+        alert('Auto-fill is disabled: teams must alternate their vetoes.');
       }
 
-      async function handleResetVeto() {
-        if (!confirm('Reset entire map veto process for this match?')) return;
-        vetoState.series = createFreshVetoSeries();
-        vetoState.coinFlipped = false;
-        vetoState.vetoStep = 0;
-        renderVetoUI();
-        await persistVeto();
-      }
+      async function handleResetVeto() { await handleResetCoin(); }
 
       function copyRotation() {
         const lines = [
@@ -535,7 +412,7 @@
       // Listen for remote updates
       const onVetoUpdated = (e) => {
         if (String(e.detail?.tournamentId) === String(tournament.id) && String(e.detail?.matchId) === String(match.id)) {
-          if (e.detail.vetoData) {
+          if (e.detail.vetoData && (e.detail.vetoData.version || 0) >= (vetoState.version || 0)) {
             const incoming = e.detail.vetoData;
             const hasChanged = incoming.coinFlipped !== vetoState.coinFlipped ||
                                incoming.coinWinner !== vetoState.coinWinner ||
@@ -563,7 +440,7 @@
         if (window.LeagueDB && typeof window.LeagueDB.getTournamentMatchVeto === 'function') {
           try {
             const fresh = await window.LeagueDB.getTournamentMatchVeto(tournament.id, match.id);
-            if (fresh) {
+            if (fresh && !busy && (fresh.version || 0) >= (vetoState.version || 0)) {
               const hasChanged = fresh.coinFlipped !== vetoState.coinFlipped ||
                                  fresh.coinWinner !== vetoState.coinWinner ||
                                  fresh.vetoStep !== vetoState.vetoStep ||
