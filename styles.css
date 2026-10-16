@@ -1,12 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap");
+
 :root {
   --bg: #11120f;
   --panel: #1a1b17;
   --line: #34352d;
   --lime: #d5f45b;
-  --text: #f5f5f0;
-  --muted: #b8baa9;
-  --display: Impact, "Arial Narrow", sans-serif;
-  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --text: #f8fafc;
+  --muted: #cbd5e1;
+  --display: "Barlow Condensed", "Rajdhani", Impact, "Arial Narrow", -apple-system, sans-serif;
+  --body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color-scheme: dark;
   accent-color: var(--lime);
 }
@@ -25,7 +27,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  text-rendering: geometricPrecision;
 }
 body {
   margin: 0;
@@ -34,7 +36,26 @@ body {
   font: 14px/1.5 var(--body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  text-rendering: geometricPrecision;
+}
+h1, h2, h3, h4, h5, h6,
+.brand-title,
+.player-gamertag,
+.modal-gamertag,
+.fl-hero-title,
+.arena-hero-title {
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.5px;
+}
+.player-gamertag {
+  font: 800 26px/1.2 var(--display) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  word-break: break-word;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 a {
   color: inherit;
@@ -108,7 +129,7 @@ header .wrap {
 }
 .header-welcome .welcome-accent {
   color: var(--lime);
-  text-shadow: 0 0 12px rgba(213, 244, 91, 0.4);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 .brand {
   display: inline-flex;
@@ -1895,11 +1916,12 @@ dialog.player-modal::backdrop {
 }
 
 .modal-gamertag {
-  font: 800 28px/1 var(--display);
+  font: 800 30px/1.2 var(--display);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   margin: 0;
-  color: var(--text);
+  color: #ffffff;
+  word-break: break-word;
 }
 
 .modal-header .pill {
@@ -4863,7 +4885,7 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
 
 .arena-hero-title .crimson-accent {
   color: #ff1e44;
-  text-shadow: 0 0 20px rgba(255, 30, 68, 0.5);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
 }
 
 .arena-hero-desc {
@@ -6370,12 +6392,13 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
 
 .profile-details h2 {
   font-family: var(--display);
-  font-size: clamp(26px, 3.5vw, 38px);
-  line-height: 1;
+  font-size: clamp(26px, 3.5vw, 40px);
+  line-height: 1.15;
   text-transform: uppercase;
   color: #ffffff;
   margin: 0 0 8px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  word-break: break-word;
 }
 
 .profile-badge-row {
@@ -7022,12 +7045,12 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
 
 .fl-brand-text .brand-frontline {
   color: #ffffff;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .fl-brand-text .brand-arena {
   color: #ff1e44;
-  text-shadow: 0 0 16px rgba(255, 30, 68, 0.55);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .fl-circuit-tag-row {
@@ -7105,7 +7128,7 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
 .fl-main-nav a.active {
   color: #ffffff;
   border-bottom-color: #ff1e44;
-  text-shadow: 0 0 10px rgba(255, 30, 68, 0.5);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .fl-mode-switcher {
@@ -7293,11 +7316,11 @@ html.hide-mode-tournaments .fl-topbar .mode-switch-btn[data-mode="tournaments"]:
   font-family: var(--display);
   font-size: 28px;
   font-weight: 900;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: #ffffff;
   margin: 0 0 10px;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .fl-hero-pills {
