@@ -5567,6 +5567,14 @@ if (dbClient && cleanPayload.user_id) {
 
     try {
       localStorage.setItem(`frontline_tournament_bracket_${tourney.id}`, JSON.stringify(bracketObj));
+      // Clean up any stale veto caches for matches in this tournament
+      const vetoPrefix = `frontline_match_veto_${String(tourney.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_`;
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(vetoPrefix)) keysToRemove.push(k);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
     } catch (_) {}
 
     await this.saveTournament(tourney);

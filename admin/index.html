@@ -9502,7 +9502,7 @@
                 <div style="display:flex; gap:10px; align-items:center;">
                   <button type="button" class="btn-paypal-submit" style="padding:8px 18px; font-size:12px; width:auto;" 
                     ${squadCount < 2 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
-                    onclick="adminGenerateBracketAction('${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                    onclick="adminGenerateBracketAction('${escapeHtml(tourneyId)}')">
                     ⚡ Generate Live Bracket Now
                   </button>
                 </div>
@@ -9541,7 +9541,7 @@
                 <a href="/tournaments/bracket/?tournament=${encodeURIComponent(tourneyId)}" target="_blank" class="btn-action-sm" style="color:#22c55e; border-color:#22c55e; text-decoration:none; padding:6px 12px; font-weight:800;">
                   ⚔ View Public Live Bracket ↗
                 </a>
-                <button type="button" class="btn-action-sm btn-action-danger" style="padding:6px 10px;" onclick="adminRegenerateBracketAction('${escapeHtml(tourneyId)}', '${escapeHtml(tourneyTitle)}')">
+                <button type="button" class="btn-action-sm btn-action-danger" style="padding:6px 10px;" onclick="adminRegenerateBracketAction('${escapeHtml(tourneyId)}')">
                   ↻ Reset &amp; Regenerate
                 </button>
               </div>
@@ -9634,18 +9634,23 @@
         }
         window.adminManageBracket = adminManageBracket;
 
-        async function adminGenerateBracketAction(tourneyId, tourneyTitle) {
-          if (!confirm("Generate live tournament bracket now from registered squads? This will seed the bracket and enable live match scoring.")) return;
+        async function adminGenerateBracketAction(tourneyId, tourneyTitle, skipConfirm = false) {
+          if (!skipConfirm) {
+            if (!confirm("Generate live tournament bracket now from registered squads? This will seed the bracket and enable live match scoring.")) return;
+          }
           try {
             if (window.LeagueDB && typeof window.LeagueDB.generateTournamentBracket === 'function') {
               const res = await window.LeagueDB.generateTournamentBracket(tourneyId);
               if (res.success) {
                 showToast("⚡ Bracket generated and seeded successfully!");
-                await adminManageBracket(tourneyId, tourneyTitle);
+                const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+                await adminManageBracket(tourneyId, resolvedTitle);
                 await loadAdminTournaments();
               } else {
                 showToast(`Failed: ${res.error || 'Unknown error'}`, true);
               }
+            } else {
+              showToast("Bracket service unavailable. Please try again.", true);
             }
           } catch (err) {
             console.error("Generate bracket error:", err);
@@ -9681,7 +9686,8 @@
               const res = await window.LeagueDB.advanceTournamentMatch(tourneyId, matchId, winner, s1, s2);
               if (res.success) {
                 showToast(`✓ Match updated! "${winner}" advanced to next round.`);
-                await adminManageBracket(tourneyId, tourneyTitle);
+                const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+                await adminManageBracket(tourneyId, resolvedTitle);
                 await loadAdminTournaments();
               } else {
                 showToast(`Failed: ${res.error || 'Could not update match'}`, true);
@@ -9695,8 +9701,9 @@
         window.adminAdvanceMatchAction = adminAdvanceMatchAction;
 
         async function adminRegenerateBracketAction(tourneyId, tourneyTitle) {
-          if (!confirm("Are you sure you want to RESET and REGENERATE this bracket? All recorded match scores will be reset to round 1 seeding.")) return;
-          await adminGenerateBracketAction(tourneyId, tourneyTitle);
+          if (!confirm("Are you sure you want to RESET and REGENERATE this bracket? All recorded match scores and vetoes will be reset to round 1 seeding.")) return;
+          const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+          await adminGenerateBracketAction(tourneyId, resolvedTitle, true);
         }
         window.adminRegenerateBracketAction = adminRegenerateBracketAction;
 
