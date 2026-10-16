@@ -853,6 +853,14 @@
         return vetoSeries.every(g => g.status === "decided");
       }
 
+      function isUserTurnToStrike() {
+        if (isSessionStaff || observerPerspective === "referee") return true;
+        if (allMapsDecided()) return false;
+        if (!coinFlipped) return false;
+        const currentTurnSide = (vetoStep % 2 === 0) ? (coinWinner === "team_a" ? "team_a" : "team_b") : (coinWinner === "team_a" ? "team_b" : "team_a");
+        return activeUserTeamSide === currentTurnSide;
+      }
+
       function updateVetoTurnBanner() {
         const banner = document.getElementById("veto-turn-text");
         if (!banner || !activeMatch) return;
@@ -865,18 +873,29 @@
         const teamA = activeMatch.team_a;
         const teamB = activeMatch.team_b;
         const activeTeam = (vetoStep % 2 === 0) ? (coinWinner === "team_a" ? teamA : teamB) : (coinWinner === "team_a" ? teamB : teamA);
+        const myTurn = isUserTurnToStrike();
 
         const curGame = vetoSeries.find(g => g.status !== "decided") || vetoSeries[0];
-        banner.innerHTML = `👉 <strong>${activeTeam.name}</strong>'s Turn to Strike ${curGame.mode} Maps`;
+        if (myTurn) {
+          banner.innerHTML = `👉 <strong style="color:#22c55e;">YOUR TURN (${activeTeam.name})</strong> to Strike ${curGame.mode} Maps`;
+        } else if (activeUserTeamSide) {
+          banner.innerHTML = `⏳ <strong style="color:#f87171;">WAITING FOR ${activeTeam.name.toUpperCase()} TO VETO</strong> — Controls locked until their pick`;
+        } else {
+          banner.innerHTML = `👉 <strong>${activeTeam.name}</strong>'s Turn to Strike ${curGame.mode} Maps`;
+        }
       }
 
       function renderVetoCards() {
         const container = document.getElementById("cdl-map-cards-container");
         if (!container) return;
 
+        const currentPendingGame = vetoSeries.find(g => g.status !== "decided");
+        const canStrikeNow = isUserTurnToStrike();
+
         container.innerHTML = vetoSeries.map(game => {
           const isDecided = game.status === "decided";
           const decidedMap = game.map || game.pool[0];
+          const isCurrentActive = currentPendingGame && currentPendingGame.game === game.game;
 
           return `
             <div class="cdl-map-card ${isDecided ? 'locked' : ''}">
@@ -904,8 +923,10 @@
                     if (isStruck) {
                       return `<span class="val-badge" style="background:#260a10; color:#ef4444; border-color:#591624; text-decoration:line-through;">✕ ${m.name}</span>`;
                     }
+
+                    const canClickThis = isCurrentActive && canStrikeNow;
                     return `
-                      <button type="button" class="btn-strike-map" onclick="strikeMap(${game.game}, '${m.name}')" title="Strike / Ban ${m.name}">
+                      <button type="button" class="btn-strike-map" ${canClickThis ? '' : 'disabled'} onclick="${canClickThis ? `strikeMap(${game.game}, '${m.name}')` : 'void(0)'}" style="${canClickThis ? '' : 'opacity:0.4; cursor:not-allowed; border-color:#2d381c;'}" title="${canClickThis ? `Strike / Ban ${m.name}` : `Waiting for opponent's turn`}">
                         <span>✕</span> <span>${m.name}</span>
                       </button>
                     `;
@@ -918,6 +939,11 @@
       }
 
       function strikeMap(gameNumber, mapName) {
+        if (!isUserTurnToStrike()) {
+          alert("It is not your team's turn to veto.");
+          return;
+        }
+
         const game = vetoSeries.find(g => g.game === gameNumber);
         if (!game || game.status === "decided") return;
 

@@ -158,12 +158,48 @@
         console.warn('Could not fetch existing tournament veto:', err);
       }
 
-      const { user, isStaff, userTeamName } = userContext || {};
+      const { user, isStaff, userTeamName, reg1, reg2 } = userContext || {};
       const t1Name = String(t1.name || '').trim();
       const t2Name = String(t2.name || '').trim();
 
-      const isTeam1 = userTeamName && (userTeamName.toLowerCase() === t1Name.toLowerCase());
-      const isTeam2 = userTeamName && (userTeamName.toLowerCase() === t2Name.toLowerCase());
+      const norm = s => String(s || '').replace(/^@/, '').trim().toLowerCase();
+      const t1Norm = norm(t1Name);
+      const t2Norm = norm(t2Name);
+
+      function checkUserMembership(reg, teamName) {
+        if (userTeamName && norm(userTeamName) === norm(teamName)) return true;
+        if (!user) return false;
+        if (user.team_name && norm(user.team_name) === norm(teamName)) return true;
+        if (user.team && norm(user.team) === norm(teamName)) return true;
+
+        if (reg) {
+          const uGamertag = norm(user.gamertag || user.username);
+          const uDiscord = norm(user.discord || user.discord_name || user.discord_username);
+          const uActId = norm(user.activision_id || user.activision);
+
+          if (uGamertag && norm(reg.captain_gamertag) === uGamertag) return true;
+          if (uDiscord && norm(reg.captain_discord) === uDiscord) return true;
+          if (uActId && norm(reg.captain_activision_id) === uActId) return true;
+
+          let roster = [];
+          if (Array.isArray(reg.roster)) roster = reg.roster;
+          else if (typeof reg.roster === 'string') {
+            try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
+          } else if (reg.roster_text) {
+            roster = reg.roster_text.split(/,\s*/);
+          }
+          if (Array.isArray(roster)) {
+            for (const member of roster) {
+              const mTag = norm(typeof member === 'object' ? (member.gamertag || member.name) : member);
+              if (mTag && ((uGamertag && mTag === uGamertag) || (uDiscord && mTag === uDiscord))) return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      const isTeam1 = checkUserMembership(reg1, t1Name);
+      const isTeam2 = checkUserMembership(reg2, t2Name);
       const canManage = isStaff || isTeam1 || isTeam2;
 
       function allDecided() {
@@ -183,9 +219,11 @@
       function isMyTurn() {
         if (isStaff) return true;
         if (allDecided()) return false;
+        if (!vetoState.coinFlipped) return false;
         const cur = getActiveTurnTeam();
-        if (isTeam1 && cur.name === t1.name) return true;
-        if (isTeam2 && cur.name === t2.name) return true;
+        const curNorm = norm(cur.name);
+        if (isTeam1 && curNorm === t1Norm) return true;
+        if (isTeam2 && curNorm === t2Norm) return true;
         return false;
       }
 
@@ -203,6 +241,7 @@
         const coinText = wrapper.querySelector('#veto-coin-text');
         const coinActions = wrapper.querySelector('#veto-coin-actions');
         const coinDisc = wrapper.querySelector('#veto-coin-disc');
+        const turnHud = wrapper.querySelector('#veto-turn-hud');
         const turnMsg = wrapper.querySelector('#veto-turn-msg');
         const cardsCont = wrapper.querySelector('#veto-series-cards');
         const adminActions = wrapper.querySelector('#veto-admin-actions');
@@ -232,12 +271,31 @@
 
         // 2. Turn HUD
         if (allDecided()) {
+          turnHud.style.borderLeftColor = '#22c55e';
+          turnHud.style.background = '#141c10';
           turnMsg.innerHTML = `🏁 <span style="color:#4ade80;">OFFICIAL SERIES ROTATION LOCKED IN</span> — Ready to Launch Match`;
+        } else if (!vetoState.coinFlipped) {
+          turnHud.style.borderLeftColor = '#fbbf24';
+          turnHud.style.background = '#1b190f';
+          turnMsg.innerHTML = `🪙 <span style="color:#fbbf24;">AWAITING COIN FLIP</span> — Flip the coin above to establish turn order.`;
         } else {
           const activeTeam = getActiveTurnTeam();
           const curGame = vetoState.series.find(g => g.status !== 'decided') || vetoState.series[0];
           const myTurn = isMyTurn();
-          turnMsg.innerHTML = `👉 <strong style="color:#fbbf24;">${esc(activeTeam.name)}'s</strong> Turn to Strike Map for <span style="color:#ffffff;">Game ${curGame.game} (${curGame.mode})</span> ${myTurn ? '<span style="color:#4ade80; margin-left:8px;">(YOUR TURN)</span>' : ''}`;
+
+          if (myTurn) {
+            turnHud.style.borderLeftColor = '#22c55e';
+            turnHud.style.background = 'rgba(34,197,94,0.1)';
+            turnMsg.innerHTML = `👉 <strong style="color:#4ade80;">YOUR TURN (${esc(activeTeam.name)})</strong> — Select a map to strike for <span style="color:#ffffff;">Game ${curGame.game} (${curGame.mode})</span>`;
+          } else if (isTeam1 || isTeam2) {
+            turnHud.style.borderLeftColor = '#ef4444';
+            turnHud.style.background = 'rgba(239,68,68,0.08)';
+            turnMsg.innerHTML = `⏳ <strong style="color:#f87171;">WAITING FOR ${esc(activeTeam.name).toUpperCase()} TO VETO</strong> — Your controls are locked until their pick is made.`;
+          } else {
+            turnHud.style.borderLeftColor = '#fbbf24';
+            turnHud.style.background = '#171d10';
+            turnMsg.innerHTML = `👉 <strong style="color:#fbbf24;">${esc(activeTeam.name)}'s</strong> Turn to Strike Map for <span style="color:#ffffff;">Game ${curGame.game} (${curGame.mode})</span>`;
+          }
         }
 
         // Admin actions (Reset / Auto-fill)
@@ -332,6 +390,11 @@
       }
 
       async function handleStrikeMap(gameNumber, mapName) {
+        if (!isMyTurn()) {
+          alert("It is not your team's turn to veto.");
+          return;
+        }
+
         const game = vetoState.series.find(g => g.game === gameNumber);
         if (!game || game.status === 'decided') return;
 
