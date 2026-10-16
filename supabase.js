@@ -2548,44 +2548,124 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
+  // Unified identity extraction & fuzzy matching helper for notifications and invites
+  _resolveUserIdentifiers(userIdentifier) {
+    if (!userIdentifier) return { cleanTag: "", uid: "", cleanDisc: "", act: "", email: "", alphaTag: "", alphaDisc: "" };
+
+    let tag = "";
+    let uid = "";
+    let disc = "";
+    let act = "";
+    let email = "";
+
+    const clean = s => String(s || "").trim().toLowerCase().replace(/^@/, "");
+    const alphaOnly = s => clean(s).replace(/[^a-z0-9]/g, "");
+
+    if (typeof userIdentifier === "string") {
+      tag = clean(userIdentifier);
+      uid = String(userIdentifier).trim();
+      disc = clean(userIdentifier);
+    } else if (typeof userIdentifier === "object" && userIdentifier !== null) {
+      tag = clean(userIdentifier.gamertag || userIdentifier.username || userIdentifier.name || userIdentifier.display_name || userIdentifier.global_name || "");
+      uid = String(userIdentifier.id || userIdentifier.user_id || userIdentifier._owner_id || "").trim();
+      disc = clean(userIdentifier.discord || userIdentifier.discord_name || userIdentifier.discord_username || "");
+      act = clean(userIdentifier.activision_id || userIdentifier.activision || "");
+      email = clean(userIdentifier.email || userIdentifier._owner_email || "");
+
+      if (userIdentifier.user_metadata) {
+        const m = userIdentifier.user_metadata;
+        if (!tag) tag = clean(m.gamertag || m.username || m.name || m.display_name || m.full_name || "");
+        if (!disc) disc = clean(m.discord || m.discord_name || m.discord_username || "");
+        if (!act) act = clean(m.activision_id || "");
+        if (!email) email = clean(m.email || "");
+      }
+
+      if (typeof this.getDiscordIdentity === "function") {
+        const dInfo = this.getDiscordIdentity(userIdentifier);
+        if (dInfo) {
+          if (!tag && dInfo.primaryName) tag = clean(dInfo.primaryName);
+          if (!disc && (dInfo.handle || dInfo.globalName)) disc = clean(dInfo.handle || dInfo.globalName);
+        }
+      }
+
+      if (!tag && email) {
+        tag = clean(email.split("@")[0]);
+      }
+    }
+
+    return {
+      cleanTag: tag,
+      uid,
+      cleanDisc: disc,
+      act,
+      email,
+      alphaTag: alphaOnly(tag),
+      alphaDisc: alphaOnly(disc)
+    };
+  },
+
+  _matchesUserTarget(targetObj, userIdent) {
+    if (!targetObj || !userIdent) return false;
+    const u = this._resolveUserIdentifiers(userIdent);
+    const clean = s => String(s || "").trim().toLowerCase().replace(/^@/, "");
+    const alphaOnly = s => clean(s).replace(/[^a-z0-9]/g, "");
+
+    const tTag = clean(targetObj.target_gamertag || targetObj.invited_gamertag || targetObj.gamertag || "");
+    const tUid = String(targetObj.target_user_id || targetObj.invited_user_id || targetObj.user_id || "").trim();
+    const tDisc = clean(targetObj.target_discord || targetObj.invited_discord || targetObj.discord || "");
+    const tAct = clean(targetObj.target_activision || targetObj.invited_activision || targetObj.activision_id || "");
+    const tAlphaTag = alphaOnly(tTag);
+    const tAlphaDisc = alphaOnly(tDisc);
+
+    // 1. Direct or fuzzy gamertag match
+    if (u.cleanTag && tTag) {
+      if (u.cleanTag === tTag || u.cleanTag.includes(tTag) || tTag.includes(u.cleanTag)) return true;
+    }
+    if (u.alphaTag && tAlphaTag && (u.alphaTag === tAlphaTag || u.alphaTag.includes(tAlphaTag) || tAlphaTag.includes(u.alphaTag))) return true;
+
+    // 2. Cross-match: user's Discord handle vs target gamertag (or vice-versa)
+    if (u.cleanDisc && tTag) {
+      if (u.cleanDisc === tTag || u.cleanDisc.includes(tTag) || tTag.includes(u.cleanDisc)) return true;
+    }
+    if (u.alphaDisc && tAlphaTag && (u.alphaDisc === tAlphaTag || u.alphaDisc.includes(tAlphaTag) || tAlphaTag.includes(u.alphaDisc))) return true;
+    if (u.cleanTag && tDisc) {
+      if (u.cleanTag === tDisc || u.cleanTag.includes(tDisc) || tDisc.includes(u.cleanTag)) return true;
+    }
+    if (u.alphaTag && tAlphaDisc && (u.alphaTag === tAlphaDisc || u.alphaTag.includes(tAlphaDisc) || tAlphaDisc.includes(u.alphaTag))) return true;
+
+    // 3. User ID match
+    if (u.uid && tUid && u.uid === tUid) return true;
+
+    // 4. Discord handle match
+    if (u.cleanDisc && tDisc) {
+      if (u.cleanDisc === tDisc || u.cleanDisc.includes(tDisc) || tDisc.includes(u.cleanDisc)) return true;
+      if (u.alphaDisc && tAlphaDisc && (u.alphaDisc === tAlphaDisc || u.alphaDisc.includes(tAlphaDisc) || tAlphaDisc.includes(u.alphaDisc))) return true;
+    }
+
+    // 5. Activision ID match
+    if (u.act && tAct && u.act === tAct) return true;
+
+    // 6. Notification metadata check (e.g. metadata.invited_gamertag)
+    if (targetObj.metadata) {
+      const mTag = clean(targetObj.metadata.invited_gamertag || "");
+      const mAlpha = alphaOnly(mTag);
+      if (mTag) {
+        if (u.cleanTag && (u.cleanTag === mTag || u.cleanTag.includes(mTag) || mTag.includes(u.cleanTag))) return true;
+        if (u.alphaTag && mAlpha && (u.alphaTag === mAlpha || u.alphaTag.includes(mAlpha) || mAlpha.includes(u.alphaTag))) return true;
+        if (u.cleanDisc && (u.cleanDisc === mTag || u.cleanDisc.includes(mTag) || mTag.includes(u.cleanDisc))) return true;
+        if (u.alphaDisc && mAlpha && (u.alphaDisc === mAlpha || u.alphaDisc.includes(mAlpha) || mAlpha.includes(u.alphaDisc))) return true;
+      }
+    }
+
+    return false;
+  },
+
   async getUserNotifications(userIdentifier) {
     try {
       const list = await this.getAllNotificationsRegistry();
       if (!userIdentifier) return [];
 
-      let tag = "";
-      let uid = "";
-      let disc = "";
-      let act = "";
-
-      if (typeof userIdentifier === "string") {
-        tag = userIdentifier.trim().toLowerCase();
-        uid = userIdentifier.trim();
-      } else if (typeof userIdentifier === "object" && userIdentifier !== null) {
-        tag = String(userIdentifier.gamertag || userIdentifier.username || userIdentifier.name || userIdentifier.email || "").trim().toLowerCase();
-        uid = String(userIdentifier.id || userIdentifier.user_id || "").trim();
-        disc = String(userIdentifier.discord || userIdentifier.discord_name || userIdentifier.discord_username || "").trim().toLowerCase();
-        act = String(userIdentifier.activision_id || userIdentifier.activision || "").trim().toLowerCase();
-        if (userIdentifier.user_metadata) {
-          const m = userIdentifier.user_metadata;
-          if (!tag) tag = String(m.gamertag || m.username || m.name || "").trim().toLowerCase();
-          if (!disc) disc = String(m.discord || m.discord_name || m.discord_username || "").trim().toLowerCase();
-          if (!act) act = String(m.activision_id || "").trim().toLowerCase();
-        }
-      }
-
-      return list.filter(n => {
-        const nTag = String(n.target_gamertag || "").trim().toLowerCase();
-        const nUid = String(n.target_user_id || "").trim();
-        const nDisc = String(n.target_discord || "").trim().toLowerCase();
-        const nAct = String(n.target_activision || "").trim().toLowerCase();
-
-        if (tag && nTag && (tag === nTag || tag.includes(nTag) || nTag.includes(tag))) return true;
-        if (uid && nUid && uid === nUid) return true;
-        if (disc && nDisc && (disc === nDisc || disc.includes(nDisc) || nDisc.includes(disc))) return true;
-        if (act && nAct && act === nAct) return true;
-        return false;
-      });
+      return list.filter(n => this._matchesUserTarget(n, userIdentifier));
     } catch (err) {
       console.error("getUserNotifications error:", err);
       return [];
@@ -2669,39 +2749,7 @@ if (dbClient && cleanPayload.user_id) {
 
     if (!userIdentifier) return list;
 
-    let tag = "";
-    let uid = "";
-    let disc = "";
-    let act = "";
-
-    if (typeof userIdentifier === "string") {
-      tag = userIdentifier.trim().toLowerCase();
-      uid = userIdentifier.trim();
-    } else if (typeof userIdentifier === "object" && userIdentifier !== null) {
-      tag = String(userIdentifier.gamertag || userIdentifier.username || userIdentifier.name || userIdentifier.email || "").trim().toLowerCase();
-      uid = String(userIdentifier.id || userIdentifier.user_id || "").trim();
-      disc = String(userIdentifier.discord || userIdentifier.discord_name || userIdentifier.discord_username || "").trim().toLowerCase();
-      act = String(userIdentifier.activision_id || userIdentifier.activision || "").trim().toLowerCase();
-      if (userIdentifier.user_metadata) {
-        const m = userIdentifier.user_metadata;
-        if (!tag) tag = String(m.gamertag || m.username || m.name || "").trim().toLowerCase();
-        if (!disc) disc = String(m.discord || m.discord_name || m.discord_username || "").trim().toLowerCase();
-        if (!act) act = String(m.activision_id || "").trim().toLowerCase();
-      }
-    }
-
-    return list.filter(inv => {
-      const iTag = String(inv.invited_gamertag || "").trim().toLowerCase();
-      const iUid = String(inv.invited_user_id || "").trim();
-      const iDisc = String(inv.invited_discord || "").trim().toLowerCase();
-      const iAct = String(inv.invited_activision || "").trim().toLowerCase();
-
-      if (tag && iTag && (tag === iTag || tag.includes(iTag) || iTag.includes(tag))) return true;
-      if (uid && iUid && uid === iUid) return true;
-      if (disc && iDisc && (disc === iDisc || disc.includes(iDisc) || iDisc.includes(disc))) return true;
-      if (act && iAct && act === iAct) return true;
-      return false;
-    });
+    return list.filter(inv => this._matchesUserTarget(inv, userIdentifier));
   },
 
   async saveTournamentTeamInvites(list) {
@@ -4908,7 +4956,27 @@ if (dbClient && cleanPayload.user_id) {
     // Dispatch Team Invites to all listed teammates (CheckMate Gaming style)
     try {
       const allInvites = await this.getTournamentTeamInvites(null);
+      // Fetch community players / registered accounts directory to enrich teammate data
+      let communityPlayers = [];
+      try {
+        if (typeof this.getTournamentPlayersDirectory === "function") {
+          communityPlayers = await this.getTournamentPlayersDirectory();
+        }
+      } catch (_) {}
+
       for (const tTag of proposedTeammates) {
+        const cleanT = String(tTag || "").trim().toLowerCase().replace(/^@/, "");
+        const matchedPlayer = (communityPlayers || []).find(p => {
+          const pTag = String(p.gamertag || "").trim().toLowerCase().replace(/^@/, "");
+          const pDisc = String(p.discord || p.discord_name || "").trim().toLowerCase().replace(/^@/, "");
+          return (pTag && (pTag === cleanT || pTag.includes(cleanT) || cleanT.includes(pTag))) ||
+                 (pDisc && (pDisc === cleanT || pDisc.includes(cleanT) || cleanT.includes(pDisc)));
+        });
+
+        const teammateUserId = matchedPlayer?.id || matchedPlayer?.user_id || null;
+        const teammateDiscord = matchedPlayer?.discord || matchedPlayer?.discord_name || "";
+        const teammateActId = matchedPlayer?.activision_id || "";
+
         const invId = "tinv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
         const newInvite = {
           id: invId,
@@ -4919,15 +4987,28 @@ if (dbClient && cleanPayload.user_id) {
           captain_gamertag: String(squadData.captain_gamertag || "Captain").trim(),
           captain_discord: String(squadData.captain_discord || "").trim(),
           invited_gamertag: tTag,
+          invited_user_id: teammateUserId,
+          invited_discord: teammateDiscord,
+          invited_activision: teammateActId,
           status: "pending", // 'pending', 'accepted', 'declined'
           created_at: new Date().toISOString()
         };
         allInvites.unshift(newInvite);
-        rosterStatusList.push({ gamertag: tTag, role: "Member", status: "pending", invite_id: invId });
+        rosterStatusList.push({
+          gamertag: tTag,
+          role: "Member",
+          status: "pending",
+          invite_id: invId,
+          user_id: teammateUserId,
+          discord: teammateDiscord
+        });
 
         // Dispatch personal notification with CheckMate Gaming style acceptance CTA
         await this.sendUserNotification({
           target_gamertag: tTag,
+          target_user_id: teammateUserId,
+          target_discord: teammateDiscord,
+          target_activision: teammateActId,
           title: "Tournament Team Invite",
           message: `${squadData.captain_gamertag} has invited you to join team "${squadData.team_name}" for the upcoming tournament "${item.title || 'Frontline Tournament'}". Accept to join the squad roster.`,
           type: "team_invite",
@@ -4939,6 +5020,8 @@ if (dbClient && cleanPayload.user_id) {
             team_name: squadData.team_name,
             captain_gamertag: squadData.captain_gamertag,
             invited_gamertag: tTag,
+            invited_user_id: teammateUserId,
+            invited_discord: teammateDiscord,
             status: "pending"
           }
         });

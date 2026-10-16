@@ -89,3 +89,25 @@ ALTER TABLE public.tournament_players ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all tournament_players" ON public.tournament_players;
 CREATE POLICY "Allow public all tournament_players" ON public.tournament_players FOR ALL USING (true) WITH CHECK (true);
 
+-- 4. LEAGUE SETTINGS (Registry for Invites, Notifications, Registrations)
+CREATE TABLE IF NOT EXISTS public.league_settings (
+    id TEXT PRIMARY KEY,
+    season_number INT DEFAULT 1,
+    status_state TEXT DEFAULT 'active',
+    status_text TEXT DEFAULT 'SEASON 1 ACTIVE',
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.league_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all league_settings" ON public.league_settings;
+CREATE POLICY "Allow public all league_settings" ON public.league_settings FOR ALL USING (true) WITH CHECK (true);
+
+-- 5. TOURNAMENT REGISTRATIONS & MATCHES
+ALTER TABLE public.tournament_registrations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all tournament_registrations" ON public.tournament_registrations;
+CREATE POLICY "Allow public all tournament_registrations" ON public.tournament_registrations FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.tournament_matches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all tournament_matches" ON public.tournament_matches;
+CREATE POLICY "Allow public all tournament_matches" ON public.tournament_matches FOR ALL USING (true) WITH CHECK (true);
+

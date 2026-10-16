@@ -1086,6 +1086,38 @@
           console.warn("Error loading arena notifications:", e);
         }
 
+        // Also fetch active tournament team invites from registry to guarantee tournament invites are NEVER missed
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === "function") {
+            const directInvites = await window.LeagueDB.getTournamentTeamInvites(player);
+            if (Array.isArray(directInvites) && directInvites.length > 0) {
+              directInvites.forEach(inv => {
+                const alreadyHas = notifs.some(n => n.type === "team_invite" && (n.metadata?.invite_id === inv.id || n.id === inv.id));
+                if (!alreadyHas) {
+                  notifs.unshift({
+                    id: "synth_" + inv.id,
+                    title: "Tournament Team Invite",
+                    message: `${inv.captain_gamertag || "Team Captain"} has invited you to join team "${inv.team_name || "Tournament Squad"}" for tournament "${inv.tournament_title || "Tournament"}". Accept to join the squad roster.`,
+                    type: "team_invite",
+                    created_at: inv.created_at || new Date().toISOString(),
+                    read: inv.status !== "pending",
+                    metadata: {
+                      invite_id: inv.id,
+                      registration_id: inv.registration_id,
+                      tournament_id: inv.tournament_id,
+                      tournament_title: inv.tournament_title,
+                      team_name: inv.team_name,
+                      captain_gamertag: inv.captain_gamertag,
+                      invited_gamertag: inv.invited_gamertag,
+                      status: inv.status || "pending"
+                    }
+                  });
+                }
+              });
+            }
+          }
+        } catch (_) {}
+
         if (!notifs || notifs.length === 0) {
           container.innerHTML = `
             <div style="text-align:center; padding:28px 16px; background:#0e121a; border:1px dashed #232e42; border-radius:4px; color:#64748b; font-size:12.5px;">
