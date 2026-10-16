@@ -1062,13 +1062,42 @@
             return false;
           }
 
-          const inTeam1 = isUserInReg(reg1, user) || 
-            (user?.team_name && String(user.team_name).trim().toLowerCase() === t1NameClean) ||
-            (user?.team && String(user.team).trim().toLowerCase() === t1NameClean);
-          const inTeam2 = isUserInReg(reg2, user) || 
-            (user?.team_name && String(user.team_name).trim().toLowerCase() === t2NameClean) ||
-            (user?.team && String(user.team).trim().toLowerCase() === t2NameClean);
-          const hasAccess = isStaff || inTeam1 || inTeam2;
+          let reportingTeam = null;
+
+try {
+  const client = window.supabaseClient || window.dbClient;
+  const { data: { user: authUser }, error: authError } =
+    await client.auth.getUser();
+
+  if (authError) throw authError;
+
+  // Use the authenticated account's tournament staff permission.
+  isStaff = !!authUser && (
+    authUser.app_metadata?.tournament_admin === true ||
+    authUser.app_metadata?.tournament_admin === 'true'
+  );
+
+  if (authUser) {
+    const { data: membership, error } = await client
+      .from('tournament_report_members')
+      .select('team')
+      .eq('tournament_id', String(activeTournament.id))
+      .eq('match_id', String(match.id))
+      .eq('user_id', authUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    reportingTeam = Number(membership?.team) || null;
+  }
+} catch (error) {
+  isStaff = false;
+  console.error('Match chat access check failed:', error);
+}
+
+const inTeam1 = reportingTeam === 1;
+const inTeam2 = reportingTeam === 2;
+const hasAccess = isStaff || inTeam1 || inTeam2;
 
           let userTeamName = null;
           let combatantTeamName = null;
