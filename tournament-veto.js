@@ -158,7 +158,7 @@
         console.warn('Could not fetch existing tournament veto:', err);
       }
 
-      const { user, isStaff, userTeamName, reg1, reg2 } = userContext || {};
+      const { user, isStaff, userTeamName, combatantTeamName, reg1, reg2 } = userContext || {};
       const t1Name = String(t1.name || '').trim();
       const t2Name = String(t2.name || '').trim();
 
@@ -167,6 +167,7 @@
       const t2Norm = norm(t2Name);
 
       function checkUserMembership(reg, teamName) {
+        if (combatantTeamName && norm(combatantTeamName) === norm(teamName)) return true;
         if (userTeamName && norm(userTeamName) === norm(teamName)) return true;
         if (!user) return false;
         if (user.team_name && norm(user.team_name) === norm(teamName)) return true;
@@ -176,12 +177,24 @@
           const uGamertag = norm(user.gamertag || user.username);
           const uDiscord = norm(user.discord || user.discord_name || user.discord_username);
           const uActId = norm(user.activision_id || user.activision);
+          const uEmail = norm(user.email);
 
           if (uGamertag && norm(reg.captain_gamertag) === uGamertag) return true;
           if (uDiscord && norm(reg.captain_discord) === uDiscord) return true;
           if (uActId && norm(reg.captain_activision_id) === uActId) return true;
+          if (uEmail && norm(reg.captain_email) === uEmail) return true;
 
           let roster = [];
+          if (Array.isArray(reg.roster_status)) {
+            for (const member of reg.roster_status) {
+              const mTag = norm(member?.gamertag || member?.username);
+              const mDisc = norm(member?.discord);
+              const mAct = norm(member?.activision_id);
+              if (mTag && uGamertag && mTag === uGamertag) return true;
+              if (mDisc && uDiscord && mDisc === uDiscord) return true;
+              if (mAct && uActId && mAct === uActId) return true;
+            }
+          }
           if (Array.isArray(reg.roster)) roster = reg.roster;
           else if (typeof reg.roster === 'string') {
             try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
@@ -200,7 +213,8 @@
 
       const isTeam1 = checkUserMembership(reg1, t1Name);
       const isTeam2 = checkUserMembership(reg2, t2Name);
-      const canManage = isStaff || isTeam1 || isTeam2;
+      const isCombatant = isTeam1 || isTeam2;
+      const canManage = isStaff || isCombatant;
 
       function allDecided() {
         return vetoState.series.every(g => g.status === 'decided');
@@ -217,13 +231,29 @@
       }
 
       function isMyTurn() {
-        if (isStaff) return true;
         if (allDecided()) return false;
         if (!vetoState.coinFlipped) return false;
         const cur = getActiveTurnTeam();
         const curNorm = norm(cur.name);
-        if (isTeam1 && curNorm === t1Norm) return true;
-        if (isTeam2 && curNorm === t2Norm) return true;
+
+        // If user belongs to one of the competing teams, strictly check if it's their team's turn!
+        // (Even if the user is an admin, when competing as a combatant on a roster, their turn must be strictly respected)
+        if (isTeam1 && !isTeam2) {
+          return curNorm === t1Norm;
+        }
+        if (isTeam2 && !isTeam1) {
+          return curNorm === t2Norm;
+        }
+        if (isTeam1 && isTeam2) {
+          // In local test mode where user matches both teams, allow active turn
+          return true;
+        }
+
+        // Neutral league staff / tournament referee who is not on either team roster
+        if (isStaff) {
+          return true;
+        }
+
         return false;
       }
 
@@ -254,7 +284,17 @@
           coinDisc.style.background = '#152514';
           coinDisc.style.borderColor = '#22c55e';
           coinDisc.style.color = '#4ade80';
-          coinActions.innerHTML = '';
+          
+          if (isStaff) {
+            coinActions.innerHTML = `
+              <button type="button" class="btn-tourney-outline" id="btn-admin-reset-coin" style="font-size:10.5px; padding:3px 9px; color:#f87171; border-color:#7f1d1d;" title="Only Tournament Admins can reset the coin flip">
+                🔄 Reset Coin Toss
+              </button>
+            `;
+            wrapper.querySelector('#btn-admin-reset-coin')?.addEventListener('click', handleResetCoin);
+          } else {
+            coinActions.innerHTML = `<span style="font-size:10.5px; color:#6b7280; font-style:italic;">Coin Toss Confirmed</span>`;
+          }
         } else {
           coinText.textContent = `Coin toss required to determine first strike advantage between ${t1.name} and ${t2.name}.`;
           if (canManage) {
@@ -287,7 +327,7 @@
             turnHud.style.borderLeftColor = '#22c55e';
             turnHud.style.background = 'rgba(34,197,94,0.1)';
             turnMsg.innerHTML = `👉 <strong style="color:#4ade80;">YOUR TURN (${esc(activeTeam.name)})</strong> — Select a map to strike for <span style="color:#ffffff;">Game ${curGame.game} (${curGame.mode})</span>`;
-          } else if (isTeam1 || isTeam2) {
+          } else if (isCombatant) {
             turnHud.style.borderLeftColor = '#ef4444';
             turnHud.style.background = 'rgba(239,68,68,0.08)';
             turnMsg.innerHTML = `⏳ <strong style="color:#f87171;">WAITING FOR ${esc(activeTeam.name).toUpperCase()} TO VETO</strong> — Your controls are locked until their pick is made.`;
@@ -302,33 +342,36 @@
         if (isStaff) {
           adminActions.innerHTML = `
             <button type="button" id="btn-veto-auto" class="btn-tourney-outline" style="font-size:10px; padding:2px 8px;" title="Randomly fill remaining picks">Auto-Fill</button>
-            <button type="button" id="btn-veto-reset" class="btn-tourney-outline" style="font-size:10px; padding:2px 8px; color:#f87171;" title="Reset veto to initial state">Reset</button>
+            <button type="button" id="btn-veto-reset" class="btn-tourney-outline" style="font-size:10px; padding:2px 8px; color:#f87171;" title="Reset veto to initial state">Reset All</button>
           `;
           wrapper.querySelector('#btn-veto-auto')?.addEventListener('click', handleAutoVeto);
           wrapper.querySelector('#btn-veto-reset')?.addEventListener('click', handleResetVeto);
         }
 
-        // 3. Render Series Cards
+        // 3. Render Series Cards in strict sequential order
         const currentPendingGame = vetoState.series.find(g => g.status !== 'decided');
+        const myTurn = isMyTurn();
+
         cardsCont.innerHTML = vetoState.series.map(game => {
           const isDecided = game.status === 'decided';
           const decidedMap = game.map || (isDecided ? game.pool[0] : null);
           const isCurrentActive = currentPendingGame && currentPendingGame.game === game.game;
+          const isUpcomingLocked = !isDecided && !isCurrentActive;
 
           return `
-            <div style="background:#12160e; border:1px solid ${isDecided ? '#22c55e' : (isCurrentActive ? '#fbbf24' : '#232b17')}; border-radius:3px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:${isCurrentActive ? '0 0 14px rgba(251,191,36,0.15)' : 'none'};">
+            <div style="background:#12160e; border:1px solid ${isDecided ? '#22c55e' : (isCurrentActive ? '#fbbf24' : '#232b17')}; border-radius:3px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:${isCurrentActive ? '0 0 14px rgba(251,191,36,0.15)' : 'none'}; opacity:${isUpcomingLocked ? '0.55' : '1'};">
               <div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                   <span style="font:800 10.5px var(--body); color:#fbbf24; text-transform:uppercase;">GAME ${game.game}</span>
-                  <span style="font:800 9.5px var(--body); padding:1px 5px; border-radius:2px; ${isDecided ? 'background:rgba(34,197,94,0.15); border:1px solid #22c55e; color:#4ade80;' : 'background:#1b2212; color:#9ca3af;'}">
-                    ${isDecided ? 'LOCKED IN' : 'VETOING'}
+                  <span style="font:800 9.5px var(--body); padding:1px 5px; border-radius:2px; ${isDecided ? 'background:rgba(34,197,94,0.15); border:1px solid #22c55e; color:#4ade80;' : (isCurrentActive ? 'background:rgba(251,191,36,0.15); border:1px solid #fbbf24; color:#fbbf24;' : 'background:#1b2212; color:#6b7280;')}">
+                    ${isDecided ? 'LOCKED IN' : (isCurrentActive ? 'VETO ACTIVE' : 'QUEUED')}
                   </span>
                 </div>
                 <div style="font:800 14px var(--body); color:#ffffff; margin-bottom:2px;">
                   ${isDecided ? esc(decidedMap.name) : esc(game.mode)}
                 </div>
                 <div style="font-size:11px; color:#94a3b8; margin-bottom:10px;">
-                  ${isDecided ? `Mode: ${esc(game.mode)}` : `${game.pool.length} maps in pool`}
+                  ${isDecided ? `Mode: ${esc(game.mode)}` : (isCurrentActive ? `${game.pool.length} maps in active pool` : `Queued after Game ${game.game - 1}`)}
                 </div>
 
                 <!-- Map options list -->
@@ -344,10 +387,10 @@
                       return `<span style="display:inline-block; font-size:11px; color:#6b7280; text-decoration:line-through; padding:2px 5px;">✕ ${esc(m.name)}</span>`;
                     }
 
-                    // Strike button
-                    const canStrikeThis = isCurrentActive && isMyTurn();
+                    // Strike button - strictly clickable ONLY if current active game AND is my turn AND coin flipped!
+                    const canStrikeThis = isCurrentActive && myTurn && vetoState.coinFlipped;
                     return `
-                      <button type="button" class="btn-veto-strike-map" data-game="${game.game}" data-map="${esc(m.name)}" ${canStrikeThis ? '' : 'disabled'} style="background:${canStrikeThis ? '#1f2814' : '#14180e'}; border:1px solid ${canStrikeThis ? '#eab308' : '#28321a'}; color:${canStrikeThis ? '#ffffff' : '#6b7280'}; padding:3px 7px; border-radius:2px; font-size:11px; font-weight:700; cursor:${canStrikeThis ? 'pointer' : 'not-allowed'}; display:inline-flex; align-items:center; gap:4px;">
+                      <button type="button" class="btn-veto-strike-map" data-game="${game.game}" data-map="${esc(m.name)}" ${canStrikeThis ? '' : 'disabled'} style="background:${canStrikeThis ? '#1f2814' : '#14180e'}; border:1px solid ${canStrikeThis ? '#eab308' : '#28321a'}; color:${canStrikeThis ? '#ffffff' : '#6b7280'}; padding:3px 7px; border-radius:2px; font-size:11px; font-weight:700; cursor:${canStrikeThis ? 'pointer' : 'not-allowed'}; pointer-events:${canStrikeThis ? 'auto' : 'none'}; opacity:${canStrikeThis ? '1' : '0.45'}; display:inline-flex; align-items:center; gap:4px;">
                         <span style="color:#ef4444;">✕</span> ${esc(m.name)}
                       </button>
                     `;
@@ -393,7 +436,32 @@
         }, 700);
       }
 
+      async function handleResetCoin() {
+        if (!isStaff) {
+          alert('Only tournament admins can reset the coin flip.');
+          return;
+        }
+        if (!confirm('Admin Directive: Reset the coin flip for this match? This will also reset pending vetoes.')) return;
+        vetoState.coinFlipped = false;
+        vetoState.vetoStep = 0;
+        vetoState.series = createFreshVetoSeries();
+        renderVetoUI();
+        await persistVeto();
+      }
+
       async function handleStrikeMap(gameNumber, mapName) {
+        if (!vetoState.coinFlipped) {
+          alert("The coin toss must be completed before vetoing maps.");
+          return;
+        }
+
+        // Strict sequential order enforcement
+        const currentPendingGame = vetoState.series.find(g => g.status !== 'decided');
+        if (!currentPendingGame || currentPendingGame.game !== gameNumber) {
+          alert(`Maps must be vetoed in strict sequential order. Please complete Game ${currentPendingGame ? currentPendingGame.game : 1} first.`);
+          return;
+        }
+
         if (!isMyTurn()) {
           alert("It is not your team's turn to veto.");
           return;

@@ -1022,15 +1022,29 @@
             if (!reg || !u) return false;
             const norm = s => String(s || '').replace(/^@/, '').trim().toLowerCase();
             const uGamertag = norm(u.gamertag || u.username);
-            const uDiscord = norm(u.discord);
-            const uActId = norm(u.activision_id);
+            const uDiscord = norm(u.discord || u.discord_name || u.discord_username);
+            const uActId = norm(u.activision_id || u.activision);
+            const uEmail = norm(u.email);
 
             // Match captain
             if (uGamertag && norm(reg.captain_gamertag) === uGamertag) return true;
             if (uDiscord && norm(reg.captain_discord) === uDiscord) return true;
             if (uActId && norm(reg.captain_activision_id) === uActId) return true;
+            if (uEmail && norm(reg.captain_email) === uEmail) return true;
 
-            // Match roster
+            // Match roster_status (structured invitations and teammates)
+            if (Array.isArray(reg.roster_status)) {
+              for (const member of reg.roster_status) {
+                const mTag = norm(member?.gamertag || member?.username);
+                const mDisc = norm(member?.discord);
+                const mAct = norm(member?.activision_id);
+                if (mTag && uGamertag && mTag === uGamertag) return true;
+                if (mDisc && uDiscord && mDisc === uDiscord) return true;
+                if (mAct && uActId && mAct === uActId) return true;
+              }
+            }
+
+            // Match legacy roster
             let roster = [];
             if (Array.isArray(reg.roster)) roster = reg.roster;
             else if (typeof reg.roster === 'string') {
@@ -1042,6 +1056,7 @@
               for (const member of roster) {
                 const mTag = norm(typeof member === 'object' ? (member.gamertag || member.name) : member);
                 if (mTag && uGamertag && mTag === uGamertag) return true;
+                if (mTag && uDiscord && mTag === uDiscord) return true;
               }
             }
             return false;
@@ -1056,14 +1071,20 @@
           const hasAccess = isStaff || inTeam1 || inTeam2;
 
           let userTeamName = null;
+          let combatantTeamName = null;
           let userRole = 'combatant';
+
+          if (inTeam1) {
+            combatantTeamName = t1.name;
+          } else if (inTeam2) {
+            combatantTeamName = t2.name;
+          }
+
           if (isStaff) {
             userRole = 'staff';
-            userTeamName = 'League Official';
-          } else if (inTeam1) {
-            userTeamName = t1.name;
-          } else if (inTeam2) {
-            userTeamName = t2.name;
+            userTeamName = combatantTeamName || 'League Official';
+          } else {
+            userTeamName = combatantTeamName;
           }
 
           // Build Match Chat HTML Section
@@ -1162,6 +1183,7 @@
               user,
               isStaff,
               userTeamName,
+              combatantTeamName,
               userRole,
               reg1,
               reg2
