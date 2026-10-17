@@ -10380,9 +10380,15 @@ window.LadderDB = {
     const newChallenge = {
       ladder_type: challengeData.ladder_type || "4v4_variant",
       team_a_id: challengeData.team_a_id,
+      team_a: challengeData.team_a || null,
+      captain_name: challengeData.captain_name || (challengeData.team_a && challengeData.team_a.captain_name) || null,
+      captain_discord: challengeData.captain_discord || (challengeData.team_a && challengeData.team_a.captain_discord) || null,
+      user_id: challengeData.user_id || (challengeData.team_a && challengeData.team_a.user_id) || null,
+      team_name: challengeData.team_name || (challengeData.team_a && challengeData.team_a.name) || null,
+      team_tag: challengeData.team_tag || (challengeData.team_a && challengeData.team_a.tag) || null,
       best_of: parseInt(challengeData.best_of, 10) || 5,
       status: "open",
-      scheduled_time: challengeData.scheduled_time || "Ready Now",
+      scheduled_time: challengeData.scheduled_time || challengeData.time || "Ready Now",
       notes: challengeData.notes || "CDL Rules",
       created_at: new Date().toISOString()
     };
@@ -10405,14 +10411,30 @@ window.LadderDB = {
     try {
       const type = newChallenge.ladder_type;
       let existing = await this.getOpenChallenges(type);
-      newChallenge.id = "chal_" + Date.now();
-      newChallenge.team_a = challengeData.team_a; // embed squad details
+      newChallenge.id = challengeData.id || ("chal_" + Date.now());
+      if (!newChallenge.team_a && challengeData.team_a) {
+        newChallenge.team_a = challengeData.team_a;
+      }
       existing.unshift(newChallenge);
       localStorage.setItem("frontline_ladder_challenges_" + type, JSON.stringify(existing));
       return { success: true, challenge: newChallenge, local: true };
     } catch (e) {
       return { success: false, error: e.message };
     }
+  },
+
+  async getMatchFinderChallenges(ladderType = "all") {
+    const types = (ladderType && ladderType !== "all") ? [ladderType] : ["4v4_variant", "2v2_snd", "1v1_radar"];
+    let all = [];
+    for (const t of types) {
+      try {
+        const chals = await this.getOpenChallenges(t);
+        if (Array.isArray(chals)) {
+          all.push(...chals);
+        }
+      } catch (_) {}
+    }
+    return all;
   },
 
   // Record or Accept Match in Progress
@@ -10461,7 +10483,17 @@ window.LadderDB = {
         ladder_type: foundChal.ladder_type || "4v4_variant",
         best_of: foundChal.best_of || 5,
         status: "in_progress",
-        team_a: foundChal.team_a || { id: 1, name: "Team 1", tag: "T1", avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80", elo: 1200, tier: "Specialist" },
+        team_a: foundChal.team_a || {
+          id: foundChal.team_a_id || 1,
+          name: foundChal.team_name || "Team 1",
+          tag: foundChal.team_tag || "T1",
+          captain_name: foundChal.captain_name || "Captain",
+          captain_discord: foundChal.captain_discord || "",
+          user_id: foundChal.user_id || null,
+          avatar_url: foundChal.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          elo: foundChal.elo || 1200,
+          tier: "Specialist"
+        },
         team_b: acceptingTeam,
         notes: foundChal.notes || "CDL Rules",
         server_info: "Dallas (Central Host)",
@@ -10470,6 +10502,54 @@ window.LadderDB = {
     }
 
     await this.saveMatch(matchObj);
+
+    // Dispatch notification to the poster (Team A Captain/Creator)
+    try {
+      const posterTag = matchObj.team_a?.captain_name || matchObj.team_a?.captain || matchObj.team_a?.name;
+      const posterUserId = matchObj.team_a?.user_id || matchObj.team_a?.created_by || null;
+      const posterDiscord = matchObj.team_a?.captain_discord || null;
+      const opponentName = acceptingTeam?.name || "An opponent squad";
+      const ladderTitle = (matchObj.ladder_type || "Arena").replace(/_/g, " ").toUpperCase();
+
+      if (posterTag || posterUserId) {
+        const notifData = {
+          target_gamertag: posterTag,
+          target_user_id: posterUserId,
+          target_discord: posterDiscord,
+          type: "match_accepted",
+          title: "⚔ MATCH CHALLENGE ACCEPTED!",
+          message: `Squad "${opponentName}" has accepted your ${ladderTitle} challenge! Report to the CDL Match Veto Room immediately.`,
+          metadata: {
+            match_id: matchObj.id,
+            match_url: `/match/?id=${encodeURIComponent(matchObj.id)}`,
+            opponent_team: opponentName,
+            ladder_type: matchObj.ladder_type
+          }
+        };
+
+        if (window.LeagueDB && typeof window.LeagueDB.sendUserNotification === "function") {
+          await window.LeagueDB.sendUserNotification(notifData);
+        } else {
+          // Direct fallback to localStorage notifications
+          const list = JSON.parse(localStorage.getItem("frontline_user_notifications") || "[]");
+          const notifId = "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+          const newNotif = {
+            id: notifId,
+            ...notifData,
+            created_at: new Date().toISOString(),
+            read: false
+          };
+          list.unshift(newNotif);
+          localStorage.setItem("frontline_user_notifications", JSON.stringify(list));
+          try {
+            window.dispatchEvent(new CustomEvent("frontline_notification_received", { detail: newNotif }));
+          } catch (_) {}
+        }
+      }
+    } catch (notifErr) {
+      console.warn("Notice: Failed to dispatch match accepted notification:", notifErr);
+    }
+
     return { success: true, match: matchObj };
   },
 

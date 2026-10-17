@@ -327,12 +327,44 @@
         `).join('');
       }
 
-      function acceptMatchChallenge(id) {
+      async function acceptMatchChallenge(id) {
         const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
         if (!player || !player.gamertag) {
           alert('You must sign in with your Arena combatant profile to accept challenges.\nRedirecting to Arena Profile...');
           window.location.href = '/arena/profile/#login';
           return;
+        }
+
+        // Find challenge object to know its ladder type
+        const chal = activeChallenges.find(c => String(c.id) === String(id));
+        const ladderType = chal?.ladder_type || '4v4_variant';
+        let acceptingTeam = null;
+
+        if (window.LadderDB && typeof window.LadderDB.getMyTeam === 'function') {
+          acceptingTeam = window.LadderDB.getMyTeam(ladderType);
+        }
+
+        if (!acceptingTeam) {
+          acceptingTeam = {
+            id: 'team_' + Date.now(),
+            name: player.team_name || (player.gamertag + "'s Squad"),
+            tag: player.tag || 'SQD',
+            captain_name: player.gamertag,
+            captain_discord: player.discord_name || player.discord || '',
+            user_id: player.user_id || player.id || null,
+            elo: player.elo || 1200,
+            avatar_url: player.avatar_url || 'images/arenalogo_1.png',
+            tier: 'Combatant Tier'
+          };
+        }
+
+        // Record accept through LadderDB so notification is dispatched to poster
+        try {
+          if (window.LadderDB && typeof window.LadderDB.acceptChallenge === 'function') {
+            await window.LadderDB.acceptChallenge(id, acceptingTeam);
+          }
+        } catch (err) {
+          console.warn('LadderDB acceptChallenge error:', err);
         }
 
         // Navigate directly into active CDL Veto Room
@@ -358,12 +390,18 @@
           return;
         }
 
+        const ladderType = document.getElementById('post-ladder-select').value;
+        const myTeam = window.LadderDB && typeof window.LadderDB.getMyTeam === 'function' ? window.LadderDB.getMyTeam(ladderType) : null;
+
         const newChallenge = {
           id: 'chal-' + Date.now(),
-          ladder_type: document.getElementById('post-ladder-select').value,
-          team_name: player.team_name || (player.gamertag + "'s Squad"),
-          team_tag: player.tag || 'SQUAD',
+          ladder_type: ladderType,
+          team_a_id: myTeam?.id || ('team_' + Date.now()),
+          team_name: myTeam?.name || player.team_name || (player.gamertag + "'s Squad"),
+          team_tag: myTeam?.tag || player.tag || 'SQUAD',
           captain_name: player.gamertag,
+          captain_discord: player.discord_name || player.discord || '',
+          user_id: player.user_id || player.id || null,
           elo: player.elo || 1200,
           tier: 'Combatant Tier',
           host: document.getElementById('post-host-preference').value,
@@ -372,6 +410,26 @@
           avatar_url: player.avatar_url,
           notes: document.getElementById('post-challenge-notes').value.trim()
         };
+
+        newChallenge.team_a = {
+          id: newChallenge.team_a_id,
+          name: newChallenge.team_name,
+          tag: newChallenge.team_tag,
+          captain_name: newChallenge.captain_name,
+          captain_discord: newChallenge.captain_discord,
+          user_id: newChallenge.user_id,
+          avatar_url: newChallenge.avatar_url,
+          elo: newChallenge.elo,
+          tier: newChallenge.tier
+        };
+
+        try {
+          if (window.LadderDB && typeof window.LadderDB.postChallenge === 'function') {
+            await window.LadderDB.postChallenge(newChallenge);
+          }
+        } catch (err) {
+          console.warn('LadderDB.postChallenge error:', err);
+        }
 
         activeChallenges.unshift(newChallenge);
         closePostChallengeModal();

@@ -334,9 +334,11 @@
 
     const isInvite = notif.type === 'team_invite';
     const isTourneyLive = notif.type === 'tournament_live';
+    const isMatchAccepted = notif.type === 'match_accepted';
     const inviteId = notif.metadata?.invite_id;
     const inviteStatus = notif.metadata?.status || 'pending';
     const bracketUrl = notif.metadata?.bracket_url || notif.metadata?.action_url || '/tournaments/bracket/';
+    const matchUrl = notif.metadata?.match_url || (notif.metadata?.match_id ? `/match/?id=${encodeURIComponent(notif.metadata.match_id)}` : '/match-finder/');
 
     let actionButtonsHtml = '';
     if (isInvite && inviteStatus === 'pending' && inviteId) {
@@ -354,11 +356,19 @@
           </a>
         </div>
       `;
+    } else if (isMatchAccepted) {
+      actionButtonsHtml = `
+        <div style="margin-top:6px;">
+          <a href="${matchUrl}" style="display:inline-block; background:#ff1e44; color:#ffffff; font-weight:800; font-size:11px; padding:6px 14px; border-radius:3px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 4px 12px rgba(255,30,68,0.35);">
+            ⚔ Enter Match Room ↗
+          </a>
+        </div>
+      `;
     }
 
-    const toastBorderColor = isTourneyLive ? '#ff1e44' : (isInvite ? '#38bdf8' : '#d5f45b');
-    const toastTitleColor = isTourneyLive ? '#ff3b3b' : (isInvite ? '#22c55e' : '#d5f45b');
-    const toastIcon = isTourneyLive ? '🔴' : (isInvite ? '🛡' : '🔔');
+    const toastBorderColor = (isTourneyLive || isMatchAccepted) ? '#ff1e44' : (isInvite ? '#38bdf8' : '#d5f45b');
+    const toastTitleColor = (isTourneyLive || isMatchAccepted) ? '#ff3b3b' : (isInvite ? '#22c55e' : '#d5f45b');
+    const toastIcon = isTourneyLive ? '🔴' : (isMatchAccepted ? '⚔' : (isInvite ? '🛡' : '🔔'));
 
     toast.style.borderColor = toastBorderColor;
     toast.style.borderLeftColor = toastBorderColor;
@@ -597,10 +607,21 @@
                 </a>
               </div>
             `;
+          } else if (n.type === 'match_accepted') {
+            badgeText = '⚔ MATCH CHALLENGE ACCEPTED';
+            badgeColor = '#ff1e44';
+            const mUrl = n.metadata?.match_url || (n.metadata?.match_id ? `/match/?id=${encodeURIComponent(n.metadata.match_id)}` : '/match-finder/');
+            customActionHtml = `
+              <div style="margin-top:4px;">
+                <a href="${mUrl}" style="display:inline-block; font-size:10.5px; font-weight:800; color:#ff1e44; text-decoration:none; text-transform:uppercase;">
+                  ⚔ Open Match Veto Room ↗
+                </a>
+              </div>
+            `;
           }
 
           return `
-            <div style="padding:10px 14px; border-bottom:1px solid #1a2012; background:${n.read ? 'transparent' : (n.type === 'tournament_live' ? 'rgba(255,30,68,0.08)' : 'rgba(213,244,91,0.06)')}; display:flex; flex-direction:column; gap:4px;">
+            <div style="padding:10px 14px; border-bottom:1px solid #1a2012; background:${n.read ? 'transparent' : ((n.type === 'tournament_live' || n.type === 'match_accepted') ? 'rgba(255,30,68,0.08)' : 'rgba(213,244,91,0.06)')}; display:flex; flex-direction:column; gap:4px;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:10px; font-weight:800; color:${badgeColor}; text-transform:uppercase;">
                   ${badgeText}
