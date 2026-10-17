@@ -4663,6 +4663,17 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
+    // If status was changed to Live, send notification to all registered players
+    const prevStatus = String(existingObj.status || "").toLowerCase();
+    const newStatus = String(tourneyItem.status || "").toLowerCase();
+    if (newStatus.includes("live") && !prevStatus.includes("live")) {
+      try {
+        await this.notifyTournamentLive(tourneyItem);
+      } catch (liveErr) {
+        console.warn("Notice: could not dispatch live tournament notifications in saveTournament:", liveErr);
+      }
+    }
+
     window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: tourneyItem }));
     return { success: true, tournament: tourneyItem };
   },
@@ -5434,6 +5445,153 @@ if (dbClient && cleanPayload.user_id) {
     return list;
   },
 
+  // Dispatch live alerts to all players & squad rosters registered in a tournament when it goes LIVE
+  async notifyTournamentLive(tournamentOrId) {
+    try {
+      let tourney = tournamentOrId;
+      if (!tourney || typeof tourney !== "object") {
+        const tourneys = await this.getTournaments();
+        tourney = tourneys.find(t => String(t.id) === String(tournamentOrId));
+      }
+      if (!tourney || !tourney.id) return { success: false, error: "Tournament not found." };
+
+      const tourneyId = String(tourney.id);
+      const tourneyTitle = tourney.title || "Championship Tournament";
+      const bracketUrl = tourney.bracket_url || `/tournaments/bracket/?tournament=${encodeURIComponent(tourneyId)}`;
+
+      // Fetch all registered squads for this tournament
+      const regs = await this.getTournamentRegistrations(tourneyId);
+      if (!regs || regs.length === 0) {
+        return { success: true, count: 0, message: "No registered squads found to notify." };
+      }
+
+      // Collect all distinct combatants (captains, starting roster, reserves)
+      const combatantsMap = new Map();
+      const norm = s => String(s || "").trim().toLowerCase();
+
+      regs.forEach(reg => {
+        const squadName = reg.team_name || "Squad";
+
+        // 1. Captain
+        if (reg.captain_gamertag) {
+          const capTag = reg.captain_gamertag.trim();
+          const capKey = norm(capTag);
+          if (!combatantsMap.has(capKey)) {
+            combatantsMap.set(capKey, {
+              gamertag: capTag,
+              discord: reg.captain_discord || null,
+              activision: reg.captain_activision || null,
+              userId: reg.registered_by || null,
+              squadName: squadName,
+              isCaptain: true
+            });
+          }
+        }
+
+        // 2. Roster members
+        let roster = [];
+        if (Array.isArray(reg.roster)) roster = reg.roster;
+        else if (typeof reg.roster === "string") {
+          try { roster = JSON.parse(reg.roster); } catch (_) { roster = reg.roster.split(/,\s*/); }
+        } else if (reg.roster_text) {
+          roster = reg.roster_text.split(/,\s*/);
+        }
+
+        (roster || []).forEach(m => {
+          if (!m) return;
+          const mTag = String(typeof m === "object" ? (m.gamertag || m.name) : m).trim();
+          if (!mTag || mTag.toLowerCase() === "tbd" || mTag.toLowerCase() === "operative") return;
+          const mKey = norm(mTag);
+          if (!combatantsMap.has(mKey)) {
+            combatantsMap.set(mKey, {
+              gamertag: mTag,
+              discord: typeof m === "object" ? (m.discord || m.discord_name) : null,
+              activision: typeof m === "object" ? (m.activision_id || m.activision) : null,
+              userId: typeof m === "object" ? (m.user_id || m.userId) : null,
+              squadName: squadName,
+              isCaptain: false
+            });
+          }
+        });
+
+        // 3. Roster status objects
+        if (Array.isArray(reg.roster_status)) {
+          reg.roster_status.forEach(st => {
+            if (!st || !st.gamertag) return;
+            const stTag = String(st.gamertag).trim();
+            const stKey = norm(stTag);
+            if (!combatantsMap.has(stKey)) {
+              combatantsMap.set(stKey, {
+                gamertag: stTag,
+                discord: st.discord || null,
+                activision: st.activision || null,
+                userId: st.user_id || null,
+                squadName: squadName,
+                isCaptain: false
+              });
+            }
+          });
+        }
+      });
+
+      const allNotifications = await this.getAllNotificationsRegistry();
+      let sentCount = 0;
+      const nowIso = new Date().toISOString();
+
+      for (const combatant of combatantsMap.values()) {
+        const notifId = "notif_live_" + tourneyId + "_" + norm(combatant.gamertag);
+        
+        // Prevent duplicate spam for the same tournament live event
+        const alreadySent = allNotifications.some(n => 
+          n.id === notifId || 
+          (n.type === "tournament_live" && n.metadata?.tournament_id === tourneyId && norm(n.target_gamertag) === norm(combatant.gamertag))
+        );
+        if (alreadySent) continue;
+
+        const liveNotif = {
+          id: notifId,
+          target_gamertag: combatant.gamertag,
+          target_user_id: combatant.userId ? String(combatant.userId) : null,
+          target_discord: combatant.discord || null,
+          target_activision: combatant.activision || null,
+          title: `🔴 TOURNAMENT IS LIVE: ${tourneyTitle}`,
+          message: `The bracket for "${tourneyTitle}" has officially gone LIVE! Your squad "${combatant.squadName}" is seeded in the bracket. Report to your match station immediately.`,
+          type: "tournament_live",
+          created_at: nowIso,
+          read: false,
+          read_at: null,
+          metadata: {
+            tournament_id: tourneyId,
+            tournament_title: tourneyTitle,
+            squad_name: combatant.squadName,
+            is_captain: combatant.isCaptain,
+            bracket_url: bracketUrl,
+            action_url: bracketUrl,
+            action_text: "Open Live Bracket ↗"
+          }
+        };
+
+        allNotifications.unshift(liveNotif);
+        sentCount++;
+
+        // Broadcast real-time event for connected clients
+        try {
+          window.dispatchEvent(new CustomEvent("frontline_notification_received", { detail: liveNotif }));
+        } catch (_) {}
+      }
+
+      if (sentCount > 0) {
+        await this.saveAllNotificationsRegistry(allNotifications.slice(0, 500));
+        console.log(`[LeagueDB] Dispatched ${sentCount} live tournament notifications to registered players for: ${tourneyTitle}`);
+      }
+
+      return { success: true, count: sentCount, totalRegistered: combatantsMap.size };
+    } catch (err) {
+      console.error("notifyTournamentLive error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
   async generateTournamentBracket(tournamentId, options = {}) {
     const list = await this.getTournaments();
     const tourney = list.find(t => String(t.id) === String(tournamentId));
@@ -5626,6 +5784,13 @@ if (dbClient && cleanPayload.user_id) {
     } catch (_) {}
 
     await this.saveTournament(tourney);
+
+    // Notify all registered players in this tournament that the bracket is now LIVE
+    try {
+      await this.notifyTournamentLive(tourney);
+    } catch (notifErr) {
+      console.warn("Notice: could not dispatch live tournament notifications:", notifErr);
+    }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("frontline_bracket_updated", {
