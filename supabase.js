@@ -9758,6 +9758,40 @@ window.LadderDB = {
     return won ? change : -change;
   },
 
+  // 5-change team ELO system:
+  // Gains/losses are clamped between 5 (minimum) and 30 (maximum) in steps of 5: [5, 10, 15, 20, 25, 30].
+  // The delta depends on the difference between the team's ELO and the opposing team's ELO.
+  calculateTeamEloChange(teamElo, opposingTeamElo, won) {
+    const tElo = Number(teamElo) || 1200;
+    const oppElo = Number(opposingTeamElo) || 1200;
+    const diff = oppElo - tElo; // Positive if opposing team is higher, negative if current team is higher
+
+    if (won) {
+      // Underdog beating a higher team gains up to 30.
+      // Heavy favorite beating a lower team gains down to 5.
+      if (diff >= 200) return 30;
+      if (diff >= 100) return 25;
+      if (diff >= -50) return 20;  // Evenly matched / slight favorite
+      if (diff >= -150) return 15;
+      if (diff >= -250) return 10;
+      return 5;
+    } else {
+      // Losing to a higher team cushions the loss down to 5.
+      // Losing as a heavy favorite to a lower team penalizes up to 30.
+      if (diff >= 200) return 5;
+      if (diff >= 100) return 10;
+      if (diff >= -50) return 15;  // Evenly matched / slight favorite
+      if (diff >= -150) return 20;
+      if (diff >= -250) return 25;
+      return 30;
+    }
+  },
+
+  calculateTeamEloDelta(teamElo, opposingTeamElo, won) {
+    const change = this.calculateTeamEloChange(teamElo, opposingTeamElo, won);
+    return won ? change : -change;
+  },
+
   getTeamById(teamId) {
     if (!teamId) return null;
     const cleanId = String(teamId).trim();
@@ -10879,17 +10913,15 @@ window.LadderDB = {
         if (fullMatch) {
           const ladderType = fullMatch.ladder_type || "4v4_variant";
           const teamA = fullMatch.team_a;
-          const teamB = fullMatch.team_b;
-
           if (teamA && teamB) {
             const isTeamAWinner = winnerId === "team_a";
-            const eloGain = 25;
-            const eloLoss = 20;
 
-            // Helper to update team record & ELO
-            const applyTeamElo = async (team, won) => {
+            // Helper to update team record & ELO based on 5-change system against opposing team ELO
+            const applyTeamElo = async (team, oppTeam, won) => {
               const oldElo = Number(team.elo) || 1200;
-              const newElo = won ? (oldElo + eloGain) : Math.max(800, oldElo - eloLoss);
+              const oppElo = Number(oppTeam?.elo) || 1200;
+              const delta = this.calculateTeamEloDelta(oldElo, oppElo, won);
+              const newElo = Math.max(800, oldElo + delta);
               const wins = (Number(team.wins) || 0) + (won ? 1 : 0);
               const losses = (Number(team.losses) || 0) + (won ? 0 : 1);
               const oldStreak = Number(team.streak) || 0;
@@ -11056,9 +11088,9 @@ window.LadderDB = {
               } catch (_) {}
             };
 
-            // Update team A and team B ELO
-            await applyTeamElo(teamA, isTeamAWinner);
-            await applyTeamElo(teamB, !isTeamAWinner);
+            // Update team A and team B ELO based on opposing team's ELO
+            await applyTeamElo(teamA, teamB, isTeamAWinner);
+            await applyTeamElo(teamB, teamA, !isTeamAWinner);
 
             // Update individual rosters for both teams against the opposing team's highest ELO player
             for (const m of rosterA) {
