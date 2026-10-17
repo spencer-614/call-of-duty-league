@@ -589,12 +589,17 @@
       // State for Squad Teammate Selector & Autocomplete
       let cachedCommunityPlayers = [];
       let currentRosterTeammates = [];
-      let maxSquadSize = 4;
+      const MAX_ROSTER_SIZE = 8;
+      let minStarters = 4;
 
-      function getLadderSquadSize(ladderType) {
+      function getLadderMinStarters(ladderType) {
         if (ladderType === '1v1_radar') return 1;
         if (ladderType === '2v2_snd') return 2;
         return 4; // Default 4v4 variant
+      }
+
+      function getLadderSquadSize(ladderType) {
+        return MAX_ROSTER_SIZE;
       }
 
       function escapeHtml(str) {
@@ -755,26 +760,23 @@
         const addBtn = document.getElementById('btn-add-teammate');
         const captainTag = (document.getElementById('squad-captain-name')?.value || '').trim();
         const ladderSection = document.getElementById('ladder-teammates-section');
+        const ladderSelect = document.getElementById('squad-ladder-type');
+        const currentSelLadder = ladderSelect ? ladderSelect.value : '4v4_variant';
+        minStarters = getLadderMinStarters(currentSelLadder);
 
-        const neededTeammates = Math.max(0, maxSquadSize - 1);
-
-        if (maxSquadSize <= 1) {
-          if (ladderSection) ladderSection.style.display = 'none';
-          return;
-        } else {
-          if (ladderSection) ladderSection.style.display = 'block';
-        }
-
-        if (hint) {
-          hint.textContent = `Format requires ${maxSquadSize} players (1 Captain + ${neededTeammates} Teammate${neededTeammates === 1 ? '' : 's'})`;
-        }
+        if (ladderSection) ladderSection.style.display = 'block';
 
         const totalEnlisted = 1 + currentRosterTeammates.length;
-        const isComplete = totalEnlisted >= maxSquadSize;
+        const isFull = totalEnlisted >= MAX_ROSTER_SIZE;
+        const meetsStarters = totalEnlisted >= minStarters;
+
+        if (hint) {
+          hint.textContent = `Match starter requirement: ${minStarters} player${minStarters > 1 ? 's' : ''}. Roster capacity: up to ${MAX_ROSTER_SIZE} combatants total (1 Captain + up to 7 Teammates).`;
+        }
 
         if (badge) {
-          badge.textContent = isComplete ? `✓ ${maxSquadSize} / ${maxSquadSize} Players` : `${totalEnlisted} / ${maxSquadSize} Players`;
-          if (isComplete) {
+          badge.textContent = `${totalEnlisted} / ${MAX_ROSTER_SIZE} Players (Min: ${minStarters})`;
+          if (meetsStarters) {
             badge.style.color = '#22c55e';
             badge.style.background = 'rgba(34,197,94,0.15)';
             badge.style.borderColor = 'rgba(34,197,94,0.35)';
@@ -786,9 +788,9 @@
         }
 
         if (searchInput && addBtn) {
-          if (isComplete) {
+          if (isFull) {
             searchInput.disabled = true;
-            searchInput.placeholder = `Roster full (${maxSquadSize}/${maxSquadSize}). Remove a player to replace.`;
+            searchInput.placeholder = `Roster full (${MAX_ROSTER_SIZE}/${MAX_ROSTER_SIZE}). Remove a player to replace.`;
             addBtn.disabled = true;
             addBtn.style.opacity = '0.5';
           } else {
@@ -819,41 +821,63 @@
           </div>
         `;
 
-        // Teammates Slots
-        for (let i = 0; i < neededTeammates; i++) {
-          const teammateTag = currentRosterTeammates[i];
-          const slotNum = i + 2;
-          if (teammateTag) {
-            const playerDetails = cachedCommunityPlayers.find(p => p.gamertag.toLowerCase() === teammateTag.toLowerCase());
-            html += `
-              <div class="roster-slot-card filled">
-                <div style="display:flex; align-items:center; gap:9px;">
-                  <span style="font-size:13px; color:#22c55e;">✓</span>
-                  <div>
-                    <span style="font-size:10px; color:#22c55e; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${slotNum} · Enlisted Teammate</span>
-                    <strong style="font-size:13px; color:#ffffff;">${escapeHtml(teammateTag)}</strong>
-                    ${playerDetails?.discord ? `<span style="font-size:11px; color:#94a3b8; margin-left:6px;">(${escapeHtml(playerDetails.discord)})</span>` : ''}
-                  </div>
+        // Enlisted Teammates Slots
+        currentRosterTeammates.forEach((teammateTag, idx) => {
+          const slotNum = idx + 2;
+          const playerDetails = cachedCommunityPlayers.find(p => p.gamertag.toLowerCase() === teammateTag.toLowerCase());
+          const isStarter = slotNum <= minStarters;
+          html += `
+            <div class="roster-slot-card filled">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="font-size:13px; color:#22c55e;">✓</span>
+                <div>
+                  <span style="font-size:10px; color:${isStarter ? '#22c55e' : '#38bdf8'}; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">
+                    Slot ${slotNum} · ${isStarter ? 'Starter Teammate' : 'Roster Reserve'}
+                  </span>
+                  <strong style="font-size:13px; color:#ffffff;">${escapeHtml(teammateTag)}</strong>
+                  ${playerDetails?.discord ? `<span style="font-size:11px; color:#94a3b8; margin-left:6px;">(${escapeHtml(playerDetails.discord)})</span>` : ''}
                 </div>
-                <button type="button" class="btn-crimson-outline" onclick="removeTeammate(${i})" style="padding:2px 8px; font-size:10.5px; border-color:#ef4444; color:#ef4444;">
-                  ✕ Remove
-                </button>
               </div>
-            `;
-          } else {
-            html += `
-              <div class="roster-slot-card empty" onclick="focusTeammateSearch()">
-                <div style="display:flex; align-items:center; gap:9px;">
-                  <span style="font-size:13px; color:#64748b;">+</span>
-                  <div>
-                    <span style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${slotNum} · Teammate (Open)</span>
-                    <span style="font-size:12px; color:#64748b; font-style:italic;">Empty Slot — Search player above</span>
-                  </div>
+              <button type="button" class="btn-crimson-outline" onclick="removeTeammate(${idx})" style="padding:2px 8px; font-size:10.5px; border-color:#ef4444; color:#ef4444;">
+                ✕ Remove
+              </button>
+            </div>
+          `;
+        });
+
+        // Show remaining empty starter slots if below minStarters
+        const neededStarters = Math.max(0, minStarters - totalEnlisted);
+        for (let s = 0; s < neededStarters; s++) {
+          const slotNum = totalEnlisted + s + 1;
+          html += `
+            <div class="roster-slot-card empty" onclick="focusTeammateSearch()">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="font-size:13px; color:#64748b;">+</span>
+                <div>
+                  <span style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${slotNum} · Required Starter (Open)</span>
+                  <span style="font-size:12px; color:#64748b; font-style:italic;">Empty Starter Slot — Search player above</span>
                 </div>
-                <span style="font-size:10.5px; color:#ff1e44; font-weight:700;">+ Select Player</span>
               </div>
-            `;
-          }
+              <span style="font-size:10.5px; color:#ff1e44; font-weight:700;">+ Select Player</span>
+            </div>
+          `;
+        }
+
+        // If starters are satisfied and roster < 8, show an optional reserve slot prompt
+        if (totalEnlisted < MAX_ROSTER_SIZE) {
+          const nextSlot = totalEnlisted + 1;
+          html += `
+            <div class="roster-slot-card empty" onclick="focusTeammateSearch()" style="border-style:dashed; opacity:0.85;">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="font-size:13px; color:#38bdf8;">+</span>
+                <div>
+                  <span style="font-size:10px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:block;">Slot ${nextSlot} · Optional Roster Combatant (up to 8)</span>
+                  <span style="font-size:12px; color:#94a3b8; font-style:italic;">Invite additional sub/reserve player</span>
+                </div>
+              </div>
+              <span style="font-size:10.5px; color:#38bdf8; font-weight:700;">+ Invite Player</span>
+            </div>
+          `;
         }
 
         container.innerHTML = html;
@@ -863,7 +887,7 @@
         const dropdown = document.getElementById('squad-teammate-dropdown-results');
         if (!dropdown) return;
 
-        if (currentRosterTeammates.length >= maxSquadSize - 1) {
+        if (currentRosterTeammates.length >= MAX_ROSTER_SIZE - 1) {
           dropdown.style.display = 'none';
           return;
         }
@@ -969,8 +993,8 @@
           return;
         }
 
-        if (currentRosterTeammates.length >= maxSquadSize - 1) {
-          showTeammateWarning(`Squad roster is full (${maxSquadSize}/${maxSquadSize} players).`);
+        if (currentRosterTeammates.length >= MAX_ROSTER_SIZE - 1) {
+          showTeammateWarning(`Squad roster is full (${MAX_ROSTER_SIZE}/${MAX_ROSTER_SIZE} players max).`);
           return;
         }
 
@@ -1001,23 +1025,33 @@
 
       // Modal Handlers
       async function openCreateTeamModal() {
+        const ladderSelect = document.getElementById("squad-ladder-type");
+        const targetLadder = ladderSelect ? ladderSelect.value : '4v4_variant';
+        minStarters = getLadderMinStarters(targetLadder);
+
+        // Pre-check if captain has already reached the maximum 2 teams on this ladder
+        const curPlayer = window.LadderDB && typeof window.LadderDB.getCurrentPlayer === 'function' ? window.LadderDB.getCurrentPlayer() : null;
+        if (curPlayer && curPlayer.gamertag && window.LadderDB.getLadderTeams) {
+          try {
+            const ladderTeams = await window.LadderDB.getLadderTeams(targetLadder);
+            const userOwned = (ladderTeams || []).filter(t => t.captain_name && t.captain_name.toLowerCase() === curPlayer.gamertag.toLowerCase());
+            if (userOwned.length >= 2) {
+              const ladderTitle = targetLadder === '4v4_variant' ? '4v4 CDL Variant' : targetLadder === '2v2_snd' ? '2v2 Search & Destroy' : '1v1 Radar Gunfight';
+              alert(`Notice: You already have 2 teams created on the ${ladderTitle} ladder (the maximum limit). You can manage or switch between them from your Active Squad or Profile.`);
+              return;
+            }
+          } catch (_) {}
+        }
+
         const modal = document.getElementById("modal-create-squad");
         if (modal) modal.classList.add("active");
 
-        const ladderSelect = document.getElementById("squad-ladder-type");
-        if (ladderSelect) {
-          maxSquadSize = getLadderSquadSize(ladderSelect.value);
-        }
-
         // Prefill captain if player logged in
-        if (window.LadderDB && typeof window.LadderDB.getCurrentPlayer === 'function') {
-          const cur = window.LadderDB.getCurrentPlayer();
-          if (cur && cur.gamertag) {
-            const capInput = document.getElementById("squad-captain-name");
-            const discInput = document.getElementById("squad-captain-discord");
-            if (capInput && !capInput.value) capInput.value = cur.gamertag;
-            if (discInput && !discInput.value) discInput.value = cur.discord || "";
-          }
+        if (curPlayer && curPlayer.gamertag) {
+          const capInput = document.getElementById("squad-captain-name");
+          const discInput = document.getElementById("squad-captain-discord");
+          if (capInput && !capInput.value) capInput.value = curPlayer.gamertag;
+          if (discInput && !discInput.value) discInput.value = curPlayer.discord || "";
         }
 
         currentRosterTeammates = [];
@@ -1047,10 +1081,7 @@
 
       // Change ladder type handler
       document.getElementById("squad-ladder-type")?.addEventListener("change", function(e) {
-        maxSquadSize = getLadderSquadSize(e.target.value);
-        if (currentRosterTeammates.length > maxSquadSize - 1) {
-          currentRosterTeammates = currentRosterTeammates.slice(0, Math.max(0, maxSquadSize - 1));
-        }
+        minStarters = getLadderMinStarters(e.target.value);
         renderSquadRosterSlots();
       });
 
@@ -1106,7 +1137,7 @@
         const captainDiscord = document.getElementById("squad-captain-discord").value.trim();
 
         try {
-          const newTeam = await window.LadderDB.createLadderTeam({
+          const res = await window.LadderDB.createLadderTeam({
             name,
             tag,
             ladder_type: ladderType,
@@ -1117,6 +1148,12 @@
             elo: 1200
           });
 
+          if (!res || !res.success) {
+            alert(res && res.error ? res.error : "Failed to register team.");
+            return;
+          }
+
+          const newTeam = res.team;
           window.LadderDB.setMyTeam(ladderType, newTeam);
           closeCreateTeamModal();
           const invitesCount = currentRosterTeammates.length;

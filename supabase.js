@@ -2862,6 +2862,9 @@ if (dbClient && cleanPayload.user_id) {
               }
               const alreadyOnRoster = t.players.some(p => norm(p.gamertag) === norm(targetTag));
               if (!alreadyOnRoster) {
+                if (t.players.length >= 8) {
+                  return { success: false, error: "Team roster has already reached the maximum limit of 8 combatants." };
+                }
                 t.players.push({
                   gamertag: targetTag,
                   role: "Member",
@@ -10274,13 +10277,42 @@ window.LadderDB = {
   },
 
   async createLadderTeam(teamData) {
+    const ladderType = teamData.ladder_type || "4v4_variant";
+    const captainName = teamData.captain_name || "Captain";
+    const ladderName = ladderType === "4v4_variant" ? "4v4 CDL Variant" : ladderType === "2v2_snd" ? "2v2 Search & Destroy" : "1v1 Radar Gunfight";
+
+    // Enforce 2 teams maximum per ladder limit for captains/creators
+    try {
+      const allLadderTeams = await this.getLadderTeams(ladderType);
+      const userOwnedTeams = (allLadderTeams || []).filter(t => 
+        (t.captain_name && t.captain_name.trim().toLowerCase() === captainName.trim().toLowerCase())
+      );
+      if (userOwnedTeams.length >= 2) {
+        return {
+          success: false,
+          error: `You have reached the maximum limit of 2 teams on the ${ladderName} ladder.`
+        };
+      }
+    } catch (chkErr) {
+      console.warn("Ladder team count check notice:", chkErr);
+    }
+
+    // Enforce maximum roster limit of 8 players (1 Captain + up to 7 teammates)
+    const initialTeammates = Array.isArray(teamData.teammates) ? teamData.teammates : [];
+    if (initialTeammates.length > 7) {
+      return {
+        success: false,
+        error: "Squad roster cannot exceed a maximum of 8 combatants (including captain)."
+      };
+    }
+
     // Set initial defaults
     const newTeam = {
       name: teamData.name,
       tag: (teamData.tag || "TAG").toUpperCase().trim().slice(0, 5),
       avatar_url: teamData.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-      ladder_type: teamData.ladder_type || "4v4_variant",
-      captain_name: teamData.captain_name || "Captain",
+      ladder_type: ladderType,
+      captain_name: captainName,
       captain_discord: teamData.captain_discord || "",
       elo: 1200,
       tier: "Specialist",
@@ -10368,8 +10400,7 @@ window.LadderDB = {
     } catch (_) {}
 
     // Dispatch Ladder Team Invites to enlisted teammates (CheckMate Gaming style)
-    const teammates = Array.isArray(teamData.teammates) ? teamData.teammates : [];
-    const ladderName = newTeam.ladder_type === "4v4_variant" ? "4v4 CDL Variant" : newTeam.ladder_type === "2v2_snd" ? "2v2 Search & Destroy" : "1v1 Radar Gunfight";
+    const teammates = initialTeammates;
 
     if (teammates.length > 0 && window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === "function") {
       try {
@@ -10418,6 +10449,90 @@ window.LadderDB = {
     }
 
     return { success: true, team: createdTeam };
+  },
+
+  // Invite additional combatant to existing ladder team roster (max 8 combatants)
+  async inviteLadderTeammate(teamId, targetGamertag, callerUser = null) {
+    if (!teamId || !targetGamertag) {
+      return { success: false, error: "Missing required team ID or player gamertag." };
+    }
+    const cleanTag = String(targetGamertag).trim();
+    if (!cleanTag) return { success: false, error: "Invalid player gamertag." };
+
+    let team = this.getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: "Team could not be found." };
+    }
+
+    const roster = this.getTeamRoster(team);
+    if (roster.length >= 8) {
+      return { success: false, error: "Squad roster is already at the maximum limit of 8 combatants." };
+    }
+
+    const norm = s => String(s || "").trim().toLowerCase();
+    if (roster.some(m => norm(m.gamertag) === norm(cleanTag))) {
+      return { success: false, error: `Combatant "${cleanTag}" is already on this team's roster.` };
+    }
+
+    const ladderName = team.ladder_type === "4v4_variant" ? "4v4 CDL Variant" : team.ladder_type === "2v2_snd" ? "2v2 Search & Destroy" : "1v1 Radar Gunfight";
+    const captainName = team.captain_name || (callerUser && (callerUser.gamertag || callerUser.username)) || "Team Captain";
+
+    if (window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === "function") {
+      try {
+        const allInvites = await window.LeagueDB.getTournamentTeamInvites(null);
+        // Check if an invite is already pending for this player on this team
+        const pendingExists = allInvites.some(inv => 
+          String(inv.team_id) === String(team.id) && 
+          norm(inv.invited_gamertag) === norm(cleanTag) && 
+          inv.status === "pending"
+        );
+        if (pendingExists) {
+          return { success: false, error: `A pending invite has already been sent to ${cleanTag}.` };
+        }
+
+        const invId = "linv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+        const newInvite = {
+          id: invId,
+          team_id: team.id,
+          ladder_type: team.ladder_type,
+          tournament_title: `${ladderName} Ladder`,
+          team_name: team.name,
+          captain_gamertag: captainName,
+          captain_discord: team.captain_discord || "",
+          invited_gamertag: cleanTag,
+          status: "pending",
+          type: "ladder_team_invite",
+          is_ladder: true,
+          created_at: new Date().toISOString()
+        };
+        allInvites.unshift(newInvite);
+        await window.LeagueDB.saveTournamentTeamInvites(allInvites);
+
+        // Dispatch notification with Accept/Decline action
+        await window.LeagueDB.sendUserNotification({
+          target_gamertag: cleanTag,
+          title: "Arena Ladder Team Invite",
+          message: `${captainName} has invited you to join team "[${team.tag}] ${team.name}" on the ${ladderName} ladder! Accept to join the squad roster.`,
+          type: "team_invite",
+          metadata: {
+            invite_id: invId,
+            team_id: team.id,
+            ladder_type: team.ladder_type,
+            team_name: team.name,
+            tournament_title: `${ladderName} Ladder`,
+            captain_gamertag: captainName,
+            invited_gamertag: cleanTag,
+            status: "pending",
+            is_ladder: true
+          }
+        });
+
+        return { success: true, message: `Team invite dispatched to ${cleanTag}!` };
+      } catch (err) {
+        return { success: false, error: err.message || "Failed to dispatch team invite." };
+      }
+    }
+    return { success: false, error: "League database service is unavailable." };
   },
 
   async getOpenChallenges(ladderType = "4v4_variant") {
@@ -11904,16 +12019,16 @@ window.LadderDB = {
     };
   },
 
-  // Get active teams for all ladders (strictly ONE team per ladder rule)
+  // Get player teams for all ladders (maximum 2 teams per ladder rule)
   getUserTeams(playerOrGamertag = null) {
     let player = playerOrGamertag;
     if (!player) player = this.getCurrentPlayer();
     else if (typeof player === "string") player = { gamertag: player };
 
     const ladders = [
-      { id: "4v4_variant", name: "4v4 CDL Variant", circuit: "Variant (HP / SnD / CTL)", maxPlayers: 4, icon: "⚔" },
-      { id: "2v2_snd", name: "2v2 Search & Destroy", circuit: "Search & Destroy Only", maxPlayers: 2, icon: "🎯" },
-      { id: "1v1_radar", name: "1v1 Radar Gunfight", circuit: "Radar Always-On Gunfight", maxPlayers: 1, icon: "💀" }
+      { id: "4v4_variant", name: "4v4 CDL Variant", circuit: "Variant (HP / SnD / CTL)", maxPlayers: 8, icon: "⚔" },
+      { id: "2v2_snd", name: "2v2 Search & Destroy", circuit: "Search & Destroy Only", maxPlayers: 8, icon: "🎯" },
+      { id: "1v1_radar", name: "1v1 Radar Gunfight", circuit: "Radar Always-On Gunfight", maxPlayers: 8, icon: "💀" }
     ];
 
     if (!player || !player.gamertag) {
@@ -11922,22 +12037,43 @@ window.LadderDB = {
         ladder_name: l.name,
         circuit: l.circuit,
         icon: l.icon,
-        team: null
+        team: null,
+        teams: []
       }));
     }
 
     const gt = player.gamertag.toLowerCase();
     const tag = (player.tag || "").toLowerCase();
 
-    // Retrieve exactly ONE team per ladder stored in frontline_my_team_<ladder_type>
     return ladders.map(l => {
       const myTeam = this.getMyTeam(l.id);
+      let teams = [];
+
+      try {
+        const listKey = "frontline_ladder_teams_" + l.id;
+        const allTeams = JSON.parse(localStorage.getItem(listKey)) || [];
+        teams = allTeams.filter(t => {
+          if (t.captain_name && t.captain_name.toLowerCase() === gt) return true;
+          if (Array.isArray(t.players) && t.players.some(p => p && p.gamertag && p.gamertag.toLowerCase() === gt)) return true;
+          return false;
+        });
+      } catch (_) {}
+
+      // If active team is set but not in teams list (or localStorage cache not populated yet), ensure it is included
+      if (myTeam && !teams.some(t => String(t.id) === String(myTeam.id))) {
+        teams.unshift(myTeam);
+      }
+
+      // Limit to at most 2 teams per ladder
+      teams = teams.slice(0, 2);
+
       return {
         ladder_type: l.id,
         ladder_name: l.name,
         circuit: l.circuit,
         icon: l.icon,
-        team: myTeam || null
+        team: myTeam || (teams.length > 0 ? teams[0] : null),
+        teams: teams
       };
     });
   },
