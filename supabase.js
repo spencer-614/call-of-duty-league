@@ -9881,7 +9881,7 @@ window.LadderDB = {
       });
     } catch (_) {}
 
-    // 4. All registered website accounts and local caches
+    // 4. All registered website accounts and local caches (including League side free agents)
     try {
       const custom = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
       custom.forEach(acc => {
@@ -9893,6 +9893,8 @@ window.LadderDB = {
           role: acc.role || "Flex",
           platform: acc.platform || "PC",
           avatar_url: acc.avatar_url,
+          discord: acc.discord || "",
+          activision_id: acc.activision_id || "",
           elo: Number(acc.elo) || 1200,
           wins: Number(acc.wins) || 0,
           losses: Number(acc.losses) || 0,
@@ -9909,6 +9911,8 @@ window.LadderDB = {
           role: fa.role || fa.primary_role || "Flex",
           platform: fa.platform || "Crossplay",
           avatar_url: fa.avatar_url,
+          discord: fa.discord || "",
+          activision_id: fa.activision_id || "",
           elo: Number(fa.elo) || 1200,
           wins: Number(fa.wins) || 0,
           losses: Number(fa.losses) || 0,
@@ -9925,10 +9929,84 @@ window.LadderDB = {
             team_name: "Free Agent",
             role: tp.role || "Flex",
             avatar_url: tp.avatar_url,
+            discord: tp.discord_name || tp.discord || "",
+            activision_id: tp.activision_id || "",
             elo: Number(tp.elo) || 1200
           });
         }
       });
+      // League side free agent registrations (frontline_league_signups)
+      const leagueSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+      leagueSignups.forEach(ls => {
+        if (ls && ls.gamertag) {
+          addOrUpdatePlayer({
+            id: ls.id,
+            gamertag: ls.gamertag,
+            clan_tag: ls.tag || "LFT",
+            team_name: ls.team_name || "Free Agent",
+            role: ls.role || "Flex",
+            platform: ls.platform || "Crossplay",
+            region: ls.region || "NA East",
+            avatar_url: ls.avatar_url || ls.photo_url,
+            discord: ls.discord_username || ls.discord || "",
+            activision_id: ls.activision_id || "",
+            elo: Number(ls.elo) || 1200,
+            wins: Number(ls.wins) || 0,
+            losses: Number(ls.losses) || 0
+          });
+        }
+      });
+      // In-memory MOCK_DATA signups fallback
+      if (typeof MOCK_DATA !== "undefined" && Array.isArray(MOCK_DATA.signups)) {
+        MOCK_DATA.signups.forEach(ls => {
+          if (ls && ls.gamertag) {
+            addOrUpdatePlayer({
+              id: ls.id,
+              gamertag: ls.gamertag,
+              clan_tag: "LFT",
+              team_name: ls.team_name || "Free Agent",
+              role: ls.role || "Flex",
+              platform: ls.platform || "Crossplay",
+              avatar_url: ls.avatar_url || ls.photo_url,
+              discord: ls.discord_username || ls.discord || "",
+              activision_id: ls.activision_id || "",
+              elo: Number(ls.elo) || 1200
+            });
+          }
+        });
+      }
+      // League side player card (frontline_league_player_card)
+      const leagueCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+      if (leagueCard && leagueCard.gamertag) {
+        addOrUpdatePlayer({
+          gamertag: leagueCard.gamertag,
+          clan_tag: leagueCard.tag || "LFT",
+          team_name: leagueCard.team || "Free Agent",
+          role: leagueCard.role || "Flex",
+          platform: leagueCard.platform || "Crossplay",
+          avatar_url: leagueCard.avatar || leagueCard.avatar_url,
+          discord: leagueCard.discord || "",
+          activision_id: leagueCard.activision || "",
+          elo: Number(leagueCard.elo) || 1200
+        });
+      }
+      // Discord / League authenticated user profiles
+      const leagueAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+      if (leagueAuth) {
+        const dMeta = leagueAuth.user_metadata || {};
+        const discTag = dMeta.full_name || dMeta.name || dMeta.user_name || dMeta.preferred_username || (leagueAuth.email ? leagueAuth.email.split("@")[0] : null);
+        if (discTag) {
+          addOrUpdatePlayer({
+            gamertag: discTag,
+            clan_tag: "LFT",
+            team_name: "Free Agent",
+            role: "Flex",
+            avatar_url: dMeta.avatar_url || dMeta.picture,
+            discord: dMeta.custom_claims?.global_name || dMeta.full_name || discTag,
+            elo: 1200
+          });
+        }
+      }
     } catch (_) {}
 
     // 5. Current logged-in user session
@@ -10620,6 +10698,38 @@ window.LadderDB = {
                   return fa;
                 });
                 if (faFound) localStorage.setItem("frontline_arena_free_agents", JSON.stringify(faList));
+              } catch (_) {}
+
+              // Update in League side free agents (frontline_league_signups)
+              try {
+                let lSignups = JSON.parse(localStorage.getItem("frontline_league_signups")) || [];
+                let lsFound = false;
+                lSignups = lSignups.map(ls => {
+                  if (ls.gamertag && ls.gamertag.toLowerCase() === cleanTag) {
+                    lsFound = true;
+                    const curElo = Number(ls.elo) || 1200;
+                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    return {
+                      ...ls,
+                      elo: nextElo,
+                      wins: (Number(ls.wins) || 0) + (won ? 1 : 0),
+                      losses: (Number(ls.losses) || 0) + (won ? 0 : 1)
+                    };
+                  }
+                  return ls;
+                });
+                if (lsFound) localStorage.setItem("frontline_league_signups", JSON.stringify(lSignups));
+              } catch (_) {}
+
+              // Update in League player card (frontline_league_player_card)
+              try {
+                let lCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+                if (lCard && lCard.gamertag && lCard.gamertag.toLowerCase() === cleanTag) {
+                  const curElo = Number(lCard.elo) || 1200;
+                  const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                  lCard.elo = nextElo;
+                  localStorage.setItem("frontline_league_player_card", JSON.stringify(lCard));
+                }
               } catch (_) {}
 
               // Update active player session if logged in
