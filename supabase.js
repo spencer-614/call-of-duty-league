@@ -5386,6 +5386,32 @@ if (dbClient && cleanPayload.user_id) {
     return list;
   },
 
+  advanceTournamentByes(bracket) {
+    if (bracket?.bye_policy !== 'as-needed-v1') return bracket;
+    const all=(bracket.stages||[]).flatMap(s=>(s.rounds||[]).flatMap(r=>r.matches||[]));
+    const byId=new Map(all.map(m=>[String(m.id),m]));
+    for(let pass=0;pass<all.length;pass++) {
+      for(const m of all) {
+        let ready=true;
+        for(const side of [1,2]) {
+          const source=m['sourceMatch'+side];
+          if(!source)continue;
+          const parent=byId.get(String(source));
+          const win=parent?.team1?.winner?parent.team1:parent?.team2?.winner?parent.team2:null;
+          if(!win){ready=false;continue;}
+          const dest=m['team'+side];
+          if(dest.name!==win.name || dest.seed!==win.seed)Object.assign(dest,{name:win.name,tag:win.tag,seed:win.seed,score:0,winner:null});
+        }
+        if(m.isBye && ready) {
+          const side=m.team1.isBye?2:1;
+          m.status='Completed';m.team1.score=0;m.team2.score=0;
+          m.team1.winner=side===1;m.team2.winner=side===2;
+        }
+      }
+    }
+    return bracket;
+  },
+
   async generateTournamentBracket(tournamentId, options = {}) {
     const list = await this.getTournaments();
     const tourney = list.find(t => String(t.id) === String(tournamentId));
@@ -5400,132 +5426,57 @@ if (dbClient && cleanPayload.user_id) {
       };
     }
 
-    const isDoubleElim = String(tourney.bracket_type || "").toLowerCase().includes("double");
+    // A new schedule never silently replaces an existing/live bracket.
+    if (String(tourney.bracket_type || '').toLowerCase().includes('double')) {
+      return { success: false, error: 'Later-round byes currently support single elimination only.' };
+    }
+    if (tourney.bracket_data && !options.replaceUnstartedBracket) {
+      return { success: false, error: 'A bracket already exists. It was not changed. Use the documented unstarted-bracket replacement only before reporting is enabled.' };
+    }
+    const oldMatches=(tourney.bracket_data?.stages||[]).flatMap(s=>(s.rounds||[]).flatMap(r=>r.matches||[]));
+    if(oldMatches.some(m=>!m.isBye && m.team1?.name!=='BYE' && m.team2?.name!=='BYE' &&
+      (m.status==='Completed' || Number(m.team1?.score)>0 || Number(m.team2?.score)>0 || m.maps?.length))) {
+      return { success:false, error:'This bracket has scores or completed matches. It was not changed.' };
+    }
+    const c = window.supabaseClient || window.dbClient;
+    if (!c) return { success: false, error: 'Database unavailable; bracket was not changed.' };
+    // IDs are reused by generation, so do not replace any bracket with configured reporting.
+    for (const table of ['tournament_report_matches', 'tournament_veto_states']) {
+      const { data, error } = await c.from(table).select('match_id')
+        .eq('tournament_id', String(tournamentId)).limit(1);
+      if (error) return { success: false, error: 'Could not verify existing match data: ' + error.message };
+      if (data?.length) return { success: false, error: 'Reporting or veto data already exists. Bracket was not changed. Do not regenerate this tournament.' };
+    }
     const N = regs.length;
-
-    // Calculate bracket size (next power of 2: 2, 4, 8, 16, 32)
-    let size = 2;
-    while (size < N) size *= 2;
-
-    function getSeedPairs(num) {
-      if (num === 2) return [[1, 2]];
-      let rounds = Math.log2(num) - 1;
-      let pls = [1, 2];
-      for (let i = 0; i < rounds; i++) {
-        let next = [];
-        let sum = (pls.length * 2) + 1;
-        pls.forEach(p => {
-          next.push(p);
-          next.push(sum - p);
-        });
-        pls = next;
-      }
-      let pairs = [];
-      for (let i = 0; i < pls.length; i += 2) {
-        pairs.push([pls[i], pls[i + 1]]);
-      }
-      return pairs;
-    }
-
-    const pairs = getSeedPairs(size);
-    const totalRounds = Math.log2(size);
-
-    function getRoundName(roundIdx, total) {
-      const fromEnd = total - roundIdx;
-      if (fromEnd === 1) return "Grand Finals";
-      if (fromEnd === 2) return "Semifinals";
-      if (fromEnd === 3) return "Quarterfinals";
-      if (fromEnd === 4) return "Round of 16";
-      return `Round ${roundIdx + 1}`;
-    }
-
+    const isDoubleElim = false;
     const rounds = [];
     let matchCounter = 1;
-
-    // Round 1 Matches
-    const r1Matches = pairs.map(([s1, s2], idx) => {
-      const t1 = regs[s1 - 1] || null;
-      const t2 = regs[s2 - 1] || null;
-      const mid = `M${matchCounter++}`;
-      const isBye1 = !t2 && t1;
-      const isBye2 = !t1 && t2;
-
-      return {
-        id: mid,
-        code: `R1-M${idx + 1}`,
-        roundName: getRoundName(0, totalRounds),
-        stageName: isDoubleElim ? "Winners Bracket" : "Championship Bracket",
-        status: (isBye1 || isBye2) ? "Completed" : "Scheduled",
-        time: "Round 1",
-        bestOf: "BO5",
-        team1: {
-          seed: s1,
-          name: t1 ? t1.team_name : "BYE",
-          tag: t1 ? (t1.team_name.slice(0, 4).toUpperCase()) : "BYE",
-          score: isBye1 ? 1 : 0,
-          winner: isBye1 ? true : null
-        },
-        team2: {
-          seed: s2,
-          name: t2 ? t2.team_name : "BYE",
-          tag: t2 ? (t2.team_name.slice(0, 4).toUpperCase()) : "BYE",
-          score: isBye2 ? 1 : 0,
-          winner: isBye2 ? true : null
-        },
-        maps: []
-      };
-    });
-
-    rounds.push({
-      roundId: "r1",
-      name: getRoundName(0, totalRounds),
-      badge: "Round 1",
-      bestOf: "BO5",
-      matches: r1Matches
-    });
-
-    // Subsequent rounds (Quarterfinals, Semifinals, Grand Finals)
-    let prevMatches = r1Matches;
-    for (let r = 1; r < totalRounds; r++) {
-      const currMatches = [];
-      const numMatches = prevMatches.length / 2;
-      for (let m = 0; m < numMatches; m++) {
-        const parent1 = prevMatches[m * 2];
-        const parent2 = prevMatches[m * 2 + 1];
-        const mid = `M${matchCounter++}`;
-
-        const t1Name = parent1.team1.winner ? parent1.team1.name : (parent1.team2.winner ? parent1.team2.name : `Winner of ${parent1.code}`);
-        const t1Tag = parent1.team1.winner ? parent1.team1.tag : (parent1.team2.winner ? parent1.team2.tag : "TBD");
-        const t1Seed = parent1.team1.winner ? parent1.team1.seed : (parent1.team2.winner ? parent1.team2.seed : null);
-
-        const t2Name = parent2.team1.winner ? parent2.team1.name : (parent2.team2.winner ? parent2.team2.name : `Winner of ${parent2.code}`);
-        const t2Tag = parent2.team1.winner ? parent2.team1.tag : (parent2.team2.winner ? parent2.team2.tag : "TBD");
-        const t2Seed = parent2.team1.winner ? parent2.team1.seed : (parent2.team2.winner ? parent2.team2.seed : null);
-
-        currMatches.push({
-          id: mid,
-          code: `R${r + 1}-M${m + 1}`,
-          roundName: getRoundName(r, totalRounds),
-          stageName: isDoubleElim ? (r === totalRounds - 1 ? "Grand Finals" : "Winners Bracket") : "Championship Bracket",
-          status: "Scheduled",
-          time: getRoundName(r, totalRounds),
-          bestOf: "BO5",
-          sourceMatch1: parent1.id,
-          sourceMatch2: parent2.id,
-          team1: { seed: t1Seed, name: t1Name, tag: t1Tag, score: 0, winner: null },
-          team2: { seed: t2Seed, name: t2Name, tag: t2Tag, score: 0, winner: null },
-          maps: []
-        });
+    const totalRounds = Math.ceil(Math.log2(N));
+    const roundName = r => totalRounds-r === 1 ? 'Grand Finals' : totalRounds-r === 2 ? 'Semifinals' : 'Round ' + (r+1);
+    // Each round uses only its real entrants/feeder slots; pad at most ONE bye.
+    let entries = regs.map((t,i)=>({ team:{seed:i+1,name:t.team_name,tag:t.team_name.slice(0,4).toUpperCase(),score:0,winner:null}, source:null }));
+    for (let r = 0; entries.length > 1; r++) {
+      let bye = null;
+      if (entries.length % 2) {
+        // Fixed bracket position, rotated across rounds, decided before play begins.
+        const index = r % (entries.length - 1);
+        bye = entries.splice(index, 1)[0];
       }
-
-      rounds.push({
-        roundId: `r${r + 1}`,
-        name: getRoundName(r, totalRounds),
-        badge: `Round ${r + 1}`,
-        bestOf: "BO5",
-        matches: currMatches
-      });
-      prevMatches = currMatches;
+      const matches = [];
+      const createMatch = (a,b) => {
+        const m = { id:'M'+matchCounter++, code:'R'+(r+1)+'-M'+(matches.length+1),
+          roundName:roundName(r),stageName:'Championship Bracket',status:'Scheduled',
+          time:'Round '+(r+1),bestOf:'BO5',team1:{...a.team},team2:{...b.team},maps:[] };
+        if(a.source)m.sourceMatch1=a.source;
+        if(b.source)m.sourceMatch2=b.source;
+        if(b.team.isBye)m.isBye=true;
+        matches.push(m);
+      };
+      // Seeded pairs: first remaining entrant versus last remaining entrant.
+      while(entries.length) createMatch(entries.shift(),entries.pop());
+      if(bye)createMatch(bye,{team:{seed:null,name:'BYE',tag:'BYE',score:0,winner:false,isBye:true},source:null});
+      rounds.push({roundId:'r'+(r+1),name:roundName(r),badge:'Round '+(r+1),bestOf:'BO5',matches});
+      entries=matches.map(m=>({team:{seed:null,name:'Winner of '+m.code,tag:'TBD',score:0,winner:null},source:m.id}));
     }
 
     const bracketObj = {
@@ -5539,6 +5490,7 @@ if (dbClient && cleanPayload.user_id) {
       status: "LIVE BRACKET",
       description: tourney.description || "Official tournament bracket progression.",
       ruleset: "CDL V4 Competitive Settings · Dallas/Central Host",
+      bye_policy: "as-needed-v1",
       generated_at: new Date().toISOString(),
       teams_count: N,
       explainer: {
@@ -5559,8 +5511,9 @@ if (dbClient && cleanPayload.user_id) {
       ]
     };
 
+    this.advanceTournamentByes(bracketObj);
     tourney.bracket_data = bracketObj;
-    tourney.bracket_url = `/brackets/?tournament=${tourney.id}`;
+    tourney.bracket_url = `/tournaments/bracket/?tournament=${tourney.id}`;
     tourney.status = "Live";
     tourney.teams_registered_count = N;
     tourney.registered_teams = N;
@@ -5616,6 +5569,7 @@ if (dbClient && cleanPayload.user_id) {
 
     if (!targetMatch) return { success: false, error: "Match not found in bracket." };
 
+    if (targetMatch.isBye) return { success: false, error: 'Bye matches advance automatically; do not enter a score.' };
     targetMatch.status = "Completed";
     targetMatch.team1.score = parseInt(score1, 10) || 0;
     targetMatch.team2.score = parseInt(score2, 10) || 0;
@@ -5641,6 +5595,8 @@ if (dbClient && cleanPayload.user_id) {
         });
       });
     });
+
+    this.advanceTournamentByes(bracket);
 
     try {
       localStorage.setItem(`frontline_tournament_bracket_${tournamentId}`, JSON.stringify(bracket));

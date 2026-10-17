@@ -47,6 +47,7 @@
     pool: CDL_TOURNAMENT_MAP_POOL,
 
     async mount(hostEl, tournament, match, userContext) {
+      if (match.isBye) { hostEl.textContent = "Bye — no map veto required."; return; }
       if (!hostEl) return;
       hostEl.innerHTML = '';
 

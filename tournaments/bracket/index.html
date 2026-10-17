@@ -430,7 +430,7 @@
         <div id="explainer-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; color:var(--muted); font-size:13px; line-height:1.7;">
           <div>
             <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">1. Automated Seeding &amp; BYE Progression</strong>
-            Squads are seeded according to official check-in order and regional standing. In uneven brackets, top seeds receive automatic round 1 BYEs advancing directly to round 2.
+            Squads are seeded according to official check-in order and regional standing. Each round pairs its available entrants. If that round has an odd number, one predetermined bracket slot receives a bye and advances automatically once its entrant is known.
           </div>
           <div>
             <strong style="color:var(--text); font-size:14px; display:block; margin-bottom: 6px;">2. Map Vetoes &amp; Host Rotation</strong>
@@ -488,7 +488,7 @@
 
     <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=unified-admin-20261017"></script>
+    <script src="/supabase.js?v=late-byes-20261017"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -1531,7 +1531,7 @@ const hasAccess = isStaff || inTeam1 || inTeam2;
         });
       })();
     </script>
-  <script src="/tournament-reports.js?v=unified-admin-20261017"></script>
-  <script src="/tournament-veto.js?v=unified-admin-20261017"></script>
+  <script src="/tournament-reports.js?v=late-byes-20261017"></script>
+  <script src="/tournament-veto.js?v=late-byes-20261017"></script>
 </body>
 </html>
