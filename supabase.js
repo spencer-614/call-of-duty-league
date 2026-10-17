@@ -7019,15 +7019,8 @@ if (dbClient && cleanPayload.user_id) {
       if (error) {
         return { success: false, error: error.message };
       }
-      // Security Check: verify this is NOT a regular player account
-      const userRole = data.user?.app_metadata?.role || data.user?.user_metadata?.role;
-      if (userRole === "player") {
-        await dbClient.auth.signOut();
-        return {
-          success: false,
-          error: "Access Denied: This is a Combatant Player account. Staff credentials are required for the Admin Console."
-        };
-      }
+      const access = await this.getMyStaffAccess();
+      if (!access.is_staff) return { success: false, error: 'This account has no staff role.' };
 
       // Synchronize active auth user and purge stale non-staff player card
       try {
@@ -7656,131 +7649,29 @@ if (dbClient && cleanPayload.user_id) {
     return false;
   },
 
-  isAccountAdmin(target) {
-    if (!target) return false;
-
-    const staffRoleKeys = [
-      "commissioner", "referee", "stats_official", "roster_manager",
-      "recruiter", "broadcaster", "rulebook_admin", "admin", "staff",
-      "administrator", "mod", "moderator"
-    ];
-
-    const idents = this._extractUserIdentifiers(target);
-
-    // Hardcoded primary commissioners
-    for (const e of idents.emails) {
-      if (e === "todd061496@gmail.com" || e === "admin@frontlineleague.com" ||
-          e === "referee@frontlineleague.com" || e === "roster@frontlineleague.com" ||
-          e === "recruiter@frontlineleague.com" || e === "broadcast@frontlineleague.com") {
-        return true;
-      }
-    }
-
-    // Cached staff roles in localStorage
-    try {
-      const cached = localStorage.getItem("frontline_staff_roles_cache");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          for (const s of parsed) {
-            if (this._matchStaffRow(s, idents, staffRoleKeys)) return true;
-          }
-        }
-      }
-    } catch (e) {}
-
-    // Check direct target object roles
-    if (typeof target === "object" && target !== null) {
-      const appRole = (target.app_metadata?.role || "").toLowerCase();
-      const metaRole = (target.user_metadata?.role || "").toLowerCase();
-      const directRole = (target.role || "").toLowerCase();
-      const staffRole = (target.staff_role || "").toLowerCase();
-
-      if (staffRoleKeys.includes(appRole) || staffRoleKeys.includes(metaRole) || 
-          staffRoleKeys.includes(directRole) || staffRoleKeys.includes(staffRole)) {
-        return true;
-      }
-
-      if (target.is_staff === true || target.is_admin === true || target.is_commissioner === true || target.app_metadata?.claims_admin === true) {
-        return true;
-      }
-    }
-
-    return false;
+  // The database is authoritative; this memory snapshot is only for synchronous UI hints.
+  _staffAccess: null,
+  async getMyStaffAccess() {
+    this._staffAccess = null;
+    const c = window.supabaseClient || window.dbClient;
+    if (!c) throw new Error('Database unavailable.');
+    const { data: auth, error: authError } = await c.auth.getUser();
+    if (authError) throw authError;
+    if (!auth.user) return { is_staff: false, is_admin: false, profile: null };
+    const { data, error } = await c.rpc('get_my_staff_access');
+    if (error) throw error;
+    this._staffAccess = { ...data, auth_user_id: auth.user.id };
+    return this._staffAccess;
   },
-
+  isAccountAdmin(target) {
+    const a = this._staffAccess;
+    if (!a?.is_staff || !target) return false;
+    if (typeof target === 'string') return target.toLowerCase() === a.profile?.email?.toLowerCase();
+    return target.id === a.auth_user_id || target.user_id === a.auth_user_id;
+  },
   async isAccountAdminAsync(target) {
-    if (this.isAccountAdmin(target)) return true;
-
-    const staffRoleKeys = [
-      "commissioner", "referee", "stats_official", "roster_manager",
-      "recruiter", "broadcaster", "rulebook_admin", "admin", "staff",
-      "administrator", "mod", "moderator"
-    ];
-
-    const idents = this._extractUserIdentifiers(target);
-
-    // Primary hardcoded commissioners
-    for (const e of idents.emails) {
-      if (e === "todd061496@gmail.com" || e === "admin@frontlineleague.com") return true;
-    }
-
-    if (dbClient) {
-      try {
-        // 1. Query staff_roles table in Supabase
-        const { data: staffList, error } = await dbClient.from("staff_roles").select("*");
-        if (!error && Array.isArray(staffList)) {
-          for (const s of staffList) {
-            if (this._matchStaffRow(s, idents, staffRoleKeys)) {
-              // Auto-link real auth user_id and email if missing/slug
-              if (idents.authUserId && (!s.user_id || s.user_id !== idents.authUserId)) {
-                const primaryEmail = Array.from(idents.emails)[0] || null;
-                const updates = { user_id: idents.authUserId, updated_at: new Date().toISOString() };
-                if (primaryEmail && s.email.includes("@frontlineleague.com")) {
-                  updates.email = primaryEmail;
-                }
-                dbClient.from("staff_roles").update(updates).eq("id", s.id).catch(() => {});
-              }
-
-              // Update cache
-              try {
-                const cached = JSON.parse(localStorage.getItem("frontline_staff_roles_cache")) || [];
-                if (!cached.some(c => String(c.id) === String(s.id))) {
-                  cached.push(s);
-                  localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(cached));
-                }
-              } catch (e) {}
-
-              return true;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("isAccountAdminAsync staff_roles query notice:", err);
-      }
-
-      // 2. Query players table in Supabase
-      try {
-        let pQuery = dbClient.from("players").select("id, user_id, email, gamertag, discord, role, is_staff, is_commissioner");
-        if (idents.authUserId) pQuery = pQuery.eq("user_id", idents.authUserId);
-        else if (idents.emails.size > 0) pQuery = pQuery.in("email", Array.from(idents.emails));
-        else if (idents.names.size > 0) pQuery = pQuery.in("gamertag", Array.from(idents.names));
-
-        const { data: players } = await pQuery.limit(5);
-        if (Array.isArray(players)) {
-          for (const p of players) {
-            const pRole = (p.role || "").toLowerCase().trim();
-            if (p.is_staff === true || p.is_commissioner === true || staffRoleKeys.includes(pRole)) {
-              return true;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("isAccountAdminAsync players query notice:", err);
-      }
-    }
-
-    return false;
+    try { const a = await this.getMyStaffAccess(); return !!a.is_staff && this.isAccountAdmin(target); }
+    catch (error) { console.error('Staff permission check failed:', error); return false; }
   },
 isDiscordLinkedToEmail(target) {
     if (!target) return false;
@@ -9052,137 +8943,8 @@ isDiscordLinkedToEmail(target) {
   },
 
   async getStaffProfile(target) {
-    if (!target) return null;
-    const staffRoleKeys = [
-      "commissioner", "referee", "stats_official", "roster_manager",
-      "recruiter", "broadcaster", "rulebook_admin", "admin", "staff",
-      "administrator", "mod", "moderator"
-    ];
-
-    const idents = this._extractUserIdentifiers(target);
-
-    // Hardcoded primary commissioners
-    for (const e of idents.emails) {
-      if (e === "todd061496@gmail.com" || e === "admin@frontlineleague.com") {
-        return {
-          email: e,
-          role: "commissioner",
-          display_name: e === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner"
-        };
-      }
-    }
-
-    // 1. Query Supabase staff_roles table
-    if (dbClient) {
-      try {
-        const { data: staffList, error } = await dbClient.from("staff_roles").select("*");
-        if (!error && Array.isArray(staffList)) {
-          for (const s of staffList) {
-            if (this._matchStaffRow(s, idents, staffRoleKeys)) {
-              // Auto-link real auth user_id and email if missing
-              if (idents.authUserId && (!s.user_id || s.user_id !== idents.authUserId)) {
-                const primaryEmail = Array.from(idents.emails)[0] || null;
-                const updates = { user_id: idents.authUserId, updated_at: new Date().toISOString() };
-                if (primaryEmail && s.email.includes("@frontlineleague.com")) {
-                  updates.email = primaryEmail;
-                }
-                dbClient.from("staff_roles").update(updates).eq("id", s.id).catch(() => {});
-              }
-              return {
-                id: s.id,
-                email: s.email || Array.from(idents.emails)[0] || "",
-                display_name: s.display_name || Array.from(idents.names)[0] || (s.email ? s.email.split("@")[0] : "Staff Member"),
-                role: s.role || "commissioner",
-                custom_permissions: s.custom_permissions || null,
-                notes: s.notes || ""
-              };
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Error querying staff_roles table from Supabase:", err);
-      }
-    }
-
-    // 2. Query Supabase players table
-    if (dbClient) {
-      try {
-        let pQuery = dbClient.from("players").select("id, user_id, email, gamertag, discord, role, is_staff, is_commissioner");
-        if (idents.authUserId) pQuery = pQuery.eq("user_id", idents.authUserId);
-        else if (idents.emails.size > 0) pQuery = pQuery.in("email", Array.from(idents.emails));
-        else if (idents.names.size > 0) pQuery = pQuery.in("gamertag", Array.from(idents.names));
-
-        const { data: pList } = await pQuery.limit(5);
-        if (Array.isArray(pList)) {
-          for (const p of pList) {
-            const pRole = (p.role || "").toLowerCase().trim();
-            if (p.is_staff === true || p.is_commissioner === true || staffRoleKeys.includes(pRole)) {
-              return {
-                id: p.id,
-                email: p.email || Array.from(idents.emails)[0] || "",
-                display_name: p.gamertag || Array.from(idents.names)[0] || "Staff Member",
-                role: p.is_commissioner ? "commissioner" : (staffRoleKeys.includes(pRole) ? pRole : "referee"),
-                custom_permissions: null,
-                notes: "Promoted from players directory"
-              };
-            }
-          }
-        }
-      } catch (err) {}
-    }
-
-    // 3. Fallback to localStorage cache
-    try {
-      const cached = localStorage.getItem("frontline_staff_roles_cache");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          for (const s of parsed) {
-            if (this._matchStaffRow(s, idents, staffRoleKeys)) {
-              return s;
-            }
-          }
-        }
-      }
-    } catch (e) {}
-    // 2b. Check frontline_arena_registered_accounts for assigned staff role
-    try {
-      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-      const match = accounts.find(a => 
-        (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail) ||
-        (userId && (a.id === userId || a.user_id === userId)) ||
-        (discordId && (a.discord_id === discordId || a.id === discordId))
-      );
-      if (match && (match.is_staff === true || match.staff_role)) {
-        return {
-          id: match.id,
-          email: match.email || cleanEmail,
-          display_name: match.gamertag || match.username || cleanEmail.split("@")[0],
-          role: match.staff_role || match.role || "referee",
-          custom_permissions: match.custom_permissions || null,
-          notes: match.notes || ""
-        };
-      }
-    } catch (e) {}
-
-    // 3. Fallback to mock list
-    if (cleanEmail) {
-      const mock = (MOCK_DATA.staffRoles || []).find(s => s.email.toLowerCase() === cleanEmail);
-      if (mock) return mock;
-
-      // 4. Primary official commissioner email fallback
-      if (cleanEmail === "admin@frontlineleague.com" || cleanEmail === "todd061496@gmail.com") {
-        return {
-          id: 0,
-          email: cleanEmail,
-          display_name: cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner",
-          role: "commissioner",
-          notes: "Primary League Commissioner"
-        };
-      }
-    }
-
-    return null;
+    const access = await this.getMyStaffAccess();
+    return access.is_staff ? access.profile : null;
   },
 
   async getAllStaffMembers() {
@@ -9245,51 +9007,6 @@ isDiscordLinkedToEmail(target) {
       payload.user_id = staffData.user_id;
     }
 
-    // Update frontline_arena_registered_accounts so Discord / website account immediately gets staff status
-    try {
-      const accounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
-      const idx = accounts.findIndex(a => 
-        (a.email && a.email.toLowerCase() === cleanEmail) ||
-        (staffData.user_id && (a.id === staffData.user_id || a.user_id === staffData.user_id)) ||
-        (staffData.discord && a.discord && a.discord.toLowerCase() === staffData.discord.toLowerCase())
-      );
-      if (idx !== -1) {
-        accounts[idx].is_staff = true;
-        accounts[idx].staff_role = payload.role;
-        accounts[idx].custom_permissions = payload.custom_permissions;
-        if (payload.user_id && !accounts[idx].user_id) accounts[idx].user_id = payload.user_id;
-        localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(accounts));
-      }
-    } catch (e) {}
-
-    // Update active session if currently signed in user matches
-    try {
-      const curAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
-      if (curAuth && ((curAuth.email && curAuth.email.toLowerCase() === cleanEmail) || (staffData.user_id && curAuth.id === staffData.user_id))) {
-        curAuth.is_staff = true;
-        curAuth.staff_role = payload.role;
-        curAuth.custom_permissions = payload.custom_permissions;
-        localStorage.setItem("frontline_league_auth_user", JSON.stringify(curAuth));
-      }
-    } catch (e) {}
-
-    // Also sync role to public.players table in Supabase so player row is updated
-    if (dbClient) {
-      try {
-        const isCommissioner = payload.role === "commissioner";
-        const pUpdates = { is_staff: true, role: payload.role };
-        if (isCommissioner) pUpdates.is_commissioner = true;
-        if (payload.user_id) {
-          dbClient.from("players").update(pUpdates).eq("user_id", payload.user_id).catch(() => {});
-        }
-        if (payload.display_name) {
-          dbClient.from("players").update(pUpdates).ilike("gamertag", payload.display_name).catch(() => {});
-        }
-        if (cleanEmail && !cleanEmail.includes("@frontlineleague.com")) {
-          dbClient.from("players").update(pUpdates).ilike("email", cleanEmail).catch(() => {});
-        }
-      } catch (err) {}
-    }
     if (dbClient) {
       try {
         const { data, error } = await dbClient
@@ -9299,15 +9016,6 @@ isDiscordLinkedToEmail(target) {
 
         if (error) {
           console.error("Supabase upsert staff_roles error:", error);
-          // If upsert failed due to user_id constraint (e.g. invalid foreign key), retry without user_id
-          if (payload.user_id && (error.code === "23503" || error.message?.includes("foreign key"))) {
-            delete payload.user_id;
-            const retryRes = await dbClient.from("staff_roles").upsert(payload, { onConflict: "email" }).select();
-            if (!retryRes.error) {
-              await this.getAllStaffMembers();
-              return { success: true, data: retryRes.data?.[0] || payload };
-            }
-          }
           return { success: false, error: error.message };
         }
 
@@ -9319,21 +9027,7 @@ isDiscordLinkedToEmail(target) {
       }
     }
 
-    // Local fallback
-    try {
-      let list = await this.getAllStaffMembers();
-      const existingIdx = list.findIndex(s => s.email.toLowerCase() === cleanEmail);
-      const cacheItem = { ...payload, discord: staffData.discord, discord_id: staffData.discord_id };
-      if (existingIdx !== -1) {
-        list[existingIdx] = { ...list[existingIdx], ...cacheItem };
-      } else {
-        list.push({ id: Date.now(), ...cacheItem });
-      }
-      localStorage.setItem("frontline_staff_roles_cache", JSON.stringify(list));
-      return { success: true, data: payload, mock: true };
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
+    return { success: false, error: 'Database unavailable; staff changes were not saved.' };
   },
 
   async deleteStaffRole(target) {
@@ -9362,24 +9056,17 @@ isDiscordLinkedToEmail(target) {
       }
     }
 
-    if (dbClient) {
-      try {
-        if (staffId) {
-          try { await dbClient.from("staff_roles").delete().eq("id", staffId); } catch (_) {}
-        }
-        if (targetEmail) {
-          try { await dbClient.from("staff_roles").delete().ilike("email", targetEmail); } catch (_) {}
-        }
-        if (targetUserId) {
-          try { await dbClient.from("staff_roles").delete().eq("user_id", targetUserId); } catch (_) {}
-        }
-        if (targetGamertag) {
-          try { await dbClient.from("staff_roles").delete().ilike("display_name", targetGamertag); } catch (_) {}
-        }
-      } catch (err) {
-        console.warn("deleteStaffRole db error:", err);
-      }
-    }
+    if (!dbClient) return { success: false, error: 'Database unavailable.' };
+    try {
+      let q = dbClient.from('staff_roles').delete();
+      if (staffId) q = q.eq('id', staffId);
+      else if (targetUserId) q = q.eq('user_id', targetUserId);
+      else if (targetEmail) q = q.eq('email', targetEmail);
+      else return { success: false, error: 'Select a staff record by ID, UUID, or email.' };
+      const { data, error } = await q.select('id');
+      if (error) throw error;
+      if (!data?.length) throw new Error('No staff record was removed. Check your permission and selected account.');
+    } catch (error) { return { success: false, error: error.message }; }
 
     // 1. Purge from in-memory MOCK_DATA
     if (typeof MOCK_DATA !== "undefined" && Array.isArray(MOCK_DATA.staffRoles)) {

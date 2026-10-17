@@ -3547,7 +3547,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=4"></script>
+    <script src="/supabase.js?v=unified-admin-20261017"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -3581,58 +3581,18 @@
         let activeAllowedTabs = [];
 
         async function unlockConsole(userEmail, userObj = null) {
-          gateContainer.style.display = "none";
-          dashboardContainer.style.display = "block";
-
-          // 1. Fetch or resolve staff profile & permissions
-          try {
-            if (window.LeagueDB && typeof window.LeagueDB.getStaffProfile === "function") {
-              activeStaffProfile = await window.LeagueDB.getStaffProfile(userObj || userEmail);
-            }
-          } catch(e) {
-            console.warn("Could not load staff profile, defaulting:", e);
+          const access = await window.LeagueDB.getMyStaffAccess();
+          if (!access.is_staff || !access.profile) {
+            await lockConsole();
+            gateError.textContent = 'Sign in with an account assigned a staff role.';
+            gateError.style.display = 'block';
+            return;
           }
-          if (!activeStaffProfile) {
-            const clean = (userEmail || "").toLowerCase().trim();
-            if (clean === "admin@frontlineleague.com" || clean === "todd061496@gmail.com") {
-              activeStaffProfile = {
-                email: userEmail,
-                role: "commissioner",
-                display_name: clean === "todd061496@gmail.com" ? "Commissioner Spencer" : "Commissioner"
-              };
-              localStorage.setItem("frontline_admin_session", "authorized");
-              localStorage.setItem("frontline_admin_email", userEmail);
-              const commishUser = {
-                id: "commissioner_admin",
-                email: userEmail,
-                user_metadata: {
-                  gamertag: activeStaffProfile.display_name,
-                  username: activeStaffProfile.display_name,
-                  name: activeStaffProfile.display_name,
-                  role: "commissioner",
-                  is_commissioner: true,
-                  avatar_url: "/images/leaguelogo_1.png"
-                }
-              };
-              localStorage.setItem("frontline_league_auth_user", JSON.stringify(commishUser));
-              localStorage.setItem("frontline_arena_user", JSON.stringify(commishUser));
-              localStorage.setItem("frontline_arena_auth_user", JSON.stringify(commishUser));
-              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: commishUser } }));
-              window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: commishUser } }));
-            } else {
-              // Fallback for verified staff user: build profile from activeUser object
-              const candidateName = userObj?.user_metadata?.gamertag || userObj?.user_metadata?.discord_username || userObj?.user_metadata?.full_name || (userEmail ? userEmail.split("@")[0] : "League Commissioner");
-              activeStaffProfile = {
-                email: userEmail,
-                role: userObj?.role || userObj?.staff_role || "commissioner",
-                display_name: candidateName
-              };
-              sessionStorage.setItem("frontline_admin_session", "authorized");
-              sessionStorage.setItem("frontline_admin_email", userEmail);
-            }
-          }
-          const isPrimary = (userEmail && ["admin@frontlineleague.com", "todd061496@gmail.com"].includes(userEmail.toLowerCase().trim()));
-          const roleKey = activeStaffProfile?.role || (isPrimary ? "commissioner" : "commissioner");
+          activeStaffProfile = access.profile;
+          gateContainer.style.display = 'none';
+          dashboardContainer.style.display = 'block';
+          const isPrimary = access.is_admin;
+          const roleKey = access.is_admin ? 'commissioner' : activeStaffProfile.role;
           const roleDef = (window.LeagueDB?.STAFF_ROLES && window.LeagueDB.STAFF_ROLES[roleKey]) || {
             title: activeStaffProfile?.role ? (activeStaffProfile.role.charAt(0).toUpperCase() + activeStaffProfile.role.slice(1)) : "Commissioner",
             badgeClass: "role-badge-commissioner"
@@ -3789,7 +3749,7 @@
             ).toLowerCase().trim();
 
             const isPrimary = userEmail === "todd061496@gmail.com" || userEmail === "admin@frontlineleague.com";
-            const isStaff = isPrimary || (await window.LeagueDB.isAccountAdminAsync(activeUser));
+            const isStaff = await window.LeagueDB.isAccountAdminAsync(activeUser);
             if (!isStaff) {
               // Active user is a combatant: lock console and purge stale admin session credentials
               await lockConsole();
@@ -9731,7 +9691,7 @@
         }
       });
     </script>
-  <script src="/tournament-reports.js"></script>
+  <script src="/tournament-reports.js?v=unified-admin-20261017"></script>
 </body>
 </html>
 

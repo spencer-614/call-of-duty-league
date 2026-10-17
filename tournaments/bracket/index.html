@@ -488,7 +488,7 @@
 
     <!-- Scripts: Supabase DB, Bullet Sparks & Tournament Bracket Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=20261012d"></script>
+    <script src="/supabase.js?v=unified-admin-20261017"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -1072,10 +1072,7 @@ try {
   if (authError) throw authError;
 
   // Use the authenticated account's tournament staff permission.
-  isStaff = !!authUser && (
-    authUser.app_metadata?.tournament_admin === true ||
-    authUser.app_metadata?.tournament_admin === 'true'
-  );
+  isStaff = !!authUser && !!(await window.LeagueDB.getMyStaffAccess()).is_admin;
 
   if (authUser) {
     const { data: membership, error } = await client
@@ -1534,7 +1531,7 @@ const hasAccess = isStaff || inTeam1 || inTeam2;
         });
       })();
     </script>
-  <script src="/tournament-reports.js"></script>
-  <script src="/tournament-veto.js"></script>
+  <script src="/tournament-reports.js?v=unified-admin-20261017"></script>
+  <script src="/tournament-veto.js?v=unified-admin-20261017"></script>
 </body>
 </html>

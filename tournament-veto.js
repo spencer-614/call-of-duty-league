@@ -166,7 +166,7 @@
         if (!c) throw new Error('Database unavailable.');
         const { data: auth, error: authError } = await c.auth.getUser();
         if (authError || !auth?.user) throw new Error('Sign in to veto maps.');
-        isStaff = [true, 'true'].includes(auth.user.app_metadata?.tournament_admin);
+        isStaff = !!(await window.LeagueDB.getMyStaffAccess()).is_admin;
         const { data: members, error } = await c.from('tournament_report_members')
           .select('team').eq('tournament_id', String(tournament.id))
           .eq('match_id', String(match.id)).eq('user_id', auth.user.id);
