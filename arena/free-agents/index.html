@@ -206,13 +206,11 @@
             <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:4px;">CDL Role</label>
             <select id="filter-role" onchange="handleFilterChange()" style="width:100%; box-sizing:border-box; background:#04060a; border:1px solid #1c2738; border-radius:4px; padding:9px 12px; color:#fff; font-size:12px; outline:none;">
               <option value="all">All Roles</option>
-              <option value="smg">SMG (All / Entry / Slayer)</option>
-              <option value="main ar">Main AR (Anchor)</option>
-              <option value="slayer">SMG Slayer</option>
-              <option value="entry">Entry SMG</option>
-              <option value="flex">Flex (AR / SMG)</option>
-              <option value="sniper">Sniper / Pick Specialist</option>
-              <option value="objective">Objective Sub</option>
+              <option value="smg">SMG</option>
+              <option value="main ar">Main AR</option>
+              <option value="flex">Flex</option>
+              <option value="obj">OBJ</option>
+              <option value="anchor">Anchor</option>
             </select>
           </div>
 
@@ -427,12 +425,11 @@
             <div>
               <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">Primary CDL Role *</label>
               <select id="lft-role" required style="width:100%; box-sizing:border-box; background:#080b11; border:1px solid #1e283a; border-radius:4px; padding:10px 12px; color:#fff; font-size:13px;">
-                <option value="Main AR">Main AR (Anchor)</option>
-                <option value="SMG Slayer">SMG Slayer</option>
-                <option value="Entry SMG">Entry SMG</option>
-                <option value="Flex">Flex (AR / SMG)</option>
-                <option value="Sniper / Pick">Sniper / Pick Specialist</option>
-                <option value="Objective SMG">Objective SMG</option>
+                <option value="SMG">SMG / Slayer</option>
+                <option value="Main AR">Main AR</option>
+                <option value="Flex" selected>Flex (AR / SMG)</option>
+                <option value="OBJ">OBJ (Objective)</option>
+                <option value="Anchor">Anchor</option>
               </select>
             </div>
           </div>

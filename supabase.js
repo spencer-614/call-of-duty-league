@@ -8519,10 +8519,11 @@ isDiscordLinkedToEmail(target) {
                   Tactical Role <span class="req" style="color:var(--lime, #d5f45b);">*</span>
                 </label>
                 <select id="discord-dossier-role" class="form-control" required style="width:100%; box-sizing:border-box; background:#080a07; border:1px solid #333d1c; padding:10px 14px; color:#fff; font-size:13.5px; border-radius:2px;">
+                  <option value="SMG">SMG / Slayer</option>
+                  <option value="Main AR">Main AR</option>
                   <option value="Flex" selected>Flex / Hybrid</option>
-                  <option value="Main AR">Main AR / Anchor</option>
-                  <option value="SMG">SMG / Entry Fragger</option>
-                  <option value="Sniper">Sniper / Slayer</option>
+                  <option value="OBJ">OBJ (Objective)</option>
+                  <option value="Anchor">Anchor</option>
                 </select>
               </div>
 
