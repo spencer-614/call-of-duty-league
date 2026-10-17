@@ -1486,7 +1486,20 @@
 
         document.getElementById('edit-league-gamertag').value = p.gamertag || '';
         document.getElementById('edit-league-team').value = p.team || (p.is_staff ? 'Frontline League HQ' : 'Free Agent');
-        document.getElementById('edit-league-role').value = p.role || 'Flex';
+        // Normalize role to matching dropdown options
+        let currentRole = p.role || 'Flex';
+        if (currentRole.toLowerCase().includes('anchor') && !currentRole.toLowerCase().includes('main ar')) {
+          currentRole = 'Anchor';
+        } else if (currentRole.toLowerCase().includes('main ar') || currentRole.toLowerCase() === 'ar') {
+          currentRole = 'Main AR';
+        } else if (currentRole.toLowerCase().includes('obj') || currentRole.toLowerCase().includes('objective')) {
+          currentRole = 'OBJ';
+        } else if (currentRole.toLowerCase().includes('smg') || currentRole.toLowerCase().includes('slayer') || currentRole.toLowerCase().includes('entry')) {
+          currentRole = 'SMG';
+        } else if (currentRole.toLowerCase().includes('sniper')) {
+          currentRole = 'Flex'; // Sniper removed, fall back gracefully to Flex
+        }
+        document.getElementById('edit-league-role').value = currentRole;
         document.getElementById('edit-league-division').value = p.division || 'Division 1 · Premier';
         document.getElementById('edit-league-activision').value = p.activision || '';
         if (document.getElementById('edit-league-discord')) {
