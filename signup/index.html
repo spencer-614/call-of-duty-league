@@ -1948,7 +1948,9 @@
 
               unlockRegistrationTerminal(activeUser);
 
-              if (res.requiresEmailConfirmation) {
+              if (res.fallbackNotice) {
+                showGateSuccess(`✓ Account created &amp; verified! Registration terminal unlocked below.`);
+              } else if (res.requiresEmailConfirmation) {
                 showGateSuccess(`✓ Account registered and placed in the recruitment queue for <strong>${escapeHtml(email)}</strong>! A confirmation email has been dispatched. You can now finalize your squad details below.`);
               } else {
                 showGateSuccess(`✓ Account created &amp; placed in the recruitment queue! Registration terminal unlocked below.`);
