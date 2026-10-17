@@ -9819,6 +9819,9 @@
                 </div>
               </div>
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn-action-sm" style="background:rgba(255,30,68,0.15); border-color:#ff1e44; color:#ff3b3b; font-weight:800; padding:6px 12px;" onclick="adminSendLiveTournamentAlertAction('${escapeHtml(tourneyId)}')">
+                  📢 Send Live Alerts (${squadCount} Squads)
+                </button>
                 <a href="/tournaments/bracket/?tournament=${encodeURIComponent(tourneyId)}" target="_blank" class="btn-action-sm" style="color:#22c55e; border-color:#22c55e; text-decoration:none; padding:6px 12px; font-weight:800;">
                   ⚔ View Public Live Bracket ↗
                 </a>
@@ -9938,7 +9941,25 @@
             showToast("Error generating bracket: " + err.message, true);
           }
         }
-        window.adminGenerateBracketAction = adminGenerateBracketAction;
+        async function adminSendLiveTournamentAlertAction(tourneyId) {
+          if (!confirm("Send live tournament notification to all registered squad members and captains now?")) return;
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.notifyTournamentLive === 'function') {
+              const res = await window.LeagueDB.notifyTournamentLive(tourneyId);
+              if (res.success) {
+                showToast(`✓ Dispatched live alerts to registered combatants (${res.count} alerts sent, ${res.totalRegistered || 0} registered players).`);
+              } else {
+                showToast(`Notice: ${res.error || 'Failed to dispatch alerts'}`, true);
+              }
+            } else {
+              showToast("Notification system unavailable.", true);
+            }
+          } catch (err) {
+            console.error("Error sending tournament live alerts:", err);
+            showToast("Failed to dispatch live alerts: " + err.message, true);
+          }
+        }
+        window.adminSendLiveTournamentAlertAction = adminSendLiveTournamentAlertAction;
 
         async function adminAdvanceMatchAction(tourneyId, matchId, tourneyTitle) {
           const score1Input = document.getElementById(`score1-${matchId}`);

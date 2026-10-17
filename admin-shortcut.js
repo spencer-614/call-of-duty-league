@@ -333,8 +333,12 @@
     `;
 
     const isInvite = notif.type === 'team_invite';
+    const isTourneyLive = notif.type === 'tournament_live';
+    const isMatchAccepted = notif.type === 'match_accepted';
     const inviteId = notif.metadata?.invite_id;
     const inviteStatus = notif.metadata?.status || 'pending';
+    const bracketUrl = notif.metadata?.bracket_url || notif.metadata?.action_url || '/tournaments/bracket/';
+    const matchUrl = notif.metadata?.match_url || (notif.metadata?.match_id ? `/match/?id=${encodeURIComponent(notif.metadata.match_id)}` : '/match-finder/');
 
     let actionButtonsHtml = '';
     if (isInvite && inviteStatus === 'pending' && inviteId) {
@@ -344,13 +348,36 @@
           <button type="button" onclick="window.__respondToTeamInvite('${inviteId}', false, this)" style="background:transparent; border:1px solid #ef4444; color:#ef4444; font-weight:700; font-size:11px; padding:6px 12px; border-radius:3px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">✕ Decline</button>
         </div>
       `;
+    } else if (isTourneyLive) {
+      actionButtonsHtml = `
+        <div style="margin-top:6px;">
+          <a href="${bracketUrl}" style="display:inline-block; background:#ff1e44; color:#ffffff; font-weight:800; font-size:11px; padding:6px 14px; border-radius:3px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 4px 12px rgba(255,30,68,0.35);">
+            ⚡ Open Live Bracket ↗
+          </a>
+        </div>
+      `;
+    } else if (isMatchAccepted) {
+      actionButtonsHtml = `
+        <div style="margin-top:6px;">
+          <a href="${matchUrl}" style="display:inline-block; background:#ff1e44; color:#ffffff; font-weight:800; font-size:11px; padding:6px 14px; border-radius:3px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 4px 12px rgba(255,30,68,0.35);">
+            ⚔ Enter Match Room ↗
+          </a>
+        </div>
+      `;
     }
+
+    const toastBorderColor = (isTourneyLive || isMatchAccepted) ? '#ff1e44' : (isInvite ? '#38bdf8' : '#d5f45b');
+    const toastTitleColor = (isTourneyLive || isMatchAccepted) ? '#ff3b3b' : (isInvite ? '#22c55e' : '#d5f45b');
+    const toastIcon = isTourneyLive ? '🔴' : (isMatchAccepted ? '⚔' : (isInvite ? '🛡' : '🔔'));
+
+    toast.style.borderColor = toastBorderColor;
+    toast.style.borderLeftColor = toastBorderColor;
 
     toast.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:16px;">${isInvite ? '🛡' : '🔔'}</span>
-          <strong style="color:${isInvite ? '#22c55e' : '#d5f45b'}; font-size:12.5px; text-transform:uppercase; letter-spacing:0.8px;">${notif.title}</strong>
+          <span style="font-size:16px;">${toastIcon}</span>
+          <strong style="color:${toastTitleColor}; font-size:12.5px; text-transform:uppercase; letter-spacing:0.8px;">${notif.title}</strong>
         </div>
         <button type="button" class="btn-dismiss-toast" style="background:transparent; border:none; color:#888; font-size:14px; cursor:pointer; padding:0 4px; line-height:1;">✕</button>
       </div>
@@ -359,8 +386,8 @@
       </div>
       ${actionButtonsHtml}
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-        <small style="font-size:10px; color:#6b7280;">Frontline HQ Directive</small>
-        <a href="/profile/" style="font-size:11px; color:#d5f45b; font-weight:800; text-decoration:none;">View Dossier ↗</a>
+        <small style="font-size:10px; color:#6b7280;">Frontline Tournament Command</small>
+        <a href="${bracketUrl}" style="font-size:11px; color:${toastTitleColor}; font-weight:800; text-decoration:none;">${isTourneyLive ? 'Live Bracket ↗' : 'View Dossier ↗'}</a>
       </div>
     `;
 
@@ -562,16 +589,39 @@
 
           let badgeText = 'DIRECTIVE';
           let badgeColor = '#d5f45b';
+          let customActionHtml = '';
           if (isAccepted) {
             badgeText = '✓ LEAGUE REGISTRATION ACCEPTED';
             badgeColor = '#22c55e';
           } else if (isInvite) {
             badgeText = '🛡 SQUAD INVITATION';
             badgeColor = '#38bdf8';
+          } else if (n.type === 'tournament_live') {
+            badgeText = '🔴 TOURNAMENT LIVE';
+            badgeColor = '#ff1e44';
+            const bUrl = n.metadata?.bracket_url || n.metadata?.action_url || '/tournaments/bracket/';
+            customActionHtml = `
+              <div style="margin-top:4px;">
+                <a href="${bUrl}" style="display:inline-block; font-size:10.5px; font-weight:800; color:#ff1e44; text-decoration:none; text-transform:uppercase;">
+                  ⚡ Open Bracket &amp; Vetoes ↗
+                </a>
+              </div>
+            `;
+          } else if (n.type === 'match_accepted') {
+            badgeText = '⚔ MATCH CHALLENGE ACCEPTED';
+            badgeColor = '#ff1e44';
+            const mUrl = n.metadata?.match_url || (n.metadata?.match_id ? `/match/?id=${encodeURIComponent(n.metadata.match_id)}` : '/match-finder/');
+            customActionHtml = `
+              <div style="margin-top:4px;">
+                <a href="${mUrl}" style="display:inline-block; font-size:10.5px; font-weight:800; color:#ff1e44; text-decoration:none; text-transform:uppercase;">
+                  ⚔ Open Match Veto Room ↗
+                </a>
+              </div>
+            `;
           }
 
           return `
-            <div style="padding:10px 14px; border-bottom:1px solid #1a2012; background:${n.read ? 'transparent' : 'rgba(213,244,91,0.06)'}; display:flex; flex-direction:column; gap:4px;">
+            <div style="padding:10px 14px; border-bottom:1px solid #1a2012; background:${n.read ? 'transparent' : ((n.type === 'tournament_live' || n.type === 'match_accepted') ? 'rgba(255,30,68,0.08)' : 'rgba(213,244,91,0.06)')}; display:flex; flex-direction:column; gap:4px;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:10px; font-weight:800; color:${badgeColor}; text-transform:uppercase;">
                   ${badgeText}
@@ -581,6 +631,7 @@
               <strong style="font-size:12px; color:#ffffff;">${n.title}</strong>
               <p style="font-size:11.5px; color:#94a3b8; margin:2px 0 4px; line-height:1.4;">${n.message}</p>
               ${inviteActionHtml}
+              ${customActionHtml}
               ${!n.read ? `
                 <button type="button" onclick="window.__markNotificationAsRead('${n.id}')" style="align-self:flex-start; background:transparent; border:none; color:#d5f45b; font-size:10.5px; font-weight:700; cursor:pointer; padding:0; text-decoration:underline; margin-top:2px;">
                   Mark as read

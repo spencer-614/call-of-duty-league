@@ -476,7 +476,8 @@
               <button type="button" class="filter-btn" data-role-filter="SMG">SMG</button>
               <button type="button" class="filter-btn" data-role-filter="Main AR">Main AR</button>
               <button type="button" class="filter-btn" data-role-filter="Flex">Flex</button>
-              <button type="button" class="filter-btn" data-role-filter="Sniper">Sniper</button>
+              <button type="button" class="filter-btn" data-role-filter="OBJ">OBJ</button>
+              <button type="button" class="filter-btn" data-role-filter="Anchor">Anchor</button>
             </div>
           </div>
 
@@ -574,7 +575,21 @@
       async function initPlayers() {
         const container = document.getElementById("players-container");
         try {
-          allPlayers = await window.LeagueDB.getPlayers();
+          const rawPlayers = await window.LeagueDB.getPlayers();
+          const seenTags = new Set();
+          allPlayers = [];
+          (rawPlayers || []).forEach(p => {
+            if (!p || !p.gamertag) return;
+            const lower = String(p.gamertag).toLowerCase().trim();
+            if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+              p.gamertag = "Invictus";
+            }
+            const key = String(p.gamertag).toLowerCase().trim();
+            if (!seenTags.has(key)) {
+              seenTags.add(key);
+              allPlayers.push(p);
+            }
+          });
 
           // Check URL query parameters for pre-selected filters
           const urlParams = new URLSearchParams(window.location.search);
@@ -654,11 +669,13 @@
             if (targetRole === 'smg') {
               roleMatch = playerRoleStr.includes('smg') || playerRoleStr.includes('slayer') || playerRoleStr.includes('entry') || playerRoleStr.includes('sub');
             } else if (targetRole === 'main ar' || targetRole === 'ar') {
-              roleMatch = playerRoleStr.includes('ar') || playerRoleStr.includes('anchor') || playerRoleStr.includes('assault');
+              roleMatch = playerRoleStr.includes('main ar') || playerRoleStr.includes('ar') || playerRoleStr.includes('assault');
             } else if (targetRole === 'flex') {
               roleMatch = playerRoleStr.includes('flex') || playerRoleStr.includes('hybrid');
-            } else if (targetRole === 'sniper') {
-              roleMatch = playerRoleStr.includes('sniper') || playerRoleStr.includes('pick');
+            } else if (targetRole === 'obj') {
+              roleMatch = playerRoleStr.includes('obj') || playerRoleStr.includes('objective');
+            } else if (targetRole === 'anchor') {
+              roleMatch = playerRoleStr.includes('anchor');
             } else {
               roleMatch = playerRoleStr.includes(targetRole);
             }
