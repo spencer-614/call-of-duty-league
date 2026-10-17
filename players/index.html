@@ -575,7 +575,21 @@
       async function initPlayers() {
         const container = document.getElementById("players-container");
         try {
-          allPlayers = await window.LeagueDB.getPlayers();
+          const rawPlayers = await window.LeagueDB.getPlayers();
+          const seenTags = new Set();
+          allPlayers = [];
+          (rawPlayers || []).forEach(p => {
+            if (!p || !p.gamertag) return;
+            const lower = String(p.gamertag).toLowerCase().trim();
+            if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+              p.gamertag = "Invictus";
+            }
+            const key = String(p.gamertag).toLowerCase().trim();
+            if (!seenTags.has(key)) {
+              seenTags.add(key);
+              allPlayers.push(p);
+            }
+          });
 
           // Check URL query parameters for pre-selected filters
           const urlParams = new URLSearchParams(window.location.search);

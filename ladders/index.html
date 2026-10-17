@@ -1074,11 +1074,27 @@
         const tbody = document.getElementById("standings-tbody");
         if (!tbody) return;
 
-        // Ensure Noble, Invictus, or placeholder accounts do not display on the leaderboard
-        const cleanPlayers = (players || []).filter(p => {
-          if (!p || !p.gamertag) return false;
-          const lower = String(p.gamertag).trim().toLowerCase();
-          return lower !== "noble" && lower !== "invictus" && lower !== "operative" && lower !== "tbd";
+        // Ensure Noble or placeholder accounts do not display on the leaderboard
+        // Unify itzinvictus_ / Invictus into a single "Invictus" player
+        const seenTags = new Set();
+        const cleanPlayers = [];
+        (players || []).forEach(p => {
+          if (!p || !p.gamertag) return;
+          let tag = String(p.gamertag).trim();
+          let lower = tag.toLowerCase();
+
+          if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+            tag = "Invictus";
+            lower = "invictus";
+            p.gamertag = "Invictus";
+          }
+
+          if (lower === "noble" || lower === "operative" || lower === "tbd") return;
+
+          if (!seenTags.has(lower)) {
+            seenTags.add(lower);
+            cleanPlayers.push(p);
+          }
         });
 
         if (cleanPlayers.length === 0) {

@@ -7765,8 +7765,17 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   // ==========================================
-  // DISCORD IDENTITY & COMBATANT DOSSIER SYNC
-  // ==========================================
+  // Normalize aliases/Discord handles to canonical gamertags
+  normalizeGamertag(name) {
+    if (!name) return "";
+    const clean = String(name).trim();
+    const lower = clean.toLowerCase();
+    if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+      return "Invictus";
+    }
+    return clean;
+  },
+
   getDiscordIdentity(user) {
     if (!user) return null;
     const meta = user.user_metadata || {};
@@ -9891,9 +9900,17 @@ window.LadderDB = {
 
     const addOrUpdatePlayer = (p) => {
       if (!p || !p.gamertag) return;
-      const tag = String(p.gamertag).trim();
-      const lower = tag.toLowerCase();
-      if (!tag || lower === "operative" || lower === "tbd" || lower === "noble" || lower === "invictus") return;
+      let tag = String(p.gamertag).trim();
+      let lower = tag.toLowerCase();
+
+      // Normalize Discord handle/gamertag variants for Invictus
+      if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+        tag = "Invictus";
+        lower = "invictus";
+        if (!p.discord) p.discord = "itzinvictus_";
+      }
+
+      if (!tag || lower === "operative" || lower === "tbd" || lower === "noble") return;
 
       // Individual player ELO is tracked on the player profile or free agent dossier
       const pElo = Number(p.elo) || 1200;
@@ -9933,6 +9950,8 @@ window.LadderDB = {
         if (p.avatar_url && !existing.avatar_url.includes("unsplash.com")) existing.avatar_url = p.avatar_url;
         if (p.team_name && p.team_name !== "Free Agent") existing.team_name = p.team_name;
         if (p.clan_tag && p.clan_tag !== "LFT") existing.clan_tag = p.clan_tag;
+        if (!existing.discord && (p.discord || p.discord_name)) existing.discord = p.discord || p.discord_name;
+        if (!existing.activision_id && p.activision_id) existing.activision_id = p.activision_id;
       }
     };
 
@@ -11231,6 +11250,12 @@ window.LadderDB = {
         const obj = JSON.parse(explicit);
         // Only use explicit if no conflicting authUser or if it matches authUser
         if (!authUser || (obj.id && obj.id === authUser.id) || (obj.email && cleanAuthEmail && obj.email.toLowerCase() === cleanAuthEmail)) {
+          const lower = String(obj.gamertag || "").toLowerCase().trim();
+          if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+            obj.gamertag = "Invictus";
+            obj.username = "Invictus";
+            obj.discord = obj.discord || "itzinvictus_";
+          }
           return obj;
         }
       }
@@ -11243,10 +11268,13 @@ window.LadderDB = {
       let card = null;
       try { card = JSON.parse(localStorage.getItem('frontline_league_player_card')); } catch(e){}
       let gamertag = meta.gamertag || meta.username || card?.gamertag || card?.username || meta.display_name || meta.global_name || meta.full_name || discordInfo?.globalName || discordInfo?.handle || (authUser.email ? authUser.email.split("@")[0] : "Combatant");
-      if (authUser.id === "00dd56dd-fbc4-4243-b733-ff0a7e4086a3" || cleanAuthEmail === "savory@frontlineleague.com" || String(gamertag).toLowerCase().includes("savory")) {
+      const lowerGamer = String(gamertag || "").toLowerCase().trim();
+      if (authUser.id === "00dd56dd-fbc4-4243-b733-ff0a7e4086a3" || cleanAuthEmail === "savory@frontlineleague.com" || lowerGamer.includes("savory")) {
         gamertag = "Savory";
       } else if (authUser.id === "82788abf-e013-4aff-8475-673fb390b340" || cleanAuthEmail === "todd061496@gmail.com") {
         gamertag = "Commissioner Spencer";
+      } else if (lowerGamer === "itzinvictus_" || lowerGamer === "itzinvictus" || lowerGamer === "invictus") {
+        gamertag = "Invictus";
       }
       return {
         id: authUser.id,
@@ -11258,7 +11286,7 @@ window.LadderDB = {
         elo: 1200,
         tier: "Specialist",
         avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-        discord: discordInfo?.primaryName || meta.discord_name || (gamertag === "Savory" ? "Savory" : `${gamertag.toLowerCase()}#0001`),
+        discord: discordInfo?.primaryName || meta.discord_name || (gamertag === "Savory" ? "Savory" : (gamertag === "Invictus" ? "itzinvictus_" : `${gamertag.toLowerCase()}#0001`)),
         activision_id: meta.activision_id || `${gamertag}#1234567`
       };
     }
@@ -12097,12 +12125,25 @@ window.LadderDB = {
           }
         }
 
-        const lowerGamer = u.gamertag.toLowerCase().trim();
-        const existingIdx = list.findIndex(fa => fa.gamertag && fa.gamertag.toLowerCase().trim() === lowerGamer);
+        let tag = String(u.gamertag).trim();
+        let lowerGamer = tag.toLowerCase();
+        if (lowerGamer === "itzinvictus_" || lowerGamer === "itzinvictus" || lowerGamer === "invictus") {
+          tag = "Invictus";
+          lowerGamer = "invictus";
+          if (!u.discord) u.discord = "itzinvictus_";
+        }
+        u.gamertag = tag;
+
+        const existingIdx = list.findIndex(fa => {
+          if (!fa || !fa.gamertag) return false;
+          const faLower = fa.gamertag.toLowerCase().trim();
+          return faLower === lowerGamer || 
+            ((lowerGamer === "invictus") && (faLower === "itzinvictus_" || faLower === "itzinvictus"));
+        });
         if (existingIdx === -1) {
           list.unshift({
             id: "fa-" + (u.id || Date.now()),
-            gamertag: u.gamertag,
+            gamertag: tag,
             clan_tag: (u.tag || "LFT").toUpperCase().slice(0, 5),
             elo: Number(u.elo) || 1200,
             tier: this.getTier(Number(u.elo) || 1200),

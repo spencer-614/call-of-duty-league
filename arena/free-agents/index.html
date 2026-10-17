@@ -667,7 +667,22 @@
           if (window.LeagueDB && typeof window.LeagueDB.shouldBlockAdminCombatant === "function") {
             list = (list || []).filter(fa => !window.LeagueDB.shouldBlockAdminCombatant(fa));
           }
-          allFreeAgents = list || [];
+          const seenAgents = new Set();
+          const cleanFreeAgents = [];
+          (list || []).forEach(fa => {
+            if (!fa || !fa.gamertag) return;
+            const lower = String(fa.gamertag).toLowerCase().trim();
+            if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
+              fa.gamertag = "Invictus";
+              if (!fa.discord) fa.discord = "itzinvictus_";
+            }
+            const key = String(fa.gamertag).toLowerCase().trim();
+            if (!seenAgents.has(key)) {
+              seenAgents.add(key);
+              cleanFreeAgents.push(fa);
+            }
+          });
+          allFreeAgents = cleanFreeAgents;
 
           updateLadderPillsAndCounters(allFreeAgents);
           renderActiveView();
