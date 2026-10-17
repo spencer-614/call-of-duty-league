@@ -1074,11 +1074,11 @@
         const tbody = document.getElementById("standings-tbody");
         if (!tbody) return;
 
-        // Ensure Noble or placeholder accounts do not display on the leaderboard
+        // Ensure Noble, Invictus, or placeholder accounts do not display on the leaderboard
         const cleanPlayers = (players || []).filter(p => {
           if (!p || !p.gamertag) return false;
           const lower = String(p.gamertag).trim().toLowerCase();
-          return lower !== "noble" && lower !== "operative" && lower !== "tbd";
+          return lower !== "noble" && lower !== "invictus" && lower !== "operative" && lower !== "tbd";
         });
 
         if (cleanPlayers.length === 0) {
