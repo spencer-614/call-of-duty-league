@@ -906,10 +906,16 @@
       }
 
       function getRankSuffix(n) {
-        if (n === 1) return "1st";
-        if (n === 2) return "2nd";
-        if (n === 3) return "3rd";
-        return n + "th";
+        const num = Math.floor(Math.abs(Number(n) || 0));
+        const rem100 = num % 100;
+        if (rem100 >= 11 && rem100 <= 13) {
+          return num + "th";
+        }
+        const rem10 = num % 10;
+        if (rem10 === 1) return num + "st";
+        if (rem10 === 2) return num + "nd";
+        if (rem10 === 3) return num + "rd";
+        return num + "th";
       }
 
       function selectLadder(ladderType) {
