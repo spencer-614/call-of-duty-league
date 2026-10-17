@@ -4938,50 +4938,17 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
-    // Resolve authenticated player (Supabase Auth, local session, or registered account)
-    let authenticatedUser = null;
-    if (typeof this.getAuthUser === "function") {
-      try {
-        const authRes = await this.getAuthUser();
-        if (authRes?.user) authenticatedUser = authRes.user;
-      } catch (_) {}
+    // Registration ownership must come from the real signed-in Auth account.
+    if (!dbClient?.auth) return { success: false, error: 'Database unavailable. Registration was not submitted.' };
+    let registrationAuth;
+    try {
+      const { data, error } = await dbClient.auth.getUser();
+      if (error || !data?.user) return { success: false, error: 'Please sign in again before registering your team.' };
+      registrationAuth = data;
+    } catch (error) {
+      return { success: false, error: error.message || 'Could not verify the signed-in account.' };
     }
-    if (!authenticatedUser && dbClient?.auth) {
-      try {
-        const { data: sessionData } = await dbClient.auth.getSession().catch(() => ({}));
-        if (sessionData?.session?.user) {
-          authenticatedUser = sessionData.session.user;
-        } else {
-          const { data: userData } = await dbClient.auth.getUser().catch(() => ({}));
-          if (userData?.user) authenticatedUser = userData.user;
-        }
-      } catch (_) {}
-    }
-    if (!authenticatedUser && typeof this.getCurrentPlayer === "function") {
-      try {
-        const curPlayer = this.getCurrentPlayer();
-        if (curPlayer && (curPlayer.id || curPlayer.email || curPlayer.gamertag)) {
-          authenticatedUser = curPlayer;
-        }
-      } catch (_) {}
-    }
-    if (!authenticatedUser) {
-      try {
-        const localAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user")) ||
-                          JSON.parse(localStorage.getItem("frontline_arena_auth_user")) ||
-                          JSON.parse(localStorage.getItem("frontline_auth_user")) ||
-                          JSON.parse(localStorage.getItem("frontline_arena_user"));
-        if (localAuth && (localAuth.id || localAuth.email || localAuth.gamertag)) {
-          authenticatedUser = localAuth;
-        }
-      } catch (_) {}
-    }
-
-    if (!authenticatedUser) {
-      return { success: false, error: "Please sign in to register your team for the tournament." };
-    }
-
-    const registeredById = authenticatedUser.id || ("usr_" + Date.now());
+    const registeredById = registrationAuth.user.id;
 
     // Extract raw roster teammates (excluding captain)
     const proposedTeammates = (rawRoster || [])
@@ -5014,6 +4981,33 @@ if (dbClient && cleanPayload.user_id) {
       accepted_at: squadData.registered_at || new Date().toISOString(),
       registered_at: squadData.registered_at || new Date().toISOString()
     };
+
+    // Save the authoritative registration to tournament_registrations table (only passing known columns)
+    if (dbClient) {
+      try {
+        const dbPayload = {
+          id: regRecord.id,
+          registered_by: registeredById,
+          tournament_id: regRecord.tournament_id,
+          tournament_title: regRecord.tournament_title,
+          team_name: regRecord.team_name,
+          captain_gamertag: regRecord.captain_gamertag,
+          captain_discord: regRecord.captain_discord,
+          captain_activision_id: regRecord.captain_activision_id,
+          roster: regRecord.roster,
+          roster_text: regRecord.roster_text,
+          status: regRecord.status,
+          registered_at: regRecord.registered_at
+        };
+        const { error: regTableErr } = await dbClient
+          .from("tournament_registrations").insert([dbPayload]);
+        if (regTableErr) {
+          return { success: false, error: "Registration could not be saved: " + regTableErr.message };
+        }
+      } catch (tableErr) {
+        return { success: false, error: "Registration could not be saved: " + (tableErr.message || tableErr) };
+      }
+    }
 
     // Dispatch Team Invites to all listed teammates (CheckMate Gaming style)
     try {
@@ -5091,32 +5085,6 @@ if (dbClient && cleanPayload.user_id) {
       await this.saveTournamentTeamInvites(allInvites);
     } catch (invErr) {
       console.warn("Notice: Error creating teammate invites:", invErr);
-    }
-
-    // Save the authoritative registration to tournament_registrations table (only passing known columns)
-    if (dbClient) {
-      try {
-        const dbPayload = {
-          id: regRecord.id,
-          tournament_id: regRecord.tournament_id,
-          tournament_title: regRecord.tournament_title,
-          team_name: regRecord.team_name,
-          captain_gamertag: regRecord.captain_gamertag,
-          captain_discord: regRecord.captain_discord,
-          captain_activision_id: regRecord.captain_activision_id,
-          roster: regRecord.roster,
-          roster_text: regRecord.roster_text,
-          status: regRecord.status,
-          registered_at: regRecord.registered_at
-        };
-        const { error: regTableErr } = await dbClient
-          .from("tournament_registrations").insert([dbPayload]);
-        if (regTableErr) {
-          console.warn("Direct tournament_registrations table insert warning (will rely on registry):", regTableErr.message);
-        }
-      } catch (tableErr) {
-        console.warn("tournament_registrations insert exception:", tableErr);
-      }
     }
 
     // Prepend to all registrations
