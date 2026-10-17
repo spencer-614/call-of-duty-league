@@ -4865,10 +4865,11 @@ if (dbClient && cleanPayload.user_id) {
 
       if (dbClient) {
         try {
-          const [tRes, pRes, sRes] = await Promise.all([
+          const [tRes, pRes, sRes, fRes] = await Promise.all([
             dbClient.from("tournament_players").select("gamertag, discord_name"),
             dbClient.from("players").select("gamertag, discord_name"),
-            dbClient.from("league_signups").select("gamertag, discord_username")
+            dbClient.from("league_signups").select("gamertag, discord_username"),
+            dbClient.from("arena_free_agents").select("gamertag, discord, email")
           ]);
           (tRes?.data || []).forEach(p => {
             if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
@@ -4881,6 +4882,10 @@ if (dbClient && cleanPayload.user_id) {
           (sRes?.data || []).forEach(p => {
             if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
             if (p.discord_username) registeredTagsSet.add(norm(p.discord_username));
+          });
+          (fRes?.data || []).forEach(p => {
+            if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+            if (p.discord) registeredTagsSet.add(norm(p.discord));
           });
         } catch (_) {}
       }
@@ -4901,6 +4906,11 @@ if (dbClient && cleanPayload.user_id) {
           if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
           if (p.discord) registeredTagsSet.add(norm(p.discord));
         });
+        const localFA = JSON.parse(localStorage.getItem("frontline_arena_free_agents")) || [];
+        localFA.forEach(p => {
+          if (p.gamertag) registeredTagsSet.add(norm(p.gamertag));
+          if (p.discord) registeredTagsSet.add(norm(p.discord));
+        });
       } catch (_) {}
 
       for (const tNorm of teammateNorms) {
@@ -4908,18 +4918,56 @@ if (dbClient && cleanPayload.user_id) {
           const originalTag = (rawRoster || []).find(x => norm(typeof x === "object" ? (x.gamertag || x.name) : x) === tNorm) || tNorm;
           return {
             success: false,
-            error: `Teammate "${originalTag}" does not have an account on the website. All teammates must create an account / sign in with Discord before being added to a tournament roster.`
+            error: `Teammate "${originalTag}" does not have an account on the website. All teammates must create an account / sign in before being added to a tournament roster.`
           };
         }
       }
     }
 
-    // Use verified Supabase Auth identity for tournament registration ownership.
-    if (!dbClient) return { success: false, error: "Sign in before registering your team." };
-    const { data: registrationAuth, error: registrationAuthError } = await dbClient.auth.getUser();
-    if (registrationAuthError || !registrationAuth?.user) {
-      return { success: false, error: "Sign in before registering your team." };
+    // Resolve authenticated player (Supabase Auth, local session, or registered account)
+    let authenticatedUser = null;
+    if (typeof this.getAuthUser === "function") {
+      try {
+        const authRes = await this.getAuthUser();
+        if (authRes?.user) authenticatedUser = authRes.user;
+      } catch (_) {}
     }
+    if (!authenticatedUser && dbClient?.auth) {
+      try {
+        const { data: sessionData } = await dbClient.auth.getSession().catch(() => ({}));
+        if (sessionData?.session?.user) {
+          authenticatedUser = sessionData.session.user;
+        } else {
+          const { data: userData } = await dbClient.auth.getUser().catch(() => ({}));
+          if (userData?.user) authenticatedUser = userData.user;
+        }
+      } catch (_) {}
+    }
+    if (!authenticatedUser && typeof this.getCurrentPlayer === "function") {
+      try {
+        const curPlayer = this.getCurrentPlayer();
+        if (curPlayer && (curPlayer.id || curPlayer.email || curPlayer.gamertag)) {
+          authenticatedUser = curPlayer;
+        }
+      } catch (_) {}
+    }
+    if (!authenticatedUser) {
+      try {
+        const localAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user")) ||
+                          JSON.parse(localStorage.getItem("frontline_arena_auth_user")) ||
+                          JSON.parse(localStorage.getItem("frontline_auth_user")) ||
+                          JSON.parse(localStorage.getItem("frontline_arena_user"));
+        if (localAuth && (localAuth.id || localAuth.email || localAuth.gamertag)) {
+          authenticatedUser = localAuth;
+        }
+      } catch (_) {}
+    }
+
+    if (!authenticatedUser) {
+      return { success: false, error: "Please sign in to register your team for the tournament." };
+    }
+
+    const registeredById = authenticatedUser.id || ("usr_" + Date.now());
 
     // Extract raw roster teammates (excluding captain)
     const proposedTeammates = (rawRoster || [])
@@ -4936,7 +4984,7 @@ if (dbClient && cleanPayload.user_id) {
     const regId = "reg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
     const regRecord = {
       id: regId,
-      registered_by: registrationAuth.user.id,
+      registered_by: registeredById,
       tournament_id: String(tournamentId),
       tournament_title: item.title || "Frontline Tournament",
       team_name: String(squadData.team_name || "Squad").trim(),

@@ -1643,7 +1643,30 @@
           });
         } catch (_) {}
 
-        // 5. Custom registered accounts in local storage
+        // 5. Arena Free Agents from Supabase (including email signups)
+        if (window.LeagueDB && typeof window.LeagueDB.getFreeAgents === 'function') {
+          try {
+            const dbAgents = await window.LeagueDB.getFreeAgents();
+            if (Array.isArray(dbAgents)) {
+              dbAgents.forEach(p => {
+                const tag = (p.gamertag || p.username || '').trim();
+                if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
+                  map.set(tag.toLowerCase(), {
+                    gamertag: tag,
+                    discord: p.discord || '',
+                    team: p.team || 'Free Agent',
+                    role: p.role || 'Free Agent',
+                    avatar: p.avatar_url || null,
+                    isTournamentPlayer: false,
+                    hasAccount: true
+                  });
+                }
+              });
+            }
+          } catch (_) {}
+        }
+
+        // 6. Custom registered accounts & Free agents in local storage
         try {
           const custom = JSON.parse(localStorage.getItem('frontline_arena_registered_accounts')) || [];
           custom.forEach(p => {
@@ -1660,12 +1683,29 @@
               });
             }
           });
+          const localFA = JSON.parse(localStorage.getItem('frontline_arena_free_agents')) || [];
+          localFA.forEach(p => {
+            const tag = (p.gamertag || p.username || '').trim();
+            if (tag && !map.has(tag.toLowerCase())) {
+              map.set(tag.toLowerCase(), {
+                gamertag: tag,
+                discord: p.discord || '',
+                team: 'Free Agent',
+                role: p.role || 'Free Agent',
+                avatar: p.avatar_url || null,
+                isTournamentPlayer: false,
+                hasAccount: true
+              });
+            }
+          });
         } catch (_) {}
 
-        // 6. Current authenticated user profile
+        // 7. Current authenticated user profile
         try {
           const authUser = JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
-                           JSON.parse(localStorage.getItem('frontline_auth_user')) || null;
+                           JSON.parse(localStorage.getItem('frontline_arena_auth_user')) ||
+                           JSON.parse(localStorage.getItem('frontline_auth_user')) ||
+                           JSON.parse(localStorage.getItem('frontline_arena_user')) || null;
           if (authUser) {
             const tag = (authUser.gamertag || authUser.username || authUser.user_metadata?.custom_claims?.global_name || authUser.user_metadata?.full_name || '').trim();
             if (tag && tag.toLowerCase() !== 'operative' && !map.has(tag.toLowerCase())) {
@@ -2088,20 +2128,29 @@
         // Render modal auth status banner
         const modalAuthBar = document.getElementById('tourney-modal-auth-bar');
         if (modalAuthBar) {
-          if (myUser.id || (myUser.gamertag && myUser.gamertag !== 'Operative')) {
+          const userIdentifier = myUser.gamertag || myUser.discord || myUser.email;
+          if (myUser.id || (userIdentifier && userIdentifier.toLowerCase() !== 'operative')) {
             modalAuthBar.innerHTML = `
-              <div style="background:rgba(88,101,242,0.1); border:1px solid rgba(88,101,242,0.3); padding:8px 12px; border-radius:3px; display:flex; align-items:center; justify-content:space-between; font-size:11.5px;">
-                <span style="color:#8ea1e1; font-weight:700;">🟢 Signed in as <strong style="color:#fff;">${escapeHtml(myUser.gamertag || myUser.discord)}</strong></span>
-                <span style="color:#4ade80; font-weight:700; font-size:10.5px;">✓ Open Tournament Verified</span>
+              <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); padding:8px 12px; border-radius:3px; display:flex; align-items:center; justify-content:space-between; font-size:11.5px; flex-wrap:wrap; gap:6px;">
+                <span style="color:#86efac; font-weight:700;">🟢 Signed in as <strong style="color:#fff;">${escapeHtml(userIdentifier)}</strong></span>
+                <span style="color:#4ade80; font-weight:700; font-size:10.5px;">✓ Tournament Registration Ready</span>
               </div>
             `;
           } else {
             modalAuthBar.innerHTML = `
-              <div style="background:rgba(88,101,242,0.12); border:1px solid #5865F2; padding:10px 14px; border-radius:3px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                <span style="color:#cbd5e1; font-size:12px;">Sign in with Discord to auto-fill Captain details (No draft registration needed):</span>
-                <button type="button" onclick="signInWithDiscordFromTourney('${id}')" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:11px; padding:5px 12px; cursor:pointer; font-weight:800; display:inline-flex; align-items:center; gap:5px;">
-                  <span>💬 1-Click Discord Sign In</span>
-                </button>
+              <div style="background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.35); padding:10px 14px; border-radius:3px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <div style="color:#fef08a; font-size:12px; font-weight:700;">⚠️ Sign in required to register your squad:</div>
+                  <div style="color:#9ca3af; font-size:11px; margin-top:2px;">Sign in with your email account or 1-Click Discord to register.</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <button type="button" onclick="signInWithDiscordFromTourney('${id}')" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:11px; padding:5px 12px; cursor:pointer; font-weight:800; display:inline-flex; align-items:center; gap:5px;">
+                    <span>💬 Discord Sign In</span>
+                  </button>
+                  <a href="/login/" target="_blank" class="btn" style="background:#22c55e; border-color:#22c55e; color:#000; font-size:11px; padding:5px 12px; cursor:pointer; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                    <span>🔑 Email Sign In</span>
+                  </a>
+                </div>
               </div>
             `;
           }
