@@ -197,9 +197,13 @@
       </div>
 
       <div class="fl-subnav-links">
-        <a href="/ladders/" class="fl-subnav-item active">
+        <a href="/ladders/" class="fl-subnav-item active" id="subnav-ladders-link">
           <span>Ladders</span>
           <span class="fl-badge-count">3</span>
+        </a>
+        <a href="/ladders/?view=leaderboard" class="fl-subnav-item" id="subnav-leaderboard-link" onclick="handleSubnavLeaderboardClick(event)">
+          <span>Leaderboard</span>
+          <span class="fl-badge-count" style="background:#3b82f6; color:#fff;">ELO</span>
         </a>
         <a href="/arena/tournaments/" class="fl-subnav-item">
           <span>Tournaments</span>
@@ -300,29 +304,46 @@
             <button type="button" onclick="document.getElementById('explainer-box').style.display='none'" class="fl-explainer-close" title="Dismiss Explainer">✕</button>
           </div>
 
-          <!-- STANDINGS LEADERBOARD CARD -->
+          <!-- STANDINGS & LEADERBOARDS CARD -->
           <div class="fl-standings-card" id="standings">
-            <div class="fl-standings-header">
-              <div class="fl-standings-title">
-                <span id="standings-table-title">STANDINGS</span>
-                <span style="font-size:11px; color:#64748b; font-weight:normal;" id="standings-sub-label">(Live NA Division Rankings)</span>
+            <div class="fl-standings-header" style="flex-wrap:wrap; gap:12px;">
+              <div>
+                <div class="fl-standings-title">
+                  <span id="standings-table-title">STANDINGS</span>
+                  <span style="font-size:11px; color:#64748b; font-weight:normal;" id="standings-sub-label">(Live NA Division Rankings)</span>
+                </div>
+                <!-- Leaderboard Mode Selector: Teams ELO vs Individual Players ELO -->
+                <div style="display:inline-flex; align-items:center; background:#080b11; border:1px solid #1e283a; border-radius:6px; padding:3px; gap:4px; margin-top:8px;" role="tablist" aria-label="Leaderboard View Type">
+                  <button type="button" id="tab-leaderboard-teams" onclick="setLeaderboardMode('teams')" style="background:#ff1e44; color:#fff; border:none; padding:5px 14px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; border-radius:4px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;">
+                    <span>🛡</span> <span>Teams Leaderboard</span>
+                  </button>
+                  <button type="button" id="tab-leaderboard-players" onclick="setLeaderboardMode('players')" style="background:transparent; color:#94a3b8; border:none; padding:5px 14px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; border-radius:4px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;">
+                    <span>👤</span> <span>Players Leaderboard</span>
+                  </button>
+                </div>
               </div>
 
-              <div class="fl-standings-tools">
-                <input type="text" id="standings-search-input" oninput="filterStandingsTable()" placeholder="Search squad or gamertag..." class="fl-search-input" />
+              <div class="fl-standings-tools" style="display:flex; align-items:center; gap:8px;">
+                <input type="text" id="standings-search-input" oninput="filterStandingsTable()" placeholder="Search squads or combatants..." class="fl-search-input" />
               </div>
+            </div>
+
+            <!-- ELO Leaderboard Notice Explaining Separate ELO Ratings -->
+            <div id="leaderboard-elo-notice" style="background:rgba(255,30,68,0.06); border-bottom:1px solid #1c2638; padding:8px 16px; font-size:11px; color:#94a3b8; display:flex; align-items:center; justify-content:space-between;">
+              <span id="leaderboard-elo-notice-text">🛡 <strong>Teams ELO:</strong> Team ELO is earned as a cohesive squad and tracks collective performance on the ladder.</span>
+              <span style="font-size:10px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.5px;">CDL Verified</span>
             </div>
 
             <div style="overflow-x:auto;">
               <table class="fl-standings-table">
                 <thead>
-                  <tr>
-                    <th style="width:280px;">STANDINGS</th>
+                  <tr id="standings-thead-tr">
+                    <th style="width:280px;" id="th-name-col">STANDINGS</th>
                     <th class="col-stat">WINS</th>
                     <th class="col-stat">LOSS</th>
                     <th class="col-stat">PCT</th>
                     <th class="col-stat">STREAK</th>
-                    <th class="col-points">POINTS (ELO)</th>
+                    <th class="col-points" id="th-elo-col">TEAM ELO</th>
                   </tr>
                 </thead>
                 <tbody id="standings-tbody">
@@ -777,7 +798,9 @@
          ========================================================================= -->
     <script>
       let currentLadder = "4v4_variant";
+      let leaderboardMode = "teams"; // 'teams' | 'players'
       let cachedTeams = [];
+      let cachedPlayers = [];
 
       const LADDER_CONFIG = {
         "4v4_variant": {
@@ -800,11 +823,86 @@
         }
       };
 
-      // Check URL parameters for ladder
+      // Check URL parameters for ladder and view
       const urlParams = new URLSearchParams(window.location.search);
       const ladderParam = urlParams.get("ladder");
       if (ladderParam && LADDER_CONFIG[ladderParam]) {
         currentLadder = ladderParam;
+      }
+      const viewParam = urlParams.get("view");
+      if (viewParam === "players" || viewParam === "leaderboard") {
+        leaderboardMode = "players";
+      }
+
+      function handleSubnavLeaderboardClick(e) {
+        if (e) e.preventDefault();
+        setLeaderboardMode("players");
+        const el = document.getElementById("standings");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }
+
+      function setLeaderboardMode(mode) {
+        leaderboardMode = mode === "players" ? "players" : "teams";
+
+        const btnTeams = document.getElementById("tab-leaderboard-teams");
+        const btnPlayers = document.getElementById("tab-leaderboard-players");
+        const noticeEl = document.getElementById("leaderboard-elo-notice-text");
+        const thName = document.getElementById("th-name-col");
+        const thElo = document.getElementById("th-elo-col");
+        const subnavLadders = document.getElementById("subnav-ladders-link");
+        const subnavLeaderboard = document.getElementById("subnav-leaderboard-link");
+
+        if (leaderboardMode === "players") {
+          if (btnTeams) {
+            btnTeams.style.background = "transparent";
+            btnTeams.style.color = "#94a3b8";
+          }
+          if (btnPlayers) {
+            btnPlayers.style.background = "#3b82f6";
+            btnPlayers.style.color = "#ffffff";
+          }
+          if (noticeEl) {
+            noticeEl.innerHTML = `👤 <strong>Players ELO Leaderboard:</strong> Individual ELO reflects personal skill, match performance, and tactical win rating across all formats (separate from team squad ELO).`;
+          }
+          if (thName) thName.textContent = "COMBATANT / PLAYER";
+          if (thElo) thElo.textContent = "PLAYER ELO";
+          if (subnavLadders) subnavLadders.classList.remove("active");
+          if (subnavLeaderboard) subnavLeaderboard.classList.add("active");
+        } else {
+          if (btnTeams) {
+            btnTeams.style.background = "#ff1e44";
+            btnTeams.style.color = "#ffffff";
+          }
+          if (btnPlayers) {
+            btnPlayers.style.background = "transparent";
+            btnPlayers.style.color = "#94a3b8";
+          }
+          if (noticeEl) {
+            noticeEl.innerHTML = `🛡 <strong>Teams ELO Leaderboard:</strong> Team ELO is earned as a cohesive squad and tracks collective performance on the ladder (separate from individual player ELO).`;
+          }
+          if (thName) thName.textContent = "STANDINGS";
+          if (thElo) thElo.textContent = "TEAM ELO";
+          if (subnavLadders) subnavLadders.classList.add("active");
+          if (subnavLeaderboard) subnavLeaderboard.classList.remove("active");
+        }
+
+        const conf = LADDER_CONFIG[currentLadder] || LADDER_CONFIG["4v4_variant"];
+        const tableTitle = document.getElementById("standings-table-title");
+        if (tableTitle) {
+          tableTitle.textContent = leaderboardMode === "players"
+            ? `${conf.breadcrumb.toUpperCase()} PLAYERS LEADERBOARD`
+            : `${conf.breadcrumb.toUpperCase()} STANDINGS`;
+        }
+
+        const searchInput = document.getElementById("standings-search-input");
+        if (searchInput) {
+          searchInput.placeholder = leaderboardMode === "players"
+            ? "Search player gamertag, Discord, role..."
+            : "Search squad, tag, or captain...";
+          searchInput.value = "";
+        }
+
+        loadStandings();
       }
 
       function getRankSuffix(n) {
@@ -931,25 +1029,123 @@
       async function loadStandings() {
         const tbody = document.getElementById("standings-tbody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:36px; color:#64748b;">Loading live ladder standings...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:36px; color:#64748b;">Loading live ${leaderboardMode === 'players' ? 'player leaderboard' : 'ladder standings'}...</td></tr>`;
 
-        try {
-          let teams = [];
-          if (window.LadderDB && typeof window.LadderDB.getLadderTeams === "function") {
-            teams = await window.LadderDB.getLadderTeams(currentLadder);
+        if (leaderboardMode === "players") {
+          try {
+            let players = [];
+            if (window.LadderDB && typeof window.LadderDB.getLadderPlayers === "function") {
+              players = await window.LadderDB.getLadderPlayers(currentLadder);
+            }
+            cachedPlayers = players || [];
+
+            const countLabel = document.getElementById("sidebar-team-count");
+            if (countLabel && cachedPlayers.length > 0) {
+              countLabel.textContent = `${cachedPlayers.length} Combatants`;
+            }
+
+            renderPlayerLeaderboardRows(cachedPlayers);
+          } catch (err) {
+            console.error("Error loading player leaderboard:", err);
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#ef4444;">Failed to load player leaderboard: ${err.message}</td></tr>`;
           }
-          cachedTeams = teams || [];
+        } else {
+          try {
+            let teams = [];
+            if (window.LadderDB && typeof window.LadderDB.getLadderTeams === "function") {
+              teams = await window.LadderDB.getLadderTeams(currentLadder);
+            }
+            cachedTeams = teams || [];
 
-          const countLabel = document.getElementById("sidebar-team-count");
-          if (countLabel && cachedTeams.length > 0) {
-            countLabel.textContent = `${cachedTeams.length} Squads`;
+            const countLabel = document.getElementById("sidebar-team-count");
+            if (countLabel && cachedTeams.length > 0) {
+              countLabel.textContent = `${cachedTeams.length} Squads`;
+            }
+
+            renderStandingsRows(cachedTeams);
+          } catch (err) {
+            console.error("Error loading standings:", err);
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#ef4444;">Failed to load ladder standings: ${err.message}</td></tr>`;
           }
-
-          renderStandingsRows(cachedTeams);
-        } catch (err) {
-          console.error("Error loading standings:", err);
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#ef4444;">Failed to load ladder standings: ${err.message}</td></tr>`;
         }
+      }
+
+      function renderPlayerLeaderboardRows(players) {
+        const tbody = document.getElementById("standings-tbody");
+        if (!tbody) return;
+
+        if (!players || players.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align:center; padding:36px; color:#94a3b8;">
+                No players registered yet on this format. Sign up to claim #1 on the Player ELO Leaderboard!
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const currentPlayer = (window.LadderDB && typeof window.LadderDB.getCurrentPlayer === "function") 
+          ? window.LadderDB.getCurrentPlayer() 
+          : null;
+
+        tbody.innerHTML = players.map((player, idx) => {
+          const rankNum = idx + 1;
+          const rankSuffix = getRankSuffix(rankNum);
+          const isMe = currentPlayer && (
+            (currentPlayer.gamertag && player.gamertag && currentPlayer.gamertag.toLowerCase() === player.gamertag.toLowerCase()) ||
+            (currentPlayer.id && player.id && currentPlayer.id === player.id)
+          );
+
+          const deltaIcon = (player.streak >= 0 || rankNum <= 3)
+            ? `<span class="fl-delta-up">▲</span>`
+            : `<span class="fl-delta-down">▼</span>`;
+
+          const streakNum = player.streak || 0;
+          const isStreakWin = streakNum >= 0;
+          const streakStr = isStreakWin ? `${streakNum}W` : `${Math.abs(streakNum)}L`;
+          const streakClass = isStreakWin ? "stat-streak-win" : "stat-streak-loss";
+          const hasFlame = (player.elo || 1200) >= 1800 || streakNum >= 3;
+
+          const totalGames = (player.wins || 0) + (player.losses || 0);
+          const winPct = totalGames > 0
+            ? (player.wins / totalGames).toFixed(3).replace(/^0/, "")
+            : ".000";
+
+          const tier = player.tier || (window.LadderDB && window.LadderDB.getTier ? window.LadderDB.getTier(player.elo || 1200) : { name: "Specialist", icon: "🎯" });
+
+          return `
+            <tr style="${isMe ? 'background:rgba(59,130,246,0.1); border-left:3px solid #3b82f6;' : ''}">
+              <td>
+                <div class="fl-rank-wrapper">
+                  <span class="fl-rank-text">
+                    ${rankSuffix} ${deltaIcon}
+                  </span>
+                  <span class="fl-platform-icon" title="${player.platform || 'Crossplay'}">${player.platform === 'PlayStation' ? '🎮' : player.platform === 'Xbox' ? '🟢' : '💻'}</span>
+                  <div class="fl-team-cell">
+                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="fl-team-avatar" alt="${player.gamertag}" />
+                    <div class="fl-team-info-block">
+                      <span class="fl-team-name-text">
+                        ${player.gamertag}
+                        <span style="font-size:10.5px; font-weight:700; color:#64748b; margin-left:4px;">(${player.team_name || 'Free Agent'})</span>
+                      </span>
+                      <span style="display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase;">
+                        <span>${tier.icon || '🎯'}</span> <span>${tier.name}</span>
+                      </span>
+                      ${hasFlame ? '<span class="fl-hot-streak-flame" title="Apex Combatant / Win Streak">🔥</span>' : ''}
+                      ${isMe ? '<span style="background:#3b82f6; color:#fff; font-size:9px; font-weight:900; padding:1px 6px; border-radius:3px;">YOU</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="stat-win">${player.wins || 0}</td>
+              <td class="stat-loss">${player.losses || 0}</td>
+              <td class="stat-pct">${winPct}</td>
+              <td class="${streakClass}">${streakStr}</td>
+              <td class="stat-points" style="color:#38bdf8;">${Number(player.elo || 1200).toLocaleString()}</td>
+            </tr>
+          `;
+        }).join("");
       }
 
       function renderStandingsRows(teams) {
@@ -1021,20 +1217,33 @@
 
       function filterStandingsTable() {
         const query = document.getElementById("standings-search-input").value.toLowerCase().trim();
-        if (!cachedTeams) return;
 
-        if (!query) {
-          renderStandingsRows(cachedTeams);
-          return;
+        if (leaderboardMode === "players") {
+          if (!cachedPlayers) return;
+          if (!query) {
+            renderPlayerLeaderboardRows(cachedPlayers);
+            return;
+          }
+          const filtered = cachedPlayers.filter(p =>
+            (p.gamertag && p.gamertag.toLowerCase().includes(query)) ||
+            (p.discord && p.discord.toLowerCase().includes(query)) ||
+            (p.team_name && p.team_name.toLowerCase().includes(query)) ||
+            (p.role && p.role.toLowerCase().includes(query))
+          );
+          renderPlayerLeaderboardRows(filtered);
+        } else {
+          if (!cachedTeams) return;
+          if (!query) {
+            renderStandingsRows(cachedTeams);
+            return;
+          }
+          const filtered = cachedTeams.filter(t => 
+            (t.name && t.name.toLowerCase().includes(query)) ||
+            (t.tag && t.tag.toLowerCase().includes(query)) ||
+            (t.captain_name && t.captain_name.toLowerCase().includes(query))
+          );
+          renderStandingsRows(filtered);
         }
-
-        const filtered = cachedTeams.filter(t => 
-          (t.name && t.name.toLowerCase().includes(query)) ||
-          (t.tag && t.tag.toLowerCase().includes(query)) ||
-          (t.captain_name && t.captain_name.toLowerCase().includes(query))
-        );
-
-        renderStandingsRows(filtered);
       }
 
       async function renderRecentMatchesSidebar() {

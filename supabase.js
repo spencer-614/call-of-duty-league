@@ -9719,6 +9719,113 @@ window.LadderDB = {
     return MOCK_LADDER_DATA.teams.filter(t => t.ladder_type === ladderType);
   },
 
+  // Retrieve individual players leaderboard with individual player ELO (distinct from team ELO)
+  async getLadderPlayers(ladderType = "4v4_variant") {
+    const playerMap = new Map();
+
+    const addOrUpdatePlayer = (p) => {
+      if (!p || !p.gamertag) return;
+      const tag = String(p.gamertag).trim();
+      if (!tag || tag.toLowerCase() === "operative" || tag.toLowerCase() === "tbd") return;
+      const lower = tag.toLowerCase();
+
+      // Individual player ELO is tracked on the player profile or free agent dossier
+      const pElo = Number(p.elo) || 1200;
+      const pWins = Number(p.wins) || 0;
+      const pLosses = Number(p.losses) || 0;
+      const pStreak = Number(p.streak) || 0;
+
+      if (!playerMap.has(lower)) {
+        playerMap.set(lower, {
+          id: p.id || ("lp_" + lower),
+          gamertag: tag,
+          username: tag,
+          clan_tag: p.clan_tag || p.tag || "LFT",
+          team_name: p.team_name || p.team || "Free Agent",
+          role: p.role || p.primary_role || "Flex",
+          platform: p.platform || "Crossplay",
+          region: p.region || "NA East",
+          discord: p.discord || p.discord_name || "",
+          activision_id: p.activision_id || "",
+          avatar_url: p.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+          elo: pElo,
+          tier: this.getTier(pElo),
+          wins: pWins,
+          losses: pLosses,
+          streak: pStreak,
+          ladder_type: ladderType
+        });
+      } else {
+        const existing = playerMap.get(lower);
+        if (pElo > existing.elo) {
+          existing.elo = pElo;
+          existing.tier = this.getTier(pElo);
+        }
+        if (pWins > existing.wins) existing.wins = pWins;
+        if (pLosses > existing.losses) existing.losses = pLosses;
+        if (p.streak && Math.abs(p.streak) > Math.abs(existing.streak)) existing.streak = p.streak;
+        if (p.avatar_url && !existing.avatar_url.includes("unsplash.com")) existing.avatar_url = p.avatar_url;
+        if (p.team_name && p.team_name !== "Free Agent") existing.team_name = p.team_name;
+        if (p.clan_tag && p.clan_tag !== "LFT") existing.clan_tag = p.clan_tag;
+      }
+    };
+
+    // 1. Fetch free agents & registered players
+    if (typeof this.getFreeAgents === "function") {
+      try {
+        const agents = await this.getFreeAgents({ ladder: ladderType });
+        (agents || []).forEach(addOrUpdatePlayer);
+      } catch (_) {}
+    }
+
+    // 2. Fetch all rosters from ladder teams and extract individual players
+    try {
+      const teams = await this.getLadderTeams(ladderType);
+      (teams || []).forEach(team => {
+        const roster = this.getTeamRoster(team);
+        (roster || []).forEach(member => {
+          if (member) {
+            addOrUpdatePlayer({
+              ...member,
+              team_name: team.name,
+              clan_tag: team.tag || "TAG"
+            });
+          }
+        });
+      });
+    } catch (_) {}
+
+    // 3. Registered accounts in local storage
+    try {
+      const custom = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      custom.forEach(acc => {
+        addOrUpdatePlayer({
+          id: acc.id,
+          gamertag: acc.gamertag,
+          clan_tag: acc.tag || "TAG",
+          team_name: acc.team_name || "Free Agent",
+          role: acc.role || "Flex",
+          platform: acc.platform || "PC",
+          avatar_url: acc.avatar_url,
+          elo: Number(acc.elo) || 1200,
+          wins: Number(acc.wins) || 0,
+          losses: Number(acc.losses) || 0,
+          streak: Number(acc.streak) || 0
+        });
+      });
+    } catch (_) {}
+
+    // 4. Current user session
+    try {
+      const cur = this.getCurrentPlayer();
+      if (cur) addOrUpdatePlayer(cur);
+    } catch (_) {}
+
+    const playersList = Array.from(playerMap.values());
+    playersList.sort((a, b) => (b.elo || 0) - (a.elo || 0) || (b.wins || 0) - (a.wins || 0));
+    return playersList;
+  },
+
   async createLadderTeam(teamData) {
     // Set initial defaults
     const newTeam = {
