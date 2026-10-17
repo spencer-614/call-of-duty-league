@@ -9726,8 +9726,8 @@ window.LadderDB = {
     const addOrUpdatePlayer = (p) => {
       if (!p || !p.gamertag) return;
       const tag = String(p.gamertag).trim();
-      if (!tag || tag.toLowerCase() === "operative" || tag.toLowerCase() === "tbd") return;
       const lower = tag.toLowerCase();
+      if (!tag || lower === "operative" || lower === "tbd" || lower === "noble") return;
 
       // Individual player ELO is tracked on the player profile or free agent dossier
       const pElo = Number(p.elo) || 1200;
