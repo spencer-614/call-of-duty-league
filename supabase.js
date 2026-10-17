@@ -9770,7 +9770,93 @@ window.LadderDB = {
       }
     };
 
-    // 1. Fetch free agents & registered players
+    // 1. Fetch from Supabase tables (arena_free_agents, tournament_players, players, league_signups)
+    if (dbClient) {
+      try {
+        const [faRes, tpRes, pRes, lsRes] = await Promise.all([
+          dbClient.from("arena_free_agents").select("*").order("elo", { ascending: false }),
+          dbClient.from("tournament_players").select("*"),
+          dbClient.from("players").select("*"),
+          dbClient.from("league_signups").select("*")
+        ]);
+
+        (faRes?.data || []).forEach(row => {
+          if (row && row.gamertag) {
+            addOrUpdatePlayer({
+              id: row.id,
+              gamertag: row.gamertag,
+              clan_tag: row.clan_tag || "LFT",
+              team_name: row.clan_tag ? `${row.clan_tag} Combatant` : "Free Agent",
+              role: row.primary_role || row.role || "Flex",
+              platform: row.platform || "Crossplay",
+              region: row.region || "NA East",
+              discord: row.discord || "",
+              activision_id: row.activision_id || "",
+              avatar_url: row.avatar_url,
+              elo: Number(row.elo) || 1200,
+              wins: Number(row.wins) || 0,
+              losses: Number(row.losses) || 0,
+              streak: Number(row.streak) || 0
+            });
+          }
+        });
+
+        (tpRes?.data || []).forEach(row => {
+          if (row && row.gamertag) {
+            addOrUpdatePlayer({
+              id: row.id,
+              gamertag: row.gamertag,
+              clan_tag: "LFT",
+              team_name: "Free Agent",
+              role: row.role && row.role !== "Tournament Player" ? row.role : "Flex",
+              platform: "Crossplay",
+              discord: row.discord_name || row.discord || "",
+              activision_id: row.activision_id || "",
+              avatar_url: row.avatar_url,
+              elo: Number(row.elo) || 1200
+            });
+          }
+        });
+
+        (pRes?.data || []).forEach(row => {
+          if (row && row.gamertag) {
+            addOrUpdatePlayer({
+              id: row.id,
+              gamertag: row.gamertag,
+              clan_tag: row.tag || "ARENA",
+              team_name: row.team_name || row.team || "Free Agent",
+              role: row.role || "Flex",
+              platform: row.platform || "PC",
+              avatar_url: row.avatar_url,
+              elo: Number(row.elo) || 1200,
+              wins: Number(row.wins) || 0,
+              losses: Number(row.losses) || 0
+            });
+          }
+        });
+
+        (lsRes?.data || []).forEach(row => {
+          if (row && row.gamertag) {
+            addOrUpdatePlayer({
+              id: row.id,
+              gamertag: row.gamertag,
+              clan_tag: "LFT",
+              team_name: "Free Agent",
+              role: row.role || "Flex",
+              platform: row.platform || "Crossplay",
+              discord: row.discord_username || row.discord_name || "",
+              activision_id: row.activision_id || "",
+              avatar_url: row.avatar_url,
+              elo: Number(row.elo) || 1200
+            });
+          }
+        });
+      } catch (dbErr) {
+        console.warn("Supabase players leaderboard query notice:", dbErr);
+      }
+    }
+
+    // 2. Fetch free agents helper fallback
     if (typeof this.getFreeAgents === "function") {
       try {
         const agents = await this.getFreeAgents({ ladder: ladderType });
@@ -9778,7 +9864,7 @@ window.LadderDB = {
       } catch (_) {}
     }
 
-    // 2. Fetch all rosters from ladder teams and extract individual players
+    // 3. Fetch all rosters from ladder teams and extract individual players
     try {
       const teams = await this.getLadderTeams(ladderType);
       (teams || []).forEach(team => {
@@ -9795,7 +9881,7 @@ window.LadderDB = {
       });
     } catch (_) {}
 
-    // 3. Registered accounts in local storage
+    // 4. All registered website accounts and local caches
     try {
       const custom = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
       custom.forEach(acc => {
@@ -9813,9 +9899,39 @@ window.LadderDB = {
           streak: Number(acc.streak) || 0
         });
       });
+      const localFA = JSON.parse(localStorage.getItem("frontline_arena_free_agents")) || [];
+      localFA.forEach(fa => {
+        addOrUpdatePlayer({
+          id: fa.id,
+          gamertag: fa.gamertag,
+          clan_tag: fa.clan_tag || "LFT",
+          team_name: "Free Agent",
+          role: fa.role || fa.primary_role || "Flex",
+          platform: fa.platform || "Crossplay",
+          avatar_url: fa.avatar_url,
+          elo: Number(fa.elo) || 1200,
+          wins: Number(fa.wins) || 0,
+          losses: Number(fa.losses) || 0,
+          streak: Number(fa.streak) || 0
+        });
+      });
+      const localTourneyP = JSON.parse(localStorage.getItem("frontline_tournament_players")) || [];
+      localTourneyP.forEach(tp => {
+        if (tp && tp.gamertag) {
+          addOrUpdatePlayer({
+            id: tp.id,
+            gamertag: tp.gamertag,
+            clan_tag: "LFT",
+            team_name: "Free Agent",
+            role: tp.role || "Flex",
+            avatar_url: tp.avatar_url,
+            elo: Number(tp.elo) || 1200
+          });
+        }
+      });
     } catch (_) {}
 
-    // 4. Current user session
+    // 5. Current logged-in user session
     try {
       const cur = this.getCurrentPlayer();
       if (cur) addOrUpdatePlayer(cur);
@@ -10364,7 +10480,7 @@ window.LadderDB = {
       currentMatchData.winner = winnerId;
       localStorage.setItem(key, JSON.stringify(currentMatchData));
 
-      // Update Supabase if connected
+      // 1. Update Supabase ladder_matches if connected
       if (dbClient) {
         try {
           await dbClient
@@ -10378,6 +10494,165 @@ window.LadderDB = {
             })
             .eq("id", matchId);
         } catch (e) {}
+      }
+
+      // 2. Adjust Team ELO and Individual Player ELO ratings (Teams gain team ELO, players gain individual ELO)
+      try {
+        const fullMatch = await this.getMatch(matchId);
+        if (fullMatch) {
+          const ladderType = fullMatch.ladder_type || "4v4_variant";
+          const teamA = fullMatch.team_a;
+          const teamB = fullMatch.team_b;
+
+          if (teamA && teamB) {
+            const isTeamAWinner = winnerId === "team_a";
+            const eloGain = 25;
+            const eloLoss = 20;
+
+            // Helper to update team record & ELO
+            const applyTeamElo = async (team, won) => {
+              const oldElo = Number(team.elo) || 1200;
+              const newElo = won ? (oldElo + eloGain) : Math.max(800, oldElo - eloLoss);
+              const wins = (Number(team.wins) || 0) + (won ? 1 : 0);
+              const losses = (Number(team.losses) || 0) + (won ? 0 : 1);
+              const oldStreak = Number(team.streak) || 0;
+              const streak = won ? (oldStreak >= 0 ? oldStreak + 1 : 1) : (oldStreak <= 0 ? oldStreak - 1 : -1);
+
+              team.elo = newElo;
+              team.tier = this.getTier(newElo).name;
+              team.wins = wins;
+              team.losses = losses;
+              team.streak = streak;
+
+              // Save to database
+              if (dbClient && team.id && typeof team.id === "number") {
+                try {
+                  await dbClient.from("ladder_teams").update({
+                    elo: newElo,
+                    wins,
+                    losses,
+                    streak,
+                    tier: team.tier
+                  }).eq("id", team.id);
+                } catch (_) {}
+              }
+
+              // Update in local cache
+              try {
+                const listKey = "frontline_ladder_teams_" + ladderType;
+                let list = JSON.parse(localStorage.getItem(listKey)) || [];
+                const idx = list.findIndex(t => String(t.id) === String(team.id));
+                if (idx !== -1) {
+                  list[idx] = { ...list[idx], elo: newElo, wins, losses, streak, tier: team.tier };
+                  list.sort((a, b) => (b.elo || 0) - (a.elo || 0));
+                  localStorage.setItem(listKey, JSON.stringify(list));
+                }
+                const myT = this.getMyTeam(ladderType);
+                if (myT && String(myT.id) === String(team.id)) {
+                  this.setMyTeam(ladderType, { ...myT, elo: newElo, wins, losses, streak, tier: team.tier });
+                }
+              } catch (_) {}
+            };
+
+            // Helper to update each player's individual ELO
+            const applyPlayerElo = async (gamertag, won) => {
+              if (!gamertag) return;
+              const cleanTag = String(gamertag).trim().toLowerCase();
+
+              // Update in arena_free_agents (Supabase)
+              if (dbClient) {
+                try {
+                  const { data: existingFA } = await dbClient
+                    .from("arena_free_agents")
+                    .select("id, elo, wins, losses")
+                    .ilike("gamertag", gamertag)
+                    .maybeSingle();
+
+                  if (existingFA) {
+                    const curElo = Number(existingFA.elo) || 1200;
+                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    await dbClient.from("arena_free_agents").update({
+                      elo: nextElo,
+                      wins: (Number(existingFA.wins) || 0) + (won ? 1 : 0),
+                      losses: (Number(existingFA.losses) || 0) + (won ? 0 : 1)
+                    }).eq("id", existingFA.id);
+                  }
+                } catch (_) {}
+              }
+
+              // Update in frontline_arena_registered_accounts (localStorage)
+              try {
+                let reg = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+                let found = false;
+                reg = reg.map(acc => {
+                  if (acc.gamertag && acc.gamertag.toLowerCase() === cleanTag) {
+                    found = true;
+                    const curElo = Number(acc.elo) || 1200;
+                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    return {
+                      ...acc,
+                      elo: nextElo,
+                      wins: (Number(acc.wins) || 0) + (won ? 1 : 0),
+                      losses: (Number(acc.losses) || 0) + (won ? 0 : 1)
+                    };
+                  }
+                  return acc;
+                });
+                if (found) localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(reg));
+              } catch (_) {}
+
+              // Update in frontline_arena_free_agents (localStorage)
+              try {
+                let faList = JSON.parse(localStorage.getItem("frontline_arena_free_agents")) || [];
+                let faFound = false;
+                faList = faList.map(fa => {
+                  if (fa.gamertag && fa.gamertag.toLowerCase() === cleanTag) {
+                    faFound = true;
+                    const curElo = Number(fa.elo) || 1200;
+                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    return {
+                      ...fa,
+                      elo: nextElo,
+                      wins: (Number(fa.wins) || 0) + (won ? 1 : 0),
+                      losses: (Number(fa.losses) || 0) + (won ? 0 : 1)
+                    };
+                  }
+                  return fa;
+                });
+                if (faFound) localStorage.setItem("frontline_arena_free_agents", JSON.stringify(faList));
+              } catch (_) {}
+
+              // Update active player session if logged in
+              try {
+                const curPlayer = this.getCurrentPlayer();
+                if (curPlayer && curPlayer.gamertag && curPlayer.gamertag.toLowerCase() === cleanTag) {
+                  const curElo = Number(curPlayer.elo) || 1200;
+                  const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                  curPlayer.elo = nextElo;
+                  curPlayer.tier = this.getTier(nextElo).name;
+                  localStorage.setItem("frontline_arena_user", JSON.stringify(curPlayer));
+                  if (typeof this.updateArenaNavProfile === "function") this.updateArenaNavProfile();
+                }
+              } catch (_) {}
+            };
+
+            // Update team A and team B ELO
+            await applyTeamElo(teamA, isTeamAWinner);
+            await applyTeamElo(teamB, !isTeamAWinner);
+
+            // Update individual rosters for both teams
+            const rosterA = this.getTeamRoster(teamA);
+            const rosterB = this.getTeamRoster(teamB);
+            for (const m of rosterA) {
+              if (m && m.gamertag) await applyPlayerElo(m.gamertag, isTeamAWinner);
+            }
+            for (const m of rosterB) {
+              if (m && m.gamertag) await applyPlayerElo(m.gamertag, !isTeamAWinner);
+            }
+          }
+        }
+      } catch (eloErr) {
+        console.warn("Ladder ELO rating update notice:", eloErr);
       }
 
       return {
