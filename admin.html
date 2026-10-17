@@ -9941,6 +9941,7 @@
             showToast("Error generating bracket: " + err.message, true);
           }
         }
+        window.adminGenerateBracketAction = adminGenerateBracketAction;
         async function adminSendLiveTournamentAlertAction(tourneyId) {
           if (!confirm("Send live tournament notification to all registered squad members and captains now?")) return;
           try {
