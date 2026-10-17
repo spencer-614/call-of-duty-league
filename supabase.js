@@ -9724,6 +9724,40 @@ window.LadderDB = {
     return this.getTier(elo);
   },
 
+  // 5-change individual player ELO system:
+  // Gains/losses are clamped between 5 (minimum) and 30 (maximum) in steps of 5: [5, 10, 15, 20, 25, 30].
+  // The delta depends on the difference between the player's ELO and the highest ELO player on the opposing team.
+  calculateIndividualPlayerEloChange(playerElo, highestOpponentElo, won) {
+    const pElo = Number(playerElo) || 1200;
+    const oppElo = Number(highestOpponentElo) || 1200;
+    const diff = oppElo - pElo; // Positive if opponent is higher, negative if player is higher
+
+    if (won) {
+      // Underdog beating a much higher opponent gains up to 30.
+      // Favorite beating a much lower opponent gains down to 5.
+      if (diff >= 200) return 30;
+      if (diff >= 100) return 25;
+      if (diff >= -50) return 20;  // Evenly matched / slight favorite
+      if (diff >= -150) return 15;
+      if (diff >= -250) return 10;
+      return 5;
+    } else {
+      // Losing to a much higher opponent cushions the loss down to 5.
+      // Losing as a heavy favorite to a lower opponent penalizes up to 30.
+      if (diff >= 200) return 5;
+      if (diff >= 100) return 10;
+      if (diff >= -50) return 15;  // Evenly matched / slight favorite
+      if (diff >= -150) return 20;
+      if (diff >= -250) return 25;
+      return 30;
+    }
+  },
+
+  calculateIndividualPlayerEloDelta(playerElo, highestOpponentElo, won) {
+    const change = this.calculateIndividualPlayerEloChange(playerElo, highestOpponentElo, won);
+    return won ? change : -change;
+  },
+
   getTeamById(teamId) {
     if (!teamId) return null;
     const cleanId = String(teamId).trim();
@@ -10897,10 +10931,21 @@ window.LadderDB = {
               } catch (_) {}
             };
 
-            // Helper to update each player's individual ELO
-            const applyPlayerElo = async (gamertag, won) => {
+            // Extract highest ELO player on Team A and Team B for individual player ELO adjustments
+            const rosterA = this.getTeamRoster(teamA);
+            const rosterB = this.getTeamRoster(teamB);
+            const highestEloA = Math.max(...rosterA.map(m => Number(m.elo) || 1200), Number(teamA.elo) || 1200);
+            const highestEloB = Math.max(...rosterB.map(m => Number(m.elo) || 1200), Number(teamB.elo) || 1200);
+
+            // Helper to update each player's individual ELO based on 5-change system against opposing team's highest ELO
+            const applyPlayerElo = async (gamertag, won, highestOpponentElo, currentEstimatedElo = 1200) => {
               if (!gamertag) return;
               const cleanTag = String(gamertag).trim().toLowerCase();
+
+              const getNextRating = (curElo) => {
+                const delta = this.calculateIndividualPlayerEloDelta(curElo, highestOpponentElo, won);
+                return Math.max(800, curElo + delta);
+              };
 
               // Update in arena_free_agents (Supabase)
               if (dbClient) {
@@ -10913,7 +10958,7 @@ window.LadderDB = {
 
                   if (existingFA) {
                     const curElo = Number(existingFA.elo) || 1200;
-                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    const nextElo = getNextRating(curElo);
                     await dbClient.from("arena_free_agents").update({
                       elo: nextElo,
                       wins: (Number(existingFA.wins) || 0) + (won ? 1 : 0),
@@ -10931,7 +10976,7 @@ window.LadderDB = {
                   if (acc.gamertag && acc.gamertag.toLowerCase() === cleanTag) {
                     found = true;
                     const curElo = Number(acc.elo) || 1200;
-                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    const nextElo = getNextRating(curElo);
                     return {
                       ...acc,
                       elo: nextElo,
@@ -10952,7 +10997,7 @@ window.LadderDB = {
                   if (fa.gamertag && fa.gamertag.toLowerCase() === cleanTag) {
                     faFound = true;
                     const curElo = Number(fa.elo) || 1200;
-                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    const nextElo = getNextRating(curElo);
                     return {
                       ...fa,
                       elo: nextElo,
@@ -10973,7 +11018,7 @@ window.LadderDB = {
                   if (ls.gamertag && ls.gamertag.toLowerCase() === cleanTag) {
                     lsFound = true;
                     const curElo = Number(ls.elo) || 1200;
-                    const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                    const nextElo = getNextRating(curElo);
                     return {
                       ...ls,
                       elo: nextElo,
@@ -10991,7 +11036,7 @@ window.LadderDB = {
                 let lCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
                 if (lCard && lCard.gamertag && lCard.gamertag.toLowerCase() === cleanTag) {
                   const curElo = Number(lCard.elo) || 1200;
-                  const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                  const nextElo = getNextRating(curElo);
                   lCard.elo = nextElo;
                   localStorage.setItem("frontline_league_player_card", JSON.stringify(lCard));
                 }
@@ -11002,7 +11047,7 @@ window.LadderDB = {
                 const curPlayer = this.getCurrentPlayer();
                 if (curPlayer && curPlayer.gamertag && curPlayer.gamertag.toLowerCase() === cleanTag) {
                   const curElo = Number(curPlayer.elo) || 1200;
-                  const nextElo = won ? curElo + eloGain : Math.max(800, curElo - eloLoss);
+                  const nextElo = getNextRating(curElo);
                   curPlayer.elo = nextElo;
                   curPlayer.tier = this.getTier(nextElo).name;
                   localStorage.setItem("frontline_arena_user", JSON.stringify(curPlayer));
@@ -11015,14 +11060,12 @@ window.LadderDB = {
             await applyTeamElo(teamA, isTeamAWinner);
             await applyTeamElo(teamB, !isTeamAWinner);
 
-            // Update individual rosters for both teams
-            const rosterA = this.getTeamRoster(teamA);
-            const rosterB = this.getTeamRoster(teamB);
+            // Update individual rosters for both teams against the opposing team's highest ELO player
             for (const m of rosterA) {
-              if (m && m.gamertag) await applyPlayerElo(m.gamertag, isTeamAWinner);
+              if (m && m.gamertag) await applyPlayerElo(m.gamertag, isTeamAWinner, highestEloB, Number(m.elo) || 1200);
             }
             for (const m of rosterB) {
-              if (m && m.gamertag) await applyPlayerElo(m.gamertag, !isTeamAWinner);
+              if (m && m.gamertag) await applyPlayerElo(m.gamertag, !isTeamAWinner, highestEloA, Number(m.elo) || 1200);
             }
           }
         }
