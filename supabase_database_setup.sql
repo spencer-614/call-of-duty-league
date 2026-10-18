@@ -728,16 +728,7 @@ BEGIN
     clean_discord_id := COALESCE(
         NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'provider_id'), ''),
         NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'discord_user_id'), ''),
-        (
-            SELECT COALESCE(
-                discord_identity ->> 'id',
-                discord_identity ->> 'user_id',
-                discord_identity -> 'identity_data' ->> 'id'
-            )
-            FROM JSONB_ARRAY_ELEMENTS(COALESCE(NEW.identities, '[]'::JSONB)) AS identities(discord_identity)
-            WHERE discord_identity ->> 'provider' = 'discord'
-            LIMIT 1
-        )
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'sub'), '')
     );
     IF clean_discord_id !~ '^[0-9]{5,25}$' THEN
         clean_discord_id := NULL;
@@ -853,16 +844,7 @@ BEGIN
         COALESCE(
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'provider_id'), ''),
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'discord_user_id'), ''),
-            (
-                SELECT COALESCE(
-                    discord_identity ->> 'id',
-                    discord_identity ->> 'user_id',
-                    discord_identity -> 'identity_data' ->> 'id'
-                )
-                FROM JSONB_ARRAY_ELEMENTS(COALESCE(u.identities, '[]'::JSONB)) AS identities(discord_identity)
-                WHERE discord_identity ->> 'provider' = 'discord'
-                LIMIT 1
-            )
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'sub'), '')
         ) AS discord_id,
         COALESCE(
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'avatar_url'), ''),

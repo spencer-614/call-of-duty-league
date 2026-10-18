@@ -4761,7 +4761,7 @@
             } else {
               staffUsersMap.set(primaryKey, {
                 key: primaryKey,
-                email: rawEmail || "",
+                email: rawEmail || (gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : (safeUserId ? `user_${safeUserId.slice(0, 8)}@frontlineleague.com` : "")),
                 hasRealEmail: hasRealEmail,
                 gamertag: gamertag || (rawEmail ? rawEmail.split("@")[0] : (discord || "Combatant")),
                 discord: discord,
@@ -5158,7 +5158,7 @@
 
               try {
                 const res = await window.LeagueDB.saveStaffRole({
-                  email: user.email,
+                  email: user.email || (user.gamertag ? `${user.gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : `user_${String(user.user_id || 'staff').slice(0, 8)}@frontlineleague.com`),
                   hasRealEmail: user.hasRealEmail,
                   user_id: user.user_id || null,
                   discord: user.discord || null,
@@ -5338,7 +5338,7 @@
           user.role = effectiveRole;
 
           const res = await window.LeagueDB.saveStaffRole({
-            email: user.email,
+            email: user.email || (user.gamertag ? `${user.gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : `user_${String(user.user_id || 'staff').slice(0, 8)}@frontlineleague.com`),
             hasRealEmail: user.hasRealEmail,
             user_id: user.user_id || null,
             discord: user.discord || null,

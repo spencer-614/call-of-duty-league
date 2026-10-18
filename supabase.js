@@ -10513,9 +10513,17 @@ isDiscordLinkedToEmail(target) {
   },
 
   async saveStaffRole(staffData) {
-    const cleanEmail = (staffData.email || "").toLowerCase().trim();
+    let cleanEmail = (staffData.email || "").toLowerCase().trim();
     if (!cleanEmail) {
-      return { success: false, error: "Valid staff email is required." };
+      if (staffData.gamertag) {
+        cleanEmail = `${staffData.gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com`;
+      } else if (staffData.discord) {
+        cleanEmail = `${staffData.discord.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com`;
+      } else if (staffData.user_id) {
+        cleanEmail = `user_${String(staffData.user_id).slice(0, 8)}@frontlineleague.com`;
+      } else {
+        cleanEmail = `staff_${Date.now()}@frontlineleague.com`;
+      }
     }
 
     const notesParts = [];

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- FRONTLINE CALL OF DUTY LEAGUE - DISCORD AUTH IDENTITY & STAFF SYNC (V2)
+-- FRONTLINE CALL OF DUTY LEAGUE - DISCORD AUTH IDENTITY & STAFF SYNC (V2.1)
 -- ==============================================================================
 -- 1. Ensure all identity tables have email, user_id, discord_id, and metadata columns.
 -- 2. Drop any legacy trigger causing "Staff UUID and email must belong to same Auth account".
@@ -98,6 +98,11 @@ BEGIN
         END IF;
     END IF;
 
+    -- Ensure email is never empty for staff_roles NOT NULL constraint
+    IF NEW.email IS NULL OR NEW.email = '' THEN
+        NEW.email := 'staff_' || SUBSTRING(COALESCE(NEW.user_id::text, MD5(RANDOM()::text)), 1, 8) || '@frontlineleague.com';
+    END IF;
+
     RETURN NEW;
 END;
 $$;
@@ -129,20 +134,11 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Extract Discord Snowflake ID
+    -- Extract Discord Snowflake ID (safe extraction from raw_user_meta_data)
     clean_discord_id := COALESCE(
         NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'provider_id'), ''),
         NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'discord_user_id'), ''),
-        (
-            SELECT COALESCE(
-                discord_identity ->> 'id',
-                discord_identity ->> 'user_id',
-                discord_identity -> 'identity_data' ->> 'id'
-            )
-            FROM JSONB_ARRAY_ELEMENTS(COALESCE(NEW.identities, '[]'::JSONB)) AS identities(discord_identity)
-            WHERE discord_identity ->> 'provider' = 'discord'
-            LIMIT 1
-        )
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'sub'), '')
     );
     IF clean_discord_id !~ '^[0-9]{5,25}$' THEN
         clean_discord_id := NULL;
@@ -224,7 +220,7 @@ $$;
 
 DROP TRIGGER IF EXISTS tr_auth_user_sync_identity ON auth.users;
 CREATE TRIGGER tr_auth_user_sync_identity
-    AFTER INSERT OR UPDATE OF email, raw_user_meta_data ON auth.users
+    AFTER INSERT OR UPDATE ON auth.users
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_auth_user_sync();
 
@@ -240,22 +236,13 @@ DECLARE
     clean_discord_name TEXT;
     clean_avatar TEXT;
 BEGIN
-    FOR usr IN SELECT id, email, raw_user_meta_data, identities FROM auth.users WHERE email IS NOT NULL AND email <> '' LOOP
+    FOR usr IN SELECT id, email, raw_user_meta_data FROM auth.users WHERE email IS NOT NULL AND email <> '' LOOP
         clean_email := LOWER(BTRIM(usr.email));
         
         clean_discord_id := COALESCE(
             NULLIF(BTRIM(usr.raw_user_meta_data ->> 'provider_id'), ''),
             NULLIF(BTRIM(usr.raw_user_meta_data ->> 'discord_user_id'), ''),
-            (
-                SELECT COALESCE(
-                    discord_identity ->> 'id',
-                    discord_identity ->> 'user_id',
-                    discord_identity -> 'identity_data' ->> 'id'
-                )
-                FROM JSONB_ARRAY_ELEMENTS(COALESCE(usr.identities, '[]'::JSONB)) AS identities(discord_identity)
-                WHERE discord_identity ->> 'provider' = 'discord'
-                LIMIT 1
-            )
+            NULLIF(BTRIM(usr.raw_user_meta_data ->> 'sub'), '')
         );
         IF clean_discord_id !~ '^[0-9]{5,25}$' THEN
             clean_discord_id := NULL;
@@ -369,16 +356,7 @@ BEGIN
         COALESCE(
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'provider_id'), ''),
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'discord_user_id'), ''),
-            (
-                SELECT COALESCE(
-                    discord_identity ->> 'id',
-                    discord_identity ->> 'user_id',
-                    discord_identity -> 'identity_data' ->> 'id'
-                )
-                FROM JSONB_ARRAY_ELEMENTS(COALESCE(u.identities, '[]'::JSONB)) AS identities(discord_identity)
-                WHERE discord_identity ->> 'provider' = 'discord'
-                LIMIT 1
-            )
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'sub'), '')
         ) AS discord_id,
         COALESCE(
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'avatar_url'), ''),
@@ -442,6 +420,7 @@ BEGIN
             FROM auth.users u
             WHERE u.raw_user_meta_data ->> 'provider_id' = target_discord_id
                OR u.raw_user_meta_data ->> 'discord_user_id' = target_discord_id
+               OR u.raw_user_meta_data ->> 'sub' = target_discord_id
             LIMIT 1;
         END IF;
 
@@ -456,6 +435,9 @@ BEGIN
 
     IF resolved_email IS NULL OR resolved_email = '' THEN
         resolved_email := LOWER(BTRIM(target_email));
+    END IF;
+    IF resolved_email IS NULL OR resolved_email = '' THEN
+        resolved_email := COALESCE(NULLIF(LOWER(BTRIM(target_gamertag)), ''), 'staff') || '@frontlineleague.com';
     END IF;
 
     resolved_name := COALESCE(NULLIF(BTRIM(target_display_name), ''), target_gamertag, target_discord, split_part(resolved_email, '@', 1));
@@ -513,7 +495,6 @@ DECLARE
     discord_username TEXT;
     matched_staff_id BIGINT;
     match_count INTEGER;
-    updated_count INTEGER := 0;
 BEGIN
     IF auth.uid() IS NULL THEN
         RAISE EXCEPTION 'Authentication is required.';
@@ -524,16 +505,7 @@ BEGIN
         COALESCE(
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'provider_id'), ''),
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'discord_user_id'), ''),
-            (
-                SELECT COALESCE(
-                    discord_identity ->> 'id',
-                    discord_identity ->> 'user_id',
-                    discord_identity -> 'identity_data' ->> 'id'
-                )
-                FROM JSONB_ARRAY_ELEMENTS(COALESCE(u.identities, '[]'::JSONB)) AS identities(discord_identity)
-                WHERE discord_identity ->> 'provider' = 'discord'
-                LIMIT 1
-            )
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'sub'), '')
         ),
         COALESCE(
             NULLIF(BTRIM(u.raw_user_meta_data ->> 'gamertag'), ''),
