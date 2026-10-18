@@ -3453,6 +3453,98 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
+  async generateDummyTournamentSquads(tournamentId, count = 8) {
+    try {
+      if (!tournamentId) return { success: false, error: "Tournament ID required." };
+      const numToGen = Math.min(Math.max(parseInt(count, 10) || 8, 2), 64);
+
+      const CDL_SAMPLE_NAMES = [
+        "Atlanta FaZe", "OpTic Texas", "Toronto Ultra", "New York Subliners",
+        "Seattle Surge", "Miami Heretics", "Los Angeles Thieves", "Boston Breach",
+        "Vegas Legion", "Carolina Royal Ravens", "Minnesota RØKKR", "Los Angeles Guerrillas",
+        "London Royal Ravens", "Paris Legion", "Dallas Empire", "Chicago Huntsmen",
+        "Ghost Gaming", "Complexity", "FaZe Black", "OpTic Nation",
+        "Team Envy", "Rise Nation", "Evil Geniuses", "Team Kaliber",
+        "Splyce", "Red Reserve", "Mindfreak", "Fnatic",
+        "Elevate", "Epsilon eSports", "Millenium", "Echo Fox"
+      ];
+
+      const SAMPLE_CAPTAINS = [
+        "Simp", "Shotzhy", "Scump", "Insight", "HyDra",
+        "Abuzah", "Vikul", "Ghosty", "Snoopy", "Attach",
+        "Gwinn", "Accuracy", "Clayster", "Crimsix", "FormaL",
+        "Octane", "Kenny", "Envoy", "Pred", "CleanX",
+        "Drazah", "Cellium", "aBeZy", "Dashy", "Sib"
+      ];
+
+      const list = await this.getTournaments();
+      const tourney = list.find(t => String(t.id) === String(tournamentId));
+      if (!tourney) return { success: false, error: "Tournament not found." };
+
+      const allRegs = await this.getTournamentRegistrations(null);
+      const existing = allRegs.filter(r => String(r.tournament_id) === String(tournamentId));
+      const existingNames = new Set(existing.map(r => String(r.team_name || "").toLowerCase()));
+
+      const createdSquads = [];
+      for (let i = 0; i < numToGen; i++) {
+        let baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
+        let name = baseName;
+        if (existingNames.has(name.toLowerCase())) {
+          name = `${baseName} (Dummy ${i + 1})`;
+        }
+        let captain = `${SAMPLE_CAPTAINS[i % SAMPLE_CAPTAINS.length]}_Bot${i + 1}`;
+
+        const squadPayload = {
+          team_name: name,
+          captain_gamertag: captain,
+          captain_discord: `${captain.toLowerCase()}#0000`,
+          captain_activision_id: `${captain}#CDLTest`,
+          roster: [`Bot_${i + 1}A`, `Bot_${i + 1}B`, `Bot_${i + 1}C`],
+          is_dummy_team: true
+        };
+
+        const res = await this.adminRegisterTournamentSquad(tournamentId, squadPayload);
+        if (res && res.success) {
+          createdSquads.push(name);
+          existingNames.add(name.toLowerCase());
+        }
+      }
+
+      return {
+        success: true,
+        count: createdSquads.length,
+        squads: createdSquads,
+        message: `Successfully enlisted ${createdSquads.length} test squad${createdSquads.length === 1 ? '' : 's'}.`
+      };
+    } catch (err) {
+      console.error("generateDummyTournamentSquads error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
+  async clearDummyTournamentSquads(tournamentId) {
+    try {
+      if (!tournamentId) return { success: false, error: "Tournament ID required." };
+      const regs = await this.getTournamentRegistrations(tournamentId);
+      const dummyRegs = regs.filter(r => {
+        const n = String(r.team_name || "").toLowerCase();
+        const c = String(r.captain_gamertag || "").toLowerCase();
+        return r.is_dummy_team || n.includes("dummy") || c.includes("bot") || n.includes("bot");
+      });
+
+      let removed = 0;
+      for (const reg of dummyRegs) {
+        const res = await this.deleteTournamentRegistration(reg.id, tournamentId);
+        if (res && res.success) removed++;
+      }
+
+      return { success: true, count: removed, message: `Removed ${removed} test squad${removed === 1 ? '' : 's'}.` };
+    } catch (err) {
+      console.error("clearDummyTournamentSquads error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
   // ==========================================
   // LEAGUE ANNOUNCEMENTS & INTEL BROADCAST
   // ==========================================
