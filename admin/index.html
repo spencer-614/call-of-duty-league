@@ -1004,6 +1004,9 @@
 <button type="button" class="admin-nav-btn" data-tab="tab-tournaments-hub" id="nav-btn-tournaments-hub" onclick="switchActiveTab('tab-tournaments-hub')" style="border-color:#fbbf24; color:#fbbf24;">
             🏆 Tournaments Hub
           </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-arena-command" id="nav-btn-arena-command" onclick="switchActiveTab('tab-arena-command')" style="border-color:#ff1e44; color:#ff1e44; display:none;">
+            ⚔️ Arena Command (Commissioner)
+          </button>
         </nav>
 
         <!-- ========================================== -->
@@ -3000,7 +3003,317 @@
               </table>
             </div>
           </div>
-        </div>      </section>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- TAB 15: ARENA COMMAND (COMMISSIONERS ONLY)               -->
+        <!-- ======================================================== -->
+        <div id="tab-arena-command" class="admin-tab-content" style="display:none;">
+          <!-- Directive Header Banner -->
+          <div class="admin-panel-card" style="border-left: 4px solid #ff1e44; background: #130a0d;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,30,68,0.15); border:1px solid rgba(255,30,68,0.35); color:#ff1e44; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  <span>★</span> <span>COMMISSIONER DIRECTIVE // ARENA OPERATIONAL DESK</span>
+                </div>
+                <h3 style="margin:2px 0 4px; font-size:20px; color:#ffffff; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+                  ⚔️ Competitive Arena Command Console
+                </h3>
+                <div style="font-size:12.5px; color:#94a3b8; line-height:1.4;">
+                  Authorized solely for League Commissioners. Control Arena season status, dispatch live announcements directly to competitors on <a href="/arena/" target="_blank" style="color:#ff1e44;">/arena/</a> and <a href="/ladders/" target="_blank" style="color:#ff1e44;">/ladders/</a>, and orchestrate Arena tournament brackets.
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="/arena/" target="_blank" class="btn-action-sm" style="border-color:#ff1e44; color:#ff1e44; font-weight:800;">
+                  ⚔️ Open Arena Hub ↗
+                </a>
+                <a href="/ladders/" target="_blank" class="btn-action-sm" style="border-color:#ff1e44; color:#ff1e44; font-weight:800;">
+                  📊 Ladders Board ↗
+                </a>
+                <a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="border-color:#fbbf24; color:#fbbf24; font-weight:800;">
+                  🏆 Arena Tournaments ↗
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: Arena Season Status & Operational Phase -->
+          <div class="admin-panel-card" style="border-top:3px solid #ff1e44;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+              <h3 class="admin-card-title" style="margin:0; color:#ff1e44;">⚙ 1. Arena Season Status &amp; Lifecycle Control</h3>
+              <span style="font-size:12px; color:#94a3b8; font-family:var(--admin-font);">Broadcasts directly to Arena navigation, top beacons, and ladder headers</span>
+            </div>
+
+            <!-- Live Arena Header & Hero Preview Box -->
+            <div style="background:#090d14; border:1px solid #1a2538; padding:18px 22px; border-radius:4px; margin-bottom:20px; display:flex; flex-direction:column; gap:14px;">
+              <div style="font-size:11px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.8px;">
+                👁 Live Arena Header Status Preview
+              </div>
+              <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; background:#06080d; padding:14px 18px; border-radius:3px; border-left:3px solid #ff1e44;">
+                <img src="/images/arenalogo_1.png" alt="Arena Logo" style="width:48px; height:48px; object-fit:contain;" />
+                <div>
+                  <div style="font-size:16px; font-weight:900; letter-spacing:0.5px;">
+                    <span style="color:#ffffff;">FRONTLINE</span> <span style="color:#ff1e44;">ARENA</span>
+                  </div>
+                  <div style="display:inline-flex; align-items:center; gap:8px; margin-top:4px;">
+                    <span style="font-size:10px; font-weight:800; color:#94a3b8; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:2px;">COMPETITIVE ARENA</span>
+                    <div id="preview-arena-live-beacon" class="fl-live-beacon" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:#ff1e44; background:rgba(255,30,68,0.12); border:1px solid rgba(255,30,68,0.3); padding:2px 8px; border-radius:12px;">
+                      <span id="preview-arena-beacon-dot" class="fl-live-dot" style="width:7px; height:7px; background:#ff1e44; border-radius:50%; box-shadow:0 0 10px #ff1e44;"></span>
+                      <span id="preview-arena-status-text">ARENA SEASON 1 ACTIVE</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <form id="form-arena-season-settings">
+              <div class="admin-form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label">Arena Operational State *</label>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:8px;">
+                    <label style="display:flex; align-items:flex-start; gap:14px; background:#180c10; border:2px solid #ff1e44; padding:16px 18px; cursor:pointer; transition:all 0.2s;" id="label-arena-state-active">
+                      <input type="radio" name="arena-season-state" id="radio-arena-season-active" value="active" checked style="margin-top:3px; accent-color:#ff1e44;" />
+                      <div>
+                        <div style="font-family:var(--admin-font); font-size:15px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                          🔴 Arena Season Active
+                        </div>
+                        <div style="color:#cbd5e1; font-size:12.5px; line-height:1.4;">
+                          Competitive ladders, Match Finder board, and tournament veto rooms are open and fully operational.
+                        </div>
+                      </div>
+                    </label>
+
+                    <label style="display:flex; align-items:flex-start; gap:14px; background:#141511; border:2px solid var(--line); padding:16px 18px; cursor:pointer; transition:all 0.2s;" id="label-arena-state-coming-soon">
+                      <input type="radio" name="arena-season-state" id="radio-arena-season-coming-soon" value="coming_soon" style="margin-top:3px; accent-color:#f5a623;" />
+                      <div>
+                        <div style="font-family:var(--admin-font); font-size:15px; font-weight:800; color:#f5a623; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                          ⏳ Arena Coming Soon / Pre-Season
+                        </div>
+                        <div style="color:#cbd5e1; font-size:12.5px; line-height:1.4;">
+                          Pre-season onboarding mode. Displays countdown/upcoming status while rosters finalize.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="arena-season-number-input">Current Arena Season Number *</label>
+                  <input type="number" id="arena-season-number-input" class="form-control" min="1" max="99" value="1" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="arena-season-text-override">Broadcast Status Text (Auto-Generated or Custom)</label>
+                  <input type="text" id="arena-season-text-override" class="form-control" value="ARENA SEASON 1 ACTIVE" />
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:12px;">
+                <span id="arena-season-save-status" style="display:none; font-size:13px; font-weight:700;"></span>
+                <button type="submit" id="btn-save-arena-season" class="btn-paypal-submit" style="width:auto; padding:10px 24px; font-size:13px; background:#ff1e44; border-color:#ff1e44; color:#fff;">
+                  <span>Broadcast &amp; Save Arena Season Status</span>
+                  <span>⚡</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Section 2: Arena Announcements Dispatch & Management -->
+          <div class="admin-panel-card" style="border-top:3px solid #ff1e44;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+              <div>
+                <h3 id="arena-announcement-form-title" class="admin-card-title" style="margin:0; color:#ff1e44;">📢 2. Compose Arena Announcement Dispatch</h3>
+                <p style="color:var(--muted); font-size:12.5px; margin:4px 0 0;">
+                  Dispatches bulletins directly onto <code>/arena/</code> and <code>/ladders/</code> for all competitive players.
+                </p>
+              </div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <a href="/arena/#arena-announcements-container" target="_blank" class="btn-action-sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:#ff1e44; border-color:rgba(255,30,68,0.4); background:rgba(255,30,68,0.06);">🌐 View Live on Arena ↗</a>
+                <button type="button" id="btn-cancel-arena-announcement-edit" class="btn-action-sm" style="display:none;">✕ Cancel Edit Mode</button>
+              </div>
+            </div>
+
+            <!-- Live Announcement Preview Box (Arena Theme) -->
+            <div style="background:#090d14; border:1px solid #1a2538; padding:16px; border-radius:4px; margin-bottom:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:11px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.8px;">👁 Live Arena Broadcast Banner Preview</span>
+                <span style="font-size:11px; color:#64748b;">Updates dynamically as you type below</span>
+              </div>
+              <div id="preview-arena-announcement-banner" class="announcement-banner red" style="border-left:4px solid #ff1e44; background:#0d121c; padding:18px 22px; border-radius:4px; border:1px solid #1e293b; border-left:4px solid #ff1e44;">
+                <div class="announcement-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                  <div class="announcement-badge-group" style="display:flex; align-items:center; gap:8px;">
+                    <span id="preview-arena-ann-beacon" class="announcement-beacon red" style="width:8px; height:8px; background:#ff1e44; border-radius:50%; box-shadow:0 0 10px #ff1e44; display:inline-block;"></span>
+                    <span id="preview-arena-ann-tag" class="announcement-tag red" style="font-size:11px; font-weight:800; color:#ff1e44; background:rgba(255,30,68,0.12); border:1px solid rgba(255,30,68,0.3); padding:2px 8px; border-radius:2px; text-transform:uppercase;">ARENA UPDATE</span>
+                    <span id="preview-arena-ann-pinned" style="display:none; font-size:11px; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.35); padding:2px 8px; border-radius:2px; text-transform:uppercase;">PINNED</span>
+                  </div>
+                  <span id="preview-arena-ann-date" class="announcement-date" style="font-size:11.5px; color:#64748b; font-weight:700;">TRANSMITTED TODAY</span>
+                </div>
+                <h3 id="preview-arena-ann-title" style="margin:0 0 8px; font-size:18px; font-weight:800; color:#ffffff;">Competitive Season 1 Ladder Reset &amp; Match Openings</h3>
+                <p id="preview-arena-ann-body" style="margin:0 0 14px; font-size:13px; color:#cbd5e1; line-height:1.6;">Welcome competitors to Frontline Arena. Challenges are live for 4v4 CDL Variant and 2v2 SnD.</p>
+                <div id="preview-arena-ann-image-wrap" style="display:none; margin-bottom:14px; max-height:280px; overflow:hidden; border-radius:3px; border:1px solid #1e293b;">
+                  <img id="preview-arena-ann-image" src="" alt="Media" style="width:100%; height:100%; object-fit:contain; background:#000;" />
+                </div>
+                <a id="preview-arena-ann-cta" href="#" class="btn-crimson" style="display:inline-flex; padding:8px 16px; font-size:12px; text-decoration:none;">
+                  <span id="preview-arena-ann-cta-text">Open Match Finder ↗</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Composer Form -->
+            <form id="form-arena-announcement">
+              <input type="hidden" id="arena-announcement-id" />
+              <div class="admin-form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="arena-ann-title-input">Headline / Dispatch Title *</label>
+                  <input type="text" id="arena-ann-title-input" class="form-control" placeholder="e.g. Competitive Season 1 Ladder Reset & Match Openings" required />
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="arena-ann-message-input">Announcement Message / Transmission Body *</label>
+                  <textarea id="arena-ann-message-input" class="form-control" rows="3" placeholder="Enter bulletin content displayed to Arena competitors..." required style="resize:vertical;"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="arena-ann-tag-input">Category Tag</label>
+                  <input type="text" id="arena-ann-tag-input" class="form-control" placeholder="e.g. Arena Launch, Ladder Alert, Map Pool" value="Arena Update" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="arena-ann-color-input">Accent HUD Color</label>
+                  <select id="arena-ann-color-input" class="form-control">
+                    <option value="red" selected>Crimson Red (Arena Signature)</option>
+                    <option value="amber">Amber Gold (Warning / Attention)</option>
+                    <option value="lime">Lime Green (Live / Action)</option>
+                    <option value="cyan">Cyan Neon (Special Event / Intel)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="arena-ann-link-url-input">Action Link URL (Optional)</label>
+                  <input type="text" id="arena-ann-link-url-input" class="form-control" placeholder="e.g. /match-finder/, /ladders/, or /arena/tournaments/" value="/match-finder/" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="arena-ann-link-text-input">Action Link Label (Optional)</label>
+                  <input type="text" id="arena-ann-link-text-input" class="form-control" placeholder="e.g. Open Match Finder ↗" value="Open Match Finder ↗" />
+                </div>
+
+                <!-- Image Attachment -->
+                <div class="form-group" style="grid-column: 1 / -1; background:#0e131d; border:1px dashed #27354d; padding:16px; border-radius:4px;">
+                  <label class="form-label" style="font-size:13px; font-weight:800; color:#ff1e44; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+                    <span>📸 Image Attachment / Graphic Flyer (Optional)</span>
+                    <span id="arena-ann-image-badge" style="font-size:11px; font-weight:normal; color:#94a3b8;">Optional embedded media</span>
+                  </label>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; align-items:flex-start; margin-top:8px;">
+                    <div>
+                      <label class="form-label" for="arena-ann-image-file" style="font-size:11.5px; margin-bottom:2px;">Upload Image File</label>
+                      <input type="file" id="arena-ann-image-file" accept="image/*" class="form-control" style="padding:6px; font-size:12px;" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="arena-ann-image-url-input" style="font-size:11.5px; margin-bottom:2px;">Direct Image URL</label>
+                      <input type="url" id="arena-ann-image-url-input" class="form-control" placeholder="https://... or /images/..." style="font-size:12px;" />
+                    </div>
+                  </div>
+
+                  <div id="arena-ann-image-preview-container" style="display:none; align-items:center; gap:14px; margin-top:12px; padding:10px 14px; background:#06080d; border:1px solid #1a2538; border-radius:3px;">
+                    <img id="arena-ann-uploaded-thumb" src="" alt="Preview" style="width:70px; height:45px; object-fit:cover; border-radius:2px; border:1px solid #334155;" />
+                    <div style="flex:1;">
+                      <span id="arena-ann-image-filename" style="font-size:12px; font-weight:700; color:#ffffff; display:block;">Image Attached</span>
+                      <small style="color:#22c55e; font-size:11px;">✓ Ready to embed</small>
+                    </div>
+                    <button type="button" id="btn-remove-arena-ann-image" class="btn-action-sm btn-action-danger" style="padding:4px 10px; font-size:11px;">✕ Remove</button>
+                  </div>
+                </div>
+
+                <!-- Toggles -->
+                <div class="form-group" style="display:flex; align-items:center; gap:24px; padding-top:10px; grid-column: 1 / -1;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
+                    <input type="checkbox" id="arena-ann-is-active-input" checked style="accent-color:#ff1e44; width:18px; height:18px;" />
+                    <span>Active (Display immediately on Arena pages)</span>
+                  </label>
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:13px; font-weight:bold;">
+                    <input type="checkbox" id="arena-ann-pinned-input" style="accent-color:#ff1e44; width:18px; height:18px;" />
+                    <span>Pin Announcement (Featured Top Placement)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:12px;">
+                <button type="button" id="btn-reset-arena-ann-form" class="btn-action-sm" onclick="resetArenaAnnouncementForm()">Clear Form</button>
+                <button type="submit" id="btn-submit-arena-ann" class="btn-paypal-submit" style="width:auto; padding:10px 24px; font-size:13px; background:#ff1e44; border-color:#ff1e44; color:#fff;">
+                  <span id="btn-submit-arena-ann-text">Broadcast Arena Announcement</span>
+                  <span id="btn-submit-arena-ann-icon">📢</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Dispatched Arena Announcements Table -->
+            <div style="margin-top:32px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                <h4 style="margin:0; font-size:16px; color:#ffffff; font-weight:800;">Arena Dispatch Archive</h4>
+                <button type="button" class="btn-action-sm" onclick="loadArenaAnnouncements()">↻ Refresh Dispatches</button>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Tag</th>
+                      <th>Headline</th>
+                      <th>Body Preview</th>
+                      <th>Media</th>
+                      <th>Transmitted</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-arena-announcements-tbody">
+                    <!-- Loaded dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Arena Tournaments Quick Desk -->
+          <div class="admin-panel-card" style="border-top:3px solid #fbbf24;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div>
+                <h3 class="admin-card-title" style="margin:0; color:#fbbf24;">🏆 3. Arena Tournaments Quick Desk</h3>
+                <p style="color:var(--muted); font-size:12.5px; margin:4px 0 0;">
+                  Tournaments flagged for the <strong>Arena Circuit</strong> (/arena/tournaments/). Commissioners can post new cups, generate brackets, or view enlisted squads.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="btn-action-sm" onclick="quickCreateArenaTournament()" style="background:#fbbf24; border-color:#fbbf24; color:#0b1109; font-weight:800;">
+                  ＋ Post Arena Tournament ↗
+                </button>
+                <button type="button" class="btn-action-sm" onclick="switchActiveTab('tab-tournaments-hub')">
+                  Open Full Tournaments Hub ↗
+                </button>
+              </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Tournament Title</th>
+                    <th>Format &amp; Bracket</th>
+                    <th>Prize &amp; Entry</th>
+                    <th>Date &amp; Time</th>
+                    <th>Teams Enlisted</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-arena-tourneys-tbody">
+                  <!-- Loaded dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Modal: Add Custom Scheduled Match -->
@@ -3579,6 +3892,9 @@
         const navBtns = document.querySelectorAll(".admin-nav-btn");
         const tabContents = document.querySelectorAll(".admin-tab-content");
 
+        let activeStaffProfile = null;
+        let activeAllowedTabs = [];
+
         function isCommissionerAccount(target) {
           if (!target) return false;
           const commishEmails = ["todd061496@gmail.com", "admin@frontlineleague.com"];
@@ -4050,6 +4366,9 @@
           if (targetId === "tab-signups") {
             loadSignups();
           }
+          if (targetId === "tab-arena-command") {
+            if (typeof loadArenaCommandData === "function") loadArenaCommandData();
+          }
         }
         window.switchActiveTab = switchActiveTab;
 
@@ -4077,7 +4396,8 @@
           { id: "tab-staff", label: "Staff & Roles" },
           { id: "tab-ladder-disputes", label: "Ladder Disputes" },
           { id: "tab-platform-switcher", label: "Platform Switcher" },
-          { id: "tab-tournaments-hub", label: "Tournaments Hub" }
+          { id: "tab-tournaments-hub", label: "Tournaments Hub" },
+          { id: "tab-arena-command", label: "Arena Command" }
         ];
 
         let staffUsersMap = new Map();
@@ -8982,6 +9302,7 @@
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="openEditTournamentModal('${escapeHtml(t.id)}')">✏️ Edit Details</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#eab308; background:rgba(234,179,8,0.12); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">🤖 Test Teams</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
                       <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
                       ${(circuit === 'arena' || circuit === 'both') ? `<a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="font-size:11px; padding:4px 8px; text-decoration:none; color:#ff1e44; border-color:rgba(255,30,68,0.4);">Arena ↗</a>` : ''}
@@ -9583,7 +9904,10 @@
                       : `${squadCount} squads enlisted. Click below to seed and generate the live tournament bracket.`}
                   </div>
                 </div>
-                <div style="display:flex; gap:10px; align-items:center;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                  <button type="button" class="btn-action-sm" style="background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800; padding:8px 14px;" onclick="adminPromptGenerateDummySquads('${escapeHtml(tourneyId)}')">
+                    🤖 + Add Test Dummy Teams
+                  </button>
                   <button type="button" class="btn-paypal-submit" style="padding:8px 18px; font-size:12px; width:auto;" 
                     ${squadCount < 2 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
                     onclick="adminGenerateBracketAction('${escapeHtml(tourneyId)}')">
@@ -9622,6 +9946,9 @@
                 </div>
               </div>
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn-action-sm" style="background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800; padding:6px 12px;" onclick="adminPromptGenerateDummySquads('${escapeHtml(tourneyId)}')">
+                  🤖 + Test Dummy Teams
+                </button>
                 <button type="button" class="btn-action-sm" style="background:rgba(255,30,68,0.15); border-color:#ff1e44; color:#ff3b3b; font-weight:800; padding:6px 12px;" onclick="adminSendLiveTournamentAlertAction('${escapeHtml(tourneyId)}')">
                   📢 Send Live Alerts (${squadCount} Squads)
                 </button>
@@ -9725,11 +10052,20 @@
           if (!skipConfirm) {
             if (!confirm("Generate live tournament bracket now from registered squads? This will seed the bracket and enable live match scoring.")) return;
           }
+
+          // Let the admin choose whether to dispatch live notifications right now or keep it silent
+          const sendAlerts = confirm("🔔 Would you like to dispatch LIVE alerts to all registered players and captains right now?\n\n• Click OK to send notifications immediately.\n• Click Cancel to generate the bracket silently (you can send alerts anytime later with the '📢 Send Live Alerts' button).");
+
           try {
             if (window.LeagueDB && typeof window.LeagueDB.generateTournamentBracket === 'function') {
-              const res = await window.LeagueDB.generateTournamentBracket(tourneyId);
+              const res = await window.LeagueDB.generateTournamentBracket(tourneyId, {
+                replaceUnstartedBracket: true,
+                notifyCompetitors: sendAlerts
+              });
               if (res.success) {
-                showToast("⚡ Bracket generated and seeded successfully!");
+                showToast(sendAlerts 
+                  ? "⚡ Bracket generated & live competitor notifications dispatched!" 
+                  : "⚡ Bracket generated and seeded successfully (notifications were not sent).");
                 const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
                 await adminManageBracket(tourneyId, resolvedTitle);
                 await loadAdminTournaments();
@@ -9833,6 +10169,35 @@
             let res = null;
             if (window.LeagueDB && typeof window.LeagueDB.generateDummyTournamentSquads === "function") {
               res = await window.LeagueDB.generateDummyTournamentSquads(tId, count);
+            } else if (window.LeagueDB && typeof window.LeagueDB.adminRegisterTournamentSquad === "function") {
+              // Resilient inline generator fallback
+              const CDL_SAMPLE_NAMES = [
+                "Atlanta FaZe", "OpTic Texas", "Toronto Ultra", "New York Subliners",
+                "Seattle Surge", "Miami Heretics", "Los Angeles Thieves", "Boston Breach",
+                "Vegas Legion", "Carolina Royal Ravens", "Minnesota RØKKR", "Los Angeles Guerrillas",
+                "London Royal Ravens", "Paris Legion", "Dallas Empire", "Chicago Huntsmen"
+              ];
+              const SAMPLE_CAPTAINS = [
+                "Simp", "Shotzhy", "Scump", "Insight", "HyDra",
+                "Abuzah", "Vikul", "Ghosty", "Snoopy", "Attach",
+                "Gwinn", "Accuracy", "Clayster", "Crimsix", "FormaL", "Dashy"
+              ];
+              const created = [];
+              for (let i = 0; i < count; i++) {
+                const baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
+                const teamName = `${baseName} (Dummy ${i + 1})`;
+                const captain = `${SAMPLE_CAPTAINS[i % SAMPLE_CAPTAINS.length]}_Bot${i + 1}`;
+                const r = await window.LeagueDB.adminRegisterTournamentSquad(tId, {
+                  team_name: teamName,
+                  captain_gamertag: captain,
+                  captain_discord: `${captain.toLowerCase()}#0000`,
+                  captain_activision_id: `${captain}#CDLTest`,
+                  roster: [`Bot_${i + 1}A`, `Bot_${i + 1}B`, `Bot_${i + 1}C`],
+                  is_dummy_team: true
+                });
+                if (r && r.success) created.push(teamName);
+              }
+              res = { success: true, count: created.length };
             }
 
             if (res && res.success) {
@@ -9870,6 +10235,19 @@
             let res = null;
             if (window.LeagueDB && typeof window.LeagueDB.clearDummyTournamentSquads === "function") {
               res = await window.LeagueDB.clearDummyTournamentSquads(tId);
+            } else if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === "function") {
+              const regs = await window.LeagueDB.getTournamentRegistrations(tId);
+              const dummyRegs = regs.filter(r => {
+                const n = String(r.team_name || "").toLowerCase();
+                const c = String(r.captain_gamertag || "").toLowerCase();
+                return r.is_dummy_team || n.includes("dummy") || c.includes("bot") || n.includes("bot");
+              });
+              let removed = 0;
+              for (const reg of dummyRegs) {
+                const r = await window.LeagueDB.deleteTournamentRegistration(reg.id, tId);
+                if (r && r.success) removed++;
+              }
+              res = { success: true, count: removed };
             }
 
             if (res && res.success) {
@@ -9887,6 +10265,7 @@
             } else {
               showToast(res?.error || "Could not clear dummy squads.", true);
             }
+            }
           } catch (err) {
             console.error("adminPromptClearDummySquads error:", err);
             showToast("Error clearing dummy squads: " + err.message, true);
@@ -9903,10 +10282,591 @@
           adminPromptClearDummySquads();
         });
 
-        // Initial preview update
-        updateTournamentPreview();
-        // Hydrate switcher preview immediately on load
-        updateSwitcherPreview();
+        // ==========================================
+        // 17. ARENA COMMAND CONSOLE CONTROLLERS (COMMISSIONER ONLY)
+        // ==========================================
+        let cachedArenaAnnouncements = [];
+        let currentArenaAnnouncementImageUrl = "";
+
+        async function loadArenaCommandData() {
+          if (!isUserCommissioner()) {
+            showToast("Restricted: Arena Command is authorized solely for League Commissioners.", true);
+            return;
+          }
+          await Promise.all([
+            loadArenaSeasonSettings(),
+            loadArenaAnnouncements(),
+            loadArenaTournaments()
+          ]);
+        }
+        window.loadArenaCommandData = loadArenaCommandData;
+
+        // --- Arena Season Lifecycle Logic ---
+        async function loadArenaSeasonSettings() {
+          try {
+            if (!window.LeagueDB || typeof window.LeagueDB.getArenaSeasonSettings !== "function") return;
+            const settings = await window.LeagueDB.getArenaSeasonSettings();
+            const seasonNum = settings.season_number || 1;
+            const statusState = settings.status_state || "active";
+
+            const numInput = document.getElementById("arena-season-number-input");
+            if (numInput) numInput.value = seasonNum;
+
+            if (statusState === "coming_soon") {
+              const radioCS = document.getElementById("radio-arena-season-coming-soon");
+              if (radioCS) radioCS.checked = true;
+            } else {
+              const radioAct = document.getElementById("radio-arena-season-active");
+              if (radioAct) radioAct.checked = true;
+            }
+            updateArenaSeasonPreview();
+          } catch (err) {
+            console.error("Error loading Arena season settings:", err);
+          }
+        }
+
+        function updateArenaSeasonPreview() {
+          const numInput = document.getElementById("arena-season-number-input");
+          const radioCS = document.getElementById("radio-arena-season-coming-soon");
+          const previewText = document.getElementById("preview-arena-status-text");
+          const previewDot = document.getElementById("preview-arena-beacon-dot");
+          const previewBeacon = document.getElementById("preview-arena-live-beacon");
+          const overrideInput = document.getElementById("arena-season-text-override");
+          const labelActive = document.getElementById("label-arena-state-active");
+          const labelCS = document.getElementById("label-arena-state-coming-soon");
+
+          const seasonNum = parseInt(numInput?.value, 10) || 1;
+          const isComingSoon = radioCS?.checked;
+          const displayText = isComingSoon ? `ARENA SEASON ${seasonNum} COMING SOON` : `ARENA SEASON ${seasonNum} ACTIVE`;
+
+          if (overrideInput && (!overrideInput.value || overrideInput.value.startsWith("ARENA SEASON"))) {
+            overrideInput.value = displayText;
+          }
+          if (previewText) previewText.textContent = overrideInput?.value || displayText;
+
+          if (previewDot) {
+            previewDot.style.background = isComingSoon ? "#f59e0b" : "#ff1e44";
+            previewDot.style.boxShadow = isComingSoon ? "0 0 10px #f59e0b" : "0 0 10px #ff1e44";
+          }
+          if (previewBeacon) {
+            previewBeacon.style.color = isComingSoon ? "#f59e0b" : "#ff1e44";
+            previewBeacon.style.borderColor = isComingSoon ? "rgba(245,158,11,0.3)" : "rgba(255,30,68,0.3)";
+            previewBeacon.style.background = isComingSoon ? "rgba(245,158,11,0.12)" : "rgba(255,30,68,0.12)";
+          }
+
+          if (labelActive && labelCS) {
+            if (isComingSoon) {
+              labelCS.style.borderColor = "#f59e0b";
+              labelCS.style.background = "#18140c";
+              labelActive.style.borderColor = "var(--line)";
+              labelActive.style.background = "#141511";
+            } else {
+              labelActive.style.borderColor = "#ff1e44";
+              labelActive.style.background = "#180c10";
+              labelCS.style.borderColor = "var(--line)";
+              labelCS.style.background = "#141511";
+            }
+          }
+        }
+
+        document.getElementById("arena-season-number-input")?.addEventListener("input", updateArenaSeasonPreview);
+        document.querySelectorAll('input[name="arena-season-state"]').forEach(radio => {
+          radio.addEventListener("change", updateArenaSeasonPreview);
+        });
+        document.getElementById("arena-season-text-override")?.addEventListener("input", () => {
+          const previewText = document.getElementById("preview-arena-status-text");
+          const overrideInput = document.getElementById("arena-season-text-override");
+          if (previewText && overrideInput) previewText.textContent = overrideInput.value;
+        });
+
+        document.getElementById("form-arena-season-settings")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can update Arena status.", true);
+            return;
+          }
+          const saveBtn = document.getElementById("btn-save-arena-season");
+          const statusMsg = document.getElementById("arena-season-save-status");
+          const numInput = document.getElementById("arena-season-number-input");
+          const radioCS = document.getElementById("radio-arena-season-coming-soon");
+          const overrideInput = document.getElementById("arena-season-text-override");
+
+          const seasonNum = parseInt(numInput?.value, 10) || 1;
+          const statusState = radioCS?.checked ? "coming_soon" : "active";
+          const statusText = overrideInput?.value.trim() || (statusState === "coming_soon" ? `ARENA SEASON ${seasonNum} COMING SOON` : `ARENA SEASON ${seasonNum} ACTIVE`);
+
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span>Broadcasting Arena Status...</span><span>⏳</span>`;
+          }
+
+          try {
+            const res = await window.LeagueDB.updateArenaSeasonSettings({
+              season_number: seasonNum,
+              status_state: statusState,
+              status_text: statusText
+            });
+
+            if (res.success) {
+              showToast(`✓ Published Arena Season: "${statusText}"`);
+              if (statusMsg) {
+                statusMsg.style.display = "inline";
+                statusMsg.style.color = "#ff1e44";
+                statusMsg.textContent = `✓ Published: "${statusText}"`;
+                setTimeout(() => { statusMsg.style.display = "none"; }, 4000);
+              }
+            } else {
+              showToast(`⚠ Saved locally: ${res.error || "Check permissions"}`);
+            }
+            if (window.LeagueDB && typeof window.LeagueDB.applyArenaSeasonBadge === "function") {
+              window.LeagueDB.applyArenaSeasonBadge({ season_number: seasonNum, status_state: statusState, status_text: statusText });
+            }
+          } catch (err) {
+            console.error("Save Arena season status failed:", err);
+            showToast("Error updating Arena season: " + (err.message || err), true);
+          } finally {
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = `<span>Broadcast &amp; Save Arena Season Status</span><span>⚡</span>`;
+            }
+          }
+        });
+
+        // --- Arena Announcements Logic ---
+        function updateArenaAnnouncementPreview() {
+          const title = document.getElementById("arena-ann-title-input")?.value.trim() || "Competitive Season 1 Ladder Reset & Match Openings";
+          const message = document.getElementById("arena-ann-message-input")?.value.trim() || "Welcome competitors to Frontline Arena. Challenges are live for 4v4 CDL Variant and 2v2 SnD.";
+          const tag = document.getElementById("arena-ann-tag-input")?.value.trim() || "Arena Update";
+          const color = document.getElementById("arena-ann-color-input")?.value || "red";
+          const linkUrl = document.getElementById("arena-ann-link-url-input")?.value.trim() || "/match-finder/";
+          const linkText = document.getElementById("arena-ann-link-text-input")?.value.trim() || "Open Match Finder ↗";
+          const isPinned = !!document.getElementById("arena-ann-pinned-input")?.checked;
+
+          const bannerEl = document.getElementById("preview-arena-announcement-banner");
+          const beaconEl = document.getElementById("preview-arena-ann-beacon");
+          const tagEl = document.getElementById("preview-arena-ann-tag");
+          const pinnedEl = document.getElementById("preview-arena-ann-pinned");
+          const titleEl = document.getElementById("preview-arena-ann-title");
+          const bodyEl = document.getElementById("preview-arena-ann-body");
+          const imageWrap = document.getElementById("preview-arena-ann-image-wrap");
+          const previewImg = document.getElementById("preview-arena-ann-image");
+          const ctaEl = document.getElementById("preview-arena-ann-cta");
+          const ctaTextEl = document.getElementById("preview-arena-ann-cta-text");
+
+          const colorMap = {
+            red: { dot: "#ff1e44", border: "#ff1e44", tagBg: "rgba(255,30,68,0.12)", text: "#ff1e44" },
+            lime: { dot: "var(--lime)", border: "var(--lime)", tagBg: "rgba(213,244,91,0.12)", text: "var(--lime)" },
+            amber: { dot: "#f59e0b", border: "#f59e0b", tagBg: "rgba(245,158,11,0.12)", text: "#f59e0b" },
+            cyan: { dot: "#38bdf8", border: "#38bdf8", tagBg: "rgba(56,189,248,0.12)", text: "#38bdf8" }
+          };
+          const activeScheme = colorMap[color] || colorMap.red;
+
+          if (bannerEl) bannerEl.style.borderLeftColor = activeScheme.border;
+          if (beaconEl) {
+            beaconEl.style.background = activeScheme.dot;
+            beaconEl.style.boxShadow = `0 0 10px ${activeScheme.dot}`;
+          }
+          if (tagEl) {
+            tagEl.textContent = tag.toUpperCase();
+            tagEl.style.color = activeScheme.text;
+            tagEl.style.background = activeScheme.tagBg;
+            tagEl.style.borderColor = activeScheme.border + "55";
+          }
+          if (pinnedEl) pinnedEl.style.display = isPinned ? "inline-block" : "none";
+          if (titleEl) titleEl.textContent = title;
+          if (bodyEl) bodyEl.textContent = message;
+
+          if (imageWrap && previewImg) {
+            if (currentArenaAnnouncementImageUrl) {
+              imageWrap.style.display = "block";
+              previewImg.src = currentArenaAnnouncementImageUrl;
+            } else {
+              imageWrap.style.display = "none";
+              previewImg.src = "";
+            }
+          }
+
+          if (ctaEl && ctaTextEl) {
+            if (linkUrl) {
+              ctaEl.style.display = "inline-flex";
+              ctaEl.href = linkUrl;
+              ctaTextEl.textContent = linkText;
+            } else {
+              ctaEl.style.display = "none";
+            }
+          }
+        }
+
+        ["arena-ann-title-input", "arena-ann-message-input", "arena-ann-tag-input", "arena-ann-link-url-input", "arena-ann-link-text-input"].forEach(id => {
+          document.getElementById(id)?.addEventListener("input", updateArenaAnnouncementPreview);
+        });
+        ["arena-ann-color-input", "arena-ann-pinned-input", "arena-ann-is-active-input"].forEach(id => {
+          document.getElementById(id)?.addEventListener("change", updateArenaAnnouncementPreview);
+        });
+
+        // Image file upload listener for Arena Announcements
+        document.getElementById("arena-ann-image-file")?.addEventListener("change", async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          try {
+            const result = await compressAndResizeImage(file);
+            currentArenaAnnouncementImageUrl = result.dataUrl;
+            const urlInput = document.getElementById("arena-ann-image-url-input");
+            if (urlInput) urlInput.value = "";
+            const container = document.getElementById("arena-ann-image-preview-container");
+            const thumb = document.getElementById("arena-ann-uploaded-thumb");
+            const filenameEl = document.getElementById("arena-ann-image-filename");
+            if (container && thumb) {
+              container.style.display = "flex";
+              thumb.src = result.dataUrl;
+              if (filenameEl) filenameEl.textContent = file.name;
+            }
+            updateArenaAnnouncementPreview();
+          } catch (err) {
+            console.error("Error processing arena image file:", err);
+            alert("Could not process image file: " + (err.message || String(err)));
+          }
+        });
+
+        document.getElementById("arena-ann-image-url-input")?.addEventListener("input", (e) => {
+          const url = e.target.value.trim();
+          currentArenaAnnouncementImageUrl = url;
+          const container = document.getElementById("arena-ann-image-preview-container");
+          const thumb = document.getElementById("arena-ann-uploaded-thumb");
+          if (url && container && thumb) {
+            thumb.src = url;
+            container.style.display = "flex";
+          } else if (container) {
+            container.style.display = "none";
+          }
+          updateArenaAnnouncementPreview();
+        });
+
+        document.getElementById("btn-remove-arena-ann-image")?.addEventListener("click", () => {
+          currentArenaAnnouncementImageUrl = "";
+          const fileInp = document.getElementById("arena-ann-image-file");
+          const urlInp = document.getElementById("arena-ann-image-url-input");
+          const container = document.getElementById("arena-ann-image-preview-container");
+          if (fileInp) fileInp.value = "";
+          if (urlInp) urlInp.value = "";
+          if (container) container.style.display = "none";
+          updateArenaAnnouncementPreview();
+        });
+
+        function resetArenaAnnouncementForm() {
+          document.getElementById("arena-announcement-id").value = "";
+          document.getElementById("arena-ann-title-input").value = "";
+          document.getElementById("arena-ann-message-input").value = "";
+          document.getElementById("arena-ann-tag-input").value = "Arena Update";
+          document.getElementById("arena-ann-color-input").value = "red";
+          document.getElementById("arena-ann-link-url-input").value = "/match-finder/";
+          document.getElementById("arena-ann-link-text-input").value = "Open Match Finder ↗";
+          document.getElementById("arena-ann-is-active-input").checked = true;
+          document.getElementById("arena-ann-pinned-input").checked = false;
+          currentArenaAnnouncementImageUrl = "";
+          const fileInp = document.getElementById("arena-ann-image-file");
+          const urlInp = document.getElementById("arena-ann-image-url-input");
+          const container = document.getElementById("arena-ann-image-preview-container");
+          if (fileInp) fileInp.value = "";
+          if (urlInp) urlInp.value = "";
+          if (container) container.style.display = "none";
+
+          const formTitle = document.getElementById("arena-announcement-form-title");
+          if (formTitle) formTitle.textContent = "📢 2. Compose Arena Announcement Dispatch";
+          const cancelBtn = document.getElementById("btn-cancel-arena-announcement-edit");
+          if (cancelBtn) cancelBtn.style.display = "none";
+          const submitBtnText = document.getElementById("btn-submit-arena-ann-text");
+          if (submitBtnText) submitBtnText.textContent = "Broadcast Arena Announcement";
+          updateArenaAnnouncementPreview();
+        }
+        window.resetArenaAnnouncementForm = resetArenaAnnouncementForm;
+
+        document.getElementById("btn-cancel-arena-announcement-edit")?.addEventListener("click", resetArenaAnnouncementForm);
+
+        async function loadArenaAnnouncements() {
+          const tbody = document.getElementById("admin-arena-announcements-tbody");
+          if (!tbody) return;
+          try {
+            if (!window.LeagueDB || typeof window.LeagueDB.getArenaAnnouncements !== "function") return;
+            cachedArenaAnnouncements = await window.LeagueDB.getArenaAnnouncements(true, true);
+            if (!cachedArenaAnnouncements || cachedArenaAnnouncements.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:30px;">No Arena announcements currently registered. Dispatch your first bulletin above.</td></tr>`;
+              return;
+            }
+
+            tbody.innerHTML = cachedArenaAnnouncements.map(a => {
+              const color = a.tag_color || "red";
+              const dateStr = a.created_at ? new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : '---';
+              const statusPills = [];
+              if (a.is_active) {
+                statusPills.push('<span class="pill" style="color:#22c55e; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3);">ACTIVE</span>');
+              } else {
+                statusPills.push('<span class="pill" style="color:var(--muted); background:#1a1c17; border:1px solid #333;">INACTIVE</span>');
+              }
+              if (a.pinned) {
+                statusPills.push('<span class="pill" style="color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.35);">PINNED</span>');
+              }
+
+              return `
+                <tr>
+                  <td>${statusPills.join(' ')}</td>
+                  <td><span class="announcement-tag ${color}">${escapeHtml(a.tag || "ARENA")}</span></td>
+                  <td><strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(a.title || "")}</strong></td>
+                  <td style="max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#cbd5e1; font-size:12px;">${escapeHtml(a.message || "")}</td>
+                  <td>${a.image_url ? `<img src="${escapeHtml(a.image_url)}" alt="Thumb" style="width:40px; height:26px; object-fit:cover; border-radius:2px; border:1px solid #1e283a;" />` : '<span style="color:var(--muted); font-size:11px;">None</span>'}</td>
+                  <td style="font-size:12px; color:var(--muted);">${escapeHtml(dateStr)}</td>
+                  <td>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                      <button type="button" class="btn-action-sm" onclick="editArenaAnnouncement('${escapeHtml(a.id)}')" style="font-size:11px; padding:4px 8px; color:#ff1e44; border-color:rgba(255,30,68,0.4);">✏️ Edit</button>
+                      <button type="button" class="btn-action-sm" onclick="toggleArenaAnnouncement('${escapeHtml(a.id)}', ${a.is_active})" style="font-size:11px; padding:4px 8px;">${a.is_active ? '⏸ Deactivate' : '▶ Activate'}</button>
+                      <button type="button" class="btn-action-sm btn-action-danger" onclick="deleteArenaAnnouncementAction('${escapeHtml(a.id)}')" style="font-size:11px; padding:4px 8px;">🗑 Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          } catch (err) {
+            console.error("Error loading Arena announcements:", err);
+          }
+        }
+        window.loadArenaAnnouncements = loadArenaAnnouncements;
+
+        function editArenaAnnouncement(id) {
+          const ann = cachedArenaAnnouncements.find(a => String(a.id) === String(id));
+          if (!ann) return;
+          document.getElementById("arena-announcement-id").value = ann.id;
+          document.getElementById("arena-ann-title-input").value = ann.title || "";
+          document.getElementById("arena-ann-message-input").value = ann.message || "";
+          document.getElementById("arena-ann-tag-input").value = ann.tag || "Arena Update";
+          document.getElementById("arena-ann-color-input").value = ann.tag_color || "red";
+          document.getElementById("arena-ann-link-url-input").value = ann.link_url || "";
+          document.getElementById("arena-ann-link-text-input").value = ann.link_text || "";
+          document.getElementById("arena-ann-is-active-input").checked = ann.is_active !== false;
+          document.getElementById("arena-ann-pinned-input").checked = !!ann.pinned;
+
+          currentArenaAnnouncementImageUrl = ann.image_url || "";
+          const container = document.getElementById("arena-ann-image-preview-container");
+          const thumb = document.getElementById("arena-ann-uploaded-thumb");
+          if (currentArenaAnnouncementImageUrl && container && thumb) {
+            thumb.src = currentArenaAnnouncementImageUrl;
+            container.style.display = "flex";
+          } else if (container) {
+            container.style.display = "none";
+          }
+
+          const formTitle = document.getElementById("arena-announcement-form-title");
+          if (formTitle) formTitle.textContent = "✏️ Edit Arena Announcement: " + (ann.title || "");
+          const cancelBtn = document.getElementById("btn-cancel-arena-announcement-edit");
+          if (cancelBtn) cancelBtn.style.display = "inline-flex";
+          const submitBtnText = document.getElementById("btn-submit-arena-ann-text");
+          if (submitBtnText) submitBtnText.textContent = "Save Changes to Announcement";
+          updateArenaAnnouncementPreview();
+          document.getElementById("tab-arena-command")?.scrollIntoView({ behavior: "smooth" });
+        }
+        window.editArenaAnnouncement = editArenaAnnouncement;
+
+        async function toggleArenaAnnouncement(id, currentActive) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can toggle announcements.", true);
+            return;
+          }
+          try {
+            const res = await window.LeagueDB.updateArenaAnnouncement(id, { is_active: !currentActive });
+            if (res.success) {
+              showToast(`✓ Arena announcement ${!currentActive ? 'activated (live on Arena)' : 'deactivated'}.`);
+              await loadArenaAnnouncements();
+            } else {
+              showToast("Failed to toggle announcement: " + (res.error || 'Error'), true);
+            }
+          } catch (err) {
+            console.error("toggleArenaAnnouncement error:", err);
+          }
+        }
+        window.toggleArenaAnnouncement = toggleArenaAnnouncement;
+
+        async function deleteArenaAnnouncementAction(id) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can delete announcements.", true);
+            return;
+          }
+          if (!confirm("Are you sure you want to permanently delete this Arena announcement?")) return;
+          try {
+            const res = await window.LeagueDB.deleteArenaAnnouncement(id);
+            if (res.success) {
+              showToast("✓ Arena announcement deleted.");
+              if (document.getElementById("arena-announcement-id").value === id) {
+                resetArenaAnnouncementForm();
+              }
+              await loadArenaAnnouncements();
+            } else {
+              showToast("Failed to delete announcement: " + (res.error || 'Error'), true);
+            }
+          } catch (err) {
+            console.error("deleteArenaAnnouncementAction error:", err);
+          }
+        }
+        window.deleteArenaAnnouncementAction = deleteArenaAnnouncementAction;
+
+        document.getElementById("form-arena-announcement")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to dispatch announcements.", true);
+            return;
+          }
+          const submitBtn = document.getElementById("btn-submit-arena-ann");
+          const editId = document.getElementById("arena-announcement-id")?.value;
+
+          const payload = {
+            title: document.getElementById("arena-ann-title-input")?.value.trim(),
+            message: document.getElementById("arena-ann-message-input")?.value.trim(),
+            tag: document.getElementById("arena-ann-tag-input")?.value.trim() || "Arena Update",
+            tag_color: document.getElementById("arena-ann-color-input")?.value || "red",
+            link_url: document.getElementById("arena-ann-link-url-input")?.value.trim() || null,
+            link_text: document.getElementById("arena-ann-link-text-input")?.value.trim() || null,
+            image_url: currentArenaAnnouncementImageUrl || null,
+            image_fit: "contain",
+            is_active: document.getElementById("arena-ann-is-active-input")?.checked !== false,
+            pinned: !!document.getElementById("arena-ann-pinned-input")?.checked
+          };
+
+          if (!payload.title || !payload.message) {
+            alert("Title and message body are required.");
+            return;
+          }
+
+          if (submitBtn) submitBtn.disabled = true;
+
+          try {
+            if (editId) {
+              const res = await window.LeagueDB.updateArenaAnnouncement(editId, payload);
+              if (res.success) {
+                showToast("✓ Arena announcement updated and broadcasted!");
+                resetArenaAnnouncementForm();
+                await loadArenaAnnouncements();
+              } else {
+                showToast("Failed: " + (res.error || "Database error"), true);
+              }
+            } else {
+              const res = await window.LeagueDB.createArenaAnnouncement(payload);
+              if (res.success) {
+                showToast("✓ Arena announcement broadcasted live to competitors!");
+                resetArenaAnnouncementForm();
+                await loadArenaAnnouncements();
+              } else {
+                showToast("Failed: " + (res.error || "Database error"), true);
+              }
+            }
+          } catch (err) {
+            console.error("Error submitting arena announcement:", err);
+            showToast("Error submitting announcement: " + (err.message || String(err)), true);
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
+          }
+        });
+
+        // --- Arena Tournaments Quick Desk Logic ---
+        async function loadArenaTournaments() {
+          const tbody = document.getElementById("admin-arena-tourneys-tbody");
+          if (!tbody) return;
+          try {
+            let list = [];
+            if (window.LeagueDB && typeof window.LeagueDB.getTournaments === "function") {
+              list = await window.LeagueDB.getTournaments();
+            } else {
+              const local = localStorage.getItem("frontline_tournaments_data");
+              if (local) {
+                try { list = JSON.parse(local); } catch (e) {}
+              }
+            }
+            const arenaTourneys = (list || []).filter(t => {
+              const c = (t.circuit || "").toLowerCase();
+              return c === "arena" || c === "both" || !c;
+            });
+
+            if (arenaTourneys.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--muted);">No Arena ladder tournaments currently active. Click "＋ Post Arena Tournament" above to launch one.</td></tr>`;
+              return;
+            }
+
+            tbody.innerHTML = arenaTourneys.map(t => {
+              const enlisted = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
+              const max = t.max_teams || 32;
+              const curStatus = t.status || 'Registration Open';
+              const statusPills = [];
+              if (curStatus.toLowerCase().includes('live')) {
+                statusPills.push('<span class="pill" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35);">🔴 LIVE</span>');
+              } else if (curStatus.toLowerCase().includes('upcoming')) {
+                statusPills.push('<span class="pill" style="color:#38bdf8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35);">UPCOMING</span>');
+              } else if (curStatus.toLowerCase().includes('completed')) {
+                statusPills.push('<span class="pill" style="color:var(--muted); background:#1e2017; border:1px solid #333;">COMPLETED</span>');
+              } else {
+                statusPills.push('<span class="pill" style="color:#22c55e; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.35);">OPEN</span>');
+              }
+              if (t.pinned) {
+                statusPills.push('<span class="pill" style="color:#fbbf24; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.35);">PINNED</span>');
+              }
+
+              const thumbImg = t.banner_url || t.image_url;
+
+              return `
+                <tr>
+                  <td>
+                    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+                      <span class="pill" style="color:#ff1e44; background:rgba(255,30,68,0.12); border:1px solid rgba(255,30,68,0.35);">⚔️ ARENA</span>
+                      ${statusPills.join('')}
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                      ${thumbImg ? `<img src="${escapeHtml(thumbImg)}" alt="Thumb" style="width:54px; height:34px; object-fit:cover; border-radius:2px; border:1px solid #2a311e; flex-shrink:0;" />` : ''}
+                      <div>
+                        <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(t.title || 'Untitled Tournament')}</strong>
+                        <div style="font-size:11px; color:var(--muted); margin-top:2px;">ID: ${escapeHtml(t.id || 'N/A')}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="font-weight:700; color:#fbbf24; font-size:12px;">${escapeHtml(t.format || '4v4 CDL Variant')}</div>
+                    <div style="font-size:11px; color:var(--muted);">${escapeHtml(t.bracket_type || 'Double Elimination')}</div>
+                  </td>
+                  <td>
+                    <div style="color:#fbbf24; font-weight:800; font-size:12px;">${escapeHtml(t.prize_pool || '$500 USD')}</div>
+                    <div style="font-size:11px; color:#22c55e;">${escapeHtml(t.entry_fee || 'FREE ENTRY')}</div>
+                  </td>
+                  <td>
+                    <div style="font-size:12px; color:#ffffff;">${escapeHtml(t.date || t.start_date || 'TBD')}</div>
+                    <div style="font-size:11px; color:var(--muted);">${escapeHtml(t.time || t.start_time || '6:00 PM EST')}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight:800; font-size:12px; color:#ffffff;">${enlisted} / ${max}</div>
+                    <div style="font-size:10px; color:var(--muted);">Registered Teams</div>
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="openEditTournamentModal('${escapeHtml(t.id)}')">✏️ Edit Details</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
+                      <a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="font-size:11px; padding:4px 8px; text-decoration:none; color:#ff1e44; border-color:rgba(255,30,68,0.4);">Arena ↗</a>
+                      <button type="button" class="btn-action-sm btn-action-danger" style="font-size:11px; padding:4px 8px;" onclick="adminDeleteTourney('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">🗑 Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          } catch (err) {
+            console.error("Error loading Arena tournaments:", err);
+          }
+        }
+        window.loadArenaTournaments = loadArenaTournaments;
+
+        function quickCreateArenaTournament() {
+          switchActiveTab("tab-tournaments-hub");
+          const circuitInp = document.getElementById("tourney-circuit-input");
+          if (circuitInp) circuitInp.value = "arena";
+          cancelTournamentEdit();
+          document.getElementById("tourney-title-input")?.focus();
+        }
+        window.quickCreateArenaTournament = quickCreateArenaTournament;
 
         // 16. Console Initial Session Unlock Check
         checkInitialAuth();

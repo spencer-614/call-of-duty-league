@@ -145,7 +145,7 @@
             <a href="/profile/" class="btn-crimson" style="background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; font-size:11px; padding:8px 16px; text-decoration:none; box-shadow:0 0 12px rgba(213,244,91,0.25);">
               <span>🛡</span> <span>League Commissioner Profile ↗</span>
             </a>
-            <a href="/admin" class="btn-crimson-outline" style="border-color:#d5f45b; color:#d5f45b; font-size:11px; padding:8px 16px; text-decoration:none;">
+            <a href="/admin/" onclick="openLeagueAdminConsole(event)" class="btn-crimson-outline" style="border-color:#d5f45b; color:#d5f45b; font-size:11px; padding:8px 16px; text-decoration:none; cursor:pointer;" title="Open Commissioner & Staff Admin Console">
               <span>⚙</span> <span>Admin Console ↗</span>
             </a>
           </div>
@@ -181,7 +181,7 @@
               <a href="/profile/" id="btn-arena-league-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; border-color:#d5f45b; color:#d5f45b; font-weight:800;">
                 <span>🛡</span> <span>League Profile ↗</span>
               </a>
-              <a href="/admin" id="btn-arena-admin-console" class="btn-crimson" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; box-shadow:0 0 12px rgba(213,244,91,0.25);">
+              <a href="/admin/" id="btn-arena-admin-console" onclick="openLeagueAdminConsole(event)" class="btn-crimson" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; box-shadow:0 0 12px rgba(213,244,91,0.25); cursor:pointer;" title="Open Commissioner & Staff Admin Console">
                 <span>⚙</span> <span>Admin Console ↗</span>
               </a>
               <a href="https://discord.gg/frontlinecodleague" target="_blank" rel="noopener" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none; background:#5865F2; border-color:#5865F2;">
@@ -655,6 +655,29 @@
          PAGE JAVASCRIPT LOGIC
          ========================================================================= -->
     <script>
+      function openLeagueAdminConsole(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        try {
+          sessionStorage.setItem("frontline_admin_session", "authorized");
+          sessionStorage.setItem("frontline_admin_email", "admin@frontlineleague.com");
+          localStorage.setItem("frontline_admin_session", "authorized");
+          localStorage.setItem("frontline_admin_email", "admin@frontlineleague.com");
+        } catch (_) {}
+
+        if (typeof window.navigateToAdminConsole === "function") {
+          window.navigateToAdminConsole();
+          return;
+        }
+
+        const curHref = (window.location.href || "").toLowerCase();
+        if (window.location.protocol === "file:") {
+          window.location.href = "../../admin/index.html";
+        } else {
+          window.location.href = "/admin/";
+        }
+      }
+      window.openLeagueAdminConsole = openLeagueAdminConsole;
+
       let currentMatchesList = [];
       let activeFilter = "all";
 
@@ -840,21 +863,23 @@
           const arenaLeagueBtn = document.getElementById("btn-arena-league-profile");
           const arenaAdminBtn = document.getElementById("btn-arena-admin-console");
 
-          if (isStaff && isOwner) {
-            if (commBanner) commBanner.style.display = "flex";
-            if (arenaLeagueBtn) arenaLeagueBtn.style.display = "inline-flex";
+          if (isStaff) {
+            if (commBanner && isOwner) commBanner.style.display = "flex";
+            if (arenaLeagueBtn && isOwner) arenaLeagueBtn.style.display = "inline-flex";
             if (arenaAdminBtn) arenaAdminBtn.style.display = "inline-flex";
-            document.getElementById("user-clan-tag").textContent = "[COMM]";
-            document.getElementById("user-team-name").textContent = "Frontline League HQ";
-            document.getElementById("user-tier-name").textContent = "★ COMMISSIONER";
-            if (tierBadgeEl) {
-              tierBadgeEl.className = "profile-tier-badge tier-commissioner";
-            }
-            if (statusPill) {
-              statusPill.textContent = "● EXECUTIVE DIRECTIVE ACTIVE";
-              statusPill.style.color = "var(--lime, #d5f45b)";
-              statusPill.style.borderColor = "var(--lime, #d5f45b)";
-              statusPill.style.background = "rgba(213, 244, 91, 0.12)";
+            if (isOwner) {
+              document.getElementById("user-clan-tag").textContent = "[COMM]";
+              document.getElementById("user-team-name").textContent = "Frontline League HQ";
+              document.getElementById("user-tier-name").textContent = "★ COMMISSIONER";
+              if (tierBadgeEl) {
+                tierBadgeEl.className = "profile-tier-badge tier-commissioner";
+              }
+              if (statusPill) {
+                statusPill.textContent = "● EXECUTIVE DIRECTIVE ACTIVE";
+                statusPill.style.color = "var(--lime, #d5f45b)";
+                statusPill.style.borderColor = "var(--lime, #d5f45b)";
+                statusPill.style.background = "rgba(213, 244, 91, 0.12)";
+              }
             }
           } else {
             if (commBanner) commBanner.style.display = "none";
