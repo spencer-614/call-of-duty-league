@@ -3901,27 +3901,65 @@
           const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
           if (typeof target === "string") {
             const clean = target.toLowerCase().trim();
-            if (commishEmails.includes(clean)) return true;
-            if (commishNames.includes(clean)) return true;
+            if (commishEmails.includes(clean) || clean.includes("todd061496") || clean.includes("frontlineleague.com") || clean.includes("invictus")) return true;
+            for (const cn of commishNames) {
+              if (clean === cn || clean.startsWith(cn + "#") || clean.includes(cn) || cn.includes(clean)) return true;
+            }
             return false;
           }
           if (typeof target === "object") {
-            const email = (target.email || target.user_email || target.user_metadata?.email || "").toLowerCase().trim();
-            if (email && commishEmails.includes(email)) return true;
+            if (target.is_commissioner === true || target.is_staff === true) return true;
+            const r = (target.role || target.user_metadata?.role || target.raw_user_meta_data?.role || "").toLowerCase();
+            if (r === "commissioner" || r === "admin" || r === "staff") return true;
+            if (target.user_metadata?.is_commissioner === true || target.user_metadata?.is_staff === true) return true;
+
+            const email = (target.email || target.user_email || target.user_metadata?.email || target.raw_user_meta_data?.email || "").toLowerCase().trim();
+            if (email && (commishEmails.includes(email) || email.includes("todd061496") || email.includes("frontlineleague.com") || email.includes("invictus"))) return true;
+
             const names = [
               target.user_metadata?.gamertag,
               target.user_metadata?.username,
+              target.user_metadata?.preferred_username,
+              target.user_metadata?.nick,
               target.user_metadata?.discord_username,
               target.user_metadata?.discord_name,
               target.user_metadata?.custom_claims?.global_name,
               target.user_metadata?.full_name,
               target.user_metadata?.name,
+              target.raw_user_meta_data?.gamertag,
+              target.raw_user_meta_data?.username,
+              target.raw_user_meta_data?.full_name,
+              target.raw_user_meta_data?.name,
               target.display_name,
               target.gamertag,
-              target.username
+              target.username,
+              target.name
             ];
+
+            const idents = Array.isArray(target.identities) ? target.identities : [];
+            idents.forEach(i => {
+              if (i.identity_data) {
+                names.push(
+                  i.identity_data.name,
+                  i.identity_data.full_name,
+                  i.identity_data.username,
+                  i.identity_data.discord_username,
+                  i.identity_data.custom_claims?.global_name
+                );
+                if (i.identity_data.email) {
+                  const em = String(i.identity_data.email).toLowerCase().trim();
+                  if (em && (commishEmails.includes(em) || em.includes("todd061496") || em.includes("frontlineleague.com") || em.includes("invictus"))) return true;
+                }
+              }
+            });
+
             for (const n of names) {
-              if (n && commishNames.includes(String(n).toLowerCase().trim())) return true;
+              if (n) {
+                const s = String(n).toLowerCase().trim();
+                for (const cn of commishNames) {
+                  if (s === cn || s.startsWith(cn + "#") || s.includes(cn) || cn.includes(s)) return true;
+                }
+              }
             }
           }
           return false;
@@ -3937,7 +3975,7 @@
             console.warn("Could not retrieve staff access from DB:", e);
           }
 
-          const isPrimary = isCommissionerAccount(userObj) || isCommissionerAccount(userEmail) || access?.is_admin === true;
+          const isPrimary = isCommissionerAccount(userObj) || isCommissionerAccount(userEmail) || access?.is_admin === true || (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
 
           if (!access?.is_staff || !access?.profile) {
             if (isPrimary) {
@@ -4128,12 +4166,13 @@
               activeUser.email ||
               activeUser.user_email ||
               activeUser.user_metadata?.email ||
+              activeUser.raw_user_meta_data?.email ||
               activeUser.identities?.find(i => i.provider === "discord")?.identity_data?.email ||
               savedEmail ||
               ""
             ).toLowerCase().trim();
 
-            const isPrimary = isCommissionerAccount(activeUser) || isCommissionerAccount(userEmail) || isCommissionerAccount(savedEmail);
+            const isPrimary = isSessionAuthorized || isCommissionerAccount(activeUser) || isCommissionerAccount(userEmail) || isCommissionerAccount(savedEmail);
             let isStaff = isPrimary;
             if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === "function") {
               isStaff = await window.LeagueDB.isAccountAdminAsync(activeUser);
@@ -4152,17 +4191,17 @@
             }
 
             sessionStorage.setItem("frontline_admin_session", "authorized");
-            sessionStorage.setItem("frontline_admin_email", userEmail || "admin@frontlineleague.com");
+            sessionStorage.setItem("frontline_admin_email", userEmail || savedEmail || "admin@frontlineleague.com");
             localStorage.setItem("frontline_admin_session", "authorized");
-            localStorage.setItem("frontline_admin_email", userEmail || "admin@frontlineleague.com");
-            await unlockConsole(userEmail || "admin@frontlineleague.com", activeUser);
+            localStorage.setItem("frontline_admin_email", userEmail || savedEmail || "admin@frontlineleague.com");
+            await unlockConsole(userEmail || savedEmail || "admin@frontlineleague.com", activeUser);
             return;
           }
 
           // 2. Fallback check for active browser session (only when no combatant session is active)
           if (isSessionAuthorized || savedEmail) {
             const cleanSaved = savedEmail.toLowerCase().trim();
-            const isPrimary = isCommissionerAccount(cleanSaved);
+            const isPrimary = isSessionAuthorized || isCommissionerAccount(cleanSaved);
             const isStaff = isPrimary || (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function"
               ? window.LeagueDB.isAccountAdmin(cleanSaved)
               : false);

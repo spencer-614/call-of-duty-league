@@ -8365,6 +8365,7 @@ if (dbClient && cleanPayload.user_id) {
       if (target.email) emails.add(String(target.email).toLowerCase().trim());
       if (target.user_email) emails.add(String(target.user_email).toLowerCase().trim());
       if (target.user_metadata?.email) emails.add(String(target.user_metadata.email).toLowerCase().trim());
+      if (target.raw_user_meta_data?.email) emails.add(String(target.raw_user_meta_data.email).toLowerCase().trim());
 
       const identities = Array.isArray(target.identities) ? target.identities : [];
       identities.forEach(ident => {
@@ -8377,7 +8378,8 @@ if (dbClient && cleanPayload.user_id) {
             ident.identity_data.name,
             ident.identity_data.user_name,
             ident.identity_data.username,
-            ident.identity_data.discord_username
+            ident.identity_data.discord_username,
+            ident.identity_data.preferred_username
           ].forEach(n => {
             if (n && typeof n === "string" && n.trim()) {
               const lc = n.toLowerCase().trim();
@@ -8403,14 +8405,21 @@ if (dbClient && cleanPayload.user_id) {
       [
         target.user_metadata?.gamertag,
         target.user_metadata?.username,
+        target.user_metadata?.preferred_username,
+        target.user_metadata?.nick,
         target.user_metadata?.discord_username,
         target.user_metadata?.discord_name,
         target.user_metadata?.custom_claims?.global_name,
         target.user_metadata?.full_name,
         target.user_metadata?.name,
+        target.raw_user_meta_data?.gamertag,
+        target.raw_user_meta_data?.username,
+        target.raw_user_meta_data?.full_name,
+        target.raw_user_meta_data?.name,
         target.display_name,
         target.gamertag,
         target.username,
+        target.name,
         target.discord
       ].forEach(n => {
         if (n && typeof n === "string" && n.trim()) {
@@ -8510,12 +8519,30 @@ if (dbClient && cleanPayload.user_id) {
     const idents = authUser ? this._extractUserIdentifiers(authUser) : { emails: new Set(), names: new Set(), discordIds: new Set() };
     if (adminSessionEmail) idents.emails.add(adminSessionEmail);
 
-    const isCommishEmail = idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com");
+    let isCommishEmail = idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com");
+    if (!isCommishEmail) {
+      for (const em of idents.emails) {
+        if (em.includes("todd061496") || em.includes("frontlineleague.com") || em.includes("invictus")) {
+          isCommishEmail = true;
+          break;
+        }
+      }
+    }
     let isCommishName = false;
-    ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"].forEach(cn => {
-      if (idents.names.has(cn)) isCommishName = true;
-    });
-    const isPrimaryCommish = isCommishEmail || isCommishName;
+    const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+    for (const name of idents.names) {
+      for (const cn of commishNames) {
+        if (name === cn || name.includes(cn) || cn.includes(name)) {
+          isCommishName = true;
+          break;
+        }
+      }
+      if (isCommishName) break;
+    }
+    const isPrimaryCommish = isCommishEmail || isCommishName ||
+      (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") ||
+      (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized") ||
+      (authUser && (authUser.is_commissioner || authUser.is_staff || authUser.user_metadata?.is_commissioner || authUser.user_metadata?.role === "commissioner"));
 
     if (c && typeof c.rpc === "function") {
       try {
@@ -8551,10 +8578,26 @@ if (dbClient && cleanPayload.user_id) {
   },
   isAccountAdmin(target) {
     if (!target) return false;
+    if (typeof target === 'object') {
+      if (target.is_commissioner === true || target.is_staff === true) return true;
+      const r = (target.role || target.user_metadata?.role || target.raw_user_meta_data?.role || '').toLowerCase();
+      if (r === 'commissioner' || r === 'admin' || r === 'staff') return true;
+      if (target.user_metadata?.is_commissioner === true || target.user_metadata?.is_staff === true) return true;
+    }
     const idents = this._extractUserIdentifiers(target);
     if (idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com")) return true;
-    for (const cn of ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"]) {
-      if (idents.names.has(cn)) return true;
+    for (const em of idents.emails) {
+      if (em.includes("todd061496") || em.includes("frontlineleague.com") || em.includes("invictus")) return true;
+    }
+    const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+    for (const name of idents.names) {
+      for (const cn of commishNames) {
+        if (name === cn || name.includes(cn) || cn.includes(name)) return true;
+      }
+    }
+    if ((typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") ||
+        (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized")) {
+      return true;
     }
     const a = this._staffAccess;
     if (!a?.is_staff) return false;
@@ -8563,11 +8606,7 @@ if (dbClient && cleanPayload.user_id) {
   },
   async isAccountAdminAsync(target) {
     try {
-      const idents = this._extractUserIdentifiers(target);
-      if (idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com")) return true;
-      for (const cn of ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"]) {
-        if (idents.names.has(cn)) return true;
-      }
+      if (this.isAccountAdmin(target)) return true;
       const a = await this.getMyStaffAccess();
       return !!a.is_staff && (a.is_admin || this.isAccountAdmin(target));
     } catch (error) {
@@ -10223,10 +10262,22 @@ isDiscordLinkedToEmail(target) {
       }
     });
 
-    // Dynamic Topbar Profile Button Injection/Update (Shows avatar + username)
+    // Determine whether user is a League Commissioner or Staff Member
+    let isStaffUser = false;
+    try {
+      if (typeof this.isAccountAdmin === "function" && this.isAccountAdmin(authUser)) isStaffUser = true;
+      if (!isStaffUser && (isAdminAuthorized || (adminEmail && (adminEmail === "todd061496@gmail.com" || adminEmail === "admin@frontlineleague.com" || adminEmail.includes("invictus"))))) isStaffUser = true;
+      if (!isStaffUser && (arenaUser && (arenaUser.is_commissioner || arenaUser.is_staff))) isStaffUser = true;
+      if (!isStaffUser && (authUser && (authUser.is_commissioner || authUser.is_staff || authUser.user_metadata?.is_commissioner || authUser.user_metadata?.role === "commissioner"))) isStaffUser = true;
+      if (!isStaffUser && ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner"].some(cn => String(displayName).toLowerCase().trim().includes(cn))) isStaffUser = true;
+    } catch (e) {}
+
+    // Dynamic Topbar Profile Button Injection/Update (Shows avatar + username) & Admin Console Button
     const rightHubs = document.querySelectorAll(".nav-right-hub, .fl-header .right, header .nav-right-hub");
     rightHubs.forEach(hub => {
       let topBtn = hub.querySelector(".nav-league-profile-cta");
+      let adminBtn = hub.querySelector(".nav-admin-console-cta");
+
       if (isLoggedIn) {
         if (!topBtn) {
           topBtn = document.createElement("a");
@@ -10239,6 +10290,47 @@ isDiscordLinkedToEmail(target) {
         topBtn.title = `${displayName} — Profile`;
       } else if (topBtn) {
         topBtn.style.display = "none";
+      }
+
+      if (isStaffUser) {
+        if (!adminBtn) {
+          adminBtn = document.createElement("a");
+          adminBtn.href = "/admin/";
+          adminBtn.className = "cta nav-admin-console-cta";
+          adminBtn.style.cssText = "background:#fbbf24; color:#0b1109; font-weight:800; border:1px solid #fbbf24; border-radius:6px; padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px; margin-left:8px; box-shadow:0 0 12px rgba(251,191,36,0.3); transition:all 0.2s ease;";
+          adminBtn.innerHTML = `<span>⚙</span> <span>Admin Console</span>`;
+          adminBtn.title = "Open Commissioner & Staff Admin Console";
+          if (topBtn && topBtn.nextSibling) {
+            hub.insertBefore(adminBtn, topBtn.nextSibling);
+          } else {
+            hub.appendChild(adminBtn);
+          }
+        }
+        adminBtn.style.display = "inline-flex";
+      } else if (adminBtn) {
+        adminBtn.style.display = "none";
+      }
+    });
+
+    // Also inject or display Admin Console link in dropdown navigation menu if staff
+    const dropdownCols = document.querySelectorAll(".nav-dropdown-col, nav.links");
+    dropdownCols.forEach(col => {
+      const heading = col.querySelector(".nav-category-title");
+      if (heading && (heading.textContent.includes("Franchises") || heading.textContent.includes("Media"))) {
+        let adminLink = col.querySelector(".nav-admin-dropdown-link");
+        if (isStaffUser) {
+          if (!adminLink) {
+            adminLink = document.createElement("a");
+            adminLink.href = "/admin/";
+            adminLink.className = "nav-admin-dropdown-link";
+            adminLink.style.cssText = "color:#fbbf24; font-weight:700;";
+            adminLink.innerHTML = `<span class="nav-icon">⚙</span> Admin Console ↗`;
+            col.appendChild(adminLink);
+          }
+          adminLink.style.display = "flex";
+        } else if (adminLink) {
+          adminLink.style.display = "none";
+        }
       }
     });
 
@@ -12689,12 +12781,14 @@ window.LadderDB = {
     if (squadHeaderEl) {
       if (player && player.gamertag) {
         const cleanPUserEmail = (player.email || "").toLowerCase().trim();
-        const isStaff = player.is_staff || player.is_commissioner || (cleanPUserEmail && (cleanPUserEmail === "todd061496@gmail.com" || cleanPUserEmail === "admin@frontlineleague.com")) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized");
+        const isStaff = player.is_staff || player.is_commissioner || (cleanPUserEmail && (cleanPUserEmail === "todd061496@gmail.com" || cleanPUserEmail === "admin@frontlineleague.com" || cleanPUserEmail.includes("invictus"))) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") || (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "commissioner"].some(cn => String(player.gamertag).toLowerCase().trim().includes(cn));
         const tag = isStaff ? (player.tag || "COMM") : (player.tag || "TAG");
         const badgeColor = isStaff ? "var(--lime, #d5f45b)" : "#ff1e44";
         const badgeText = isStaff ? "COMMISSIONER" : `${player.elo || 1200} ELO`;
         const linkTarget = isStaff ? "/profile/" : "/arena/profile/#my-teams";
         const linkTitle = isStaff ? "Signed in as League Commissioner — Open League Profile" : "View Active Teams";
+
+        const adminBtnHtml = isStaff ? `<a href="/admin/" class="btn-crimson arena-admin-console-pill" style="padding:7px 14px; font-size:11px; text-decoration:none; background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; margin-left:8px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 0 10px rgba(213,244,91,0.25);" title="Open Commissioner Admin Console"><span>⚙</span> <span>Admin Console</span></a>` : ``;
 
         squadHeaderEl.innerHTML = `
           <a href="${linkTarget}" class="gb-my-squad-pill" title="${linkTitle}" style="text-decoration:none;">
@@ -12704,6 +12798,7 @@ window.LadderDB = {
               <span style="color:${badgeColor}; font-size:11px; margin-left:4px; font-weight:800;">${badgeText}</span>
             </div>
           </a>
+          ${adminBtnHtml}
         `;
       } else {
         squadHeaderEl.innerHTML = `

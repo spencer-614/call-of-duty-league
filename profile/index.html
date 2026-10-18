@@ -973,16 +973,35 @@
         if (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
           isStaff = window.LeagueDB.isAccountAdmin(authUser);
         }
-        if (!isStaff && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com")) {
+        if (!isStaff && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("todd061496") || cleanEmail.includes("frontlineleague.com") || cleanEmail.includes("invictus"))) {
           isStaff = true;
         }
-        if (!isStaff && sessionStorage.getItem("frontline_admin_session") === "authorized") {
+        if (!isStaff && (sessionStorage.getItem("frontline_admin_session") === "authorized" || localStorage.getItem("frontline_admin_session") === "authorized")) {
+          isStaff = true;
+        }
+        const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+        const profileTag = String(authUser.user_metadata?.gamertag || authUser.gamertag || authUser.user_metadata?.username || authUser.user_metadata?.discord_username || "").toLowerCase().trim();
+        if (!isStaff && commishNames.some(cn => profileTag === cn || profileTag.includes(cn) || cn.includes(profileTag))) {
+          isStaff = true;
+        }
+        if (!isStaff && (authUser.is_commissioner || authUser.is_staff || authUser.user_metadata?.is_commissioner || authUser.user_metadata?.role === "commissioner")) {
           isStaff = true;
         }
         if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === "function") {
           try {
             isStaff = await window.LeagueDB.isAccountAdminAsync(authUser);
           } catch (e) {}
+        }
+
+        if (isStaff) {
+          try {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            localStorage.setItem("frontline_admin_session", "authorized");
+            if (cleanEmail) {
+              sessionStorage.setItem("frontline_admin_email", cleanEmail);
+              localStorage.setItem("frontline_admin_email", cleanEmail);
+            }
+          } catch(e) {}
         }
 
         // Validate cached player card: ONLY accept if it strictly belongs to THIS user

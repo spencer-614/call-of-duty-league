@@ -825,9 +825,15 @@
 
           // Staff / Commissioner Recognition in Arena Profile
           const cleanEmail = (player.email || "").toLowerCase().trim();
-          let isStaff = player.is_staff || player.tier === "Commissioner" || player.tag === "COMM" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || (sessionStorage.getItem("frontline_admin_session") === "authorized");
+          let isStaff = player.is_staff || player.is_commissioner || player.tier === "Commissioner" || player.tag === "COMM" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("invictus") || (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "commissioner"].some(cn => String(player.gamertag || "").toLowerCase().trim().includes(cn));
           if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
             isStaff = window.LeagueDB.isAccountAdmin(player);
+          }
+          if (isStaff) {
+            try {
+              sessionStorage.setItem("frontline_admin_session", "authorized");
+              localStorage.setItem("frontline_admin_session", "authorized");
+            } catch(e) {}
           }
 
           const commBanner = document.getElementById("arena-commissioner-banner");
