@@ -3862,7 +3862,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=late-byes-20261017"></script>
+    <script src="/supabase.js?v=dummy-teams-20261017b"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -10035,25 +10035,54 @@
 
           showToast(`⏳ Generating ${count} dummy squads with complete rosters...`);
           try {
+            let res = null;
             if (window.LeagueDB && typeof window.LeagueDB.generateDummyTournamentSquads === "function") {
-              const res = await window.LeagueDB.generateDummyTournamentSquads(tId, count);
-              if (res && res.success) {
-                showToast(`✓ Generated ${res.count} test dummy squads!`);
-                const resolvedTitle = activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
-                const regsModal = document.getElementById("modal-view-tourney-registrations");
-                if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
-                  await adminViewTourneyRegistrations(tId, resolvedTitle);
-                }
-                const bracketModal = document.getElementById("modal-admin-bracket-manager");
-                if (bracketModal && (bracketModal.open || bracketModal.hasAttribute("open"))) {
-                  await adminManageBracket(tId, resolvedTitle);
-                }
-                await loadAdminTournaments();
-              } else {
-                showToast(res?.error || "Failed to generate dummy squads.", true);
+              res = await window.LeagueDB.generateDummyTournamentSquads(tId, count);
+            } else if (window.LeagueDB && typeof window.LeagueDB.adminRegisterTournamentSquad === "function") {
+              // Resilient inline generator fallback
+              const CDL_SAMPLE_NAMES = [
+                "Atlanta FaZe", "OpTic Texas", "Toronto Ultra", "New York Subliners",
+                "Seattle Surge", "Miami Heretics", "Los Angeles Thieves", "Boston Breach",
+                "Vegas Legion", "Carolina Royal Ravens", "Minnesota RØKKR", "Los Angeles Guerrillas",
+                "London Royal Ravens", "Paris Legion", "Dallas Empire", "Chicago Huntsmen"
+              ];
+              const SAMPLE_CAPTAINS = [
+                "Simp", "Shotzhy", "Scump", "Insight", "HyDra",
+                "Abuzah", "Vikul", "Ghosty", "Snoopy", "Attach",
+                "Gwinn", "Accuracy", "Clayster", "Crimsix", "FormaL", "Dashy"
+              ];
+              const created = [];
+              for (let i = 0; i < count; i++) {
+                const baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
+                const teamName = `${baseName} (Dummy ${i + 1})`;
+                const captain = `${SAMPLE_CAPTAINS[i % SAMPLE_CAPTAINS.length]}_Bot${i + 1}`;
+                const r = await window.LeagueDB.adminRegisterTournamentSquad(tId, {
+                  team_name: teamName,
+                  captain_gamertag: captain,
+                  captain_discord: `${captain.toLowerCase()}#0000`,
+                  captain_activision_id: `${captain}#CDLTest`,
+                  roster: [`Bot_${i + 1}A`, `Bot_${i + 1}B`, `Bot_${i + 1}C`],
+                  is_dummy_team: true
+                });
+                if (r && r.success) created.push(teamName);
               }
+              res = { success: true, count: created.length };
+            }
+
+            if (res && res.success) {
+              showToast(`✓ Generated ${res.count} test dummy squads!`);
+              const resolvedTitle = activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
+              const regsModal = document.getElementById("modal-view-tourney-registrations");
+              if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
+                await adminViewTourneyRegistrations(tId, resolvedTitle);
+              }
+              const bracketModal = document.getElementById("modal-admin-bracket-manager");
+              if (bracketModal && (bracketModal.open || bracketModal.hasAttribute("open"))) {
+                await adminManageBracket(tId, resolvedTitle);
+              }
+              await loadAdminTournaments();
             } else {
-              showToast("Dummy team generator service unavailable.", true);
+              showToast(res?.error || "Failed to generate dummy squads.", true);
             }
           } catch (err) {
             console.error("adminPromptGenerateDummySquads error:", err);
@@ -10072,23 +10101,39 @@
 
           showToast("⏳ Removing dummy squads...");
           try {
+            let res = null;
             if (window.LeagueDB && typeof window.LeagueDB.clearDummyTournamentSquads === "function") {
-              const res = await window.LeagueDB.clearDummyTournamentSquads(tId);
-              if (res && res.success) {
-                showToast(`✓ Removed ${res.count} dummy test squads.`);
-                const resolvedTitle = activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
-                const regsModal = document.getElementById("modal-view-tourney-registrations");
-                if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
-                  await adminViewTourneyRegistrations(tId, resolvedTitle);
-                }
-                const bracketModal = document.getElementById("modal-admin-bracket-manager");
-                if (bracketModal && (bracketModal.open || bracketModal.hasAttribute("open"))) {
-                  await adminManageBracket(tId, resolvedTitle);
-                }
-                await loadAdminTournaments();
-              } else {
-                showToast(res?.error || "Could not clear dummy squads.", true);
+              res = await window.LeagueDB.clearDummyTournamentSquads(tId);
+            } else if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === "function") {
+              const regs = await window.LeagueDB.getTournamentRegistrations(tId);
+              const dummyRegs = regs.filter(r => {
+                const n = String(r.team_name || "").toLowerCase();
+                const c = String(r.captain_gamertag || "").toLowerCase();
+                return r.is_dummy_team || n.includes("dummy") || c.includes("bot") || n.includes("bot");
+              });
+              let removed = 0;
+              for (const reg of dummyRegs) {
+                const r = await window.LeagueDB.deleteTournamentRegistration(reg.id, tId);
+                if (r && r.success) removed++;
               }
+              res = { success: true, count: removed };
+            }
+
+            if (res && res.success) {
+              showToast(`✓ Removed ${res.count} dummy test squads.`);
+              const resolvedTitle = activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
+              const regsModal = document.getElementById("modal-view-tourney-registrations");
+              if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
+                await adminViewTourneyRegistrations(tId, resolvedTitle);
+              }
+              const bracketModal = document.getElementById("modal-admin-bracket-manager");
+              if (bracketModal && (bracketModal.open || bracketModal.hasAttribute("open"))) {
+                await adminManageBracket(tId, resolvedTitle);
+              }
+              await loadAdminTournaments();
+            } else {
+              showToast(res?.error || "Could not clear dummy squads.", true);
+            }
             }
           } catch (err) {
             console.error("adminPromptClearDummySquads error:", err);
