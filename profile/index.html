@@ -668,14 +668,6 @@
           return;
         }
 
-        const path = window.location.pathname || "";
-        if (path.includes("/profile")) {
-          const prefix = path.substring(0, path.indexOf("/profile"));
-          if (prefix && prefix !== "/") {
-            window.location.href = prefix + "/admin/";
-            return;
-          }
-        }
         window.location.href = "/admin/";
       }
       window.openLeagueAdminConsole = openLeagueAdminConsole;

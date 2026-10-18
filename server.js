@@ -88,7 +88,7 @@ HIERARCHY_ROUTES.forEach(route => {
 });
 
 // Admin panel explicit route (/admin, /admin/, and /admin.html all serve admin.html directly)
-app.get(["/admin", "/admin/", "/admin.html"], (req, res) => {
+app.get(["/admin", "/admin/", "/admin.html", "/arena/admin", "/arena/admin/"], (req, res) => {
   res.sendFile(path.resolve(__dirname, "admin.html"));
 });
 

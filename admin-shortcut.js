@@ -49,13 +49,6 @@
         }
         return;
       }
-      const p = loc.pathname || "";
-      if (p.includes("/profile") || p.includes("/arena/") || p.includes("/teams/") || p.includes("/players/")) {
-        const seg = p.split("/").filter(Boolean);
-        if (seg.length > 1 && seg[0] !== "admin") {
-          loc.href = "/" + seg[0] + "/admin/";
-        }
-      }
       loc.href = "/admin/";
     } catch (err) {
       window.location.href = "/admin/";
