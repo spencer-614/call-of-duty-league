@@ -3220,8 +3220,8 @@
           <h3 class="admin-modal-title" id="tourney-reg-modal-title" style="margin:0; font:800 20px var(--display);">Tournament Registrations</h3>
         </div>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <button type="button" class="btn-action-sm" id="btn-modal-generate-dummy-squads" style="background:rgba(251,191,36,0.12); border-color:#fbbf24; color:#fbbf24; font-weight:800;" onclick="adminPromptGenerateDummySquads(activeAdminTourneyId)">🤖 + Generate Dummy Teams</button>
-          <button type="button" class="btn-action-sm" id="btn-modal-clear-dummy-squads" style="background:rgba(239,68,68,0.12); border-color:#ef4444; color:#f87171; font-weight:800;" onclick="adminPromptClearDummySquads(activeAdminTourneyId)">🗑 Clear Dummy Teams</button>
+          <button type="button" class="btn-action-sm" id="btn-modal-generate-dummy-squads" style="background:rgba(251,191,36,0.12); border-color:#fbbf24; color:#fbbf24; font-weight:800;" onclick="adminPromptGenerateDummySquads()">🤖 + Generate Dummy Teams</button>
+          <button type="button" class="btn-action-sm" id="btn-modal-clear-dummy-squads" style="background:rgba(239,68,68,0.12); border-color:#ef4444; color:#f87171; font-weight:800;" onclick="adminPromptClearDummySquads()">🗑 Clear Dummy Teams</button>
           <button type="button" class="btn-action-sm" id="btn-modal-open-admin-register-squad" style="background:#22c55e; border-color:#22c55e; color:#0b1109; font-weight:800;" onclick="openAdminRegisterSquadModal()">+ Admin Register Squad</button>
           <button type="button" class="btn-action-sm" onclick="document.getElementById('modal-view-tourney-registrations').close()">✕ Close</button>
         </div>
@@ -9283,6 +9283,10 @@
 
           activeAdminTourneyId = tourneyId;
           activeAdminTourneyTitle = tourneyTitle || "Tournament";
+          window.activeAdminTourneyId = tourneyId;
+          window.activeAdminTourneyTitle = tourneyTitle || "Tournament";
+          modal.dataset.tourneyId = tourneyId;
+          modal.dataset.tourneyTitle = tourneyTitle || "Tournament";
 
           const openBracketBtn = document.getElementById("btn-modal-open-bracket-from-regs");
           if (openBracketBtn) {
@@ -9810,9 +9814,10 @@
         window.adminRegenerateBracketAction = adminRegenerateBracketAction;
 
         async function adminPromptGenerateDummySquads(tourneyId) {
-          const tId = tourneyId || activeAdminTourneyId;
+          const regsModal = document.getElementById("modal-view-tourney-registrations");
+          const tId = tourneyId || window.activeAdminTourneyId || (typeof activeAdminTourneyId !== "undefined" ? activeAdminTourneyId : null) || regsModal?.dataset?.tourneyId;
           if (!tId) {
-            showToast("No active tournament selected.", true);
+            showToast("No active tournament selected. Please close and re-open the tournament squads modal.", true);
             return;
           }
           const promptCount = prompt("How many dummy test teams would you like to generate? (e.g. 4, 8, 11, or 16)", "8");
@@ -9832,8 +9837,7 @@
 
             if (res && res.success) {
               showToast(`✓ Generated ${res.count} test dummy squads!`);
-              const resolvedTitle = activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
-              const regsModal = document.getElementById("modal-view-tourney-registrations");
+              const resolvedTitle = window.activeAdminTourneyTitle || activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
               if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
                 await adminViewTourneyRegistrations(tId, resolvedTitle);
               }
@@ -9853,9 +9857,10 @@
         window.adminPromptGenerateDummySquads = adminPromptGenerateDummySquads;
 
         async function adminPromptClearDummySquads(tourneyId) {
-          const tId = tourneyId || activeAdminTourneyId;
+          const regsModal = document.getElementById("modal-view-tourney-registrations");
+          const tId = tourneyId || window.activeAdminTourneyId || (typeof activeAdminTourneyId !== "undefined" ? activeAdminTourneyId : null) || regsModal?.dataset?.tourneyId;
           if (!tId) {
-            showToast("No active tournament selected.", true);
+            showToast("No active tournament selected. Please close and re-open the tournament squads modal.", true);
             return;
           }
           if (!confirm("Are you sure you want to remove all generated dummy/bot test squads from this tournament?")) return;
@@ -9869,7 +9874,7 @@
 
             if (res && res.success) {
               showToast(`✓ Removed ${res.count} dummy test squads.`);
-              const resolvedTitle = activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
+              const resolvedTitle = window.activeAdminTourneyTitle || activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
               const regsModal = document.getElementById("modal-view-tourney-registrations");
               if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
                 await adminViewTourneyRegistrations(tId, resolvedTitle);
@@ -9888,6 +9893,15 @@
           }
         }
         window.adminPromptClearDummySquads = adminPromptClearDummySquads;
+
+        document.getElementById("btn-modal-generate-dummy-squads")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          adminPromptGenerateDummySquads();
+        });
+        document.getElementById("btn-modal-clear-dummy-squads")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          adminPromptClearDummySquads();
+        });
 
         // Initial preview update
         updateTournamentPreview();
