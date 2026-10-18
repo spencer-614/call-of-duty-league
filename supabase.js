@@ -206,6 +206,21 @@ if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) 
           localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
           window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: session.user } }));
           window.dispatchEvent(new CustomEvent("frontline_arena_auth_changed", { detail: { user: session.user } }));
+
+          if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+            setTimeout(() => {
+              const leagueDB = window.LeagueDB;
+              if (leagueDB && typeof leagueDB.syncDiscordStaffIdentity === "function") {
+                leagueDB.syncDiscordStaffIdentity(session.user).then(result => {
+                  if (!result.success) {
+                    console.warn("Discord staff identity sync failed:", result.error);
+                  }
+                }).catch(err => {
+                  console.error("Discord staff identity sync error:", err);
+                });
+              }
+            }, 0);
+          }
         } catch(e) {}
       } else if (event === "SIGNED_OUT") {
         try {
@@ -10228,6 +10243,34 @@ isDiscordLinkedToEmail(target) {
     } catch (e) {}
 
     return MOCK_DATA.staffRoles || [];
+  },
+
+  async syncDiscordStaffIdentity(authUser) {
+    const isDiscordUser = authUser?.app_metadata?.provider === "discord" ||
+      (Array.isArray(authUser?.app_metadata?.providers) && authUser.app_metadata.providers.includes("discord")) ||
+      (Array.isArray(authUser?.identities) && authUser.identities.some(identity => identity.provider === "discord"));
+    if (!isDiscordUser) return { success: true, synced: false };
+    if (!dbClient) return { success: false, error: "Supabase is unavailable; Discord staff identity was not synced." };
+
+    try {
+      const { data, error } = await dbClient.rpc("sync_my_discord_staff_identity");
+      if (error) {
+        console.error("Supabase Discord staff identity sync error:", error);
+        return { success: false, error: error.message || "Discord staff identity sync failed." };
+      }
+
+      if (data === true) {
+        this._staffAccess = null;
+        await this.getAllStaffMembers();
+        window.dispatchEvent(new CustomEvent("frontline_staff_identity_synced", {
+          detail: { userId: authUser.id, email: authUser.email }
+        }));
+      }
+      return { success: true, synced: data === true };
+    } catch (err) {
+      console.error("Discord staff identity sync network error:", err);
+      return { success: false, error: err.message || String(err) };
+    }
   },
 
   async saveStaffRole(staffData) {
