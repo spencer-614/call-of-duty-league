@@ -4588,16 +4588,18 @@
           let tourneyList = [];
 
           try {
-            const [staffRes, playersRes, signupsRes, tourneyRes] = await Promise.all([
+            const [staffRes, playersRes, signupsRes, tourneyRes, authUsersRes] = await Promise.all([
               window.LeagueDB?.getAllStaffMembers ? window.LeagueDB.getAllStaffMembers() : Promise.resolve([]),
               (cachedPlayers && cachedPlayers.length > 0) ? Promise.resolve(cachedPlayers) : (window.LeagueDB?.getPlayers ? window.LeagueDB.getPlayers() : Promise.resolve([])),
               (cachedSignups && cachedSignups.length > 0) ? Promise.resolve(cachedSignups) : (window.LeagueDB?.getSignups ? window.LeagueDB.getSignups() : Promise.resolve([])),
-              window.LeagueDB?.getTournamentPlayers ? window.LeagueDB.getTournamentPlayers() : Promise.resolve([])
+              window.LeagueDB?.getTournamentPlayers ? window.LeagueDB.getTournamentPlayers() : Promise.resolve([]),
+              window.LeagueDB?.getAuthDirectory ? window.LeagueDB.getAuthDirectory() : Promise.resolve([])
             ]);
             staffList = staffRes || [];
             playersList = playersRes || [];
             signupsList = signupsRes || [];
             tourneyList = tourneyRes || [];
+            var authUsersList = authUsersRes || [];
           } catch(e) {
             console.warn("Error gathering user roster data:", e);
           }
@@ -4632,6 +4634,11 @@
             if (gamertag) emailByGamertag.set(gamertag.toLowerCase().trim(), clean);
             if (discordHandle) emailByDiscordHandle.set(discordHandle.toLowerCase().trim(), clean);
           }
+
+          // Authoritative Auth Users from Supabase Auth (Discord verified accounts)
+          (authUsersList || []).forEach(u => {
+            registerRealEmail(u.email, { userId: u.user_id, discordId: u.discord_id, gamertag: u.gamertag, discordHandle: u.discord_name });
+          });
 
           (tourneyList || []).forEach(t => {
             registerRealEmail(t.email, { userId: t.user_id, discordId: t.discord_id, gamertag: t.gamertag, discordHandle: t.discord_name });
@@ -4698,13 +4705,13 @@
             }
 
             const hasRealEmail = !!rawEmail && (!rawEmail.endsWith("@frontlineleague.com") || rawEmail === "admin@frontlineleague.com");
-            const safeUserId = (hasRealEmail && validUserId) ? validUserId : null;
+            const safeUserId = validUserId || null;
 
             // Filter out tactical player roles (AR, SMG, Flex) from staff roles
             const staffRole = (candidate.role && VALID_STAFF_ROLES.includes(candidate.role)) ? candidate.role : 
                               (candidate.staff_role && VALID_STAFF_ROLES.includes(candidate.staff_role) ? candidate.staff_role : null);
 
-            if (!rawEmail && !gamertag && !discord) return;
+            if (!rawEmail && !gamertag && !discord && !safeUserId) return;
 
             // Find existing record by email, user_id, discord_id, gamertag, or discord handle
             let existing = null;
@@ -4731,7 +4738,7 @@
               }
             }
 
-            const primaryKey = rawEmail || (gamertag ? `gt_${gamertag.toLowerCase()}` : `usr_${Date.now()}_${Math.random()}`);
+            const primaryKey = rawEmail || (gamertag ? `gt_${gamertag.toLowerCase()}` : (safeUserId ? `uid_${safeUserId}` : `usr_${Date.now()}_${Math.random()}`));
 
             if (existing) {
               if ((!existing.hasRealEmail || !existing.email) && rawEmail) {
@@ -4754,7 +4761,7 @@
             } else {
               staffUsersMap.set(primaryKey, {
                 key: primaryKey,
-                email: rawEmail || (gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : ""),
+                email: rawEmail || "",
                 hasRealEmail: hasRealEmail,
                 gamertag: gamertag || (rawEmail ? rawEmail.split("@")[0] : (discord || "Combatant")),
                 discord: discord,
@@ -4773,6 +4780,19 @@
           }
 
           try {
+            // 0. Discord Verified Auth Users (directly from auth.users via RPC)
+            const safeAuthUsersList = Array.isArray(authUsersList) ? authUsersList : [];
+            safeAuthUsersList.forEach(u => {
+              mergeCandidateUser({
+                user_id: u.user_id,
+                email: u.email,
+                gamertag: u.gamertag,
+                discord: u.discord_name,
+                discord_id: u.discord_id,
+                category: "Discord Account"
+              });
+            });
+
             // 1. Staff Members (from staff_roles table in Supabase)
             const safeStaffList = Array.isArray(staffList) ? staffList : [];
             safeStaffList.forEach(s => {
@@ -4959,7 +4979,7 @@
                         ${isSelf ? `<span style="font-size:10.5px; color:var(--lime); font-weight:bold;">(You)</span>` : ''}
                       </div>
                       <div style="font-size:11.5px; color:var(--muted); margin-top:1px;">
-                        ${escapeHtml(item.hasRealEmail ? item.email : (item.email || 'No email registered'))}
+                        ${escapeHtml(item.hasRealEmail ? item.email : (item.email && !item.email.endsWith('@frontlineleague.com') ? item.email : (item.discord || item.category === 'Discord Account' ? 'Discord Account' : 'Standard Member')))}
                         ${item.discord ? ` · <span style="color:#7983f5;">Discord: ${escapeHtml(item.discord)}</span>` : ''}
                         ${item.team ? ` · <span style="color:#38bdf8;">[${escapeHtml(item.team)}]</span>` : ''}
                       </div>
@@ -5140,7 +5160,7 @@
                 const res = await window.LeagueDB.saveStaffRole({
                   email: user.email,
                   hasRealEmail: user.hasRealEmail,
-                  user_id: user.hasRealEmail ? (user.user_id || null) : null,
+                  user_id: user.user_id || null,
                   discord: user.discord || null,
                   discord_id: user.discord_id || null,
                   gamertag: user.gamertag,
@@ -5320,7 +5340,7 @@
           const res = await window.LeagueDB.saveStaffRole({
             email: user.email,
             hasRealEmail: user.hasRealEmail,
-            user_id: user.hasRealEmail ? (user.user_id || null) : null,
+            user_id: user.user_id || null,
             discord: user.discord || null,
             discord_id: user.discord_id || null,
             gamertag: user.gamertag,

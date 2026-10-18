@@ -8450,7 +8450,7 @@ if (dbClient && cleanPayload.user_id) {
     const pathname = typeof window !== "undefined" ? window.location.pathname : "";
     const rawTarget = redirectUrl || (origin + pathname);
     const targetRedirect = rawTarget.split("#")[0]; // Clean any existing fragment
-    const directOAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(targetRedirect)}`;
+    const directOAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(targetRedirect)}&scopes=identify+email`;
 
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.setItem("frontline_discord_oauth_pending", "true");
@@ -10280,6 +10280,20 @@ isDiscordLinkedToEmail(target) {
     return MOCK_DATA.staffRoles || [];
   },
 
+  async getAuthDirectory() {
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient.rpc("get_auth_directory");
+        if (!error && Array.isArray(data)) {
+          return data;
+        }
+      } catch (err) {
+        console.warn("getAuthDirectory RPC notice:", err?.message || err);
+      }
+    }
+    return [];
+  },
+
   async syncDiscordAuthAccount(authUser) {
     if (!authUser || !authUser.id) return { success: false, error: "No authenticated user provided." };
     const discordInfo = this.getDiscordIdentity(authUser);
@@ -10531,6 +10545,32 @@ isDiscordLinkedToEmail(target) {
     }
 
     if (dbClient) {
+      // 1. Try secure RPC function (auto-aligns UUID & verified Discord email)
+      try {
+        const { data: rpcData, error: rpcErr } = await dbClient.rpc("admin_assign_staff_role", {
+          target_email: cleanEmail,
+          target_role: staffData.role || "referee",
+          target_display_name: staffData.display_name?.trim() || staffData.gamertag || cleanEmail.split("@")[0],
+          target_user_id: (staffData.user_id && this._isValidUUID(staffData.user_id)) ? staffData.user_id : null,
+          target_discord: staffData.discord || null,
+          target_discord_id: staffData.discord_id ? String(staffData.discord_id) : null,
+          target_gamertag: staffData.gamertag || null,
+          target_permissions: staffData.custom_permissions || null,
+          target_notes: notesParts.join(" · ") || null
+        });
+
+        if (!rpcErr && rpcData?.success) {
+          await this.getAllStaffMembers();
+          return { success: true, data: rpcData.staff_role || rpcData };
+        }
+        if (rpcErr && !rpcErr.message?.includes("function") && !rpcErr.message?.includes("does not exist")) {
+          console.warn("admin_assign_staff_role RPC notice, falling back to direct upsert:", rpcErr);
+        }
+      } catch (rpcExc) {
+        console.warn("admin_assign_staff_role exception:", rpcExc);
+      }
+
+      // 2. Direct table upsert fallback
       try {
         let { data, error } = await dbClient
           .from("staff_roles")

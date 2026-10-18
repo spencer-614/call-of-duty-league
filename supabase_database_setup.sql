@@ -617,6 +617,358 @@ CREATE INDEX IF NOT EXISTS idx_tournament_suspensions_active ON public.tournamen
 ALTER TABLE public.tournament_suspensions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all tournament_suspensions" ON public.tournament_suspensions;
 CREATE POLICY "Allow public all tournament_suspensions" ON public.tournament_suspensions FOR ALL USING (true) WITH CHECK (true);
+-- ==============================================================================
+-- DISCORD AUTH IDENTITY & STAFF SYNC (V2)
+-- ==============================================================================
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS discord_name TEXT;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS discord_id TEXT;
+ALTER TABLE public.players ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
+ALTER TABLE public.tournament_players ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.tournament_players ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.tournament_players ADD COLUMN IF NOT EXISTS discord_name TEXT;
+ALTER TABLE public.tournament_players ADD COLUMN IF NOT EXISTS discord_id TEXT;
+ALTER TABLE public.tournament_players ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
+ALTER TABLE public.league_signups ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.league_signups ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.league_signups ADD COLUMN IF NOT EXISTS discord_username TEXT;
+ALTER TABLE public.league_signups ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
 
+ALTER TABLE public.staff_roles ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.staff_roles ADD COLUMN IF NOT EXISTS custom_permissions JSONB;
+ALTER TABLE public.staff_roles ADD COLUMN IF NOT EXISTS notes TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_players_email ON public.players(LOWER(email));
+CREATE INDEX IF NOT EXISTS idx_players_user_id ON public.players(user_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_players_email ON public.tournament_players(LOWER(email));
+CREATE INDEX IF NOT EXISTS idx_tournament_players_user_id ON public.tournament_players(user_id);
+CREATE INDEX IF NOT EXISTS idx_staff_roles_email ON public.staff_roles(LOWER(email));
+CREATE INDEX IF NOT EXISTS idx_staff_roles_user_id ON public.staff_roles(user_id);
+
+-- Drop legacy/conflicting triggers on staff_roles
+DO $$
+DECLARE
+    trg RECORD;
+BEGIN
+    FOR trg IN (
+        SELECT trigger_name 
+        FROM information_schema.triggers 
+        WHERE event_object_schema = 'public' 
+          AND event_object_table = 'staff_roles'
+          AND trigger_name ~* 'auth|check|validate'
+    ) LOOP
+        EXECUTE 'DROP TRIGGER IF EXISTS ' || quote_ident(trg.trigger_name) || ' ON public.staff_roles;';
+    END LOOP;
+END $$;
+
+-- Smart trigger to auto-align Staff Role Auth & Prevent Mismatch Exceptions
+CREATE OR REPLACE FUNCTION public.align_staff_role_auth()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, auth
+AS $$
+DECLARE
+    v_auth_email TEXT;
+    v_auth_id UUID;
+BEGIN
+    IF NEW.user_id IS NOT NULL THEN
+        SELECT LOWER(BTRIM(u.email)), u.id
+        INTO v_auth_email, v_auth_id
+        FROM auth.users u
+        WHERE u.id = NEW.user_id;
+
+        IF v_auth_email IS NOT NULL AND (NEW.email IS NULL OR NEW.email = '' OR NEW.email LIKE '%@frontlineleague.com' OR LOWER(BTRIM(NEW.email)) <> v_auth_email) THEN
+            NEW.email := v_auth_email;
+        END IF;
+    ELSIF NEW.email IS NOT NULL AND NEW.email NOT LIKE '%@frontlineleague.com' THEN
+        SELECT u.id
+        INTO v_auth_id
+        FROM auth.users u
+        WHERE LOWER(BTRIM(u.email)) = LOWER(BTRIM(NEW.email))
+        LIMIT 1;
+
+        IF v_auth_id IS NOT NULL THEN
+            NEW.user_id := v_auth_id;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_align_staff_role_auth ON public.staff_roles;
+CREATE TRIGGER tr_align_staff_role_auth
+    BEFORE INSERT OR UPDATE ON public.staff_roles
+    FOR EACH ROW
+    EXECUTE FUNCTION public.align_staff_role_auth();
+
+-- Auto trigger on auth.users for Discord OAuth
+CREATE OR REPLACE FUNCTION public.handle_auth_user_sync()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, auth
+AS $$
+DECLARE
+    clean_email TEXT;
+    clean_discord_id TEXT;
+    clean_gamertag TEXT;
+    clean_discord_name TEXT;
+    clean_avatar TEXT;
+BEGIN
+    clean_email := LOWER(BTRIM(NEW.email));
+    IF clean_email IS NULL OR clean_email = '' THEN
+        RETURN NEW;
+    END IF;
+
+    clean_discord_id := COALESCE(
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'provider_id'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'discord_user_id'), ''),
+        (
+            SELECT COALESCE(
+                discord_identity ->> 'id',
+                discord_identity ->> 'user_id',
+                discord_identity -> 'identity_data' ->> 'id'
+            )
+            FROM JSONB_ARRAY_ELEMENTS(COALESCE(NEW.identities, '[]'::JSONB)) AS identities(discord_identity)
+            WHERE discord_identity ->> 'provider' = 'discord'
+            LIMIT 1
+        )
+    );
+    IF clean_discord_id !~ '^[0-9]{5,25}$' THEN
+        clean_discord_id := NULL;
+    END IF;
+
+    clean_gamertag := COALESCE(
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'gamertag'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'username'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'name'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'full_name'), ''),
+        split_part(clean_email, '@', 1)
+    );
+
+    clean_discord_name := COALESCE(
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'discord_name'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'discord_username'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'user_name'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data -> 'custom_claims' ->> 'global_name'), ''),
+        clean_gamertag
+    );
+
+    clean_avatar := COALESCE(
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'avatar_url'), ''),
+        NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'picture'), ''),
+        ''
+    );
+
+    UPDATE public.players
+    SET email = clean_email,
+        user_id = NEW.id,
+        discord_name = COALESCE(NULLIF(players.discord_name, ''), clean_discord_name),
+        avatar_url = CASE WHEN players.avatar_url IS NULL OR players.avatar_url = '' THEN clean_avatar ELSE players.avatar_url END
+    WHERE user_id = NEW.id
+       OR (clean_gamertag IS NOT NULL AND LOWER(BTRIM(gamertag)) = LOWER(BTRIM(clean_gamertag)))
+       OR (clean_discord_name IS NOT NULL AND LOWER(BTRIM(discord_name)) = LOWER(BTRIM(clean_discord_name)));
+
+    UPDATE public.tournament_players
+    SET email = clean_email,
+        user_id = NEW.id,
+        discord_id = COALESCE(tournament_players.discord_id, clean_discord_id),
+        discord_name = COALESCE(tournament_players.discord_name, clean_discord_name),
+        avatar_url = CASE WHEN tournament_players.avatar_url IS NULL OR tournament_players.avatar_url = '' THEN clean_avatar ELSE tournament_players.avatar_url END
+    WHERE user_id = NEW.id
+       OR (clean_discord_id IS NOT NULL AND tournament_players.discord_id = clean_discord_id)
+       OR (clean_gamertag IS NOT NULL AND LOWER(BTRIM(gamertag)) = LOWER(BTRIM(clean_gamertag)))
+       OR (clean_discord_name IS NOT NULL AND LOWER(BTRIM(discord_name)) = LOWER(BTRIM(clean_discord_name)));
+
+    UPDATE public.league_signups
+    SET user_id = NEW.id,
+        email = clean_email,
+        discord_user_id = COALESCE(league_signups.discord_user_id, clean_discord_id)
+    WHERE user_id = NEW.id
+       OR (clean_discord_id IS NOT NULL AND league_signups.discord_user_id = clean_discord_id)
+       OR (clean_gamertag IS NOT NULL AND LOWER(BTRIM(gamertag)) = LOWER(BTRIM(clean_gamertag)));
+
+    UPDATE public.staff_roles
+    SET user_id = NEW.id,
+        email = clean_email,
+        updated_at = NOW()
+    WHERE user_id = NEW.id
+       OR LOWER(BTRIM(email)) = clean_email
+       OR (clean_discord_id IS NOT NULL AND notes ~* ('(^|[^0-9])DiscordID:[[:space:]]*' || clean_discord_id || '([^0-9]|$)'))
+       OR (clean_discord_name IS NOT NULL AND notes ~* ('(^|[^a-z0-9_])Discord:[[:space:]]*@?' || clean_discord_name || '([^a-z0-9_]|$)'))
+       OR (clean_gamertag IS NOT NULL AND (
+             LOWER(BTRIM(display_name)) = LOWER(BTRIM(clean_gamertag))
+             OR notes ~* ('(^|[^a-z0-9_])Gamertag:[[:space:]]*' || clean_gamertag || '([^a-z0-9_]|$)')
+          ));
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_auth_user_sync_identity ON auth.users;
+CREATE TRIGGER tr_auth_user_sync_identity
+    AFTER INSERT OR UPDATE OF email, raw_user_meta_data ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_auth_user_sync();
+
+-- RPC Functions
+CREATE OR REPLACE FUNCTION public.get_auth_directory()
+RETURNS TABLE (
+    user_id UUID,
+    email TEXT,
+    gamertag TEXT,
+    discord_name TEXT,
+    discord_id TEXT,
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, auth
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        u.id AS user_id,
+        LOWER(BTRIM(u.email)) AS email,
+        COALESCE(
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'gamertag'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'username'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'name'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'full_name'), ''),
+            split_part(u.email, '@', 1)
+        ) AS gamertag,
+        COALESCE(
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'discord_name'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'discord_username'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'user_name'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data -> 'custom_claims' ->> 'global_name'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'gamertag'), '')
+        ) AS discord_name,
+        COALESCE(
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'provider_id'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'discord_user_id'), ''),
+            (
+                SELECT COALESCE(
+                    discord_identity ->> 'id',
+                    discord_identity ->> 'user_id',
+                    discord_identity -> 'identity_data' ->> 'id'
+                )
+                FROM JSONB_ARRAY_ELEMENTS(COALESCE(u.identities, '[]'::JSONB)) AS identities(discord_identity)
+                WHERE discord_identity ->> 'provider' = 'discord'
+                LIMIT 1
+            )
+        ) AS discord_id,
+        COALESCE(
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'avatar_url'), ''),
+            NULLIF(BTRIM(u.raw_user_meta_data ->> 'picture'), ''),
+            ''
+        ) AS avatar_url,
+        u.created_at
+    FROM auth.users AS u
+    WHERE u.email IS NOT NULL AND u.email <> ''
+    ORDER BY u.created_at DESC;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_auth_directory() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_auth_directory() TO authenticated, anon;
+
+CREATE OR REPLACE FUNCTION public.admin_assign_staff_role(
+    target_email TEXT,
+    target_role TEXT,
+    target_display_name TEXT DEFAULT NULL,
+    target_user_id UUID DEFAULT NULL,
+    target_discord TEXT DEFAULT NULL,
+    target_discord_id TEXT DEFAULT NULL,
+    target_gamertag TEXT DEFAULT NULL,
+    target_permissions JSONB DEFAULT NULL,
+    target_notes TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, auth
+AS $$
+DECLARE
+    resolved_email TEXT;
+    resolved_user_id UUID;
+    resolved_name TEXT;
+    notes_str TEXT;
+    saved_role RECORD;
+BEGIN
+    resolved_email := LOWER(BTRIM(target_email));
+    resolved_user_id := target_user_id;
+
+    IF resolved_user_id IS NOT NULL THEN
+        SELECT LOWER(BTRIM(email)) INTO resolved_email
+        FROM auth.users WHERE id = resolved_user_id;
+    END IF;
+
+    IF resolved_user_id IS NULL THEN
+        IF resolved_email IS NOT NULL AND resolved_email NOT LIKE '%@frontlineleague.com' THEN
+            SELECT id INTO resolved_user_id FROM auth.users WHERE LOWER(BTRIM(email)) = resolved_email LIMIT 1;
+        END IF;
+
+        IF resolved_user_id IS NULL AND target_discord_id IS NOT NULL AND target_discord_id <> '' THEN
+            SELECT u.id, LOWER(BTRIM(u.email)) INTO resolved_user_id, resolved_email
+            FROM auth.users u
+            WHERE u.raw_user_meta_data ->> 'provider_id' = target_discord_id
+               OR u.raw_user_meta_data ->> 'discord_user_id' = target_discord_id
+            LIMIT 1;
+        END IF;
+
+        IF resolved_user_id IS NULL AND target_gamertag IS NOT NULL AND target_gamertag <> '' THEN
+            SELECT u.id, LOWER(BTRIM(u.email)) INTO resolved_user_id, resolved_email
+            FROM auth.users u
+            WHERE LOWER(BTRIM(u.raw_user_meta_data ->> 'gamertag')) = LOWER(BTRIM(target_gamertag))
+               OR LOWER(BTRIM(u.raw_user_meta_data ->> 'username')) = LOWER(BTRIM(target_gamertag))
+            LIMIT 1;
+        END IF;
+    END IF;
+
+    IF resolved_email IS NULL OR resolved_email = '' THEN
+        resolved_email := LOWER(BTRIM(target_email));
+    END IF;
+
+    resolved_name := COALESCE(NULLIF(BTRIM(target_display_name), ''), target_gamertag, target_discord, split_part(resolved_email, '@', 1));
+
+    notes_str := COALESCE(NULLIF(BTRIM(target_notes), ''), '');
+    IF target_discord IS NOT NULL AND target_discord <> '' AND notes_str !~* ('(^|[^a-z0-9_])Discord:[[:space:]]*' || target_discord) THEN
+        notes_str := BTRIM(notes_str || ' · Discord: ' || target_discord, ' ·');
+    END IF;
+    IF target_discord_id IS NOT NULL AND target_discord_id <> '' AND notes_str !~* ('(^|[^0-9])DiscordID:[[:space:]]*' || target_discord_id) THEN
+        notes_str := BTRIM(notes_str || ' · DiscordID: ' || target_discord_id, ' ·');
+    END IF;
+    IF target_gamertag IS NOT NULL AND target_gamertag <> '' AND notes_str !~* ('(^|[^a-z0-9_])Gamertag:[[:space:]]*' || target_gamertag) THEN
+        notes_str := BTRIM(notes_str || ' · Gamertag: ' || target_gamertag, ' ·');
+    END IF;
+
+    INSERT INTO public.staff_roles (email, user_id, display_name, role, custom_permissions, notes, updated_at)
+    VALUES (resolved_email, resolved_user_id, resolved_name, target_role, target_permissions, NULLIF(notes_str, ''), NOW())
+    ON CONFLICT (email) DO UPDATE SET
+        user_id = COALESCE(EXCLUDED.user_id, staff_roles.user_id),
+        display_name = COALESCE(EXCLUDED.display_name, staff_roles.display_name),
+        role = EXCLUDED.role,
+        custom_permissions = EXCLUDED.custom_permissions,
+        notes = COALESCE(EXCLUDED.notes, staff_roles.notes),
+        updated_at = NOW()
+    RETURNING * INTO saved_role;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'email', resolved_email,
+        'user_id', resolved_user_id,
+        'role', saved_role.role,
+        'staff_role', to_jsonb(saved_role)
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_assign_staff_role(TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, JSONB, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_assign_staff_role(TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, JSONB, TEXT) TO authenticated, anon;
