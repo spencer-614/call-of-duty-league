@@ -239,6 +239,42 @@
         text-align: center;
         margin-top: 16px;
       }
+      /* Mobile optimizations for Match Intel Dialog and Match Chat */
+      @media (max-width: 640px) {
+        .bracket-modal {
+          width: 96vw !important;
+          max-height: 94vh !important;
+          margin: auto !important;
+        }
+        .modal-body {
+          padding: 14px 12px !important;
+        }
+        .match-chat-container {
+          margin-top: 14px;
+        }
+        .match-chat-header {
+          padding: 8px 10px;
+        }
+        .match-chat-box {
+          height: 200px;
+          padding: 10px;
+        }
+        .match-chat-msg {
+          max-width: 95%;
+          padding: 6px 9px;
+        }
+        .match-chat-footer {
+          padding: 8px 10px;
+        }
+        .match-chat-input {
+          font-size: 14px; /* Prevents auto-zoom on iOS */
+          padding: 7px 10px;
+        }
+        .match-chat-send-btn {
+          padding: 7px 12px;
+          font-size: 11px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -789,7 +825,11 @@
           const isLive = match.status === 'Live';
 
           let statusBadge = '';
-          if (isLive) {
+          if (match.status === 'Not Needed') {
+            statusBadge = `<span class="badge-match-finished" style="background:#1e1a12; color:#9ca3af; border:1px solid #3c3422; font-size:10px;">IF NEEDED</span>`;
+          } else if (match.isBye) {
+            statusBadge = `<span class="badge-match-finished" style="background:#142918; color:#4ade80; border:1px solid #22c55e; font-size:10px;">BYE ADVANCE</span>`;
+          } else if (isLive) {
             statusBadge = `<span class="badge-match-live"><span class="live-pulse-dot"></span>LIVE</span>`;
           } else if (isCompleted) {
             statusBadge = `<span class="badge-match-finished" style="background:#142918; color:#4ade80; border:1px solid #22c55e;">FINAL</span>`;
@@ -1064,37 +1104,52 @@
 
           let reportingTeam = null;
 
-try {
-  const client = window.supabaseClient || window.dbClient;
-  const { data: { user: authUser }, error: authError } =
-    await client.auth.getUser();
+          try {
+            const client = window.supabaseClient || window.dbClient;
+            if (client && client.auth) {
+              const { data: { user: authUser }, error: authError } = await client.auth.getUser();
 
-  if (authError) throw authError;
+              if (!authError && authUser) {
+                // Use the authenticated account's tournament staff permission if available
+                if (window.LeagueDB && typeof window.LeagueDB.getMyStaffAccess === 'function') {
+                  const staffAcc = await window.LeagueDB.getMyStaffAccess();
+                  if (staffAcc && staffAcc.is_admin) isStaff = true;
+                }
 
-  // Use the authenticated account's tournament staff permission.
-  isStaff = !!authUser && !!(await window.LeagueDB.getMyStaffAccess()).is_admin;
+                const { data: membership } = await client
+                  .from('tournament_report_members')
+                  .select('team')
+                  .eq('tournament_id', String(activeTournament.id))
+                  .eq('match_id', String(match.id))
+                  .eq('user_id', authUser.id)
+                  .maybeSingle();
 
-  if (authUser) {
-    const { data: membership, error } = await client
-      .from('tournament_report_members')
-      .select('team')
-      .eq('tournament_id', String(activeTournament.id))
-      .eq('match_id', String(match.id))
-      .eq('user_id', authUser.id)
-      .maybeSingle();
+                if (membership) {
+                  reportingTeam = Number(membership.team) || null;
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('Match reporting member check notice:', error);
+          }
 
-    if (error) throw error;
+          // Team membership check:
+          // 1. Check if user is registered in tournament registrations for team 1 or team 2 (captain or roster)
+          // 2. Check if user belongs to team via explicit reporting assignment
+          // 3. Check user profile / active team names
+          const userInT1 = isUserInReg(reg1, user) || 
+                           (user?.team_name && String(user.team_name).trim().toLowerCase() === t1NameClean) ||
+                           (user?.team && String(user.team).trim().toLowerCase() === t1NameClean) ||
+                           (reportingTeam === 1);
 
-    reportingTeam = Number(membership?.team) || null;
-  }
-} catch (error) {
-  isStaff = false;
-  console.error('Match chat access check failed:', error);
-}
+          const userInT2 = isUserInReg(reg2, user) || 
+                           (user?.team_name && String(user.team_name).trim().toLowerCase() === t2NameClean) ||
+                           (user?.team && String(user.team).trim().toLowerCase() === t2NameClean) ||
+                           (reportingTeam === 2);
 
-const inTeam1 = reportingTeam === 1;
-const inTeam2 = reportingTeam === 2;
-const hasAccess = isStaff || inTeam1 || inTeam2;
+          const inTeam1 = Boolean(userInT1);
+          const inTeam2 = Boolean(userInT2);
+          const hasAccess = Boolean(isStaff || inTeam1 || inTeam2);
 
           let userTeamName = null;
           let combatantTeamName = null;

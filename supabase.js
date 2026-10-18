@@ -5564,27 +5564,91 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   advanceTournamentByes(bracket) {
-    if (bracket?.bye_policy !== 'as-needed-v1') return bracket;
-    const all=(bracket.stages||[]).flatMap(s=>(s.rounds||[]).flatMap(r=>r.matches||[]));
-    const byId=new Map(all.map(m=>[String(m.id),m]));
-    for(let pass=0;pass<all.length;pass++) {
-      for(const m of all) {
-        let ready=true;
-        for(const side of [1,2]) {
-          const source=m['sourceMatch'+side];
-          if(!source)continue;
-          const parent=byId.get(String(source));
-          const win=parent?.team1?.winner?parent.team1:parent?.team2?.winner?parent.team2:null;
-          if(!win){ready=false;continue;}
-          const dest=m['team'+side];
-          if(dest.name!==win.name || dest.seed!==win.seed)Object.assign(dest,{name:win.name,tag:win.tag,seed:win.seed,score:0,winner:null});
+    if (!bracket || !bracket.stages) return bracket;
+    const all = bracket.stages.flatMap(s => (s.rounds || []).flatMap(r => r.matches || []));
+    const byId = new Map(all.map(m => [String(m.id), m]));
+
+    for (let pass = 0; pass < all.length; pass++) {
+      let modified = false;
+
+      for (const m of all) {
+        // 1. Advance winner from winner-source matches
+        for (const side of [1, 2]) {
+          const srcId = m['sourceMatch' + side];
+          if (!srcId) continue;
+          const parent = byId.get(String(srcId));
+          const win = parent?.team1?.winner ? parent.team1 : parent?.team2?.winner ? parent.team2 : null;
+          if (!win) continue;
+          const dest = m['team' + side];
+          if (dest && (dest.name !== win.name || dest.seed !== win.seed)) {
+            Object.assign(dest, { name: win.name, tag: win.tag, seed: win.seed, score: dest.score || 0, winner: null });
+            modified = true;
+          }
         }
-        if(m.isBye && ready) {
-          const side=m.team1.isBye?2:1;
-          m.status='Completed';m.team1.score=0;m.team2.score=0;
-          m.team1.winner=side===1;m.team2.winner=side===2;
+
+        // 2. Advance loser from loser-source matches (Double Elimination drop-downs)
+        for (const side of [1, 2]) {
+          const loserSrcId = m['loserSourceMatch' + side];
+          if (!loserSrcId) continue;
+          const parent = byId.get(String(loserSrcId));
+          const loser = (parent?.team1?.winner === true && parent?.team2) ? parent.team2
+            : (parent?.team2?.winner === true && parent?.team1) ? parent.team1 : null;
+          if (!loser) continue;
+          const dest = m['team' + side];
+          if (dest && (dest.name !== loser.name || dest.seed !== loser.seed)) {
+            Object.assign(dest, { name: loser.name, tag: loser.tag, seed: loser.seed, score: dest.score || 0, winner: null });
+            modified = true;
+          }
+        }
+
+        // 3. Handle automatic Bye match completion
+        if (m.isBye && m.status !== 'Completed') {
+          const t1Bye = m.team1?.isBye || m.team1?.name === 'BYE';
+          const t2Bye = m.team2?.isBye || m.team2?.name === 'BYE';
+          if (t1Bye && !t2Bye && m.team2?.name && m.team2.name !== 'TBD' && !m.team2.name.startsWith('Winner') && !m.team2.name.startsWith('Loser')) {
+            m.status = 'Completed';
+            m.team1.score = 0;
+            m.team2.score = 0;
+            m.team1.winner = false;
+            m.team2.winner = true;
+            modified = true;
+          } else if (t2Bye && !t1Bye && m.team1?.name && m.team1.name !== 'TBD' && !m.team1.name.startsWith('Winner') && !m.team1.name.startsWith('Loser')) {
+            m.status = 'Completed';
+            m.team1.score = 0;
+            m.team2.score = 0;
+            m.team1.winner = true;
+            m.team2.winner = false;
+            modified = true;
+          }
+        }
+
+        // 4. Handle Grand Finals Reset Match logic
+        if (m.isResetMatch && m.resetSourceMatch) {
+          const gf1 = byId.get(String(m.resetSourceMatch));
+          if (gf1 && gf1.status === 'Completed') {
+            // Elimination Champion (team2) beat Winners Champion (team1) in Match 1 -> Reset required!
+            if (gf1.team2?.winner) {
+              m.status = m.status === 'Completed' ? 'Completed' : 'Scheduled';
+              if (m.team1 && gf1.team1) {
+                m.team1.name = gf1.team1.name;
+                m.team1.tag = gf1.team1.tag;
+                m.team1.seed = gf1.team1.seed;
+              }
+              if (m.team2 && gf1.team2) {
+                m.team2.name = gf1.team2.name;
+                m.team2.tag = gf1.team2.tag;
+                m.team2.seed = gf1.team2.seed;
+              }
+            } else if (gf1.team1?.winner) {
+              // Winners Champion won Match 1 -> Tournament over, reset match not needed
+              m.status = 'Not Needed';
+              m.note = 'Not needed: Winners bracket finalist won Grand Finals Match 1.';
+            }
+          }
         }
       }
+
+      if (!modified) break;
     }
     return bracket;
   },
@@ -5603,57 +5667,305 @@ if (dbClient && cleanPayload.user_id) {
       };
     }
 
-    // A new schedule never silently replaces an existing/live bracket.
-    if (String(tourney.bracket_type || '').toLowerCase().includes('double')) {
-      return { success: false, error: 'Later-round byes currently support single elimination only.' };
-    }
     if (tourney.bracket_data && !options.replaceUnstartedBracket) {
       return { success: false, error: 'A bracket already exists. It was not changed. Use the documented unstarted-bracket replacement only before reporting is enabled.' };
     }
-    const oldMatches=(tourney.bracket_data?.stages||[]).flatMap(s=>(s.rounds||[]).flatMap(r=>r.matches||[]));
-    if(oldMatches.some(m=>!m.isBye && m.team1?.name!=='BYE' && m.team2?.name!=='BYE' &&
-      (m.status==='Completed' || Number(m.team1?.score)>0 || Number(m.team2?.score)>0 || m.maps?.length))) {
-      return { success:false, error:'This bracket has scores or completed matches. It was not changed.' };
+    const oldMatches = (tourney.bracket_data?.stages || []).flatMap(s => (s.rounds || []).flatMap(r => r.matches || []));
+    if (oldMatches.some(m => !m.isBye && m.team1?.name !== 'BYE' && m.team2?.name !== 'BYE' &&
+      (m.status === 'Completed' || Number(m.team1?.score) > 0 || Number(m.team2?.score) > 0 || m.maps?.length))) {
+      return { success: false, error: 'This bracket has scores or completed matches. It was not changed.' };
     }
     const c = window.supabaseClient || window.dbClient;
     if (!c) return { success: false, error: 'Database unavailable; bracket was not changed.' };
-    // IDs are reused by generation, so do not replace any bracket with configured reporting.
+
     for (const table of ['tournament_report_matches', 'tournament_veto_states']) {
       const { data, error } = await c.from(table).select('match_id')
         .eq('tournament_id', String(tournamentId)).limit(1);
       if (error) return { success: false, error: 'Could not verify existing match data: ' + error.message };
       if (data?.length) return { success: false, error: 'Reporting or veto data already exists. Bracket was not changed. Do not regenerate this tournament.' };
     }
+
     const N = regs.length;
-    const isDoubleElim = false;
-    const rounds = [];
-    let matchCounter = 1;
-    const totalRounds = Math.ceil(Math.log2(N));
-    const roundName = r => totalRounds-r === 1 ? 'Grand Finals' : totalRounds-r === 2 ? 'Semifinals' : 'Round ' + (r+1);
-    // Each round uses only its real entrants/feeder slots; pad at most ONE bye.
-    let entries = regs.map((t,i)=>({ team:{seed:i+1,name:t.team_name,tag:t.team_name.slice(0,4).toUpperCase(),score:0,winner:null}, source:null }));
-    for (let r = 0; entries.length > 1; r++) {
-      let bye = null;
-      if (entries.length % 2) {
-        // Fixed bracket position, rotated across rounds, decided before play begins.
-        const index = r % (entries.length - 1);
-        bye = entries.splice(index, 1)[0];
+    const isDoubleElim = String(tourney.bracket_type || '').toLowerCase().includes('double');
+    const bracketSize = Math.pow(2, Math.ceil(Math.log2(Math.max(N, 2))));
+
+    // Standard Challonge bracket seeding pattern
+    function getChallongeSeedPairs(size) {
+      let rounds = Math.log2(size);
+      let matches = [[1, 2]];
+      for (let r = 1; r < rounds; r++) {
+        let next = [];
+        let sum = Math.pow(2, r + 1) + 1;
+        for (let m of matches) {
+          next.push([m[0], sum - m[0]]);
+          next.push([sum - m[1], m[1]]);
+        }
+        matches = next;
       }
-      const matches = [];
-      const createMatch = (a,b) => {
-        const m = { id:'M'+matchCounter++, code:'R'+(r+1)+'-M'+(matches.length+1),
-          roundName:roundName(r),stageName:'Championship Bracket',status:'Scheduled',
-          time:'Round '+(r+1),bestOf:'BO5',team1:{...a.team},team2:{...b.team},maps:[] };
-        if(a.source)m.sourceMatch1=a.source;
-        if(b.source)m.sourceMatch2=b.source;
-        if(b.team.isBye)m.isBye=true;
-        matches.push(m);
+      return matches;
+    }
+
+    const seedPairs = getChallongeSeedPairs(bracketSize);
+    const teamBySeed = new Map();
+    regs.forEach((r, idx) => {
+      teamBySeed.set(idx + 1, {
+        seed: idx + 1,
+        name: r.team_name,
+        tag: (r.team_name || 'TBD').slice(0, 4).toUpperCase(),
+        score: 0,
+        winner: null
+      });
+    });
+
+    const getTeamForSeed = (s) => {
+      if (teamBySeed.has(s)) return { ...teamBySeed.get(s) };
+      return { seed: s, name: 'BYE', tag: 'BYE', score: 0, winner: false, isBye: true };
+    };
+
+    let matchCounter = 1;
+    const upperRounds = [];
+    const numUpperRounds = Math.log2(bracketSize);
+
+    // Upper Round 1
+    const r1Matches = [];
+    seedPairs.forEach((pair, idx) => {
+      const t1 = getTeamForSeed(pair[0]);
+      const t2 = getTeamForSeed(pair[1]);
+      const isBye = Boolean(t1.isBye || t2.isBye);
+      const m = {
+        id: 'M' + (matchCounter++),
+        code: (isDoubleElim ? 'UB-R1-M' : 'R1-M') + (idx + 1),
+        stageId: 'winners',
+        roundId: 'ub-r1',
+        roundName: numUpperRounds === 1 ? 'Championship Finals' : (isDoubleElim ? 'Upper Round 1' : 'Round 1'),
+        stageName: isDoubleElim ? 'Winners Bracket (Upper)' : 'Championship Bracket',
+        status: isBye ? 'Completed' : 'Scheduled',
+        time: 'Round 1',
+        bestOf: 'BO5',
+        team1: t1,
+        team2: t2,
+        isBye: isBye,
+        maps: []
       };
-      // Seeded pairs: first remaining entrant versus last remaining entrant.
-      while(entries.length) createMatch(entries.shift(),entries.pop());
-      if(bye)createMatch(bye,{team:{seed:null,name:'BYE',tag:'BYE',score:0,winner:false,isBye:true},source:null});
-      rounds.push({roundId:'r'+(r+1),name:roundName(r),badge:'Round '+(r+1),bestOf:'BO5',matches});
-      entries=matches.map(m=>({team:{seed:null,name:'Winner of '+m.code,tag:'TBD',score:0,winner:null},source:m.id}));
+      if (isBye) {
+        if (t2.isBye && !t1.isBye) {
+          m.team1.winner = true;
+          m.team2.winner = false;
+        } else if (t1.isBye && !t2.isBye) {
+          m.team2.winner = true;
+          m.team1.winner = false;
+        }
+      }
+      r1Matches.push(m);
+    });
+
+    upperRounds.push({
+      roundId: 'ub-r1',
+      name: numUpperRounds === 1 ? 'Championship Finals' : (isDoubleElim ? 'Upper Round 1' : 'Round 1'),
+      badge: 'Round 1',
+      bestOf: 'BO5',
+      matches: r1Matches
+    });
+
+    // Subsequent Upper Rounds
+    let prevUpper = r1Matches;
+    for (let r = 2; r <= numUpperRounds; r++) {
+      const rMatches = [];
+      const isFinalUpper = (r === numUpperRounds);
+      let roundTitle = '';
+      if (isDoubleElim) {
+        roundTitle = isFinalUpper ? 'Winners Finals' : (r === numUpperRounds - 1 ? 'Upper Semifinals' : 'Upper Round ' + r);
+      } else {
+        roundTitle = isFinalUpper ? 'Grand Finals' : (r === numUpperRounds - 1 ? 'Semifinals' : 'Round ' + r);
+      }
+
+      for (let i = 0; i < prevUpper.length; i += 2) {
+        const m1 = prevUpper[i];
+        const m2 = prevUpper[i + 1];
+        const m = {
+          id: 'M' + (matchCounter++),
+          code: (isDoubleElim ? 'UB-R' : 'R') + r + '-M' + (rMatches.length + 1),
+          stageId: 'winners',
+          roundId: 'ub-r' + r,
+          roundName: roundTitle,
+          stageName: isDoubleElim ? 'Winners Bracket (Upper)' : 'Championship Bracket',
+          status: 'Scheduled',
+          time: 'Round ' + r,
+          bestOf: 'BO5',
+          team1: { seed: null, name: 'Winner of ' + m1.code, tag: 'TBD', score: 0, winner: null },
+          team2: { seed: null, name: 'Winner of ' + m2.code, tag: 'TBD', score: 0, winner: null },
+          sourceMatch1: m1.id,
+          sourceMatch2: m2.id,
+          maps: []
+        };
+        rMatches.push(m);
+      }
+      upperRounds.push({
+        roundId: 'ub-r' + r,
+        name: roundTitle,
+        badge: 'Round ' + r,
+        bestOf: 'BO5',
+        matches: rMatches
+      });
+      prevUpper = rMatches;
+    }
+
+    const stages = [
+      {
+        id: 'winners',
+        name: isDoubleElim ? 'Winners Bracket (Upper)' : 'Championship Bracket',
+        rounds: upperRounds
+      }
+    ];
+
+    if (isDoubleElim && numUpperRounds > 1) {
+      const lowerRounds = [];
+      const totalLbRounds = (numUpperRounds - 1) * 2;
+      let prevLbMatches = [];
+
+      for (let lbR = 1; lbR <= totalLbRounds; lbR++) {
+        const lbMatches = [];
+        const isInternalPairing = (lbR % 2 === 1);
+        const roundTitle = lbR === totalLbRounds 
+          ? 'Losers Finals' 
+          : (lbR === totalLbRounds - 1 ? 'Losers Semifinals' : 'Elimination Round ' + lbR);
+
+        if (lbR === 1) {
+          const ubR1 = upperRounds[0].matches;
+          for (let i = 0; i < ubR1.length; i += 2) {
+            const m1 = ubR1[i];
+            const m2 = ubR1[i + 1];
+            const m = {
+              id: 'M' + (matchCounter++),
+              code: 'LB-R' + lbR + '-M' + (lbMatches.length + 1),
+              stageId: 'losers',
+              roundId: 'lb-r' + lbR,
+              roundName: roundTitle,
+              stageName: 'Elimination Bracket (Lower)',
+              status: 'Scheduled',
+              time: 'Elimination R' + lbR,
+              bestOf: 'BO5',
+              team1: { seed: null, name: 'Loser of ' + m1.code, tag: 'TBD', score: 0, winner: null },
+              team2: { seed: null, name: 'Loser of ' + m2.code, tag: 'TBD', score: 0, winner: null },
+              loserSourceMatch1: m1.id,
+              loserSourceMatch2: m2.id,
+              maps: []
+            };
+            lbMatches.push(m);
+          }
+        } else if (isInternalPairing) {
+          for (let i = 0; i < prevLbMatches.length; i += 2) {
+            const m1 = prevLbMatches[i];
+            const m2 = prevLbMatches[i + 1];
+            const m = {
+              id: 'M' + (matchCounter++),
+              code: 'LB-R' + lbR + '-M' + (lbMatches.length + 1),
+              stageId: 'losers',
+              roundId: 'lb-r' + lbR,
+              roundName: roundTitle,
+              stageName: 'Elimination Bracket (Lower)',
+              status: 'Scheduled',
+              time: 'Elimination R' + lbR,
+              bestOf: 'BO5',
+              team1: { seed: null, name: 'Winner of ' + m1.code, tag: 'TBD', score: 0, winner: null },
+              team2: { seed: null, name: 'Winner of ' + m2.code, tag: 'TBD', score: 0, winner: null },
+              sourceMatch1: m1.id,
+              sourceMatch2: m2.id,
+              maps: []
+            };
+            lbMatches.push(m);
+          }
+        } else {
+          const ubRoundIdx = (lbR / 2);
+          const ubMatches = upperRounds[ubRoundIdx].matches;
+          for (let i = 0; i < prevLbMatches.length; i++) {
+            const lbPrev = prevLbMatches[i];
+            const ubMatch = ubMatches[ubMatches.length - 1 - i] || ubMatches[i];
+            const m = {
+              id: 'M' + (matchCounter++),
+              code: 'LB-R' + lbR + '-M' + (lbMatches.length + 1),
+              stageId: 'losers',
+              roundId: 'lb-r' + lbR,
+              roundName: roundTitle,
+              stageName: 'Elimination Bracket (Lower)',
+              status: 'Scheduled',
+              time: 'Elimination R' + lbR,
+              bestOf: 'BO5',
+              team1: { seed: null, name: 'Loser of ' + ubMatch.code, tag: 'TBD', score: 0, winner: null },
+              team2: { seed: null, name: 'Winner of ' + lbPrev.code, tag: 'TBD', score: 0, winner: null },
+              loserSourceMatch1: ubMatch.id,
+              sourceMatch2: lbPrev.id,
+              maps: []
+            };
+            lbMatches.push(m);
+          }
+        }
+        lowerRounds.push({
+          roundId: 'lb-r' + lbR,
+          name: roundTitle,
+          badge: 'Lower R' + lbR,
+          bestOf: 'BO5',
+          matches: lbMatches
+        });
+        prevLbMatches = lbMatches;
+      }
+
+      stages.push({
+        id: 'losers',
+        name: 'Elimination Bracket (Lower)',
+        rounds: lowerRounds
+      });
+
+      // Grand Finals
+      const ubFinalMatch = upperRounds[upperRounds.length - 1].matches[0];
+      const lbFinalMatch = lowerRounds[lowerRounds.length - 1].matches[0];
+      const gf1 = {
+        id: 'M' + (matchCounter++),
+        code: 'GF-M1',
+        stageId: 'grandfinals',
+        roundId: 'gf',
+        roundName: 'Grand Finals',
+        stageName: 'Championship Grand Finals',
+        status: 'Scheduled',
+        time: 'Grand Championship',
+        bestOf: 'BO5',
+        team1: { seed: null, name: 'Winners Champion (TBD)', tag: 'TBD', score: 0, winner: null },
+        team2: { seed: null, name: 'Elimination Champion (TBD)', tag: 'TBD', score: 0, winner: null },
+        sourceMatch1: ubFinalMatch.id,
+        sourceMatch2: lbFinalMatch.id,
+        note: 'Winners Bracket finalist holds 1-series advantage.',
+        maps: []
+      };
+
+      const gf2 = {
+        id: 'M' + (matchCounter++),
+        code: 'GF-M2 (Reset)',
+        stageId: 'grandfinals',
+        roundId: 'gf-reset',
+        roundName: 'Grand Finals Bracket Reset',
+        stageName: 'Championship Grand Finals',
+        status: 'Scheduled',
+        time: 'If Necessary',
+        bestOf: 'BO5',
+        team1: { seed: null, name: 'TBD', tag: 'TBD', score: 0, winner: null },
+        team2: { seed: null, name: 'TBD', tag: 'TBD', score: 0, winner: null },
+        isResetMatch: true,
+        resetSourceMatch: gf1.id,
+        note: 'Triggered only if Elimination Champion wins Grand Finals Match 1.',
+        maps: []
+      };
+
+      stages.push({
+        id: 'grandfinals',
+        name: 'Championship Grand Finals',
+        rounds: [{
+          roundId: 'gf',
+          name: 'Grand Finals',
+          badge: 'Championship',
+          bestOf: 'BO5',
+          matches: [gf1, gf2]
+        }]
+      });
     }
 
     const bracketObj = {
@@ -5662,12 +5974,13 @@ if (dbClient && cleanPayload.user_id) {
       name: tourney.title || "Tournament Bracket",
       tier: tourney.format || "4v4 CDL Variant",
       badge: "LIVE TOURNAMENT",
-      format: `${N}-Team ${tourney.bracket_type || 'Single Elimination'}`,
+      format: `${N}-Team ${tourney.bracket_type || (isDoubleElim ? 'Double Elimination' : 'Single Elimination')}`,
       prizePool: tourney.prize_pool || "$500 USD",
       status: "LIVE BRACKET",
       description: tourney.description || "Official tournament bracket progression.",
       ruleset: "CDL V4 Competitive Settings · Dallas/Central Host",
-      bye_policy: "as-needed-v1",
+      bye_policy: "challonge-standard",
+      bracket_type: isDoubleElim ? "Double Elimination" : "Single Elimination",
       generated_at: new Date().toISOString(),
       teams_count: N,
       explainer: {
@@ -5676,16 +5989,10 @@ if (dbClient && cleanPayload.user_id) {
         items: [
           { title: "1. Match Check-In", text: "Teams must check in 15 minutes before their scheduled match time in Discord." },
           { title: "2. Best of 5 Series", text: "Standard CDL rotation: Hardpoint, SnD, Control, Hardpoint, SnD." },
-          { title: "3. Live Telemetry", text: "Series scores and winner advancements update in real time as matches finish." }
+          { title: "3. Live Telemetry & Bracket", text: isDoubleElim ? "Winners Bracket squad holds 1-series advantage in Grand Finals. Losers bracket champion must win two series (Bracket Reset) to claim the championship." : "Standard single elimination bracket progression: win and advance, loss results in tournament elimination." }
         ]
       },
-      stages: [
-        {
-          id: "winners",
-          name: isDoubleElim ? "Winners Bracket (Upper)" : "Championship Bracket",
-          rounds: rounds
-        }
-      ]
+      stages: stages
     };
 
     this.advanceTournamentByes(bracketObj);
@@ -5738,15 +6045,15 @@ if (dbClient && cleanPayload.user_id) {
     return null;
   },
 
-  async advanceTournamentMatch(tournamentId, matchId, winnerNumber, score1 = 3, score2 = 0) {
+  async advanceTournamentMatch(tournamentId, matchId, winnerParam, score1 = 3, score2 = 0) {
     const bracket = await this.getTournamentBracket(tournamentId);
     if (!bracket) return { success: false, error: "Bracket not found." };
 
     let targetMatch = null;
-    bracket.stages.forEach(s => {
-      s.rounds.forEach(r => {
-        r.matches.forEach(m => {
-          if (m.id === matchId || m.code === matchId) targetMatch = m;
+    (bracket.stages || []).forEach(s => {
+      (s.rounds || []).forEach(r => {
+        (r.matches || []).forEach(m => {
+          if (String(m.id) === String(matchId) || String(m.code) === String(matchId)) targetMatch = m;
         });
       });
     });
@@ -5754,18 +6061,31 @@ if (dbClient && cleanPayload.user_id) {
     if (!targetMatch) return { success: false, error: "Match not found in bracket." };
 
     if (targetMatch.isBye) return { success: false, error: 'Bye matches advance automatically; do not enter a score.' };
+
+    let winnerNum = 1;
+    if (typeof winnerParam === 'number') {
+      winnerNum = winnerParam;
+    } else if (typeof winnerParam === 'string') {
+      const cleanW = winnerParam.trim().toLowerCase();
+      const t1Name = (targetMatch.team1?.name || '').trim().toLowerCase();
+      const t2Name = (targetMatch.team2?.name || '').trim().toLowerCase();
+      if (cleanW === t2Name) winnerNum = 2;
+      else winnerNum = 1;
+    }
+
     targetMatch.status = "Completed";
     targetMatch.team1.score = parseInt(score1, 10) || 0;
     targetMatch.team2.score = parseInt(score2, 10) || 0;
-    targetMatch.team1.winner = (winnerNumber === 1);
-    targetMatch.team2.winner = (winnerNumber === 2);
+    targetMatch.team1.winner = (winnerNum === 1);
+    targetMatch.team2.winner = (winnerNum === 2);
 
-    const winner = winnerNumber === 1 ? targetMatch.team1 : targetMatch.team2;
+    const winner = winnerNum === 1 ? targetMatch.team1 : targetMatch.team2;
+    const loser = winnerNum === 1 ? targetMatch.team2 : targetMatch.team1;
 
-    // Advance winner to dependent match in next round
-    bracket.stages.forEach(s => {
-      s.rounds.forEach(r => {
-        r.matches.forEach(m => {
+    // Advance winner and loser into dependent matches
+    (bracket.stages || []).forEach(s => {
+      (s.rounds || []).forEach(r => {
+        (r.matches || []).forEach(m => {
           if (m.sourceMatch1 === targetMatch.id) {
             m.team1.name = winner.name;
             m.team1.tag = winner.tag;
@@ -5775,6 +6095,16 @@ if (dbClient && cleanPayload.user_id) {
             m.team2.name = winner.name;
             m.team2.tag = winner.tag;
             m.team2.seed = winner.seed;
+          }
+          if (m.loserSourceMatch1 === targetMatch.id) {
+            m.team1.name = loser.name;
+            m.team1.tag = loser.tag;
+            m.team1.seed = loser.seed;
+          }
+          if (m.loserSourceMatch2 === targetMatch.id) {
+            m.team2.name = loser.name;
+            m.team2.tag = loser.tag;
+            m.team2.seed = loser.seed;
           }
         });
       });

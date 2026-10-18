@@ -239,6 +239,42 @@
         text-align: center;
         margin-top: 16px;
       }
+      /* Mobile optimizations for Match Intel Dialog and Match Chat */
+      @media (max-width: 640px) {
+        .bracket-modal {
+          width: 96vw !important;
+          max-height: 94vh !important;
+          margin: auto !important;
+        }
+        .modal-body {
+          padding: 14px 12px !important;
+        }
+        .match-chat-container {
+          margin-top: 14px;
+        }
+        .match-chat-header {
+          padding: 8px 10px;
+        }
+        .match-chat-box {
+          height: 200px;
+          padding: 10px;
+        }
+        .match-chat-msg {
+          max-width: 95%;
+          padding: 6px 9px;
+        }
+        .match-chat-footer {
+          padding: 8px 10px;
+        }
+        .match-chat-input {
+          font-size: 14px; /* Prevents auto-zoom on iOS */
+          padding: 7px 10px;
+        }
+        .match-chat-send-btn {
+          padding: 7px 12px;
+          font-size: 11px;
+        }
+      }
     </style>
   </head>
   <body>
