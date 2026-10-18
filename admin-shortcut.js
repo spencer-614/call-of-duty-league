@@ -34,13 +34,27 @@
       if (path === "/admin" || path === "/admin/" || path.includes("/admin/") || href.includes("/admin/") || href.endsWith("admin.html") || href.includes("/admin/index.html")) {
         return;
       }
+      try {
+        sessionStorage.setItem("frontline_admin_session", "authorized");
+        localStorage.setItem("frontline_admin_session", "authorized");
+      } catch (_) {}
+
       if (loc.protocol === "file:") {
-        if (href.includes("/home/") || href.includes("/profile/") || href.includes("/players/") || href.includes("/teams/") || href.includes("/schedule/") || href.includes("/rules/") || href.includes("/livestreams/") || href.includes("/vods/") || href.includes("/brackets/") || href.includes("/draft/") || href.includes("/signup/") || href.includes("/arena/") || href.includes("/ladders/") || href.includes("/match/")) {
+        if (href.includes("/arena/profile/") || href.includes("/arena/tournaments/") || href.includes("/arena/free-agents/") || href.includes("/tournaments/bracket/") || href.includes("/tournaments/brackets/")) {
+          loc.href = "../../admin/index.html";
+        } else if (href.includes("/home/") || href.includes("/profile/") || href.includes("/players/") || href.includes("/teams/") || href.includes("/schedule/") || href.includes("/rules/") || href.includes("/livestreams/") || href.includes("/vods/") || href.includes("/brackets/") || href.includes("/draft/") || href.includes("/signup/") || href.includes("/arena/") || href.includes("/ladders/") || href.includes("/match/") || href.includes("/tournaments/")) {
           loc.href = "../admin/index.html";
         } else {
           loc.href = "admin/index.html";
         }
         return;
+      }
+      const p = loc.pathname || "";
+      if (p.includes("/profile") || p.includes("/arena/") || p.includes("/teams/") || p.includes("/players/")) {
+        const seg = p.split("/").filter(Boolean);
+        if (seg.length > 1 && seg[0] !== "admin") {
+          loc.href = "/" + seg[0] + "/admin/";
+        }
       }
       loc.href = "/admin/";
     } catch (err) {
@@ -157,6 +171,7 @@
   document.addEventListener("keydown", onKeyDown, true);
   document.addEventListener("click", onClick, true);
   window.__openAdminConsole = goToAdmin;
+  window.navigateToAdminConsole = goToAdmin;
 })();
 
 // =========================================================================

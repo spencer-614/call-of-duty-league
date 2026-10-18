@@ -458,11 +458,23 @@ window.LeagueDB = {
           .select("*")
           .order("points", { ascending: false })
           .order("wins", { ascending: false });
-        if (!error && data) teams = data;
-        else console.warn("Supabase fetch returned error, using fallback:", error);
+        if (!error && Array.isArray(data) && data.length > 0) {
+          teams = data;
+          try {
+            localStorage.setItem("frontline_teams_standings_cache", JSON.stringify(teams));
+          } catch (_) {}
+        } else if (error) {
+          console.warn("Supabase fetch returned error, using fallback:", error);
+        }
       } catch (err) {
         console.error("Supabase query error:", err);
       }
+    }
+    if (!teams || teams.length === 0) {
+      try {
+        const cached = localStorage.getItem("frontline_teams_standings_cache");
+        if (cached) teams = JSON.parse(cached);
+      } catch (_) {}
     }
     if (!teams || teams.length === 0) {
       teams = (MOCK_DATA.teams || []).slice();
@@ -492,24 +504,34 @@ window.LeagueDB = {
 
   // 1b. Fetch Teams with their Roster of Players
   async getTeamsWithPlayers() {
+    let result = null;
     if (dbClient) {
       try {
         const { data, error } = await dbClient
           .from("teams")
           .select("*, players(*)")
           .order("points", { ascending: false });
-        if (!error && Array.isArray(data)) {
-          return data.filter(t => {
+        if (!error && Array.isArray(data) && data.length > 0) {
+          result = data.filter(t => {
             const name = (t.name || '').toLowerCase().trim();
             const tag = (t.tag || '').toLowerCase().trim();
             return name !== 'fa' && name !== 'free agent' && name !== 'free agents' && tag !== 'fa' && t.id !== 0;
           });
+          try {
+            localStorage.setItem("frontline_teams_with_players_cache", JSON.stringify(result));
+          } catch (_) {}
+          return result;
         }
-        console.warn("Supabase fetch returned error, using fallback:", error);
+        if (error) console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
         console.error("Supabase query error:", err);
       }
     }
+    try {
+      const cached = localStorage.getItem("frontline_teams_with_players_cache");
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+
     return (MOCK_DATA.teams || []).filter(t => {
       const name = (t.name || '').toLowerCase().trim();
       const tag = (t.tag || '').toLowerCase().trim();
@@ -531,7 +553,7 @@ window.LeagueDB = {
           .select("*, teams(name, tag)")
           .order("kdr", { ascending: false });
 
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           list = data.map(p => {
             const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned' || p.team_name.toLowerCase() === 'fa')) || p.status === 'Free Agent' || p.teams?.name === 'FA' || p.teams?.name?.toLowerCase() === 'free agent';
             const division = p.division || p.teams?.division || (isFreeAgent ? 'Free Agent' : (p.kdr >= 1.15 ? 'Division 1 (Pro)' : (p.kdr >= 1.0 ? 'Division 2 (Challengers)' : 'Open Division')));
@@ -550,6 +572,10 @@ window.LeagueDB = {
               is_free_agent: isFreeAgent
             };
           });
+          try {
+            localStorage.setItem("frontline_players_cache", JSON.stringify(list));
+          } catch (_) {}
+          return list;
         } else if (error) {
           console.warn("Supabase fetch returned error, using fallback:", error);
         }
@@ -557,6 +583,11 @@ window.LeagueDB = {
         console.error("Supabase query error:", err);
       }
     }
+
+    try {
+      const cached = localStorage.getItem("frontline_players_cache");
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
 
     if (list.length === 0) {
       list = (MOCK_DATA.players || []).slice();
@@ -5040,6 +5071,36 @@ if (dbClient && cleanPayload.user_id) {
       proposedRosterNorms.push(captainTagNorm);
     }
 
+    // Check 0: Tournament Suspensions Enforcement (Commissioner Disciplinary Directive)
+    try {
+      const activeSuspensions = await this.getTournamentSuspensions();
+      if (Array.isArray(activeSuspensions) && activeSuspensions.length > 0) {
+        // Verify captain
+        const capSusp = this.isPlayerSuspended(squadData.captain_gamertag, activeSuspensions) ||
+                        (squadData.captain_discord ? this.isPlayerSuspended(squadData.captain_discord, activeSuspensions) : null);
+        if (capSusp && capSusp.suspended) {
+          return {
+            success: false,
+            error: `Tournament registration denied: Captain "${squadData.captain_gamertag}" is suspended from tournament play by league administration. Reason: ${capSusp.suspension?.reason || 'Disciplinary suspension'}.`
+          };
+        }
+
+        // Verify all proposed roster combatants
+        for (const pNorm of proposedRosterNorms) {
+          const pSusp = this.isPlayerSuspended(pNorm, activeSuspensions);
+          if (pSusp && pSusp.suspended) {
+            const originalTag = (rawRoster || []).find(x => norm(typeof x === "object" ? (x.gamertag || x.name) : x) === pNorm) || pNorm;
+            return {
+              success: false,
+              error: `Tournament registration denied: Teammate "${originalTag}" is suspended from tournament play by league administration. Reason: ${pSusp.suspension?.reason || 'Disciplinary suspension'}. Suspended players cannot be registered for any tournament.`
+            };
+          }
+        }
+      }
+    } catch (suspCheckErr) {
+      console.warn("Suspension check notice in registerSquadForTournament:", suspCheckErr);
+    }
+
     // Check 1: Duplicate squad name
     const duplicateTeam = existingTourneyRegs.find(r => norm(r.team_name) === teamNameNorm);
     if (duplicateTeam) {
@@ -5511,6 +5572,254 @@ if (dbClient && cleanPayload.user_id) {
 
       return false;
     });
+  },
+
+  // ==========================================
+  // TOURNAMENT SUSPENSIONS (Commissioners Disciplinary Desk)
+  // ==========================================
+  async getTournamentSuspensions() {
+    let list = [];
+
+    // 1. Try Supabase dedicated table 'tournament_suspensions'
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("tournament_suspensions")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          list = data;
+          try {
+            localStorage.setItem("frontline_tournament_suspensions", JSON.stringify(list));
+          } catch (_) {}
+          return list;
+        }
+      } catch (err) {}
+    }
+
+    // 2. Try Supabase league_settings row 'tournament_suspensions_registry'
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("status_text")
+          .eq("id", "tournament_suspensions_registry")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            if (Array.isArray(parsed)) {
+              list = parsed;
+              try {
+                localStorage.setItem("frontline_tournament_suspensions", JSON.stringify(list));
+              } catch (_) {}
+              return list;
+            }
+          } catch (_) {}
+        }
+      } catch (err) {}
+    }
+
+    // 3. Fallback to localStorage
+    try {
+      const local = JSON.parse(localStorage.getItem("frontline_tournament_suspensions")) || [];
+      if (Array.isArray(local)) list = local;
+    } catch (_) {}
+
+    return list;
+  },
+
+  isPlayerSuspended(playerIdentifier, suspensionsList = null) {
+    if (!playerIdentifier) return { suspended: false, suspension: null };
+    const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+    const target = norm(typeof playerIdentifier === "object" ? (playerIdentifier.gamertag || playerIdentifier.discord || playerIdentifier.email || playerIdentifier.name || "") : playerIdentifier);
+    if (!target) return { suspended: false, suspension: null };
+
+    let list = suspensionsList;
+    if (!Array.isArray(list)) {
+      try {
+        list = JSON.parse(localStorage.getItem("frontline_tournament_suspensions")) || [];
+      } catch (_) { list = []; }
+    }
+
+    const now = Date.now();
+
+    const activeSusp = (list || []).find(s => {
+      if (!s) return false;
+      if (s.is_active === false || s.status === "inactive" || s.status === "lifted") return false;
+      if (s.expires_at) {
+        const expTime = new Date(s.expires_at).getTime();
+        if (!isNaN(expTime) && expTime <= now) return false; // Expired
+      }
+      const sTag = norm(s.gamertag);
+      const sDisc = norm(s.discord);
+      const sEmail = norm(s.email);
+      return (sTag && sTag === target) || (sDisc && sDisc === target) || (sEmail && sEmail === target);
+    });
+
+    return {
+      suspended: !!activeSusp,
+      suspension: activeSusp || null
+    };
+  },
+
+  async suspendPlayer(payload = {}) {
+    const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+    const gamertag = String(payload.gamertag || "").trim();
+    if (!gamertag) return { success: false, error: "Player gamertag is required to issue a suspension." };
+
+    const reason = String(payload.reason || "Disciplinary suspension").trim();
+    const suspendedBy = String(payload.suspended_by || "League Commissioner").trim();
+    const discord = payload.discord ? String(payload.discord).trim() : null;
+    const email = payload.email ? String(payload.email).trim() : null;
+    const notes = payload.notes ? String(payload.notes).trim() : "";
+
+    let expiresAt = null;
+    if (payload.durationDays && Number(payload.durationDays) > 0) {
+      expiresAt = new Date(Date.now() + Number(payload.durationDays) * 86400000).toISOString();
+    } else if (payload.expires_at) {
+      expiresAt = new Date(payload.expires_at).toISOString();
+    }
+
+    const suspId = payload.id || ("susp_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7));
+    const suspRecord = {
+      id: suspId,
+      gamertag: gamertag,
+      discord: discord,
+      email: email,
+      reason: reason,
+      suspended_by: suspendedBy,
+      suspended_at: new Date().toISOString(),
+      expires_at: expiresAt,
+      is_active: true,
+      notes: notes,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Save to dedicated table 'tournament_suspensions'
+    if (dbClient) {
+      try {
+        await dbClient.from("tournament_suspensions").upsert(suspRecord);
+      } catch (err) {
+        console.warn("Direct tournament_suspensions upsert notice:", err);
+      }
+    }
+
+    // 2. Sync to league_settings row 'tournament_suspensions_registry'
+    const existingList = await this.getTournamentSuspensions();
+    const updatedList = existingList.filter(s => norm(s.gamertag) !== norm(gamertag));
+    updatedList.unshift(suspRecord);
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournament_suspensions_registry",
+          status_text: JSON.stringify(updatedList),
+          updated_at: new Date().toISOString()
+        });
+      } catch (err) {}
+    }
+
+    // 3. LocalStorage
+    try {
+      localStorage.setItem("frontline_tournament_suspensions", JSON.stringify(updatedList));
+    } catch (_) {}
+
+    window.dispatchEvent(new CustomEvent("frontline_tournament_suspensions_updated", { detail: suspRecord }));
+
+    return { success: true, suspension: suspRecord };
+  },
+
+  async unsuspendPlayer(suspensionIdOrGamertag, liftedBy = "League Commissioner") {
+    if (!suspensionIdOrGamertag) return { success: false, error: "Suspension ID or Gamertag required." };
+    const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+    const target = norm(suspensionIdOrGamertag);
+
+    const existingList = await this.getTournamentSuspensions();
+    const targetSusp = existingList.find(s => s.id === suspensionIdOrGamertag || norm(s.gamertag) === target);
+
+    // 1. Update in tournament_suspensions table
+    if (dbClient) {
+      try {
+        if (targetSusp) {
+          await dbClient
+            .from("tournament_suspensions")
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq("id", targetSusp.id);
+        } else {
+          await dbClient
+            .from("tournament_suspensions")
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq("gamertag", suspensionIdOrGamertag);
+        }
+      } catch (err) {}
+    }
+
+    // 2. Update in registry
+    const updatedList = existingList.map(s => {
+      if (s.id === suspensionIdOrGamertag || norm(s.gamertag) === target) {
+        return { ...s, is_active: false, lifted_at: new Date().toISOString(), lifted_by: liftedBy };
+      }
+      return s;
+    });
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournament_suspensions_registry",
+          status_text: JSON.stringify(updatedList),
+          updated_at: new Date().toISOString()
+        });
+      } catch (err) {}
+    }
+
+    // 3. LocalStorage
+    try {
+      localStorage.setItem("frontline_tournament_suspensions", JSON.stringify(updatedList));
+    } catch (_) {}
+
+    window.dispatchEvent(new CustomEvent("frontline_tournament_suspensions_updated", { detail: { id: suspensionIdOrGamertag, is_active: false } }));
+
+    return { success: true };
+  },
+
+  async deleteTournamentSuspension(suspensionIdOrGamertag) {
+    if (!suspensionIdOrGamertag) return { success: false, error: "ID or gamertag is required." };
+    const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+    const target = norm(suspensionIdOrGamertag);
+
+    if (dbClient) {
+      try {
+        await dbClient
+          .from("tournament_suspensions")
+          .delete()
+          .or(`id.eq.${suspensionIdOrGamertag},gamertag.eq.${suspensionIdOrGamertag}`);
+      } catch (err) {}
+    }
+
+    const existingList = await this.getTournamentSuspensions();
+    const updatedList = existingList.filter(s => s.id !== suspensionIdOrGamertag && norm(s.gamertag) !== target);
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournament_suspensions_registry",
+          status_text: JSON.stringify(updatedList),
+          updated_at: new Date().toISOString()
+        });
+      } catch (err) {}
+    }
+
+    try {
+      localStorage.setItem("frontline_tournament_suspensions", JSON.stringify(updatedList));
+    } catch (_) {}
+
+    window.dispatchEvent(new CustomEvent("frontline_tournament_suspensions_updated", { detail: { id: suspensionIdOrGamertag, deleted: true } }));
+
+    return { success: true };
   },
 
   // ==========================================
@@ -8519,17 +8828,17 @@ if (dbClient && cleanPayload.user_id) {
     const idents = authUser ? this._extractUserIdentifiers(authUser) : { emails: new Set(), names: new Set(), discordIds: new Set() };
     if (adminSessionEmail) idents.emails.add(adminSessionEmail);
 
-    let isCommishEmail = idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com");
+    let isCommishEmail = idents.emails.has("todd061496@gmail.com") || idents.emails.has("todd61496@gmail.com") || idents.emails.has("admin@frontlineleague.com");
     if (!isCommishEmail) {
       for (const em of idents.emails) {
-        if (em.includes("todd061496") || em.includes("frontlineleague.com") || em.includes("invictus")) {
+        if (em.includes("todd") || em.includes("frontlineleague.com") || em.includes("invictus")) {
           isCommishEmail = true;
           break;
         }
       }
     }
     let isCommishName = false;
-    const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+    const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner spencer", "commissioner", "savory"];
     for (const name of idents.names) {
       for (const cn of commishNames) {
         if (name === cn || name.includes(cn) || cn.includes(name)) {
@@ -8585,11 +8894,11 @@ if (dbClient && cleanPayload.user_id) {
       if (target.user_metadata?.is_commissioner === true || target.user_metadata?.is_staff === true) return true;
     }
     const idents = this._extractUserIdentifiers(target);
-    if (idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com")) return true;
+    if (idents.emails.has("todd061496@gmail.com") || idents.emails.has("todd61496@gmail.com") || idents.emails.has("admin@frontlineleague.com")) return true;
     for (const em of idents.emails) {
-      if (em.includes("todd061496") || em.includes("frontlineleague.com") || em.includes("invictus")) return true;
+      if (em.includes("todd") || em.includes("frontlineleague.com") || em.includes("invictus")) return true;
     }
-    const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+    const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner spencer", "commissioner", "savory"];
     for (const name of idents.names) {
       for (const cn of commishNames) {
         if (name === cn || name.includes(cn) || cn.includes(name)) return true;
@@ -9826,7 +10135,7 @@ isDiscordLinkedToEmail(target) {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command", "tab-tournament-suspensions"]
     },
     referee: {
       key: "referee",
@@ -10272,11 +10581,13 @@ isDiscordLinkedToEmail(target) {
       if (!isStaffUser && ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner"].some(cn => String(displayName).toLowerCase().trim().includes(cn))) isStaffUser = true;
     } catch (e) {}
 
-    // Dynamic Topbar Profile Button Injection/Update (Shows avatar + username) & Admin Console Button
+    // Dynamic Topbar Profile Button Injection/Update (Shows avatar + username)
+    // Note: Admin Console top-right button removed as requested (accessible via View Profile)
     const rightHubs = document.querySelectorAll(".nav-right-hub, .fl-header .right, header .nav-right-hub");
     rightHubs.forEach(hub => {
       let topBtn = hub.querySelector(".nav-league-profile-cta");
       let adminBtn = hub.querySelector(".nav-admin-console-cta");
+      if (adminBtn) adminBtn.remove();
 
       if (isLoggedIn) {
         if (!topBtn) {
@@ -10290,25 +10601,6 @@ isDiscordLinkedToEmail(target) {
         topBtn.title = `${displayName} — Profile`;
       } else if (topBtn) {
         topBtn.style.display = "none";
-      }
-
-      if (isStaffUser) {
-        if (!adminBtn) {
-          adminBtn = document.createElement("a");
-          adminBtn.href = "/admin/";
-          adminBtn.className = "cta nav-admin-console-cta";
-          adminBtn.style.cssText = "background:#fbbf24; color:#0b1109; font-weight:800; border:1px solid #fbbf24; border-radius:6px; padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px; margin-left:8px; box-shadow:0 0 12px rgba(251,191,36,0.3); transition:all 0.2s ease;";
-          adminBtn.innerHTML = `<span>⚙</span> <span>Admin Console</span>`;
-          adminBtn.title = "Open Commissioner & Staff Admin Console";
-          if (topBtn && topBtn.nextSibling) {
-            hub.insertBefore(adminBtn, topBtn.nextSibling);
-          } else {
-            hub.appendChild(adminBtn);
-          }
-        }
-        adminBtn.style.display = "inline-flex";
-      } else if (adminBtn) {
-        adminBtn.style.display = "none";
       }
     });
 
@@ -12781,14 +13073,12 @@ window.LadderDB = {
     if (squadHeaderEl) {
       if (player && player.gamertag) {
         const cleanPUserEmail = (player.email || "").toLowerCase().trim();
-        const isStaff = player.is_staff || player.is_commissioner || (cleanPUserEmail && (cleanPUserEmail === "todd061496@gmail.com" || cleanPUserEmail === "admin@frontlineleague.com" || cleanPUserEmail.includes("invictus"))) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") || (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "commissioner"].some(cn => String(player.gamertag).toLowerCase().trim().includes(cn));
+        const isStaff = player.is_staff || player.is_commissioner || (cleanPUserEmail && (cleanPUserEmail === "todd061496@gmail.com" || cleanPUserEmail === "todd61496@gmail.com" || cleanPUserEmail.includes("todd") || cleanPUserEmail === "admin@frontlineleague.com" || cleanPUserEmail.includes("invictus"))) || (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") || (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner"].some(cn => String(player.gamertag).toLowerCase().trim().includes(cn));
         const tag = isStaff ? (player.tag || "COMM") : (player.tag || "TAG");
         const badgeColor = isStaff ? "var(--lime, #d5f45b)" : "#ff1e44";
         const badgeText = isStaff ? "COMMISSIONER" : `${player.elo || 1200} ELO`;
         const linkTarget = isStaff ? "/profile/" : "/arena/profile/#my-teams";
         const linkTitle = isStaff ? "Signed in as League Commissioner — Open League Profile" : "View Active Teams";
-
-        const adminBtnHtml = isStaff ? `<a href="/admin/" class="btn-crimson arena-admin-console-pill" style="padding:7px 14px; font-size:11px; text-decoration:none; background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; margin-left:8px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 0 10px rgba(213,244,91,0.25);" title="Open Commissioner Admin Console"><span>⚙</span> <span>Admin Console</span></a>` : ``;
 
         squadHeaderEl.innerHTML = `
           <a href="${linkTarget}" class="gb-my-squad-pill" title="${linkTitle}" style="text-decoration:none;">
@@ -12798,7 +13088,6 @@ window.LadderDB = {
               <span style="color:${badgeColor}; font-size:11px; margin-left:4px; font-weight:800;">${badgeText}</span>
             </div>
           </a>
-          ${adminBtnHtml}
         `;
       } else {
         squadHeaderEl.innerHTML = `

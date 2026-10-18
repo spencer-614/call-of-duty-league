@@ -1004,6 +1004,9 @@
 <button type="button" class="admin-nav-btn" data-tab="tab-tournaments-hub" id="nav-btn-tournaments-hub" onclick="switchActiveTab('tab-tournaments-hub')" style="border-color:#fbbf24; color:#fbbf24;">
             🏆 Tournaments Hub
           </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-tournament-suspensions" id="nav-btn-tournament-suspensions" onclick="switchActiveTab('tab-tournament-suspensions')" style="border-color:#ef4444; color:#ef4444; display:none;">
+            ⛔ Tournament Suspensions (<span id="suspensions-badge-count">0</span>)
+          </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-arena-command" id="nav-btn-arena-command" onclick="switchActiveTab('tab-arena-command')" style="border-color:#ff1e44; color:#ff1e44; display:none;">
             ⚔️ Arena Command (Commissioner)
           </button>
@@ -2748,6 +2751,25 @@
             </div>
           </div>
 
+          <!-- Tournament Disciplinary Desk Banner -->
+          <div class="admin-panel-card" style="background:#180b0e; border:1px solid #7f1d1d; border-left:4px solid #ef4444; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+            <div>
+              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; font-size:10px; font-weight:800; padding:2px 7px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                <span>★</span> <span>COMMISSIONER DIRECTIVE // DISCIPLINARY TRIBUNAL</span>
+              </div>
+              <h4 style="margin:2px 0 4px; font-size:16px; color:#ffffff; font-weight:800; text-transform:uppercase; display:flex; align-items:center; gap:8px;">
+                <span>⛔ Tournament Suspensions &amp; Player Bans</span>
+                <span id="tourney-hub-susp-badge" style="font-size:11px; background:#ef4444; color:#fff; padding:2px 8px; border-radius:10px;">0 Active</span>
+              </h4>
+              <div style="font-size:12px; color:#cbd5e1; line-height:1.4;">
+                Suspended players are strictly barred from all tournament play and cannot register or be added to any squad roster.
+              </div>
+            </div>
+            <button type="button" class="btn-action-sm btn-action-danger" onclick="switchActiveTab('tab-tournament-suspensions')" style="font-weight:800; padding:8px 16px; font-size:12px;">
+              Manage Suspended Players ↗
+            </button>
+          </div>
+
           <!-- Tournament Composer (Mirrors Announcements Composer) -->
             <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; font:800 10.5px var(--body); letter-spacing:1px; text-transform:uppercase; padding:3px 8px; margin-bottom:12px; border-radius:2px;">
               <span>★</span> <span>COMMISSIONER DIRECTIVE // ARENA &amp; HUB TOURNAMENT ENGINE</span>
@@ -3006,6 +3028,168 @@
         </div>
 
         <!-- ======================================================== -->
+        <!-- TAB: TOURNAMENT SUSPENSIONS (COMMISSIONERS ONLY)         -->
+        <!-- ======================================================== -->
+        <div id="tab-tournament-suspensions" class="admin-tab-content" style="display:none;">
+          <!-- Directive Header Banner -->
+          <div class="admin-panel-card" style="border-left: 4px solid #ef4444; background: #180b0e;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  <span>★</span> <span>COMMISSIONER DIRECTIVE // TOURNAMENT DISCIPLINARY DESK</span>
+                </div>
+                <h3 style="margin:2px 0 4px; font-size:20px; color:#ffffff; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+                  ⛔ Tournament Suspensions &amp; Player Disciplinary Enforcement
+                </h3>
+                <div style="font-size:12.5px; color:#cbd5e1; line-height:1.4; max-width:850px;">
+                  Authorized solely for League Commissioners. When a player is suspended here, their tournament registration access is blocked league-wide in real-time. They cannot register as a captain, and other players cannot enlist them onto any squad roster.
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="/tournaments/" target="_blank" class="btn-action-sm" style="border-color:#fbbf24; color:#fbbf24; font-weight:800;">
+                  🏆 View Live Tournaments ↗
+                </a>
+                <button type="button" class="btn-action-sm" onclick="loadAdminSuspensions()">
+                  ↻ Refresh Suspensions
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 1: Issue Tournament Suspension -->
+          <div class="admin-panel-card" style="border-top:3px solid #ef4444;">
+            <h3 class="admin-card-title" style="margin:0 0 6px; color:#ef4444;">⛔ 1. Issue Disciplinary Tournament Suspension</h3>
+            <p style="color:var(--muted); font-size:13px; margin:0 0 16px;">
+              Select a player from the directory or manually enter their gamertag. Specify the reason and suspension duration.
+            </p>
+
+            <form id="form-create-suspension" onsubmit="handleAdminCreateSuspension(event)">
+              <div class="admin-form-grid">
+                <!-- User Directory Selector -->
+                <div class="form-group" style="grid-column: 1 / -1; background:#12140e; border:1px solid #303723; padding:12px 14px; border-radius:3px;">
+                  <label class="form-label" for="susp-user-select" style="color:var(--lime); font-weight:800; display:flex; justify-content:space-between; align-items:center;">
+                    <span>👥 Quick Select from Player / User Directory</span>
+                    <small style="color:var(--muted); font-size:11px; text-transform:none;">Auto-populates gamertag, discord, &amp; email</small>
+                  </label>
+                  <select id="susp-user-select" class="form-control" onchange="handleSuspUserSelect(this.value)">
+                    <option value="">-- Choose registered player or recruit (or type manual details below) --</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="susp-gamertag-input">Player Gamertag *</label>
+                  <input type="text" id="susp-gamertag-input" class="form-control" placeholder="e.g. Havoc" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="susp-discord-input">Discord Handle (Optional)</label>
+                  <input type="text" id="susp-discord-input" class="form-control" placeholder="e.g. Havoc#0000" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="susp-email-input">Account Email (Optional)</label>
+                  <input type="email" id="susp-email-input" class="form-control" placeholder="player@example.com" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="susp-duration-select">Suspension Duration *</label>
+                  <select id="susp-duration-select" class="form-control" onchange="handleSuspDurationChange(this.value)" required>
+                    <option value="indefinite" selected>Permanent / Indefinite Ban</option>
+                    <option value="7">7 Days (1 Week)</option>
+                    <option value="14">14 Days (2 Weeks)</option>
+                    <option value="30">30 Days (1 Month)</option>
+                    <option value="60">60 Days (2 Months)</option>
+                    <option value="90">90 Days (Season Ban)</option>
+                    <option value="custom">Custom Expiration Date...</option>
+                  </select>
+                  <input type="date" id="susp-custom-date" class="form-control" style="display:none; margin-top:8px;" />
+                </div>
+
+                <!-- Violation Presets & Input -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="susp-reason-input" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Violation / Disciplinary Reason *</span>
+                    <small style="color:var(--muted); font-size:11px;">Click preset below to fill</small>
+                  </label>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                    <button type="button" class="btn-action-sm" onclick="setSuspReasonPreset('Third-Party Software / Cheats / Cronus / StrikePack')" style="font-size:11px; padding:3px 8px; color:#ef4444; border-color:#ef444450;">🎮 Cheating / Software</button>
+                    <button type="button" class="btn-action-sm" onclick="setSuspReasonPreset('Code of Conduct Violation / Extreme Toxicity / Harassment')" style="font-size:11px; padding:3px 8px; color:#f59e0b; border-color:#f59e0b50;">🚨 Toxicity / Conduct</button>
+                    <button type="button" class="btn-action-sm" onclick="setSuspReasonPreset('Tournament Bracket Manipulation / Match Fixing / Exploiting')" style="font-size:11px; padding:3px 8px; color:#ef4444; border-color:#ef444450;">⚔️ Bracket Manipulation</button>
+                    <button type="button" class="btn-action-sm" onclick="setSuspReasonPreset('Tournament Bracket No-Show / Delaying Match / Unsportsmanlike Conduct')" style="font-size:11px; padding:3px 8px; color:#38bdf8; border-color:#38bdf850;">❌ Bracket No-Show</button>
+                    <button type="button" class="btn-action-sm" onclick="setSuspReasonPreset('Unauthorized Ringing / Account Sharing / Impersonation')" style="font-size:11px; padding:3px 8px; color:#a855f7; border-color:#a855f750;">👥 Ringing / Impersonation</button>
+                  </div>
+                  <input type="text" id="susp-reason-input" class="form-control" placeholder="Select preset above or type specific reason..." required />
+                </div>
+
+                <!-- Commissioner Internal Notes -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="susp-notes-input">Internal Commissioner Notes (Optional Log)</label>
+                  <textarea id="susp-notes-input" class="form-control" rows="2" placeholder="Ticket number, evidence links, or internal notes..."></textarea>
+                </div>
+              </div>
+
+              <div style="margin-top:16px; display:flex; gap:12px; align-items:center;">
+                <button type="submit" id="btn-submit-suspension" class="btn-action-sm btn-action-danger" style="background:#ef4444; color:#ffffff; border-color:#ef4444; font-weight:800; padding:10px 24px; font-size:13px;">
+                  ⛔ Enforce Tournament Suspension
+                </button>
+                <button type="button" class="btn-action-sm" onclick="resetSuspensionForm()">
+                  ✕ Clear Form
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card 2: Active Suspensions Roster & Log -->
+          <div class="admin-panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; gap:12px;">
+              <h3 class="admin-card-title" style="margin:0;">📋 Tournament Suspensions &amp; Disciplinary Records</h3>
+              <input type="text" id="search-admin-suspensions" class="form-control" placeholder="Filter suspended players..." style="max-width:260px;" oninput="filterAdminSuspensionsTable()" />
+            </div>
+
+            <!-- Quick Metrics Bar -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:20px;">
+              <div style="background:#131610; border:1px solid #2a311e; padding:12px 16px; border-radius:3px;">
+                <small style="color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">Total Records</small>
+                <div id="susp-metrics-total" style="font:800 20px var(--display); color:#fff; margin-top:2px;">0</div>
+              </div>
+              <div style="background:#1a0c0e; border:1px solid #7f1d1d; padding:12px 16px; border-radius:3px;">
+                <small style="color:#fca5a5; font-size:10px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">Active Suspensions</small>
+                <div id="susp-metrics-active" style="font:800 20px var(--display); color:#ef4444; margin-top:2px;">0</div>
+              </div>
+              <div style="background:#131610; border:1px solid #2a311e; padding:12px 16px; border-radius:3px;">
+                <small style="color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">Lifted / Expired</small>
+                <div id="susp-metrics-lifted" style="font:800 20px var(--display); color:#22c55e; margin-top:2px;">0</div>
+              </div>
+            </div>
+
+            <!-- Status Filter Pills -->
+            <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+              <button type="button" class="btn-action-sm filter-susp-btn active" data-filter="all" onclick="setAdminSuspFilter('all', this)">All Records</button>
+              <button type="button" class="btn-action-sm filter-susp-btn" data-filter="active" onclick="setAdminSuspFilter('active', this)" style="color:#ef4444; border-color:#ef444450;">🔴 Active Suspensions</button>
+              <button type="button" class="btn-action-sm filter-susp-btn" data-filter="lifted" onclick="setAdminSuspFilter('lifted', this)" style="color:#22c55e; border-color:#22c55e50;">✓ Lifted / Expired</button>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Combatant / Player</th>
+                    <th>Violation &amp; Reason</th>
+                    <th>Suspended By &amp; Date</th>
+                    <th>Duration &amp; Expiry</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-suspensions-tbody">
+                  <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:30px;">Loading suspensions directory...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
         <!-- TAB 15: ARENA COMMAND (COMMISSIONERS ONLY)               -->
         <!-- ======================================================== -->
         <div id="tab-arena-command" class="admin-tab-content" style="display:none;">
@@ -3042,28 +3226,6 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
               <h3 class="admin-card-title" style="margin:0; color:#ff1e44;">⚙ 1. Arena Season Status &amp; Lifecycle Control</h3>
               <span style="font-size:12px; color:#94a3b8; font-family:var(--admin-font);">Broadcasts directly to Arena navigation, top beacons, and ladder headers</span>
-            </div>
-
-            <!-- Live Arena Header & Hero Preview Box -->
-            <div style="background:#090d14; border:1px solid #1a2538; padding:18px 22px; border-radius:4px; margin-bottom:20px; display:flex; flex-direction:column; gap:14px;">
-              <div style="font-size:11px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.8px;">
-                👁 Live Arena Header Status Preview
-              </div>
-              <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; background:#06080d; padding:14px 18px; border-radius:3px; border-left:3px solid #ff1e44;">
-                <img src="/images/arenalogo_1.png" alt="Arena Logo" style="width:48px; height:48px; object-fit:contain;" />
-                <div>
-                  <div style="font-size:16px; font-weight:900; letter-spacing:0.5px;">
-                    <span style="color:#ffffff;">FRONTLINE</span> <span style="color:#ff1e44;">ARENA</span>
-                  </div>
-                  <div style="display:inline-flex; align-items:center; gap:8px; margin-top:4px;">
-                    <span style="font-size:10px; font-weight:800; color:#94a3b8; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:2px;">COMPETITIVE ARENA</span>
-                    <div id="preview-arena-live-beacon" class="fl-live-beacon" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:#ff1e44; background:rgba(255,30,68,0.12); border:1px solid rgba(255,30,68,0.3); padding:2px 8px; border-radius:12px;">
-                      <span id="preview-arena-beacon-dot" class="fl-live-dot" style="width:7px; height:7px; background:#ff1e44; border-radius:50%; box-shadow:0 0 10px #ff1e44;"></span>
-                      <span id="preview-arena-status-text">ARENA SEASON 1 ACTIVE</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <form id="form-arena-season-settings">
@@ -3897,11 +4059,11 @@
 
         function isCommissionerAccount(target) {
           if (!target) return false;
-          const commishEmails = ["todd061496@gmail.com", "admin@frontlineleague.com"];
-          const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+          const commishEmails = ["todd061496@gmail.com", "todd61496@gmail.com", "admin@frontlineleague.com"];
+          const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner spencer", "commissioner", "savory"];
           if (typeof target === "string") {
             const clean = target.toLowerCase().trim();
-            if (commishEmails.includes(clean) || clean.includes("todd061496") || clean.includes("frontlineleague.com") || clean.includes("invictus")) return true;
+            if (commishEmails.includes(clean) || clean.includes("todd") || clean.includes("frontlineleague.com") || clean.includes("invictus")) return true;
             for (const cn of commishNames) {
               if (clean === cn || clean.startsWith(cn + "#") || clean.includes(cn) || cn.includes(clean)) return true;
             }
@@ -3914,7 +4076,7 @@
             if (target.user_metadata?.is_commissioner === true || target.user_metadata?.is_staff === true) return true;
 
             const email = (target.email || target.user_email || target.user_metadata?.email || target.raw_user_meta_data?.email || "").toLowerCase().trim();
-            if (email && (commishEmails.includes(email) || email.includes("todd061496") || email.includes("frontlineleague.com") || email.includes("invictus"))) return true;
+            if (email && (commishEmails.includes(email) || email.includes("todd") || email.includes("frontlineleague.com") || email.includes("invictus"))) return true;
 
             const names = [
               target.user_metadata?.gamertag,
@@ -3948,7 +4110,7 @@
                 );
                 if (i.identity_data.email) {
                   const em = String(i.identity_data.email).toLowerCase().trim();
-                  if (em && (commishEmails.includes(em) || em.includes("todd061496") || em.includes("frontlineleague.com") || em.includes("invictus"))) return true;
+                  if (em && (commishEmails.includes(em) || em.includes("todd") || em.includes("frontlineleague.com") || em.includes("invictus"))) return true;
                 }
               }
             });
@@ -3956,6 +4118,7 @@
             for (const n of names) {
               if (n) {
                 const s = String(n).toLowerCase().trim();
+                if (commishEmails.includes(s) || s.includes("todd") || s.includes("invictus")) return true;
                 for (const cn of commishNames) {
                   if (s === cn || s.startsWith(cn + "#") || s.includes(cn) || cn.includes(s)) return true;
                 }
@@ -4010,7 +4173,7 @@
           activeAllowedTabs = (window.LeagueDB && typeof window.LeagueDB.getRoleTabs === "function")
             ? window.LeagueDB.getRoleTabs(roleKey, activeStaffProfile?.custom_permissions)
             : (isCommissionerRole
-                ? ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command"]
+                ? ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command", "tab-tournament-suspensions"]
                 : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-ladder-disputes"]);
 
           // 2. Update Top Status Bar
@@ -4031,7 +4194,7 @@
               : `(${activeAllowedTabs.length} Modules Authorized)`;
           }
 
-          // 3. Show/Hide Staff Management, Tournaments Hub, & Arena Command Tabs (Commissioners only)
+          // 3. Show/Hide Staff Management, Tournaments Hub, Suspensions & Arena Command Tabs (Commissioners only)
           const staffNavBtn = document.getElementById("nav-btn-staff");
           if (staffNavBtn) {
             staffNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
@@ -4039,6 +4202,10 @@
           const tourneysNavBtn = document.getElementById("nav-btn-tournaments-hub");
           if (tourneysNavBtn) {
             tourneysNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
+          }
+          const suspNavBtn = document.getElementById("nav-btn-tournament-suspensions");
+          if (suspNavBtn) {
+            suspNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
           }
           const arenaCmdNavBtn = document.getElementById("nav-btn-arena-command");
           if (arenaCmdNavBtn) {
@@ -4369,6 +4536,9 @@
           if (targetId === "tab-arena-command") {
             if (typeof loadArenaCommandData === "function") loadArenaCommandData();
           }
+          if (targetId === "tab-tournament-suspensions") {
+            if (typeof loadAdminSuspensions === "function") loadAdminSuspensions();
+          }
         }
         window.switchActiveTab = switchActiveTab;
 
@@ -4397,6 +4567,7 @@
           { id: "tab-ladder-disputes", label: "Ladder Disputes" },
           { id: "tab-platform-switcher", label: "Platform Switcher" },
           { id: "tab-tournaments-hub", label: "Tournaments Hub" },
+          { id: "tab-tournament-suspensions", label: "Tournament Suspensions (Commissioner)" },
           { id: "tab-arena-command", label: "Arena Command" }
         ];
 
@@ -4665,6 +4836,16 @@
               accountBadgeHtml = `<span class="pill" style="background:rgba(213,244,91,0.1); border-color:var(--lime); color:var(--lime); font-size:10px;">🌟 Member</span>`;
             }
 
+            const suspStatus = (window.LeagueDB?.isPlayerSuspended)
+              ? (window.LeagueDB.isPlayerSuspended(item.gamertag, (typeof cachedAdminSuspensions !== "undefined" ? cachedAdminSuspensions : null)) ||
+                 (item.discord ? window.LeagueDB.isPlayerSuspended(item.discord, (typeof cachedAdminSuspensions !== "undefined" ? cachedAdminSuspensions : null)) : null) ||
+                 (item.email ? window.LeagueDB.isPlayerSuspended(item.email, (typeof cachedAdminSuspensions !== "undefined" ? cachedAdminSuspensions : null)) : null))
+              : { suspended: false };
+            const isSusp = suspStatus && suspStatus.suspended;
+            if (isSusp) {
+              accountBadgeHtml += ` <span class="pill" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5; font-size:10px; font-weight:800;" title="Suspended from tournaments">⛔ Suspended</span>`;
+            }
+
             // Current status badge
             let statusBadgeHtml = "";
             if (roleDef) {
@@ -4674,7 +4855,7 @@
             }
 
             return `
-              <tr data-user-key="${escapeHtml(item.key)}" class="staff-user-row ${item.role ? 'is-staff-member' : ''}">
+              <tr data-user-key="${escapeHtml(item.key)}" class="staff-user-row ${item.role ? 'is-staff-member' : ''}" style="${isSusp ? 'background:rgba(239,68,68,0.05);' : ''}">
                 <td>
                   <div style="display:flex; align-items:center; gap:10px;">
                     <div style="width:34px; height:34px; border-radius:50%; background:#1e2017; border:1px solid ${item.role ? 'var(--lime)' : '#363b2a'}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:${item.role ? 'var(--lime)' : '#b5b8a8'}; flex-shrink:0;">
@@ -4712,13 +4893,22 @@
                   </select>
                 </td>
                 <td>
-                  <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                  <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
                     <button type="button" class="btn-action-sm btn-save-user-role" data-user-key="${escapeHtml(item.key)}" style="border-color:#3e4430; color:#b5b8a8; font-size:11px; padding:4px 9px;">
                       Save Role
                     </button>
                     <button type="button" class="btn-action-sm btn-config-perms" data-user-key="${escapeHtml(item.key)}" title="Configure custom tab permissions" style="font-size:11px; padding:4px 8px;">
                       ⚙ Perms
                     </button>
+                    ${isSusp ? `
+                      <button type="button" class="btn-action-sm" style="color:#22c55e; border-color:rgba(34,197,94,0.4); font-size:11px; padding:4px 8px;" title="Lift tournament suspension" onclick="handleAdminUnsuspend('${escapeHtml(suspStatus.suspension?.id || item.gamertag)}', '${escapeHtml(item.gamertag)}')">
+                        Unsuspend
+                      </button>
+                    ` : `
+                      <button type="button" class="btn-action-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4); font-size:11px; padding:4px 8px;" title="Suspend from tournaments" onclick="quickSuspendPlayer('${escapeHtml(item.gamertag)}', '${escapeHtml(item.discord || '')}', '${escapeHtml(item.email || '')}')">
+                        ⛔ Suspend
+                      </button>
+                    `}
                     ${item.role && !isSelf ? `
                       <button type="button" class="btn-action-sm btn-revoke-staff-role" data-user-key="${escapeHtml(item.key)}" title="Revoke staff privileges (reverts to standard member)" style="font-size:11px; padding:4px 8px; color:#ffb300; border-color:#ffb30060;">
                         Revoke Perms
@@ -5219,7 +5409,8 @@
             loadAdminRulebook(),
             loadLadderDisputes(),
             loadAdminTournaments(),
-            loadAdminSwitcherSettings()
+            loadAdminSwitcherSettings(),
+            (typeof loadAdminSuspensions === "function" ? loadAdminSuspensions() : Promise.resolve())
           ]);
           updateAnnouncementPreview();
         }
@@ -5551,9 +5742,23 @@
           const tbody = document.getElementById("admin-players-tbody");
           if (!tbody) return;
           if (playersList && playersList.length > 0) {
-            tbody.innerHTML = playersList.map(p => `
-              <tr>
-                <td><strong>${escapeHtml(p.gamertag)}</strong> ${p.activision_id ? `<br><small style="color:var(--muted);">${escapeHtml(p.activision_id)}</small>` : ''}</td>
+            tbody.innerHTML = playersList.map(p => {
+              const suspStatus = (window.LeagueDB?.isPlayerSuspended)
+                ? (window.LeagueDB.isPlayerSuspended(p.gamertag, (typeof cachedAdminSuspensions !== "undefined" ? cachedAdminSuspensions : null)) ||
+                   (p.discord ? window.LeagueDB.isPlayerSuspended(p.discord, (typeof cachedAdminSuspensions !== "undefined" ? cachedAdminSuspensions : null)) : null) ||
+                   (p.email ? window.LeagueDB.isPlayerSuspended(p.email, (typeof cachedAdminSuspensions !== "undefined" ? cachedAdminSuspensions : null)) : null))
+                : { suspended: false };
+              const isSusp = suspStatus && suspStatus.suspended;
+
+              return `
+              <tr style="${isSusp ? 'background:rgba(239,68,68,0.06);' : ''}">
+                <td>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <strong>${escapeHtml(p.gamertag)}</strong>
+                    ${isSusp ? `<span class="pill" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35); font-size:10px; font-weight:800;" title="Suspended from tournament registrations">⛔ SUSPENDED</span>` : ''}
+                  </div>
+                  ${p.activision_id ? `<small style="color:var(--muted);">${escapeHtml(p.activision_id)}</small>` : ''}
+                </td>
                 <td>${(p.teams && p.teams.name !== 'FA') ? `<span style="color:var(--lime);">[${escapeHtml(p.teams.tag)}] ${escapeHtml(p.teams.name)}</span>` : '<span style="color:#38bdf8; font-weight:600;">Free Agent</span>'}</td>
                 <td>${escapeHtml(p.role || 'Flex')}</td>
                 <td><strong style="color:var(--lime);">${p.kdr ? Number(p.kdr).toFixed(2) : '1.00'}</strong></td>
@@ -5561,11 +5766,17 @@
                   <div style="display:flex; gap:6px; flex-wrap:wrap;">
                     <button type="button" class="btn-action-sm btn-manage-player-stats" data-id="${p.id}" style="color:var(--lime); border-color:var(--lime);" title="Inspect telemetry & manage map stats">📊 Stats</button>
                     <button type="button" class="btn-action-sm btn-edit-player-profile" data-id="${p.id}" title="Edit profile & stats">✏ Edit</button>
+                    ${isSusp ? `
+                      <button type="button" class="btn-action-sm" style="color:#22c55e; border-color:rgba(34,197,94,0.4);" onclick="handleAdminUnsuspend('${escapeHtml(suspStatus.suspension?.id || p.gamertag)}', '${escapeHtml(p.gamertag)}')">Unsuspend ✓</button>
+                    ` : `
+                      <button type="button" class="btn-action-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" title="Suspend player from tournaments" onclick="quickSuspendPlayer('${escapeHtml(p.gamertag)}', '${escapeHtml(p.discord || '')}', '${escapeHtml(p.email || '')}')">⛔ Suspend</button>
+                    `}
                     <button type="button" class="btn-action-sm btn-action-danger btn-delete-player" data-id="${p.id}" data-name="${escapeHtml(p.gamertag)}">Remove</button>
                   </div>
                 </td>
               </tr>
-            `).join("");
+            `;
+            }).join("");
 
             // Manage stats button listener: switches tab and opens player
             document.querySelectorAll(".btn-manage-player-stats").forEach(btn => {
@@ -10867,6 +11078,434 @@
           document.getElementById("tourney-title-input")?.focus();
         }
         window.quickCreateArenaTournament = quickCreateArenaTournament;
+
+        // ==========================================
+        // 15B. TOURNAMENT SUSPENSIONS CONTROLLER (COMMISSIONER ONLY)
+        // ==========================================
+        let cachedAdminSuspensions = [];
+        let currentAdminSuspFilter = "all";
+
+        async function loadAdminSuspensions() {
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.getTournamentSuspensions === "function") {
+              cachedAdminSuspensions = await window.LeagueDB.getTournamentSuspensions();
+            } else {
+              const local = localStorage.getItem("frontline_tournament_suspensions");
+              cachedAdminSuspensions = local ? JSON.parse(local) : [];
+            }
+          } catch (e) {
+            console.error("loadAdminSuspensions error:", e);
+            cachedAdminSuspensions = [];
+          }
+
+          updateSuspensionMetrics();
+          populateSuspensionUserSelect();
+          renderAdminSuspensionsTable();
+
+          // Refresh badge status in other tables if loaded
+          if (cachedPlayers && cachedPlayers.length > 0 && typeof renderPlayerRows === "function") {
+            renderPlayerRows(cachedPlayers);
+          }
+          if (staffUsersMap && staffUsersMap.size > 0 && typeof renderStaffUsersTable === "function") {
+            renderStaffUsersTable();
+          }
+        }
+        window.loadAdminSuspensions = loadAdminSuspensions;
+
+        function updateSuspensionMetrics() {
+          const now = Date.now();
+          const total = cachedAdminSuspensions.length;
+          const activeList = cachedAdminSuspensions.filter(s => {
+            if (s.is_active === false || s.status === "inactive" || s.status === "lifted") return false;
+            if (s.expires_at) {
+              const exp = new Date(s.expires_at).getTime();
+              if (!isNaN(exp) && exp <= now) return false;
+            }
+            return true;
+          });
+          const activeCount = activeList.length;
+          const liftedCount = total - activeCount;
+
+          const elTotal = document.getElementById("susp-metrics-total");
+          const elActive = document.getElementById("susp-metrics-active");
+          const elLifted = document.getElementById("susp-metrics-lifted");
+          const elBadge = document.getElementById("suspensions-badge-count");
+
+          if (elTotal) elTotal.textContent = total;
+          if (elActive) elActive.textContent = activeCount;
+          if (elLifted) elLifted.textContent = liftedCount;
+          if (elBadge) elBadge.textContent = activeCount;
+        }
+
+        function populateSuspensionUserSelect() {
+          const select = document.getElementById("susp-user-select");
+          if (!select) return;
+
+          // Build a unique map of users from cachedPlayers, staffUsersMap, cachedSignups
+          const userMap = new Map();
+
+          if (cachedPlayers && Array.isArray(cachedPlayers)) {
+            cachedPlayers.forEach(p => {
+              if (p.gamertag && !userMap.has(p.gamertag.toLowerCase())) {
+                userMap.set(p.gamertag.toLowerCase(), {
+                  gamertag: p.gamertag,
+                  discord: p.discord || "",
+                  email: p.email || "",
+                  type: (p.teams && p.teams.name !== 'FA') ? `Player - [${p.teams.tag || p.teams.name}]` : "Free Agent"
+                });
+              }
+            });
+          }
+
+          if (typeof staffUsersMap !== "undefined" && staffUsersMap.size > 0) {
+            staffUsersMap.forEach(u => {
+              const key = (u.gamertag || "").toLowerCase();
+              if (key && !userMap.has(key)) {
+                userMap.set(key, {
+                  gamertag: u.gamertag,
+                  discord: u.discord || "",
+                  email: u.email || "",
+                  type: u.category || (u.role ? `Staff: ${u.role}` : "Community Member")
+                });
+              }
+            });
+          }
+
+          if (cachedSignups && Array.isArray(cachedSignups)) {
+            cachedSignups.forEach(s => {
+              const key = (s.gamertag || "").toLowerCase();
+              if (key && !userMap.has(key)) {
+                userMap.set(key, {
+                  gamertag: s.gamertag,
+                  discord: s.discord || "",
+                  email: s.email || "",
+                  type: "League Recruit"
+                });
+              }
+            });
+          }
+
+          const sortedUsers = Array.from(userMap.values()).sort((a, b) =>
+            a.gamertag.localeCompare(b.gamertag, undefined, { sensitivity: 'base' })
+          );
+
+          select.innerHTML = '<option value="">-- Choose registered player or recruit (or type manual details below) --</option>' +
+            sortedUsers.map(u => {
+              const jsonVal = escapeHtml(JSON.stringify({ gamertag: u.gamertag, discord: u.discord, email: u.email }));
+              return `<option value="${jsonVal}">${escapeHtml(u.gamertag)} (${escapeHtml(u.type)})</option>`;
+            }).join("");
+        }
+
+        function handleSuspUserSelect(jsonStr) {
+          if (!jsonStr) return;
+          try {
+            const data = JSON.parse(jsonStr);
+            const tagInp = document.getElementById("susp-gamertag-input");
+            const discInp = document.getElementById("susp-discord-input");
+            const emailInp = document.getElementById("susp-email-input");
+
+            if (tagInp && data.gamertag) tagInp.value = data.gamertag;
+            if (discInp && data.discord) discInp.value = data.discord;
+            if (emailInp && data.email) emailInp.value = data.email;
+          } catch (e) {
+            console.error("handleSuspUserSelect parse error:", e);
+          }
+        }
+        window.handleSuspUserSelect = handleSuspUserSelect;
+
+        function handleSuspDurationChange(val) {
+          const customDateInp = document.getElementById("susp-custom-date");
+          if (!customDateInp) return;
+          if (val === "custom") {
+            customDateInp.style.display = "block";
+            customDateInp.required = true;
+          } else {
+            customDateInp.style.display = "none";
+            customDateInp.required = false;
+          }
+        }
+        window.handleSuspDurationChange = handleSuspDurationChange;
+
+        function setSuspReasonPreset(reason) {
+          const inp = document.getElementById("susp-reason-input");
+          if (inp) {
+            inp.value = reason;
+            inp.focus();
+          }
+        }
+        window.setSuspReasonPreset = setSuspReasonPreset;
+
+        function resetSuspensionForm() {
+          const form = document.getElementById("form-create-suspension");
+          if (form) form.reset();
+          const customDateInp = document.getElementById("susp-custom-date");
+          if (customDateInp) {
+            customDateInp.style.display = "none";
+            customDateInp.required = false;
+          }
+          const userSelect = document.getElementById("susp-user-select");
+          if (userSelect) userSelect.value = "";
+        }
+        window.resetSuspensionForm = resetSuspensionForm;
+
+        function setAdminSuspFilter(filter, btn) {
+          currentAdminSuspFilter = filter;
+          document.querySelectorAll(".filter-susp-btn").forEach(b => b.classList.remove("active"));
+          if (btn) btn.classList.add("active");
+          renderAdminSuspensionsTable();
+        }
+        window.setAdminSuspFilter = setAdminSuspFilter;
+
+        function filterAdminSuspensionsTable() {
+          renderAdminSuspensionsTable();
+        }
+        window.filterAdminSuspensionsTable = filterAdminSuspensionsTable;
+
+        function renderAdminSuspensionsTable() {
+          const tbody = document.getElementById("admin-suspensions-tbody");
+          if (!tbody) return;
+
+          const searchInput = document.getElementById("search-admin-suspensions");
+          const q = (searchInput?.value || "").toLowerCase().trim();
+          const now = Date.now();
+
+          let filtered = cachedAdminSuspensions.filter(s => {
+            const isActive = (s.is_active !== false && s.status !== "inactive" && s.status !== "lifted" && (!s.expires_at || new Date(s.expires_at).getTime() > now));
+
+            if (currentAdminSuspFilter === "active" && !isActive) return false;
+            if (currentAdminSuspFilter === "lifted" && isActive) return false;
+
+            if (q) {
+              const mTag = (s.gamertag || "").toLowerCase().includes(q);
+              const mDisc = (s.discord || "").toLowerCase().includes(q);
+              const mEmail = (s.email || "").toLowerCase().includes(q);
+              const mReason = (s.reason || "").toLowerCase().includes(q);
+              const mBy = (s.suspended_by || "").toLowerCase().includes(q);
+              if (!mTag && !mDisc && !mEmail && !mReason && !mBy) return false;
+            }
+            return true;
+          });
+
+          if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:32px;">No tournament suspension records match this criteria.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = filtered.map(s => {
+            const isActive = (s.is_active !== false && s.status !== "inactive" && s.status !== "lifted" && (!s.expires_at || new Date(s.expires_at).getTime() > now));
+
+            let statusPill = "";
+            let expiryText = "";
+            if (isActive) {
+              statusPill = `<span class="pill" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); font-weight:800; font-size:11px;">🔴 ACTIVE BAN</span>`;
+              if (s.expires_at) {
+                const expDate = new Date(s.expires_at);
+                const diffDays = Math.ceil((expDate.getTime() - now) / 86400000);
+                expiryText = `<div style="color:#fca5a5; font-size:12px; font-weight:700;">Expires ${expDate.toLocaleDateString()}</div><div style="font-size:10.5px; color:var(--muted);">${diffDays} day(s) remaining</div>`;
+              } else {
+                expiryText = `<div style="color:#ef4444; font-size:12px; font-weight:800;">Permanent / Indefinite</div><div style="font-size:10.5px; color:var(--muted);">No automatic expiry</div>`;
+              }
+            } else {
+              statusPill = `<span class="pill" style="color:#22c55e; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.4); font-weight:800; font-size:11px;">✓ LIFTED / EXPIRED</span>`;
+              expiryText = `<div style="color:#22c55e; font-size:12px;">Lifted / Inactive</div><div style="font-size:10.5px; color:var(--muted);">${s.lifted_at ? new Date(s.lifted_at).toLocaleDateString() : 'Reinstated'}</div>`;
+            }
+
+            const suspDate = s.suspended_at ? new Date(s.suspended_at).toLocaleDateString() : (s.created_at ? new Date(s.created_at).toLocaleDateString() : "N/A");
+
+            return `
+              <tr style="${isActive ? 'background:rgba(239,68,68,0.04);' : ''}">
+                <td>${statusPill}</td>
+                <td>
+                  <div>
+                    <strong style="color:#ffffff; font-size:14px;">${escapeHtml(s.gamertag)}</strong>
+                    ${s.discord ? `<div style="font-size:11.5px; color:#7983f5; margin-top:2px;">Discord: ${escapeHtml(s.discord)}</div>` : ''}
+                    ${s.email ? `<div style="font-size:11px; color:var(--muted);">${escapeHtml(s.email)}</div>` : ''}
+                  </div>
+                </td>
+                <td>
+                  <div style="color:#fca5a5; font-weight:700; font-size:12.5px;">${escapeHtml(s.reason || 'Disciplinary violation')}</div>
+                  ${s.notes ? `<div style="font-size:11px; color:var(--muted); margin-top:3px; font-style:italic;">Notes: ${escapeHtml(s.notes)}</div>` : ''}
+                </td>
+                <td>
+                  <div style="color:#ffffff; font-size:12px; font-weight:600;">${escapeHtml(s.suspended_by || 'Commissioner')}</div>
+                  <div style="font-size:11px; color:var(--muted);">${suspDate}</div>
+                </td>
+                <td>${expiryText}</td>
+                <td>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    ${isActive ? `
+                      <button type="button" class="btn-action-sm" style="color:#22c55e; border-color:rgba(34,197,94,0.4);" onclick="handleAdminUnsuspend('${escapeHtml(s.id)}', '${escapeHtml(s.gamertag)}')">✓ Lift Ban</button>
+                    ` : `
+                      <button type="button" class="btn-action-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="quickSuspendPlayer('${escapeHtml(s.gamertag)}', '${escapeHtml(s.discord || '')}', '${escapeHtml(s.email || '')}')">⛔ Re-Suspend</button>
+                    `}
+                    <button type="button" class="btn-action-sm btn-action-danger" onclick="handleAdminDeleteSuspension('${escapeHtml(s.id)}', '${escapeHtml(s.gamertag)}')">🗑 Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join("");
+        }
+        window.renderAdminSuspensionsTable = renderAdminSuspensionsTable;
+
+        async function handleAdminCreateSuspension(e) {
+          if (e && e.preventDefault) e.preventDefault();
+
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to enforce player suspensions.", true);
+            return;
+          }
+
+          const tagInp = document.getElementById("susp-gamertag-input");
+          const discInp = document.getElementById("susp-discord-input");
+          const emailInp = document.getElementById("susp-email-input");
+          const durSelect = document.getElementById("susp-duration-select");
+          const customDateInp = document.getElementById("susp-custom-date");
+          const reasonInp = document.getElementById("susp-reason-input");
+          const notesInp = document.getElementById("susp-notes-input");
+          const submitBtn = document.getElementById("btn-submit-suspension");
+
+          const gamertag = (tagInp?.value || "").trim();
+          if (!gamertag) {
+            alert("Please enter the player's gamertag.");
+            return;
+          }
+
+          const reason = (reasonInp?.value || "").trim();
+          if (!reason) {
+            alert("Please specify the violation / disciplinary reason.");
+            return;
+          }
+
+          const durationVal = durSelect?.value || "indefinite";
+          let durationDays = null;
+          let expiresAt = null;
+
+          if (durationVal === "custom") {
+            const cDate = customDateInp?.value;
+            if (!cDate) {
+              alert("Please select a custom expiration date.");
+              return;
+            }
+            expiresAt = new Date(cDate + "T23:59:59").toISOString();
+          } else if (durationVal !== "indefinite") {
+            durationDays = Number(durationVal);
+          }
+
+          const commissionerName = activeStaffProfile?.display_name || activeStaffProfile?.gamertag || activeStaffProfile?.email || "League Commissioner";
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Enforcing Suspension...";
+          }
+
+          try {
+            const res = await window.LeagueDB.suspendPlayer({
+              gamertag: gamertag,
+              discord: (discInp?.value || "").trim() || null,
+              email: (emailInp?.value || "").trim() || null,
+              reason: reason,
+              notes: (notesInp?.value || "").trim(),
+              durationDays: durationDays,
+              expires_at: expiresAt,
+              suspended_by: commissionerName
+            });
+
+            if (res && res.success) {
+              showToast(`⛔ Tournament suspension enforced for "${gamertag}"! Registration access blocked.`);
+              resetSuspensionForm();
+              await loadAdminSuspensions();
+            } else {
+              alert("Failed to enforce suspension: " + (res?.error || "Unknown error"));
+            }
+          } catch (err) {
+            console.error("handleAdminCreateSuspension error:", err);
+            alert("Error enforcing suspension: " + (err.message || err));
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "⛔ Enforce Tournament Suspension";
+            }
+          }
+        }
+        window.handleAdminCreateSuspension = handleAdminCreateSuspension;
+
+        async function handleAdminUnsuspend(suspIdOrGamertag, gamertag) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to lift suspensions.", true);
+            return;
+          }
+
+          const targetName = gamertag || suspIdOrGamertag;
+          if (!confirm(`Are you sure you want to lift the tournament suspension for "${targetName}"?\n\nThey will regain immediate eligibility to register for tournaments and participate on squads.`)) {
+            return;
+          }
+
+          const commissionerName = activeStaffProfile?.display_name || activeStaffProfile?.gamertag || activeStaffProfile?.email || "League Commissioner";
+
+          try {
+            const res = await window.LeagueDB.unsuspendPlayer(suspIdOrGamertag, commissionerName);
+            if (res && res.success) {
+              showToast(`✓ Tournament suspension lifted for "${targetName}". Eligibility restored!`);
+              await loadAdminSuspensions();
+            } else {
+              alert("Failed to lift suspension: " + (res?.error || "Unknown error"));
+            }
+          } catch (err) {
+            console.error("handleAdminUnsuspend error:", err);
+            alert("Error lifting suspension: " + (err.message || err));
+          }
+        }
+        window.handleAdminUnsuspend = handleAdminUnsuspend;
+
+        async function handleAdminDeleteSuspension(suspId, gamertag) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to delete disciplinary records.", true);
+            return;
+          }
+
+          const targetName = gamertag || suspId;
+          if (!confirm(`Permanently remove disciplinary record for "${targetName}"?\n\nThis will remove the suspension entry completely from the database.`)) {
+            return;
+          }
+
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.deleteTournamentSuspension === "function") {
+              const res = await window.LeagueDB.deleteTournamentSuspension(suspId);
+              if (res && res.success) {
+                showToast(`✓ Disciplinary record for "${targetName}" deleted.`);
+                await loadAdminSuspensions();
+              } else {
+                alert("Failed to delete record: " + (res?.error || "Unknown error"));
+              }
+            } else {
+              cachedAdminSuspensions = cachedAdminSuspensions.filter(s => s.id !== suspId && s.gamertag !== suspId);
+              localStorage.setItem("frontline_tournament_suspensions", JSON.stringify(cachedAdminSuspensions));
+              showToast(`✓ Record removed.`);
+              await loadAdminSuspensions();
+            }
+          } catch (err) {
+            console.error("handleAdminDeleteSuspension error:", err);
+            alert("Error deleting suspension record: " + (err.message || err));
+          }
+        }
+        window.handleAdminDeleteSuspension = handleAdminDeleteSuspension;
+
+        function quickSuspendPlayer(gamertag, discord, email) {
+          switchActiveTab("tab-tournament-suspensions");
+          const tagInp = document.getElementById("susp-gamertag-input");
+          const discInp = document.getElementById("susp-discord-input");
+          const emailInp = document.getElementById("susp-email-input");
+          const reasonInp = document.getElementById("susp-reason-input");
+
+          if (tagInp) tagInp.value = gamertag || "";
+          if (discInp) discInp.value = discord || "";
+          if (emailInp) emailInp.value = email || "";
+
+          const formCard = document.getElementById("form-create-suspension");
+          if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (reasonInp) reasonInp.focus();
+        }
+        window.quickSuspendPlayer = quickSuspendPlayer;
 
         // 16. Console Initial Session Unlock Check
         checkInitialAuth();

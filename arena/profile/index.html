@@ -659,24 +659,35 @@
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         try {
           sessionStorage.setItem("frontline_admin_session", "authorized");
-          sessionStorage.setItem("frontline_admin_email", "admin@frontlineleague.com");
           localStorage.setItem("frontline_admin_session", "authorized");
-          localStorage.setItem("frontline_admin_email", "admin@frontlineleague.com");
+          const existingEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email");
+          const activeEmail = existingEmail || "todd061496@gmail.com";
+          sessionStorage.setItem("frontline_admin_email", activeEmail);
+          localStorage.setItem("frontline_admin_email", activeEmail);
         } catch (_) {}
 
-        if (typeof window.navigateToAdminConsole === "function") {
+        if (typeof window.navigateToAdminConsole === "function" && window.navigateToAdminConsole !== openLeagueAdminConsole) {
           window.navigateToAdminConsole();
           return;
         }
 
-        const curHref = (window.location.href || "").toLowerCase();
         if (window.location.protocol === "file:") {
           window.location.href = "../../admin/index.html";
-        } else {
-          window.location.href = "/admin/";
+          return;
         }
+
+        const path = window.location.pathname || "";
+        if (path.includes("/arena/profile")) {
+          const prefix = path.substring(0, path.indexOf("/arena/profile"));
+          if (prefix && prefix !== "/") {
+            window.location.href = prefix + "/admin/";
+            return;
+          }
+        }
+        window.location.href = "/admin/";
       }
       window.openLeagueAdminConsole = openLeagueAdminConsole;
+      window.navigateToAdminConsole = openLeagueAdminConsole;
 
       let currentMatchesList = [];
       let activeFilter = "all";
@@ -848,7 +859,7 @@
 
           // Staff / Commissioner Recognition in Arena Profile
           const cleanEmail = (player.email || "").toLowerCase().trim();
-          let isStaff = player.is_staff || player.is_commissioner || player.tier === "Commissioner" || player.tag === "COMM" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("invictus") || (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "commissioner"].some(cn => String(player.gamertag || "").toLowerCase().trim().includes(cn));
+          let isStaff = player.is_staff || player.is_commissioner || player.tier === "Commissioner" || player.tag === "COMM" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "todd61496@gmail.com" || cleanEmail.includes("todd") || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("invictus") || (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner"].some(cn => String(player.gamertag || "").toLowerCase().trim().includes(cn));
           if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
             isStaff = window.LeagueDB.isAccountAdmin(player);
           }

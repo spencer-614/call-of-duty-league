@@ -627,6 +627,16 @@
           window.location.href = '/arena/profile/#login';
           return;
         }
+
+        if (window.LeagueDB && typeof window.LeagueDB.isPlayerSuspended === 'function') {
+          const susp = window.LeagueDB.isPlayerSuspended(player.gamertag) ||
+                       (player.discord ? window.LeagueDB.isPlayerSuspended(player.discord) : null);
+          if (susp && susp.suspended) {
+            alert(`⛔ ACCESS DENIED: You are currently suspended from tournament play by League Commissioners.\n\nReason: ${susp.suspension?.reason || 'Disciplinary suspension'}\nDuration: ${susp.suspension?.expires_at ? ('Expires ' + new Date(susp.suspension.expires_at).toLocaleDateString()) : 'Indefinite'}\n\nSuspended players cannot register for any tournaments.`);
+            return;
+          }
+        }
+
         alert('Squad registration submitted for: ' + title + '\nCaptain: [' + (player.tag || 'TAG') + '] ' + player.gamertag + '\nCheck-in opens 1 hour before bracket start.');
       }
 

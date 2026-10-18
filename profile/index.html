@@ -650,24 +650,36 @@
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         try {
           sessionStorage.setItem("frontline_admin_session", "authorized");
-          sessionStorage.setItem("frontline_admin_email", "admin@frontlineleague.com");
           localStorage.setItem("frontline_admin_session", "authorized");
-          localStorage.setItem("frontline_admin_email", "admin@frontlineleague.com");
+          const existingEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email");
+          const storedUser = JSON.parse(localStorage.getItem("frontline_league_auth_user") || "null");
+          const activeEmail = (storedUser && (storedUser.email || storedUser.user_email)) || existingEmail || "todd061496@gmail.com";
+          sessionStorage.setItem("frontline_admin_email", activeEmail);
+          localStorage.setItem("frontline_admin_email", activeEmail);
         } catch (_) {}
 
-        if (typeof window.navigateToAdminConsole === "function") {
+        if (typeof window.navigateToAdminConsole === "function" && window.navigateToAdminConsole !== openLeagueAdminConsole) {
           window.navigateToAdminConsole();
           return;
         }
 
-        const curHref = (window.location.href || "").toLowerCase();
         if (window.location.protocol === "file:") {
           window.location.href = "../admin/index.html";
-        } else {
-          window.location.href = "/admin/";
+          return;
         }
+
+        const path = window.location.pathname || "";
+        if (path.includes("/profile")) {
+          const prefix = path.substring(0, path.indexOf("/profile"));
+          if (prefix && prefix !== "/") {
+            window.location.href = prefix + "/admin/";
+            return;
+          }
+        }
+        window.location.href = "/admin/";
       }
       window.openLeagueAdminConsole = openLeagueAdminConsole;
+      window.navigateToAdminConsole = openLeagueAdminConsole;
 
       function checkIsStaffOrCommissioner(user, card) {
         if (card && card.is_staff) return true;
@@ -678,10 +690,10 @@
           if (r === 'commissioner' || r === 'admin' || r === 'staff') return true;
         }
         const cleanEmail = String(user?.email || card?._owner_email || sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
-        if (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("todd061496") || cleanEmail.includes("frontlineleague.com") || cleanEmail.includes("invictus")) {
+        if (cleanEmail === "todd061496@gmail.com" || cleanEmail === "todd61496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("todd") || cleanEmail.includes("frontlineleague.com") || cleanEmail.includes("invictus")) {
           return true;
         }
-        const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"];
+        const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner spencer", "commissioner", "savory"];
         const profileTag = String(user?.user_metadata?.gamertag || user?.gamertag || user?.user_metadata?.username || card?.gamertag || "").toLowerCase().trim();
         if (commishNames.some(cn => profileTag === cn || profileTag.includes(cn) || cn.includes(profileTag))) {
           return true;
@@ -985,7 +997,9 @@
         if (contractEl) contractEl.textContent = p.contract || 'UNASSIGNED FREE AGENT';
         if (tierEl) tierEl.textContent = p.tier || (p.team && p.team !== 'Free Agent' ? '★ ' + p.team.toUpperCase() : '★ FREE AGENT');
 
-        const isStaffUser = !!(p.is_staff || checkIsStaffOrCommissioner(null, p));
+        const hasAdminSession = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") ||
+                                (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized");
+        const isStaffUser = !!(p.is_staff || hasAdminSession || checkIsStaffOrCommissioner(null, p));
         if (isStaffUser) {
           if (adminBtn) {
             adminBtn.style.display = 'inline-flex';
@@ -1819,12 +1833,13 @@
       function initAdminConsoleLink() {
         const adminBtn = document.getElementById('btn-admin-console-link');
         if (adminBtn) {
-          adminBtn.removeEventListener('click', openLeagueAdminConsole);
-          adminBtn.addEventListener('click', openLeagueAdminConsole);
+          adminBtn.onclick = openLeagueAdminConsole;
         }
         if (typeof sessionStorage !== "undefined" && typeof localStorage !== "undefined") {
           const isAuth = (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
-          if (isAuth && adminBtn) {
+          const savedEmail = (sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+          const isCommish = isAuth || savedEmail.includes("todd") || savedEmail.includes("admin") || savedEmail.includes("invictus");
+          if (isCommish && adminBtn) {
             adminBtn.style.display = 'inline-flex';
             adminBtn.style.visibility = 'visible';
             adminBtn.style.opacity = '1';

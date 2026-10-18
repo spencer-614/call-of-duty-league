@@ -1,5 +1,5 @@
 // ==============================================================================
-// FRONTLINE CALL OF DUTY LEAGUE - RAILWAY NODE.JS BACKEND SERVER
+// FRONTLINE CALL OF DUTY LEAGUE - NODE.JS BACKEND SERVER
 // ==============================================================================
 const express = require("express");
 const cors = require("cors");
@@ -10,11 +10,9 @@ require("dotenv").config();
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
-// PostgreSQL Connection Pool using Railway's DATABASE_URL
-// Note: Railway's internal network (*.railway.internal) DOES NOT support SSL
-const isInternalRailway = !!(process.env.DATABASE_URL && process.env.DATABASE_URL.includes("railway.internal"));
+// PostgreSQL Connection Pool using DATABASE_URL
 const isLocalhost = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes("localhost") || process.env.DATABASE_URL.includes("127.0.0.1");
-const useSsl = (!isInternalRailway && !isLocalhost);
+const useSsl = (!isLocalhost && !process.env.DATABASE_NO_SSL);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -40,11 +38,18 @@ process.on("uncaughtException", (err) => {
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// Disable caching so browser always displays latest HTML/CSS changes
+// HTTP Cache Control: HTML & dynamic endpoints always stay fresh with revalidation;
+// Static assets (CSS, JS, images, fonts, icons) are cached to eliminate slow re-downloads
 app.use((req, res, next) => {
-  res.set("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
+  const ext = path.extname(req.path).toLowerCase();
+  const isStaticAsset = [".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".woff", ".woff2", ".ttf", ".mp4", ".webm"].includes(ext);
+  if (isStaticAsset) {
+    res.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  } else {
+    res.set("Cache-Control", "no-cache, must-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+  }
   next();
 });
 
@@ -124,8 +129,8 @@ Object.entries(LEGACY_REDIRECTS).forEach(([oldUrl, newUrl]) => {
 // Static files (serves images, CSS, JS, assets)
 app.use(express.static(path.join(__dirname), { 
   extensions: ["html"],
-  etag: false, 
-  maxAge: 0 
+  etag: true, 
+  maxAge: "1h" 
 }));
 
 // Health check endpoint
@@ -139,7 +144,7 @@ app.get("/health", async (req, res) => {
 });
 
 // ------------------------------------------------------------------------------
-// TABLE DATA API (Bridges frontend calls to Railway Postgres)
+// TABLE DATA API (Bridges frontend calls to Postgres/Supabase DB)
 // ------------------------------------------------------------------------------
 
 // Allowed tables for query safety - Strict whitelist
@@ -147,7 +152,7 @@ const ALLOWED_TABLES = new Set([
   "teams", "players", "vods", "player_map_stats", "team_map_records",
   "league_signups", "org_signups", "league_announcements", "league_settings",
   "scheduled_matches", "tournament_divisions", "tournament_matches",
-  "tournaments", "tournament_registrations",
+  "tournaments", "tournament_registrations", "tournament_suspensions",
   "arena_free_agents", "ladder_teams", "ladder_rosters", "ladder_matches",
   "ladder_disputes", "staff_roles", "tournament_match_chats"
 ]);
@@ -300,6 +305,26 @@ async function initDatabaseTables() {
       );
       CREATE INDEX IF NOT EXISTS idx_tmc_match ON public.tournament_match_chats (tournament_id, match_id);
       CREATE INDEX IF NOT EXISTS idx_tmc_created ON public.tournament_match_chats (created_at ASC);
+    `);
+
+    // 4. Tournament Suspensions Table (Managed by League Commissioners)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.tournament_suspensions (
+        id TEXT PRIMARY KEY,
+        gamertag TEXT NOT NULL,
+        email TEXT,
+        discord TEXT,
+        reason TEXT NOT NULL,
+        suspended_by TEXT NOT NULL,
+        suspended_at TIMESTAMPTZ DEFAULT NOW(),
+        expires_at TIMESTAMPTZ,
+        is_active BOOLEAN DEFAULT TRUE,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_tourney_susp_tag ON public.tournament_suspensions (LOWER(gamertag));
+      CREATE INDEX IF NOT EXISTS idx_tourney_susp_active ON public.tournament_suspensions (is_active);
     `);
     console.log("PostgreSQL database schemas verified & auto-migrated.");
   } catch (err) {
@@ -775,6 +800,37 @@ app.post("/api/tournaments/:tournamentId/registrations", async (req, res) => {
     });
   }
 
+  // Enforcement: Verify neither captain nor any roster members are suspended from tournament play
+  try {
+    const rawRosterList = Array.isArray(roster) ? roster : (typeof roster_text === "string" ? roster_text.split(/,\s*/) : []);
+    const rosterTags = rawRosterList.map(r => (typeof r === "object" ? (r.gamertag || r.name) : r)).filter(Boolean);
+    const tagsToCheck = [captain_gamertag, ...rosterTags].map(t => String(t).trim().toLowerCase()).filter(Boolean);
+    const discordsToCheck = [captain_discord].map(d => String(d).trim().toLowerCase()).filter(Boolean);
+
+    if (tagsToCheck.length > 0) {
+      const suspResult = await pool.query(`
+        SELECT gamertag, reason, expires_at 
+        FROM public.tournament_suspensions
+        WHERE is_active = true 
+          AND (expires_at IS NULL OR expires_at > NOW())
+          AND (
+            LOWER(gamertag) = ANY($1) 
+            OR (discord IS NOT NULL AND LOWER(discord) = ANY($2))
+          )
+        LIMIT 1;
+      `, [tagsToCheck, discordsToCheck]);
+
+      if (suspResult.rows.length > 0) {
+        const susp = suspResult.rows[0];
+        return res.status(403).json({
+          error: `Tournament registration denied: Player "${susp.gamertag}" is suspended from tournament play by league administration. Reason: ${susp.reason || "Active suspension"}.`
+        });
+      }
+    }
+  } catch (suspErr) {
+    console.warn("Suspension enforcement check notice:", suspErr.message);
+  }
+
   const regId = id || "treg_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
   const sql = `
     INSERT INTO public.tournament_registrations (
@@ -814,14 +870,13 @@ app.use((err, req, res, next) => {
   }
 });
 
-// Start server - Must bind to 0.0.0.0 for Railway container networking
+// Start server - Bind to 0.0.0.0
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Frontline CDL Node server running on 0.0.0.0:${PORT}`);
   console.log(`Database status: ${process.env.DATABASE_URL ? "DATABASE_URL detected" : "No DATABASE_URL found"}`);
 });
 
-// Safe dual-port listener: if Railway set PORT to something other than 3000,
-// ALSO listen on 3000 so that whether Railway's domain routes to $PORT or 3000, it works!
+// Dual-port fallback listener if PORT is configured differently
 if (PORT !== 3000) {
   try {
     const http = require("http");
@@ -830,7 +885,7 @@ if (PORT !== 3000) {
       console.log("Port 3000 fallback status:", err.message);
     });
     server3000.listen(3000, "0.0.0.0", () => {
-      console.log("Frontline CDL Node server ALSO safely listening on 0.0.0.0:3000");
+      console.log("Frontline CDL Node server ALSO listening on 0.0.0.0:3000");
     });
   } catch (e) {
     console.log("Dual port startup note:", e.message);

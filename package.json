@@ -1,7 +1,7 @@
 {
   "name": "frontline-call-of-duty-league",
   "version": "1.0.0",
-  "description": "Frontline CDL web application with Railway PostgreSQL backend",
+  "description": "Frontline CDL web application with Supabase backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

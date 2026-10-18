@@ -934,6 +934,7 @@
     <!-- Logic Script -->
     <script>
       let currentTournaments = [];
+      let cachedSuspensions = [];
       let activeFormat = 'all';
       let activeStatus = 'all';
       let currentSelectedTourney = null;
@@ -985,13 +986,21 @@
           } catch(e) {}
         }
 
-        // 2. Fetch tournaments from LeagueDB
+        // 2. Fetch tournaments and active suspensions from LeagueDB
         if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
           try {
             currentTournaments = await window.LeagueDB.getTournaments();
           } catch(e) {
             console.error('Error fetching tournaments:', e);
             currentTournaments = [];
+          }
+        }
+
+        if (window.LeagueDB && typeof window.LeagueDB.getTournamentSuspensions === 'function') {
+          try {
+            cachedSuspensions = await window.LeagueDB.getTournamentSuspensions();
+          } catch(e) {
+            cachedSuspensions = [];
           }
         }
 
@@ -1013,6 +1022,24 @@
         const user = getCurrentUserIdentity();
         const heroBar = document.getElementById('tourney-hero-auth-bar');
         if (heroBar) {
+          // Check if current user is suspended from tournaments
+          if (window.LeagueDB && typeof window.LeagueDB.isPlayerSuspended === 'function') {
+            const suspRes = window.LeagueDB.isPlayerSuspended(user.gamertag, cachedSuspensions) ||
+                            (user.discord ? window.LeagueDB.isPlayerSuspended(user.discord, cachedSuspensions) : null) ||
+                            (user.email ? window.LeagueDB.isPlayerSuspended(user.email, cachedSuspensions) : null);
+            if (suspRes && suspRes.suspended) {
+              const s = suspRes.suspension;
+              heroBar.innerHTML = `
+                <div style="display:inline-flex; align-items:center; gap:10px; background:rgba(239,68,68,0.15); border:1.5px solid #ef4444; padding:8px 16px; border-radius:3px; font-size:12px; color:#fca5a5; flex-wrap:wrap;">
+                  <span style="font-size:14px;">⛔</span>
+                  <span><strong style="color:#ffffff;">ACCOUNT SUSPENDED:</strong> You are currently suspended from tournament play (${escapeHtml(s?.reason || 'Disciplinary ban')}). Tournament registration is prohibited.</span>
+                  <span style="font-size:11px; color:#f87171; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:2px;">${s?.expires_at ? ('Expires ' + new Date(s.expires_at).toLocaleDateString()) : 'Indefinite Ban'}</span>
+                </div>
+              `;
+              return;
+            }
+          }
+
           if (user.id || (user.gamertag && user.gamertag !== 'Operative')) {
             heroBar.innerHTML = `
               <div style="display:inline-flex; align-items:center; gap:10px; background:rgba(88,101,242,0.12); border:1px solid #5865F2; padding:7px 14px; border-radius:3px; font-size:12px; color:#cbd5e1;">
@@ -1897,6 +1924,35 @@
           const pTagNorm = norm(p.gamertag);
           const alreadyInSquad = enlistedPlayersInThisTourney.get(pTagNorm);
 
+          // Check if player is suspended
+          let isSusp = false;
+          let suspReason = "";
+          if (window.LeagueDB && typeof window.LeagueDB.isPlayerSuspended === 'function') {
+            const sc = window.LeagueDB.isPlayerSuspended(p.gamertag, cachedSuspensions) ||
+                       (p.discord ? window.LeagueDB.isPlayerSuspended(p.discord, cachedSuspensions) : null);
+            if (sc && sc.suspended) {
+              isSusp = true;
+              suspReason = sc.suspension?.reason || "Suspended by League Administration";
+            }
+          }
+
+          if (isSusp) {
+            return `
+              <div class="teammate-dropdown-item disabled" title="Player suspended from tournament play: ${escapeHtml(suspReason)}">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="color:#ef4444;">⛔</span>
+                  <div>
+                    <strong style="color:#f87171; font-size:12.5px; text-decoration:line-through;">${escapeHtml(p.gamertag)}</strong>
+                    ${p.discord ? `<span style="font-size:10px; color:#64748b; margin-left:6px;">(${escapeHtml(p.discord)})</span>` : ''}
+                  </div>
+                </div>
+                <span style="flex:none; font-size:10px; font-weight:800; color:#ef4444; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); padding:2px 7px; border-radius:3px; white-space:nowrap;">
+                  ⛔ SUSPENDED
+                </span>
+              </div>
+            `;
+          }
+
           if (alreadyInSquad) {
             return `
               <div class="teammate-dropdown-item disabled" title="Player is already registered in squad '${escapeHtml(alreadyInSquad)}'">
@@ -1984,6 +2040,16 @@
 
         const canonicalTag = registeredPlayer.gamertag || cleanTag;
         const canonicalNorm = norm(canonicalTag);
+
+        // Enforce suspension check: player cannot be enlisted if suspended
+        if (window.LeagueDB && typeof window.LeagueDB.isPlayerSuspended === 'function') {
+          const suspCheck = window.LeagueDB.isPlayerSuspended(canonicalTag, cachedSuspensions) ||
+                            (registeredPlayer.discord ? window.LeagueDB.isPlayerSuspended(registeredPlayer.discord, cachedSuspensions) : null);
+          if (suspCheck && suspCheck.suspended) {
+            showTeammateWarning(`Cannot enlist "${canonicalTag}": Player is currently suspended from tournament play by league administration. (${suspCheck.suspension?.reason || 'Disciplinary suspension'})`);
+            return;
+          }
+        }
 
         if (currentRosterTeammates.length >= maxSquadSize - 1) {
           showTeammateWarning(`Squad roster is already full for this format (${maxSquadSize} players max).`);
@@ -2118,7 +2184,41 @@
           });
         }
 
-        if (myEnlistedSquad && warningEl && submitBtn) {
+        // Check if CURRENT USER is suspended from tournament play
+        let mySusp = null;
+        if (window.LeagueDB && typeof window.LeagueDB.isPlayerSuspended === 'function') {
+          const checkIds = [myUser.gamertag, myUser.discord, myUser.email, myUser.normTag, myUser.normDisc].filter(Boolean);
+          for (const ident of checkIds) {
+            const res = window.LeagueDB.isPlayerSuspended(ident, cachedSuspensions);
+            if (res && res.suspended) {
+              mySusp = res.suspension;
+              break;
+            }
+          }
+        }
+
+        if (mySusp && warningEl && submitBtn) {
+          warningEl.style.display = 'block';
+          warningEl.style.background = '#361114';
+          warningEl.style.border = '1.5px solid #ef4444';
+          warningEl.style.color = '#fecaca';
+          warningEl.innerHTML = `
+            <div style="font-weight:900; font-size:13.5px; color:#ffffff; display:flex; align-items:center; gap:8px;">
+              <span>⛔</span> <span>TOURNAMENT SUSPENSION ACTIVE</span>
+            </div>
+            <div style="font-size:12px; margin-top:5px; color:#fca5a5; line-height:1.4;">
+              You have been suspended from tournament participation by League Commissioners. You cannot register a squad or participate in any tournament.
+            </div>
+            <div style="margin-top:8px; font-size:11px; color:#e2e8f0; background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:3px; line-height:1.5;">
+              <strong>Violation / Reason:</strong> ${escapeHtml(mySusp.reason || 'Disciplinary action')}<br>
+              <strong>Issued By:</strong> ${escapeHtml(mySusp.suspended_by || 'League Commissioner')}<br>
+              <strong>Duration:</strong> ${mySusp.expires_at ? ('Expires ' + new Date(mySusp.expires_at).toLocaleDateString()) : 'Indefinite / Permanent'}
+            </div>
+          `;
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.35';
+          submitBtn.textContent = '⛔ Suspended from Tournaments';
+        } else if (myEnlistedSquad && warningEl && submitBtn) {
           warningEl.style.display = 'block';
           warningEl.innerHTML = `⚠️ <strong>Already Enlisted:</strong> You are already registered for this tournament in squad <strong style="color:#ffffff;">"${escapeHtml(myEnlistedSquad.team_name)}"</strong>. Each player may only register for one squad per tournament.`;
           submitBtn.disabled = true;
@@ -2231,6 +2331,27 @@
           const needed = maxSquadSize - fullRoster.length;
           showToast(`Please enlist all ${maxSquadSize} players for this tournament format (${needed} more teammate${needed === 1 ? '' : 's'} needed).`, true);
           return;
+        }
+
+        // Verify no player in roster is suspended from tournament play
+        if (window.LeagueDB && typeof window.LeagueDB.isPlayerSuspended === 'function') {
+          // Check captain
+          const capSusp = window.LeagueDB.isPlayerSuspended(captainTag, cachedSuspensions) ||
+                          (captainDiscord ? window.LeagueDB.isPlayerSuspended(captainDiscord, cachedSuspensions) : null);
+          if (capSusp && capSusp.suspended) {
+            showToast(`Registration denied: Captain "${captainTag}" is suspended from tournament play by league administration. (${capSusp.suspension?.reason || 'Active suspension'})`, true);
+            return;
+          }
+
+          // Check all teammates
+          for (let i = 1; i < fullRoster.length; i++) {
+            const tTag = fullRoster[i];
+            const tSusp = window.LeagueDB.isPlayerSuspended(tTag, cachedSuspensions);
+            if (tSusp && tSusp.suspended) {
+              showToast(`Registration denied: Teammate "${tTag}" is suspended from tournament play. Suspended players cannot join any tournament roster.`, true);
+              return;
+            }
+          }
         }
 
         // Verify all teammates have a registered website account
@@ -2388,6 +2509,14 @@
       });
       window.addEventListener('frontline_auth_changed', () => {
         if (typeof updateTourneyAuthUI === 'function') updateTourneyAuthUI();
+      });
+      window.addEventListener('frontline_tournament_suspensions_updated', async () => {
+        if (window.LeagueDB && typeof window.LeagueDB.getTournamentSuspensions === 'function') {
+          try {
+            cachedSuspensions = await window.LeagueDB.getTournamentSuspensions();
+            if (typeof updateTourneyAuthUI === 'function') updateTourneyAuthUI();
+          } catch (_) {}
+        }
       });
 
       document.addEventListener('DOMContentLoaded', initTournamentsPage);

@@ -1,13 +1,12 @@
 -- ==============================================================================
 -- FRONTLINE CALL OF DUTY LEAGUE - SUPABASE DATABASE SETUP
 -- ==============================================================================
--- USE THIS FILE ONLY WITH SUPABASE (not Railway/standalone Postgres).
+-- USE THIS FILE WITH SUPABASE POSTGRESQL.
 -- Supabase manages the auth schema internally. DO NOT create auth.users here.
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- IMPORTANT: If you previously ran railway_full_database_setup.sql on Supabase
--- and are seeing "Database error saving new user" on Discord OAuth sign-in,
+-- NOTE: If you are seeing "Database error saving new user" on Discord OAuth sign-in,
 -- run the REPAIR section below FIRST before the table creation section.
 -- ==============================================================================
 
@@ -16,7 +15,6 @@
 -- new user" on Discord sign-in. This drops any conflicting custom auth schema.
 -- ==============================================================================
 -- STEP 1: Drop any custom auth.users table that conflicts with Supabase's auth
--- (Only applies if railway_full_database_setup.sql was mistakenly run on Supabase)
 --
 -- DROP TABLE IF EXISTS public.players CASCADE;         -- will recreate below
 -- DROP TABLE IF EXISTS public.league_signups CASCADE;  -- will recreate below  
@@ -586,6 +584,30 @@ CREATE POLICY "Allow public all ladder_matches" ON public.ladder_matches FOR ALL
 ALTER TABLE public.ladder_disputes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all ladder_disputes" ON public.ladder_disputes;
 CREATE POLICY "Allow public all ladder_disputes" ON public.ladder_disputes FOR ALL USING (true) WITH CHECK (true);
+
+-- ------------------------------------------------------------------------------
+-- TOURNAMENT SUSPENSIONS (Disciplinary bans managed by League Commissioners)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.tournament_suspensions (
+    id TEXT PRIMARY KEY,
+    gamertag TEXT NOT NULL,
+    discord TEXT,
+    email TEXT,
+    reason TEXT NOT NULL,
+    suspended_by TEXT NOT NULL,
+    suspended_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tournament_suspensions_tag ON public.tournament_suspensions (LOWER(gamertag));
+CREATE INDEX IF NOT EXISTS idx_tournament_suspensions_active ON public.tournament_suspensions (is_active);
+
+ALTER TABLE public.tournament_suspensions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public all tournament_suspensions" ON public.tournament_suspensions;
+CREATE POLICY "Allow public all tournament_suspensions" ON public.tournament_suspensions FOR ALL USING (true) WITH CHECK (true);
 
 
 
