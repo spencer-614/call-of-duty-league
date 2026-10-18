@@ -210,14 +210,16 @@ if (typeof window !== "undefined" && window.supabase && isSupabaseConfigured()) 
           if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
             setTimeout(() => {
               const leagueDB = window.LeagueDB;
-              if (leagueDB && typeof leagueDB.syncDiscordStaffIdentity === "function") {
-                leagueDB.syncDiscordStaffIdentity(session.user).then(result => {
+              if (leagueDB && typeof leagueDB.syncDiscordAuthAccount === "function") {
+                leagueDB.syncDiscordAuthAccount(session.user).then(result => {
                   if (!result.success) {
-                    console.warn("Discord staff identity sync failed:", result.error);
+                    console.warn("Discord auth account sync notice:", result.error);
                   }
                 }).catch(err => {
-                  console.error("Discord staff identity sync error:", err);
+                  console.error("Discord auth account sync error:", err);
                 });
+              } else if (leagueDB && typeof leagueDB.syncDiscordStaffIdentity === "function") {
+                leagueDB.syncDiscordStaffIdentity(session.user);
               }
             }, 0);
           }
@@ -5863,9 +5865,12 @@ if (dbClient && cleanPayload.user_id) {
     }
     if (!discordName) discordName = gamertag;
 
+    const userEmail = (payload.email || user?.email || user?.user_metadata?.email || "").toLowerCase().trim();
+
     const tourneyPlayerRecord = {
       id: userId || ("tp_" + Date.now()),
       user_id: (userId && this._isValidUUID(userId)) ? userId : null,
+      email: userEmail || null,
       gamertag: gamertag,
       discord_name: discordName,
       discord_id: discordId,
@@ -5899,18 +5904,27 @@ if (dbClient && cleanPayload.user_id) {
         }
 
         if (existingId) {
-          await dbClient
+          const updObj = {
+            gamertag: tourneyPlayerRecord.gamertag,
+            discord_name: tourneyPlayerRecord.discord_name,
+            discord_id: tourneyPlayerRecord.discord_id,
+            activision_id: tourneyPlayerRecord.activision_id,
+            avatar_url: tourneyPlayerRecord.avatar_url,
+            role: "Tournament Player",
+            updated_at: tourneyPlayerRecord.updated_at
+          };
+          if (tourneyPlayerRecord.user_id) updObj.user_id = tourneyPlayerRecord.user_id;
+          if (tourneyPlayerRecord.email) updObj.email = tourneyPlayerRecord.email;
+
+          const { error: updErr } = await dbClient
             .from("tournament_players")
-            .update({
-              gamertag: tourneyPlayerRecord.gamertag,
-              discord_name: tourneyPlayerRecord.discord_name,
-              discord_id: tourneyPlayerRecord.discord_id,
-              activision_id: tourneyPlayerRecord.activision_id,
-              avatar_url: tourneyPlayerRecord.avatar_url,
-              role: "Tournament Player",
-              updated_at: tourneyPlayerRecord.updated_at
-            })
+            .update(updObj)
             .eq("id", existingId);
+
+          if (updErr && updObj.email) {
+            delete updObj.email;
+            await dbClient.from("tournament_players").update(updObj).eq("id", existingId);
+          }
         } else {
           const insertPayload = {
             gamertag: tourneyPlayerRecord.gamertag,
@@ -5925,7 +5939,13 @@ if (dbClient && cleanPayload.user_id) {
             updated_at: tourneyPlayerRecord.updated_at
           };
           if (tourneyPlayerRecord.user_id) insertPayload.user_id = tourneyPlayerRecord.user_id;
-          await dbClient.from("tournament_players").insert([insertPayload]);
+          if (tourneyPlayerRecord.email) insertPayload.email = tourneyPlayerRecord.email;
+
+          const { error: insErr } = await dbClient.from("tournament_players").insert([insertPayload]);
+          if (insErr && insertPayload.email) {
+            delete insertPayload.email;
+            await dbClient.from("tournament_players").insert([insertPayload]);
+          }
         }
       } catch (err) {
         console.warn("tournament_players db sync note:", err?.message || err);
@@ -8649,6 +8669,8 @@ if (dbClient && cleanPayload.user_id) {
       avatarUrl += (avatarUrl.includes("?") ? "&" : "?") + "size=256";
     }
 
+    const email = (user.email || meta.email || identData.email || identData.user_email || "").toLowerCase().trim();
+
     return {
       isDiscord: !!isDiscord,
       primaryName,
@@ -8656,7 +8678,8 @@ if (dbClient && cleanPayload.user_id) {
       globalName,
       handleTag,
       avatarUrl,
-      discordId
+      discordId,
+      email
     };
   },
 
@@ -9196,6 +9219,7 @@ isDiscordLinkedToEmail(target) {
           };
           if (safeUserId) updateObj.user_id = safeUserId;
           if (cleanAvatar) updateObj.avatar_url = cleanAvatar;
+          if (email) updateObj.email = email.toLowerCase().trim();
 
           const { error: updErr } = await dbClient
             .from("players")
@@ -9204,13 +9228,15 @@ isDiscordLinkedToEmail(target) {
 
           if (updErr) {
             // Fallback for core columns only if custom columns aren't migrated
+            const coreFallback = {
+              gamertag: cleanGamertag,
+              role: cleanRole,
+              avatar_url: cleanAvatar
+            };
+            if (safeUserId) coreFallback.user_id = safeUserId;
             await dbClient
               .from("players")
-              .update({
-                gamertag: cleanGamertag,
-                role: cleanRole,
-                avatar_url: cleanAvatar
-              })
+              .update(coreFallback)
               .eq("id", existingPlayer.id);
           }
         } else if (payload.isEnlistedPlayer === true) {
@@ -9230,6 +9256,7 @@ isDiscordLinkedToEmail(target) {
             total_deaths: 0
           };
           if (safeUserId) insertObj.user_id = safeUserId;
+          if (email) insertObj.email = email.toLowerCase().trim();
 
           const { error: insErr } = await dbClient
             .from("players")
@@ -9237,16 +9264,18 @@ isDiscordLinkedToEmail(target) {
 
           if (insErr) {
             // Fallback for core columns
+            const coreInsert = {
+              gamertag: cleanGamertag,
+              role: cleanRole,
+              avatar_url: cleanAvatar,
+              kdr: 1.00,
+              wins: 0,
+              losses: 0
+            };
+            if (safeUserId) coreInsert.user_id = safeUserId;
             await dbClient
               .from("players")
-              .insert([{
-                gamertag: cleanGamertag,
-                role: cleanRole,
-                avatar_url: cleanAvatar,
-                kdr: 1.00,
-                wins: 0,
-                losses: 0
-              }]);
+              .insert([coreInsert]);
           }
         }
         // If not already an accepted player and not isEnlistedPlayer, do NOT insert into players!
@@ -9363,14 +9392,17 @@ isDiscordLinkedToEmail(target) {
 
     try {
       const arenaAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const cleanEmail = (email || "").toLowerCase().trim();
       const idx = arenaAccounts.findIndex(a =>
-        (userId && a.id === userId) ||
-        (email && a.email && a.email.toLowerCase() === email.toLowerCase()) ||
+        (userId && (a.id === userId || a.user_id === userId)) ||
+        (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail) ||
         (a.gamertag && a.gamertag.toLowerCase() === cleanGamertag.toLowerCase())
       );
       const accObj = {
         id: userId || ("usr_" + Date.now()),
-        email: email || `${cleanGamertag.toLowerCase()}@frontlineleague.com`,
+        user_id: (userId && this._isValidUUID(userId)) ? userId : null,
+        email: cleanEmail || (cleanGamertag ? `${cleanGamertag.toLowerCase()}@frontlineleague.com` : ""),
+        hasRealEmail: !!cleanEmail,
         gamertag: cleanGamertag,
         username: cleanGamertag,
         activision_id: cleanActivision,
@@ -9895,7 +9927,8 @@ isDiscordLinkedToEmail(target) {
 
     if (isDiscord) {
       try {
-        const cleanGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || (user.email ? user.email.split("@")[0] : "Operative");
+        const authEmail = (user.email || user.user_metadata?.email || discordInfo?.email || "").toLowerCase().trim();
+        const cleanGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || discordInfo?.primaryName || (authEmail ? authEmail.split("@")[0] : "Operative");
         const cleanDiscord = meta.discord_name || meta.discord_username || discordInfo?.primaryName || cleanGamertag;
         const cleanDiscordId = discordInfo?.discordId || null;
         const cleanAvatar = discordInfo?.avatarUrl || meta.avatar_url || "";
@@ -9908,7 +9941,7 @@ isDiscordLinkedToEmail(target) {
         let existingCard = null;
         try {
           const rawCard = JSON.parse(localStorage.getItem("frontline_league_player_card"));
-          if (rawCard && (rawCard._owner_id === user.id || (rawCard._owner_email && rawCard._owner_email.toLowerCase() === (user.email || "").toLowerCase()))) {
+          if (rawCard && (rawCard._owner_id === user.id || (rawCard._owner_email && authEmail && rawCard._owner_email.toLowerCase() === authEmail))) {
             existingCard = rawCard;
           }
         } catch (e) {}
@@ -9945,8 +9978,9 @@ isDiscordLinkedToEmail(target) {
           region: cleanRegion,
           platform: cleanPlatform,
           discordName: cleanDiscord,
+          discordId: cleanDiscordId,
           avatarUrl: cleanAvatar,
-          email: user.email,
+          email: authEmail,
           status: isFA ? "Free Agent" : "Active",
           teamName: currentTeam,
           skipAuthUpdate: true,
@@ -9960,6 +9994,7 @@ isDiscordLinkedToEmail(target) {
           if (typeof this.syncTournamentPlayer === "function") {
             await this.syncTournamentPlayer({
               userId: user.id,
+              email: authEmail,
               gamertag: cleanGamertag,
               discordName: cleanDiscord,
               discordId: cleanDiscordId,
@@ -10245,6 +10280,196 @@ isDiscordLinkedToEmail(target) {
     return MOCK_DATA.staffRoles || [];
   },
 
+  async syncDiscordAuthAccount(authUser) {
+    if (!authUser || !authUser.id) return { success: false, error: "No authenticated user provided." };
+    const discordInfo = this.getDiscordIdentity(authUser);
+    const meta = authUser.user_metadata || {};
+    const authUserId = authUser.id;
+    const authEmail = (authUser.email || meta.email || discordInfo?.email || "").toLowerCase().trim();
+    const discordId = discordInfo?.discordId || meta.provider_id || meta.discord_user_id || null;
+    const discordHandle = discordInfo?.handle || meta.discord_username || meta.discord_name || "";
+    const cleanGamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.primaryName || (authEmail ? authEmail.split("@")[0] : "Operative");
+    const avatarUrl = discordInfo?.avatarUrl || meta.avatar_url || "";
+
+    // 1. Store / update verified Discord email in local registered accounts cache
+    try {
+      const arenaAccounts = JSON.parse(localStorage.getItem("frontline_arena_registered_accounts")) || [];
+      const existingIdx = arenaAccounts.findIndex(a =>
+        (authUserId && (a.id === authUserId || a.user_id === authUserId)) ||
+        (authEmail && a.email && a.email.toLowerCase() === authEmail) ||
+        (discordId && a.discord_id && a.discord_id === discordId) ||
+        (cleanGamertag && a.gamertag && a.gamertag.toLowerCase() === cleanGamertag.toLowerCase())
+      );
+      const accObj = {
+        id: authUserId,
+        user_id: authUserId,
+        email: authEmail || (cleanGamertag ? `${cleanGamertag.toLowerCase()}@frontlineleague.com` : ""),
+        hasRealEmail: !!authEmail,
+        gamertag: cleanGamertag,
+        username: cleanGamertag,
+        activision_id: meta.activision_id || "",
+        role: meta.role || "Flex",
+        region: meta.region || "NA East",
+        platform: meta.platform || "PC",
+        discord: discordHandle,
+        discord_id: discordId,
+        avatar_url: avatarUrl,
+        elo: 1200,
+        tier: "Specialist",
+        tag: "ARENA"
+      };
+      if (existingIdx >= 0) {
+        arenaAccounts[existingIdx] = { ...arenaAccounts[existingIdx], ...accObj };
+      } else {
+        arenaAccounts.push(accObj);
+      }
+      localStorage.setItem("frontline_arena_registered_accounts", JSON.stringify(arenaAccounts));
+    } catch (e) {}
+
+    // 2. Call RPC to sync staff role in Supabase
+    try {
+      if (typeof this.syncDiscordStaffIdentity === "function") {
+        await this.syncDiscordStaffIdentity(authUser);
+      }
+    } catch (e) {}
+
+    // 3. Sync database tables if dbClient is available
+    if (dbClient) {
+      // Sync tournament_players with real Discord email and auth UUID
+      try {
+        if (typeof this.syncTournamentPlayer === "function") {
+          await this.syncTournamentPlayer({
+            userId: authUserId,
+            email: authEmail,
+            gamertag: cleanGamertag,
+            discordName: discordHandle,
+            discordId: discordId,
+            activisionId: meta.activision_id || "",
+            avatarUrl: avatarUrl
+          });
+        }
+      } catch (tpErr) {
+        console.warn("Tournament player sync notice:", tpErr);
+      }
+
+      // Sync players table with verified Discord email and auth UUID
+      try {
+        let existingPlayer = null;
+        const { data: pById } = await dbClient
+          .from("players")
+          .select("id, gamertag, user_id")
+          .eq("user_id", authUserId)
+          .maybeSingle();
+        if (pById) existingPlayer = pById;
+
+        if (!existingPlayer && cleanGamertag) {
+          const { data: pByTag } = await dbClient
+            .from("players")
+            .select("id, gamertag, user_id")
+            .ilike("gamertag", cleanGamertag)
+            .maybeSingle();
+          if (pByTag) existingPlayer = pByTag;
+        }
+
+        if (!existingPlayer && discordHandle) {
+          const { data: pByDisc } = await dbClient
+            .from("players")
+            .select("id, gamertag, user_id")
+            .ilike("discord_name", discordHandle)
+            .maybeSingle();
+          if (pByDisc) existingPlayer = pByDisc;
+        }
+
+        if (existingPlayer) {
+          const updObj = {
+            user_id: authUserId,
+            discord_name: discordHandle || existingPlayer.gamertag
+          };
+          if (authEmail) updObj.email = authEmail;
+          if (avatarUrl) updObj.avatar_url = avatarUrl;
+
+          const { error: pUpdErr } = await dbClient
+            .from("players")
+            .update(updObj)
+            .eq("id", existingPlayer.id);
+
+          if (pUpdErr && updObj.email) {
+            delete updObj.email;
+            await dbClient.from("players").update(updObj).eq("id", existingPlayer.id);
+          }
+        }
+      } catch (pErr) {
+        console.warn("Players table email sync notice:", pErr);
+      }
+
+      // Sync league_signups table
+      try {
+        let existingSignup = null;
+        if (discordId) {
+          const { data: sByDisc } = await dbClient
+            .from("league_signups")
+            .select("id, notes, discord_user_id, user_id")
+            .eq("discord_user_id", String(discordId))
+            .limit(1);
+          if (sByDisc && sByDisc.length > 0) existingSignup = sByDisc[0];
+        }
+        if (!existingSignup) {
+          const { data: sById } = await dbClient
+            .from("league_signups")
+            .select("id, notes, discord_user_id, user_id")
+            .eq("user_id", authUserId)
+            .limit(1);
+          if (sById && sById.length > 0) existingSignup = sById[0];
+        }
+        if (!existingSignup && cleanGamertag) {
+          const { data: sByTag } = await dbClient
+            .from("league_signups")
+            .select("id, notes, discord_user_id, user_id")
+            .ilike("gamertag", cleanGamertag)
+            .limit(1);
+          if (sByTag && sByTag.length > 0) existingSignup = sByTag[0];
+        }
+
+        if (existingSignup) {
+          const notesText = existingSignup.notes || "";
+          const notesParts = [];
+          if (notesText) notesParts.push(notesText);
+          if (authEmail && !notesText.includes(authEmail)) notesParts.push(`[Email: ${authEmail}]`);
+          if (discordId && !notesText.includes(String(discordId))) notesParts.push(`[DiscordID: ${discordId}]`);
+
+          const sUpd = {
+            user_id: authUserId,
+            notes: notesParts.join(" ")
+          };
+          if (discordId) sUpd.discord_user_id = String(discordId);
+          if (authEmail) sUpd.email = authEmail;
+          if (avatarUrl) sUpd.avatar_url = avatarUrl;
+
+          const { error: sUpdErr } = await dbClient
+            .from("league_signups")
+            .update(sUpd)
+            .eq("id", existingSignup.id);
+
+          if (sUpdErr && sUpd.email) {
+            delete sUpd.email;
+            await dbClient.from("league_signups").update(sUpd).eq("id", existingSignup.id);
+          }
+        }
+      } catch (sErr) {
+        console.warn("Signups table email sync notice:", sErr);
+      }
+    }
+
+    // 4. Run auto onboarding if regular combatant
+    try {
+      if (typeof this.autoCheckDiscordOnboarding === "function") {
+        await this.autoCheckDiscordOnboarding(authUser);
+      }
+    } catch (e) {}
+
+    return { success: true };
+  },
+
   async syncDiscordStaffIdentity(authUser) {
     const isDiscordUser = authUser?.app_metadata?.provider === "discord" ||
       (Array.isArray(authUser?.app_metadata?.providers) && authUser.app_metadata.providers.includes("discord")) ||
@@ -10287,6 +10512,9 @@ isDiscordLinkedToEmail(target) {
     if (staffData.discord_id && !notesParts.some(p => p.includes(String(staffData.discord_id)))) {
       notesParts.push(`DiscordID: ${staffData.discord_id}`);
     }
+    if (staffData.gamertag && !notesParts.some(p => p.toLowerCase().includes(staffData.gamertag.toLowerCase()))) {
+      notesParts.push(`Gamertag: ${staffData.gamertag}`);
+    }
 
     const payload = {
       email: cleanEmail,
@@ -10297,7 +10525,8 @@ isDiscordLinkedToEmail(target) {
       updated_at: new Date().toISOString()
     };
 
-    if (staffData.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(staffData.user_id))) {
+    const hasRealEmail = staffData.hasRealEmail !== false && (!cleanEmail.endsWith("@frontlineleague.com") || cleanEmail === "admin@frontlineleague.com");
+    if (hasRealEmail && staffData.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(staffData.user_id))) {
       payload.user_id = staffData.user_id;
     }
 
@@ -14028,6 +14257,9 @@ window.LadderDB = {
             try {
               localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
               localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
+              if (window.LeagueDB && typeof window.LeagueDB.syncDiscordAuthAccount === "function") {
+                window.LeagueDB.syncDiscordAuthAccount(session.user);
+              }
             } catch(e) {}
           }
           syncAllNavAndSwitcher();

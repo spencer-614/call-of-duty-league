@@ -4585,16 +4585,19 @@
           let staffList = [];
           let playersList = [];
           let signupsList = [];
+          let tourneyList = [];
 
           try {
-            const [staffRes, playersRes, signupsRes] = await Promise.all([
+            const [staffRes, playersRes, signupsRes, tourneyRes] = await Promise.all([
               window.LeagueDB?.getAllStaffMembers ? window.LeagueDB.getAllStaffMembers() : Promise.resolve([]),
               (cachedPlayers && cachedPlayers.length > 0) ? Promise.resolve(cachedPlayers) : (window.LeagueDB?.getPlayers ? window.LeagueDB.getPlayers() : Promise.resolve([])),
-              (cachedSignups && cachedSignups.length > 0) ? Promise.resolve(cachedSignups) : (window.LeagueDB?.getSignups ? window.LeagueDB.getSignups() : Promise.resolve([]))
+              (cachedSignups && cachedSignups.length > 0) ? Promise.resolve(cachedSignups) : (window.LeagueDB?.getSignups ? window.LeagueDB.getSignups() : Promise.resolve([])),
+              window.LeagueDB?.getTournamentPlayers ? window.LeagueDB.getTournamentPlayers() : Promise.resolve([])
             ]);
             staffList = staffRes || [];
             playersList = playersRes || [];
             signupsList = signupsRes || [];
+            tourneyList = tourneyRes || [];
           } catch(e) {
             console.warn("Error gathering user roster data:", e);
           }
@@ -4614,20 +4617,88 @@
             leagueAuthUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
           } catch(e) {}
 
+          // Build verified email lookup index to map users to their real Discord / auth emails
+          const emailByUserId = new Map();
+          const emailByDiscordId = new Map();
+          const emailByGamertag = new Map();
+          const emailByDiscordHandle = new Map();
+
+          function registerRealEmail(email, { userId, discordId, gamertag, discordHandle } = {}) {
+            if (!email || typeof email !== "string" || !email.includes("@")) return;
+            const clean = email.toLowerCase().trim();
+            if (clean.endsWith("@frontlineleague.com") && clean !== "admin@frontlineleague.com") return;
+            if (userId) emailByUserId.set(String(userId).toLowerCase(), clean);
+            if (discordId) emailByDiscordId.set(String(discordId), clean);
+            if (gamertag) emailByGamertag.set(gamertag.toLowerCase().trim(), clean);
+            if (discordHandle) emailByDiscordHandle.set(discordHandle.toLowerCase().trim(), clean);
+          }
+
+          (tourneyList || []).forEach(t => {
+            registerRealEmail(t.email, { userId: t.user_id, discordId: t.discord_id, gamertag: t.gamertag, discordHandle: t.discord_name });
+          });
+          (registeredAccounts || []).forEach(a => {
+            registerRealEmail(a.email, { userId: a.user_id || a.id, discordId: a.discord_id, gamertag: a.gamertag, discordHandle: a.discord });
+          });
+          if (arenaAuthUser?.email) {
+            registerRealEmail(arenaAuthUser.email, { userId: arenaAuthUser.id, discordId: arenaAuthUser.discord_id, gamertag: arenaAuthUser.gamertag, discordHandle: arenaAuthUser.discord });
+          }
+          if (leagueAuthUser?.email) {
+            registerRealEmail(leagueAuthUser.email, { userId: leagueAuthUser.id, gamertag: leagueAuthUser.user_metadata?.gamertag, discordHandle: leagueAuthUser.user_metadata?.discord_name });
+          }
+          (staffList || []).forEach(s => {
+            registerRealEmail(s.email, { userId: s.user_id, discordHandle: s.display_name });
+          });
+          (signupsList || []).forEach(s => {
+            let extractedEmail = s.email || s.user_email || "";
+            if (!extractedEmail && s.notes) {
+              const match = String(s.notes).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+              if (match) extractedEmail = match[0];
+            }
+            registerRealEmail(extractedEmail, { userId: s.user_id, discordId: s.discord_user_id, gamertag: s.gamertag, discordHandle: s.discord_username });
+          });
+          (playersList || []).forEach(p => {
+            registerRealEmail(p.email || p._owner_email, { userId: p.user_id, gamertag: p.gamertag, discordHandle: p.discord_name });
+          });
+
           staffUsersMap = new Map();
 
           const VALID_STAFF_ROLES = ["commissioner", "referee", "stats_official", "roster_manager", "recruiter", "broadcaster", "rulebook_admin"];
 
           function mergeCandidateUser(candidate) {
             if (!candidate) return;
-            const rawEmail = (candidate.email || candidate.user_email || candidate._owner_email || "").toLowerCase().trim();
+            let rawEmail = (candidate.email || candidate.user_email || candidate._owner_email || "").toLowerCase().trim();
             const gamertag = (candidate.gamertag || candidate.username || candidate.display_name || candidate.discord_name || "").trim();
             const discord = (candidate.discord || candidate.discord_username || candidate.discord_name || "").trim();
             const discordId = candidate.discord_id || candidate.discord_user_id || null;
-            const isAuthAccount = candidate.category === "Registered Member" || candidate.category === "Discord Account" || candidate.category === "Current Staff";
-            const userId = (isAuthAccount && candidate.user_id) ? candidate.user_id : null;
+            const validUserId = (candidate.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate.user_id))
+              ? candidate.user_id
+              : ((candidate.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate.id)) ? candidate.id : null);
             const playerId = candidate.player_id || (candidate.category === "Roster Player" ? candidate.id : null);
             const signupId = candidate.signup_id || (candidate.category === "League Recruit" ? candidate.id : null);
+
+            // Extract email from notes if available
+            if ((!rawEmail || rawEmail.endsWith("@frontlineleague.com")) && candidate.notes) {
+              const noteMatch = String(candidate.notes).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+              if (noteMatch && !noteMatch[0].toLowerCase().endsWith("@frontlineleague.com")) {
+                rawEmail = noteMatch[0].toLowerCase();
+              }
+            }
+
+            // Attempt to resolve real Discord email from our indexed lookup
+            if (!rawEmail || (rawEmail.endsWith("@frontlineleague.com") && rawEmail !== "admin@frontlineleague.com")) {
+              if (validUserId && emailByUserId.has(validUserId.toLowerCase())) {
+                rawEmail = emailByUserId.get(validUserId.toLowerCase());
+              } else if (discordId && emailByDiscordId.has(String(discordId))) {
+                rawEmail = emailByDiscordId.get(String(discordId));
+              } else if (gamertag && emailByGamertag.has(gamertag.toLowerCase())) {
+                rawEmail = emailByGamertag.get(gamertag.toLowerCase());
+              } else if (discord && emailByDiscordHandle.has(discord.toLowerCase())) {
+                rawEmail = emailByDiscordHandle.get(discord.toLowerCase());
+              }
+            }
+
+            const hasRealEmail = !!rawEmail && (!rawEmail.endsWith("@frontlineleague.com") || rawEmail === "admin@frontlineleague.com");
+            const safeUserId = (hasRealEmail && validUserId) ? validUserId : null;
 
             // Filter out tactical player roles (AR, SMG, Flex) from staff roles
             const staffRole = (candidate.role && VALID_STAFF_ROLES.includes(candidate.role)) ? candidate.role : 
@@ -4642,7 +4713,7 @@
                 existing = item;
                 break;
               }
-              if (userId && item.user_id && item.user_id === userId) {
+              if (safeUserId && item.user_id && item.user_id === safeUserId) {
                 existing = item;
                 break;
               }
@@ -4663,11 +4734,14 @@
             const primaryKey = rawEmail || (gamertag ? `gt_${gamertag.toLowerCase()}` : `usr_${Date.now()}_${Math.random()}`);
 
             if (existing) {
-              if (!existing.email && rawEmail) existing.email = rawEmail;
+              if ((!existing.hasRealEmail || !existing.email) && rawEmail) {
+                existing.email = rawEmail;
+                existing.hasRealEmail = hasRealEmail;
+              }
               if (!existing.gamertag && gamertag) existing.gamertag = gamertag;
               if (!existing.discord && discord) existing.discord = discord;
               if (!existing.discord_id && discordId) existing.discord_id = discordId;
-              if (!existing.user_id && userId) existing.user_id = userId;
+              if (!existing.user_id && safeUserId) existing.user_id = safeUserId;
               if (!existing.player_id && playerId) existing.player_id = playerId;
               if (!existing.signup_id && signupId) existing.signup_id = signupId;
               if (staffRole && !existing.role) existing.role = staffRole;
@@ -4676,16 +4750,16 @@
               if (candidate.notes && !existing.notes) existing.notes = candidate.notes;
               if (candidate.team && !existing.team) existing.team = candidate.team;
               if (candidate.category === "Current Staff") existing.category = "Current Staff";
-              if (rawEmail) existing.hasRealEmail = true;
+              if (hasRealEmail) existing.hasRealEmail = true;
             } else {
               staffUsersMap.set(primaryKey, {
                 key: primaryKey,
                 email: rawEmail || (gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : ""),
-                hasRealEmail: !!rawEmail,
+                hasRealEmail: hasRealEmail,
                 gamertag: gamertag || (rawEmail ? rawEmail.split("@")[0] : (discord || "Combatant")),
                 discord: discord,
                 discord_id: discordId,
-                user_id: userId,
+                user_id: safeUserId,
                 player_id: playerId,
                 signup_id: signupId,
                 role: staffRole,
@@ -4711,7 +4785,16 @@
               });
             });
 
-            // 2. Registered accounts (Discord and site)
+            // 2. Tournament Players (Discord accounts from open tournaments)
+            const safeTourneyList = Array.isArray(tourneyList) ? tourneyList : [];
+            safeTourneyList.forEach(t => {
+              mergeCandidateUser({
+                ...t,
+                category: "Discord Account"
+              });
+            });
+
+            // 3. Registered accounts (Discord and site)
             const safeRegisteredAccounts = Array.isArray(registeredAccounts) ? registeredAccounts : [];
             safeRegisteredAccounts.forEach(a => {
               mergeCandidateUser({
@@ -4721,7 +4804,7 @@
               });
             });
 
-            // 3. Active Auth Users
+            // 4. Active Auth Users
             if (arenaAuthUser) {
               mergeCandidateUser({
                 ...arenaAuthUser,
@@ -4737,7 +4820,7 @@
               });
             }
 
-            // 4. League Signups / Recruits
+            // 5. League Signups / Recruits
             const safeSignupsList = Array.isArray(signupsList) ? signupsList : [];
             safeSignupsList.forEach(s => {
               let extractedEmail = s.email || s.user_email || "";
@@ -4752,7 +4835,7 @@
               });
             });
 
-            // 5. League Roster Players
+            // 6. League Roster Players
             const safePlayersList = Array.isArray(playersList) ? playersList : [];
             safePlayersList.forEach(p => {
               mergeCandidateUser({
@@ -5056,9 +5139,11 @@
               try {
                 const res = await window.LeagueDB.saveStaffRole({
                   email: user.email,
+                  hasRealEmail: user.hasRealEmail,
                   user_id: user.hasRealEmail ? (user.user_id || null) : null,
                   discord: user.discord || null,
                   discord_id: user.discord_id || null,
+                  gamertag: user.gamertag,
                   display_name: user.gamertag,
                   role: selectedRole,
                   custom_permissions: user.custom_permissions || null,
@@ -5234,9 +5319,11 @@
 
           const res = await window.LeagueDB.saveStaffRole({
             email: user.email,
+            hasRealEmail: user.hasRealEmail,
             user_id: user.hasRealEmail ? (user.user_id || null) : null,
             discord: user.discord || null,
             discord_id: user.discord_id || null,
+            gamertag: user.gamertag,
             display_name: user.gamertag,
             role: effectiveRole,
             custom_permissions: user.custom_permissions,
