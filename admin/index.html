@@ -4623,6 +4623,7 @@
             const rawEmail = (candidate.email || candidate.user_email || candidate._owner_email || "").toLowerCase().trim();
             const gamertag = (candidate.gamertag || candidate.username || candidate.display_name || candidate.discord_name || "").trim();
             const discord = (candidate.discord || candidate.discord_username || candidate.discord_name || "").trim();
+            const discordId = candidate.discord_id || candidate.discord_user_id || null;
             const isAuthAccount = candidate.category === "Registered Member" || candidate.category === "Discord Account" || candidate.category === "Current Staff";
             const userId = (isAuthAccount && candidate.user_id) ? candidate.user_id : null;
             const playerId = candidate.player_id || (candidate.category === "Roster Player" ? candidate.id : null);
@@ -4697,64 +4698,72 @@
             }
           }
 
-          // 1. Staff Members (from staff_roles table in Supabase)
-          staffList.forEach(s => {
-            mergeCandidateUser({
-              ...s,
-              staff_id: s.id,
-              role: s.role || "referee",
-              category: "Current Staff",
-              display_name: s.display_name
+          try {
+            // 1. Staff Members (from staff_roles table in Supabase)
+            const safeStaffList = Array.isArray(staffList) ? staffList : [];
+            safeStaffList.forEach(s => {
+              mergeCandidateUser({
+                ...s,
+                staff_id: s.id,
+                role: s.role || "referee",
+                category: "Current Staff",
+                display_name: s.display_name
+              });
             });
-          });
 
-          // 2. Registered accounts (Discord and site)
-          registeredAccounts.forEach(a => {
-            mergeCandidateUser({
-              ...a,
-              category: (a.discord || a.discord_id) ? "Discord Account" : "Registered Member",
-              role: a.staff_role || (a.is_staff ? "referee" : null)
+            // 2. Registered accounts (Discord and site)
+            const safeRegisteredAccounts = Array.isArray(registeredAccounts) ? registeredAccounts : [];
+            safeRegisteredAccounts.forEach(a => {
+              mergeCandidateUser({
+                ...a,
+                category: (a.discord || a.discord_id) ? "Discord Account" : "Registered Member",
+                role: a.staff_role || (a.is_staff ? "referee" : null)
+              });
             });
-          });
 
-          // 3. Active Auth Users
-          if (arenaAuthUser) {
-            mergeCandidateUser({
-              ...arenaAuthUser,
-              category: (arenaAuthUser.discord || arenaAuthUser.discord_id) ? "Discord Account" : "Registered Member"
-            });
-          }
-          if (leagueAuthUser) {
-            mergeCandidateUser({
-              email: leagueAuthUser.email,
-              gamertag: leagueAuthUser.user_metadata?.gamertag || leagueAuthUser.displayName,
-              discord: leagueAuthUser.user_metadata?.custom_claims?.global_name || leagueAuthUser.user_metadata?.full_name,
-              category: "Registered Member"
-            });
-          }
-
-          // 4. League Signups / Recruits
-          signupsList.forEach(s => {
-            let extractedEmail = s.email || s.user_email || "";
-            if (!extractedEmail && s.notes) {
-              const match = String(s.notes).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
-              if (match) extractedEmail = match[0];
+            // 3. Active Auth Users
+            if (arenaAuthUser) {
+              mergeCandidateUser({
+                ...arenaAuthUser,
+                category: (arenaAuthUser.discord || arenaAuthUser.discord_id) ? "Discord Account" : "Registered Member"
+              });
             }
-            mergeCandidateUser({
-              ...s,
-              email: extractedEmail,
-              category: "League Recruit"
-            });
-          });
+            if (leagueAuthUser) {
+              mergeCandidateUser({
+                email: leagueAuthUser.email,
+                gamertag: leagueAuthUser.user_metadata?.gamertag || leagueAuthUser.displayName,
+                discord: leagueAuthUser.user_metadata?.custom_claims?.global_name || leagueAuthUser.user_metadata?.full_name,
+                category: "Registered Member"
+              });
+            }
 
-          // 5. League Roster Players
-          playersList.forEach(p => {
-            mergeCandidateUser({
-              ...p,
-              email: p.email || p._owner_email || "",
-              category: "Roster Player"
+            // 4. League Signups / Recruits
+            const safeSignupsList = Array.isArray(signupsList) ? signupsList : [];
+            safeSignupsList.forEach(s => {
+              let extractedEmail = s.email || s.user_email || "";
+              if (!extractedEmail && s.notes) {
+                const match = String(s.notes).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+                if (match) extractedEmail = match[0];
+              }
+              mergeCandidateUser({
+                ...s,
+                email: extractedEmail,
+                category: "League Recruit"
+              });
             });
-          });
+
+            // 5. League Roster Players
+            const safePlayersList = Array.isArray(playersList) ? playersList : [];
+            safePlayersList.forEach(p => {
+              mergeCandidateUser({
+                ...p,
+                email: p.email || p._owner_email || "",
+                category: "Roster Player"
+              });
+            });
+          } catch (mergeErr) {
+            console.error("Error populating staff directory candidates:", mergeErr);
+          }
 
           renderStaffUsersTable();
         }
