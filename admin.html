@@ -9185,6 +9185,7 @@
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="openEditTournamentModal('${escapeHtml(t.id)}')">✏️ Edit Details</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
+                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#eab308; background:rgba(234,179,8,0.12); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">🤖 Test Teams</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
                       <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
                       ${(circuit === 'arena' || circuit === 'both') ? `<a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="font-size:11px; padding:4px 8px; text-decoration:none; color:#ff1e44; border-color:rgba(255,30,68,0.4);">Arena ↗</a>` : ''}
@@ -9824,6 +9825,9 @@
                 </div>
               </div>
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn-action-sm" style="background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800; padding:6px 12px;" onclick="adminPromptGenerateDummySquads('${escapeHtml(tourneyId)}')">
+                  🤖 + Test Dummy Teams
+                </button>
                 <button type="button" class="btn-action-sm" style="background:rgba(255,30,68,0.15); border-color:#ff1e44; color:#ff3b3b; font-weight:800; padding:6px 12px;" onclick="adminSendLiveTournamentAlertAction('${escapeHtml(tourneyId)}')">
                   📢 Send Live Alerts (${squadCount} Squads)
                 </button>
