@@ -3466,7 +3466,9 @@ if (dbClient && cleanPayload.user_id) {
         "Ghost Gaming", "Complexity", "FaZe Black", "OpTic Nation",
         "Team Envy", "Rise Nation", "Evil Geniuses", "Team Kaliber",
         "Splyce", "Red Reserve", "Mindfreak", "Fnatic",
-        "Elevate", "Epsilon eSports", "Millenium", "Echo Fox"
+        "Elevate", "Epsilon eSports", "Millenium", "Echo Fox",
+        "Cloud9 New York", "Vancouver Surge", "Detroit Renegades", "St. Louis Shock",
+        "Phoenix Eclipse", "Denver Apex", "Orlando Orbit", "Seattle Steel"
       ];
 
       const SAMPLE_CAPTAINS = [
@@ -3474,7 +3476,9 @@ if (dbClient && cleanPayload.user_id) {
         "Abuzah", "Vikul", "Ghosty", "Snoopy", "Attach",
         "Gwinn", "Accuracy", "Clayster", "Crimsix", "FormaL",
         "Octane", "Kenny", "Envoy", "Pred", "CleanX",
-        "Drazah", "Cellium", "aBeZy", "Dashy", "Sib"
+        "Drazah", "Cellium", "aBeZy", "Dashy", "Sib",
+        "Standy", "Bance", "Cammy", "Priestahh", "Havok",
+        "Spart", "Asim", "Neptune", "MajorManiak", "TJHaly"
       ];
 
       const list = await this.getTournaments();
@@ -3483,38 +3487,143 @@ if (dbClient && cleanPayload.user_id) {
 
       const allRegs = await this.getTournamentRegistrations(null);
       const existing = allRegs.filter(r => String(r.tournament_id) === String(tournamentId));
-      const existingNames = new Set(existing.map(r => String(r.team_name || "").toLowerCase()));
 
-      const createdSquads = [];
+      // Build active sets of existing team names, captains, and roster players
+      const norm = str => String(str || "").replace(/^@/, "").trim().toLowerCase();
+      const usedTeamNames = new Set(existing.map(r => norm(r.team_name)));
+      const usedPlayerTags = new Set();
+      existing.forEach(r => {
+        if (r.captain_gamertag) usedPlayerTags.add(norm(r.captain_gamertag));
+        const rList = Array.isArray(r.roster) ? r.roster : (r.roster_text ? r.roster_text.split(/,\s*/) : []);
+        rList.forEach(m => {
+          const tag = typeof m === "object" ? (m.gamertag || m.name) : m;
+          if (tag) usedPlayerTags.add(norm(tag));
+        });
+      });
+
+      const newSquadRecords = [];
+      const createdSquadNames = [];
+      const batchTimestamp = Date.now();
+
       for (let i = 0; i < numToGen; i++) {
+        // Unique Team Name derivation
         let baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
-        let name = baseName;
-        if (existingNames.has(name.toLowerCase())) {
-          name = `${baseName} (Dummy ${i + 1})`;
+        let teamName = baseName;
+        let suffix = 1;
+        while (usedTeamNames.has(norm(teamName))) {
+          suffix++;
+          teamName = `${baseName} (Dummy ${suffix})`;
         }
-        let captain = `${SAMPLE_CAPTAINS[i % SAMPLE_CAPTAINS.length]}_Bot${i + 1}`;
+        usedTeamNames.add(norm(teamName));
 
-        const squadPayload = {
-          team_name: name,
+        // Unique Captain Gamertag derivation
+        let baseCaptain = SAMPLE_CAPTAINS[i % SAMPLE_CAPTAINS.length];
+        let captain = `${baseCaptain}_Bot${i + 1}`;
+        let capSuffix = 1;
+        while (usedPlayerTags.has(norm(captain))) {
+          capSuffix++;
+          captain = `${baseCaptain}_Bot${i + 1}_${capSuffix}`;
+        }
+        usedPlayerTags.add(norm(captain));
+
+        // Teammates with guaranteed unique tags
+        const teammate1 = `Bot_${batchTimestamp % 10000}_${i + 1}A`;
+        const teammate2 = `Bot_${batchTimestamp % 10000}_${i + 1}B`;
+        const teammate3 = `Bot_${batchTimestamp % 10000}_${i + 1}C`;
+        const confirmedRoster = [captain, teammate1, teammate2, teammate3];
+        confirmedRoster.forEach(t => usedPlayerTags.add(norm(t)));
+
+        const regId = `reg_dummy_${batchTimestamp}_${i + 1}_${Math.random().toString(36).substring(2, 6)}`;
+        const regRecord = {
+          id: regId,
+          registered_by: "admin_dummy_generator",
+          tournament_id: String(tournamentId),
+          tournament_title: tourney.title || "Frontline Tournament",
+          team_name: teamName,
           captain_gamertag: captain,
           captain_discord: `${captain.toLowerCase()}#0000`,
           captain_activision_id: `${captain}#CDLTest`,
-          roster: [`Bot_${i + 1}A`, `Bot_${i + 1}B`, `Bot_${i + 1}C`],
-          is_dummy_team: true
+          roster: confirmedRoster,
+          roster_text: confirmedRoster.join(", "),
+          pending_roster: [],
+          roster_status: confirmedRoster.map(tag => ({
+            gamertag: tag,
+            role: tag === captain ? "Captain" : "Member",
+            status: "accepted",
+            accepted_at: new Date().toISOString(),
+            registered_by_admin: true
+          })),
+          status: "accepted",
+          auto_accepted: true,
+          registered_by_admin: true,
+          is_dummy_team: true,
+          accepted_at: new Date().toISOString(),
+          registered_at: new Date().toISOString()
         };
 
-        const res = await this.adminRegisterTournamentSquad(tournamentId, squadPayload);
-        if (res && res.success) {
-          createdSquads.push(name);
-          existingNames.add(name.toLowerCase());
+        newSquadRecords.push(regRecord);
+        createdSquadNames.push(teamName);
+      }
+
+      // Bulk persist to database and local registry
+      const updatedAllRegs = [...newSquadRecords, ...allRegs.filter(r => !newSquadRecords.some(ns => ns.id === r.id))];
+
+      if (dbClient) {
+        try {
+          await dbClient.from("league_settings").upsert({
+            id: "tournament_registrations_registry",
+            status_state: "active",
+            status_text: JSON.stringify(updatedAllRegs),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        } catch (dbErr) {
+          console.warn("league_settings dummy bulk registry notice:", dbErr);
+        }
+
+        try {
+          const insertPayloads = newSquadRecords.map(r => ({
+            id: r.id,
+            tournament_id: r.tournament_id,
+            tournament_title: r.tournament_title,
+            team_name: r.team_name,
+            captain_gamertag: r.captain_gamertag,
+            captain_discord: r.captain_discord,
+            captain_activision_id: r.captain_activision_id,
+            roster: r.roster,
+            roster_text: r.roster_text,
+            status: r.status,
+            registered_at: r.registered_at
+          }));
+          await dbClient.from("tournament_registrations").insert(insertPayloads);
+        } catch (dbInsertErr) {
+          console.warn("tournament_registrations bulk insert notice:", dbInsertErr);
         }
       }
 
+      try {
+        localStorage.setItem("frontline_tournament_registrations", JSON.stringify(updatedAllRegs));
+      } catch (_) {}
+
+      // Update tournament registered team count and sync max_teams if necessary
+      const totalTourneySquads = updatedAllRegs.filter(r => String(r.tournament_id) === String(tournamentId)).length;
+      tourney.registered_teams = totalTourneySquads;
+      tourney.teams_registered_count = totalTourneySquads;
+      if (Number(tourney.max_teams || 0) < totalTourneySquads) {
+        tourney.max_teams = Math.max(32, totalTourneySquads);
+      }
+      await this.saveTournament(tourney);
+
+      window.dispatchEvent(new CustomEvent("frontline_tournament_registered", {
+        detail: { tournamentId, totalEnlisted: totalTourneySquads }
+      }));
+      window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: tourney }));
+
       return {
         success: true,
-        count: createdSquads.length,
-        squads: createdSquads,
-        message: `Successfully enlisted ${createdSquads.length} test squad${createdSquads.length === 1 ? '' : 's'}.`
+        count: newSquadRecords.length,
+        squads: createdSquadNames,
+        totalEnlisted: totalTourneySquads,
+        message: `Successfully enlisted ${newSquadRecords.length} test squad${newSquadRecords.length === 1 ? '' : 's'} (${totalTourneySquads} total).`
       };
     } catch (err) {
       console.error("generateDummyTournamentSquads error:", err);
@@ -3525,20 +3634,57 @@ if (dbClient && cleanPayload.user_id) {
   async clearDummyTournamentSquads(tournamentId) {
     try {
       if (!tournamentId) return { success: false, error: "Tournament ID required." };
-      const regs = await this.getTournamentRegistrations(tournamentId);
-      const dummyRegs = regs.filter(r => {
+      const allRegs = await this.getTournamentRegistrations(null);
+      const isTargetTourney = r => String(r.tournament_id) === String(tournamentId);
+
+      const dummyIds = new Set();
+      allRegs.filter(isTargetTourney).forEach(r => {
         const n = String(r.team_name || "").toLowerCase();
         const c = String(r.captain_gamertag || "").toLowerCase();
-        return r.is_dummy_team || n.includes("dummy") || c.includes("bot") || n.includes("bot");
+        if (r.is_dummy_team || r.registered_by === "admin_dummy_generator" || n.includes("dummy") || c.includes("bot") || n.includes("bot")) {
+          dummyIds.add(String(r.id));
+        }
       });
 
-      let removed = 0;
-      for (const reg of dummyRegs) {
-        const res = await this.deleteTournamentRegistration(reg.id, tournamentId);
-        if (res && res.success) removed++;
+      const updatedAllRegs = allRegs.filter(r => !dummyIds.has(String(r.id)));
+      const removedCount = dummyIds.size;
+
+      if (dbClient) {
+        try {
+          await dbClient.from("league_settings").upsert({
+            id: "tournament_registrations_registry",
+            status_state: "active",
+            status_text: JSON.stringify(updatedAllRegs),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+        } catch (e) {}
+
+        if (dummyIds.size > 0) {
+          try {
+            await dbClient.from("tournament_registrations").delete().in("id", Array.from(dummyIds));
+          } catch (e) {}
+        }
       }
 
-      return { success: true, count: removed, message: `Removed ${removed} test squad${removed === 1 ? '' : 's'}.` };
+      try {
+        localStorage.setItem("frontline_tournament_registrations", JSON.stringify(updatedAllRegs));
+      } catch (e) {}
+
+      const list = await this.getTournaments();
+      const tourney = list.find(t => String(t.id) === String(tournamentId));
+      if (tourney) {
+        const remainingCount = updatedAllRegs.filter(isTargetTourney).length;
+        tourney.registered_teams = remainingCount;
+        tourney.teams_registered_count = remainingCount;
+        await this.saveTournament(tourney);
+        window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: tourney }));
+      }
+
+      return {
+        success: true,
+        count: removedCount,
+        message: `Removed ${removedCount} test dummy squad${removedCount === 1 ? '' : 's'}.`
+      };
     } catch (err) {
       console.error("clearDummyTournamentSquads error:", err);
       return { success: false, error: err.message || err };
