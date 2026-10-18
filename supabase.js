@@ -8338,9 +8338,32 @@ if (dbClient && cleanPayload.user_id) {
         authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
       } catch (e) {}
     }
+    if (!authUser) {
+      try {
+        authUser = JSON.parse(localStorage.getItem("frontline_arena_user"));
+      } catch (e) {}
+    }
+    if (!authUser) {
+      try {
+        authUser = JSON.parse(localStorage.getItem("frontline_arena_auth_user"));
+      } catch (e) {}
+    }
+    if (!authUser) {
+      try {
+        const pc = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+        if (pc && pc.gamertag) authUser = pc;
+      } catch (e) {}
+    }
 
-    // Check if authUser is a primary commissioner
+    // Check if authUser or stored admin session is a commissioner
+    let adminSessionEmail = "";
+    try {
+      adminSessionEmail = (sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+    } catch (e) {}
+
     const idents = authUser ? this._extractUserIdentifiers(authUser) : { emails: new Set(), names: new Set(), discordIds: new Set() };
+    if (adminSessionEmail) idents.emails.add(adminSessionEmail);
+
     const isCommishEmail = idents.emails.has("todd061496@gmail.com") || idents.emails.has("admin@frontlineleague.com");
     let isCommishName = false;
     ["invictus", "itzinvictus", "itzinvictus_", "commissioner spencer", "commissioner", "savory"].forEach(cn => {
@@ -8361,14 +8384,14 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     if (isPrimaryCommish) {
-      const displayName = authUser?.user_metadata?.gamertag || authUser?.user_metadata?.discord_username || (isCommishName ? "Invictus" : "Commissioner");
+      const displayName = authUser?.user_metadata?.gamertag || authUser?.gamertag || authUser?.user_metadata?.discord_username || (isCommishName ? "Invictus" : "Commissioner");
       this._staffAccess = {
         is_staff: true,
         is_admin: true,
         auth_user_id: authUser?.id || "commissioner_admin",
         profile: {
           id: authUser?.id || "commissioner_admin",
-          email: authUser?.email || "admin@frontlineleague.com",
+          email: authUser?.email || adminSessionEmail || "admin@frontlineleague.com",
           display_name: displayName,
           role: "commissioner",
           custom_permissions: null

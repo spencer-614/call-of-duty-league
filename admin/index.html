@@ -3784,16 +3784,38 @@
               activeUser = JSON.parse(localStorage.getItem("frontline_league_auth_user"));
             } catch (e) {}
           }
+          if (!activeUser) {
+            try {
+              activeUser = JSON.parse(localStorage.getItem("frontline_arena_user"));
+            } catch (e) {}
+          }
+          if (!activeUser) {
+            try {
+              activeUser = JSON.parse(localStorage.getItem("frontline_arena_auth_user"));
+            } catch (e) {}
+          }
+          if (!activeUser) {
+            try {
+              const pc = JSON.parse(localStorage.getItem("frontline_league_player_card"));
+              if (pc && (pc.gamertag || pc.email)) activeUser = pc;
+            } catch (e) {}
+          }
+
+          // Check if commissioner email or authorization exists in session or local storage
+          const savedEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "";
+          const isSessionAuthorized = (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
 
           if (activeUser) {
             const userEmail = (
               activeUser.email ||
+              activeUser.user_email ||
               activeUser.user_metadata?.email ||
               activeUser.identities?.find(i => i.provider === "discord")?.identity_data?.email ||
+              savedEmail ||
               ""
             ).toLowerCase().trim();
 
-            const isPrimary = isCommissionerAccount(activeUser) || isCommissionerAccount(userEmail);
+            const isPrimary = isCommissionerAccount(activeUser) || isCommissionerAccount(userEmail) || isCommissionerAccount(savedEmail);
             let isStaff = isPrimary;
             if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === "function") {
               isStaff = await window.LeagueDB.isAccountAdminAsync(activeUser);
@@ -3805,29 +3827,34 @@
               sessionStorage.removeItem("frontline_admin_email");
               gateContainer.style.display = "block";
               dashboardContainer.style.display = "none";
-              const displayName = activeUser.user_metadata?.gamertag || activeUser.user_metadata?.discord_username || activeUser.user_metadata?.full_name || "Combatant";
-              gateError.textContent = `Access Denied: Logged in with Discord as ${userEmail || displayName}. This Discord account has not been assigned a staff role yet. Ask a League Commissioner to assign you a role in Staff & Roles.`;
+              const displayName = activeUser.user_metadata?.gamertag || activeUser.gamertag || activeUser.user_metadata?.discord_username || activeUser.user_metadata?.full_name || "Combatant";
+              gateError.textContent = `Access Denied: Logged in as ${displayName}. This account has not been assigned a staff role yet. Ask a League Commissioner to assign you a role in Staff & Roles.`;
               gateError.style.display = "block";
               return;
             }
 
             sessionStorage.setItem("frontline_admin_session", "authorized");
             sessionStorage.setItem("frontline_admin_email", userEmail || "admin@frontlineleague.com");
+            localStorage.setItem("frontline_admin_session", "authorized");
+            localStorage.setItem("frontline_admin_email", userEmail || "admin@frontlineleague.com");
             await unlockConsole(userEmail || "admin@frontlineleague.com", activeUser);
             return;
           }
 
           // 2. Fallback check for active browser session (only when no combatant session is active)
-          const savedEmail = sessionStorage.getItem("frontline_admin_email");
-          if (sessionStorage.getItem("frontline_admin_session") === "authorized" && savedEmail) {
+          if (isSessionAuthorized || savedEmail) {
             const cleanSaved = savedEmail.toLowerCase().trim();
             const isPrimary = isCommissionerAccount(cleanSaved);
             const isStaff = isPrimary || (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function"
-              ? window.LeagueDB.isAccountAdmin(savedEmail)
+              ? window.LeagueDB.isAccountAdmin(cleanSaved)
               : false);
             if (isStaff) {
-              await unlockConsole(savedEmail, null);
-            } else {
+              sessionStorage.setItem("frontline_admin_session", "authorized");
+              sessionStorage.setItem("frontline_admin_email", cleanSaved || "admin@frontlineleague.com");
+              localStorage.setItem("frontline_admin_session", "authorized");
+              localStorage.setItem("frontline_admin_email", cleanSaved || "admin@frontlineleague.com");
+              await unlockConsole(cleanSaved || "admin@frontlineleague.com", null);
+            } else if (isSessionAuthorized) {
               await lockConsole();
             }
           }
