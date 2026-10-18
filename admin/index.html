@@ -4623,8 +4623,8 @@
             const rawEmail = (candidate.email || candidate.user_email || candidate._owner_email || "").toLowerCase().trim();
             const gamertag = (candidate.gamertag || candidate.username || candidate.display_name || candidate.discord_name || "").trim();
             const discord = (candidate.discord || candidate.discord_username || candidate.discord_name || "").trim();
-            const discordId = candidate.discord_id || candidate.discord_user_id || null;
-            const userId = candidate.user_id || candidate.id || null;
+            const isAuthAccount = candidate.category === "Registered Member" || candidate.category === "Discord Account" || candidate.category === "Current Staff";
+            const userId = (isAuthAccount && candidate.user_id) ? candidate.user_id : null;
             const playerId = candidate.player_id || (candidate.category === "Roster Player" ? candidate.id : null);
             const signupId = candidate.signup_id || (candidate.category === "League Recruit" ? candidate.id : null);
 
@@ -5047,7 +5047,7 @@
               try {
                 const res = await window.LeagueDB.saveStaffRole({
                   email: user.email,
-                  user_id: user.user_id || null,
+                  user_id: user.hasRealEmail ? (user.user_id || null) : null,
                   discord: user.discord || null,
                   discord_id: user.discord_id || null,
                   display_name: user.gamertag,
@@ -5225,7 +5225,7 @@
 
           const res = await window.LeagueDB.saveStaffRole({
             email: user.email,
-            user_id: user.user_id || null,
+            user_id: user.hasRealEmail ? (user.user_id || null) : null,
             discord: user.discord || null,
             discord_id: user.discord_id || null,
             display_name: user.gamertag,

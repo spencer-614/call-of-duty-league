@@ -10260,10 +10260,33 @@ isDiscordLinkedToEmail(target) {
 
     if (dbClient) {
       try {
-        const { data, error } = await dbClient
+        let { data, error } = await dbClient
           .from("staff_roles")
           .upsert(payload, { onConflict: "email" })
           .select();
+
+        // If error occurred and user_id was included, automatically retry without user_id if there is a UUID/email mismatch
+        if (error && payload.user_id) {
+          const errMsg = String(error.message || "").toLowerCase();
+          if (
+            errMsg.includes("uuid") ||
+            errMsg.includes("auth account") ||
+            errMsg.includes("belong to the same") ||
+            errMsg.includes("foreign key") ||
+            errMsg.includes("user_id") ||
+            errMsg.includes("violates")
+          ) {
+            console.warn("Retrying staff role upsert without mismatched user_id:", error.message);
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.user_id;
+            const retryRes = await dbClient
+              .from("staff_roles")
+              .upsert(fallbackPayload, { onConflict: "email" })
+              .select();
+            data = retryRes.data;
+            error = retryRes.error;
+          }
+        }
 
         if (error) {
           console.error("Supabase upsert staff_roles error:", error);
