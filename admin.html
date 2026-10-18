@@ -9931,11 +9931,20 @@
           if (!skipConfirm) {
             if (!confirm("Generate live tournament bracket now from registered squads? This will seed the bracket and enable live match scoring.")) return;
           }
+
+          // Let the admin choose whether to dispatch live notifications right now or keep it silent
+          const sendAlerts = confirm("🔔 Would you like to dispatch LIVE alerts to all registered players and captains right now?\n\n• Click OK to send notifications immediately.\n• Click Cancel to generate the bracket silently (you can send alerts anytime later with the '📢 Send Live Alerts' button).");
+
           try {
             if (window.LeagueDB && typeof window.LeagueDB.generateTournamentBracket === 'function') {
-              const res = await window.LeagueDB.generateTournamentBracket(tourneyId);
+              const res = await window.LeagueDB.generateTournamentBracket(tourneyId, {
+                replaceUnstartedBracket: true,
+                notifyCompetitors: sendAlerts
+              });
               if (res.success) {
-                showToast("⚡ Bracket generated and seeded successfully!");
+                showToast(sendAlerts 
+                  ? "⚡ Bracket generated & live competitor notifications dispatched!" 
+                  : "⚡ Bracket generated and seeded successfully (notifications were not sent).");
                 const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
                 await adminManageBracket(tourneyId, resolvedTitle);
                 await loadAdminTournaments();

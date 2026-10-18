@@ -6108,11 +6108,14 @@ if (dbClient && cleanPayload.user_id) {
 
     await this.saveTournament(tourney);
 
-    // Notify all registered players in this tournament that the bracket is now LIVE
-    try {
-      await this.notifyTournamentLive(tourney);
-    } catch (notifErr) {
-      console.warn("Notice: could not dispatch live tournament notifications:", notifErr);
+    // Notify registered players in this tournament if option is selected
+    const shouldNotify = options.notifyCompetitors !== false;
+    if (shouldNotify) {
+      try {
+        await this.notifyTournamentLive(tourney);
+      } catch (notifErr) {
+        console.warn("Notice: could not dispatch live tournament notifications:", notifErr);
+      }
     }
 
     if (typeof window !== "undefined") {
