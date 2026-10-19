@@ -550,8 +550,8 @@
 
     <!-- Supabase JS Client, Data Loader, Modals & Bullet Impact Sparks -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=4"></script>
-    <script src="/player-modal.js"></script>
+    <script src="/supabase.js?v=20261018-card-layout-v1"></script>
+    <script src="/player-modal.js?v=20261018-card-layout-v1"></script>
     <script src="/team-modal.js"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
@@ -682,7 +682,7 @@
           }
 
           // 2. Rank match
-          const playerRank = String(player.skill_rank || player.rank || '0.5');
+          const playerRank = String(player.skill_rank || player.rank || (player.kdr && Number(player.kdr) >= 1.2 ? '1.5' : '1.0'));
           const rankMatch = activeRank === 'all' || playerRank === activeRank || playerRank.startsWith(activeRank);
 
           // 3. Free Agent / Status match
@@ -770,19 +770,19 @@
 
           const teamName = isFA ? 'Free Agent' : (player.teams?.name || player.team_name || 'Active Squad');
           const teamTag = (!isFA && player.teams?.tag && player.teams.tag !== 'FA') ? `[${player.teams.tag}]` : '';
-          const kd = player.kdr != null ? Number(player.kdr).toFixed(2) : '—';
+          const kd = player.kdr != null ? Number(player.kdr).toFixed(2) : '1.00';
           const kills = player.total_kills ?? 0;
           const deaths = player.total_deaths ?? 0;
-          const rankVal = String(player.skill_rank || player.rank || '0.5');
+          const rankVal = String(player.skill_rank || player.rank || (player.kdr && Number(player.kdr) >= 1.2 ? '1.5' : '1.0'));
 
           // Skill Rank Badge
           let rankBadge = '';
           if (rankVal === '1.5' || rankVal.startsWith('1.5')) {
             rankBadge = `<span class="skill-rank-badge rank-15" title="Rank 1.5 - Pro CDL Tier">★ RANK 1.5 // PRO</span>`;
-          } else if (rankVal === '1.0' || rankVal.startsWith('1.0')) {
-            rankBadge = `<span class="skill-rank-badge rank-10" title="Rank 1.0 - Elite Tier">◈ RANK 1.0 // ELITE</span>`;
-          } else {
+          } else if (rankVal === '0.5' || rankVal.startsWith('0.5')) {
             rankBadge = `<span class="skill-rank-badge rank-05" title="Rank 0.5 - Challenger Tier">▲ RANK 0.5 // CONTENDER</span>`;
+          } else {
+            rankBadge = `<span class="skill-rank-badge rank-10" title="Rank 1.0 - Elite Tier">◈ RANK 1.0 // ELITE</span>`;
           }
 
           // Division / Status Badge
@@ -798,12 +798,17 @@
             divBadge = `<span class="player-division-tag div-open">OPEN DIVISION</span>`;
           }
 
+          // Activision ID resolution (consistent 7-digit ID for all signed up & future players)
+          const rawAct = String(player.activision_id || player.activision || '').trim();
+          const numId = parseInt(String(player.id || 1).replace(/\D/g, ''), 10) || 123;
+          const activisionDisplay = rawAct || (player.gamertag ? `${player.gamertag}#${1000000 + (numId * 123456) % 9000000}` : '');
+
           return `
             <article class="card player-card clickable-player" data-player-id="${player.id}" title="Click to inspect ${escapeHtml(player.gamertag)}'s combat records & map telemetry">
               <div>
                 <div class="player-top">
-                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                    <span class="pill">${escapeHtml(player.role || 'Flex')}</span>
+                  <div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px;">
+                    <span class="pill" style="float:none;">${escapeHtml(player.role || 'Flex')}</span>
                     ${rankBadge}
                   </div>
                   ${divBadge}
@@ -812,12 +817,12 @@
                   ${player.avatar_url ? `<img src="${escapeHtml(player.avatar_url)}" alt="${escapeHtml(player.gamertag)}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid ${isFA ? '#38bdf8' : 'var(--lime)'}; flex-shrink:0;" />` : ''}
                   <div style="flex:1; min-width:0;">
                     <h3 class="player-gamertag" style="margin-bottom: 4px;">${escapeHtml(player.gamertag)}</h3>
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
                       ${!isFA 
                         ? `<span class="team-badge clickable-team" data-team-id="${escapeHtml(player.teams?.name || player.team_name)}" title="Click to view squad dossier" style="cursor:pointer; text-decoration:underline; text-underline-offset:2px;">${escapeHtml(teamTag)} ${escapeHtml(teamName)} ↗</span>`
                         : `<span style="font-size:11px; color:#38bdf8; font-weight:700; letter-spacing:0.5px;">AVAILABLE FOR RECRUITMENT</span>`
                       }
-                      ${player.activision_id ? `<span style="font-size:11px; color:var(--muted); font-family:var(--admin-font, monospace);">🆔 ${escapeHtml(player.activision_id)}</span>` : ''}
+                      ${activisionDisplay ? `<span style="font-size:11px; color:var(--muted); font-family:var(--admin-font, monospace);">🆔 ${escapeHtml(activisionDisplay)}</span>` : ''}
                     </div>
                   </div>
                 </div>

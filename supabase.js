@@ -574,13 +574,17 @@ window.LeagueDB = {
           list = data.map(p => {
             const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned' || p.team_name.toLowerCase() === 'fa')) || p.status === 'Free Agent' || p.teams?.name === 'FA' || p.teams?.name?.toLowerCase() === 'free agent';
             const division = p.division || p.teams?.division || (isFreeAgent ? 'Free Agent' : (p.kdr >= 1.15 ? 'Division 1 (Pro)' : (p.kdr >= 1.0 ? 'Division 2 (Challengers)' : 'Open Division')));
-            const calculatedRank = p.rank || (p.kdr >= 1.2 ? "1.5" : (p.kdr >= 1.0 ? "1.0" : "0.5"));
+            const calculatedRank = p.rank || p.skill_rank || (p.kdr && p.kdr >= 1.2 ? "1.5" : "1.0");
+            const numId = parseInt(String(p.id || 1).replace(/\D/g, ''), 10) || 123;
+            const cleanAct = (p.activision_id && String(p.activision_id).trim())
+              ? String(p.activision_id).trim()
+              : `${p.gamertag}#${1000000 + (numId * 123456) % 9000000}`;
             return {
               ...p,
               teams: isFreeAgent ? null : p.teams,
               avatar_url: p.avatar_url || p.photo_url || null,
               discord_name: p.discord_name || p.gamertag,
-              activision_id: p.activision_id || `${p.gamertag}#${Math.floor(1000000 + (p.id * 123456) % 9000000)}`,
+              activision_id: cleanAct,
               rank: calculatedRank,
               skill_rank: p.skill_rank || calculatedRank,
               status: p.status || (isFreeAgent ? "Free Agent" : "Active"),
@@ -589,6 +593,50 @@ window.LeagueDB = {
               is_free_agent: isFreeAgent
             };
           });
+
+          // Also include pending registrations from league_signups so all newly registered users and future signups appear immediately in the players directory
+          try {
+            const { data: signups } = await dbClient
+              .from("league_signups")
+              .select("*")
+              .order("created_at", { ascending: false });
+
+            if (signups && signups.length > 0) {
+              const existingGamertags = new Set(list.map(p => (p.gamertag || "").toLowerCase().trim()));
+              signups.forEach(s => {
+                const tagLower = (s.gamertag || "").toLowerCase().trim();
+                if (!tagLower || existingGamertags.has(tagLower)) return;
+                existingGamertags.add(tagLower);
+
+                const sNumId = parseInt(String(s.id || 1).replace(/\D/g, ''), 10) || 123;
+                const sAct = (s.activision_id && String(s.activision_id).trim())
+                  ? String(s.activision_id).trim()
+                  : `${s.gamertag}#${1000000 + (sNumId * 123456) % 9000000}`;
+
+                list.push({
+                  id: `signup-${s.id}`,
+                  gamertag: s.gamertag,
+                  role: s.role || "Flex",
+                  activision_id: sAct,
+                  avatar_url: s.avatar_url || s.photo_url || null,
+                  discord_name: s.discord_username || s.discord_name || s.gamertag,
+                  kdr: 1.00,
+                  total_kills: 0,
+                  total_deaths: 0,
+                  wins: 0,
+                  losses: 0,
+                  rank: "1.0",
+                  skill_rank: "1.0",
+                  status: "Free Agent",
+                  team_name: null,
+                  teams: null,
+                  division: "Free Agent",
+                  is_free_agent: true
+                });
+              });
+            }
+          } catch (_) {}
+
           try {
             localStorage.setItem("frontline_players_cache", JSON.stringify(list));
           } catch (_) {}
@@ -603,11 +651,32 @@ window.LeagueDB = {
 
     try {
       const cached = localStorage.getItem("frontline_players_cache");
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(p => {
+            const numId = parseInt(String(p.id || 1).replace(/\D/g, ''), 10) || 123;
+            return {
+              ...p,
+              rank: p.rank || p.skill_rank || (p.kdr && p.kdr >= 1.2 ? "1.5" : "1.0"),
+              skill_rank: p.skill_rank || p.rank || (p.kdr && p.kdr >= 1.2 ? "1.5" : "1.0"),
+              activision_id: (p.activision_id && String(p.activision_id).trim()) ? String(p.activision_id).trim() : `${p.gamertag}#${1000000 + (numId * 123456) % 9000000}`
+            };
+          });
+        }
+      }
     } catch (_) {}
 
     if (list.length === 0) {
-      list = (MOCK_DATA.players || []).slice();
+      list = (MOCK_DATA.players || []).map(p => {
+        const numId = parseInt(String(p.id || 1).replace(/\D/g, ''), 10) || 123;
+        return {
+          ...p,
+          rank: p.rank || p.skill_rank || (p.kdr && p.kdr >= 1.2 ? "1.5" : "1.0"),
+          skill_rank: p.skill_rank || p.rank || (p.kdr && p.kdr >= 1.2 ? "1.5" : "1.0"),
+          activision_id: (p.activision_id && String(p.activision_id).trim()) ? String(p.activision_id).trim() : `${p.gamertag}#${1000000 + (numId * 123456) % 9000000}`
+        };
+      });
     }
 
     return list;
@@ -704,7 +773,17 @@ window.LeagueDB = {
             .select("*, teams(name, tag)")
             .eq("id", playerId)
             .single();
-          if (!error && data) return data;
+          if (!error && data) {
+            const numId = parseInt(String(data.id || 1).replace(/\D/g, ''), 10) || 123;
+            return {
+              ...data,
+              rank: data.rank || data.skill_rank || (data.kdr && data.kdr >= 1.2 ? "1.5" : "1.0"),
+              skill_rank: data.skill_rank || data.rank || (data.kdr && data.kdr >= 1.2 ? "1.5" : "1.0"),
+              activision_id: (data.activision_id && String(data.activision_id).trim())
+                ? String(data.activision_id).trim()
+                : `${data.gamertag}#${1000000 + (numId * 123456) % 9000000}`
+            };
+          }
         } else if (String(playerId).startsWith("signup-")) {
           const rawId = String(playerId).replace("signup-", "");
           const { data, error } = await dbClient
@@ -713,15 +792,20 @@ window.LeagueDB = {
             .eq("id", rawId)
             .single();
           if (!error && data) {
+            const sNumId = parseInt(String(data.id || 1).replace(/\D/g, ''), 10) || 123;
+            const sAct = (data.activision_id && String(data.activision_id).trim())
+              ? String(data.activision_id).trim()
+              : `${data.gamertag}#${1000000 + (sNumId * 123456) % 9000000}`;
             return {
               id: playerId,
               gamertag: data.gamertag,
               discord_name: data.discord_username || data.gamertag,
-              activision_id: data.activision_id || "—",
+              activision_id: sAct,
               role: data.role || "Flex",
-              rank: "0.5",
+              rank: "1.0",
+              skill_rank: "1.0",
               status: data.registration_type === "Free Agent" ? "Free Agent" : (data.status || "Pending"),
-              kdr: null,
+              kdr: 1.00,
               total_kills: 0,
               total_deaths: 0,
               team_name: data.team_name || "Free Agent"
@@ -2356,17 +2440,23 @@ if (dbClient && cleanPayload.user_id) {
       }
 
       // 2. Build player entity (ensure discord identity, avatar, platform & region are mapped)
+      const cleanAct = (signup?.activision_id && String(signup.activision_id).trim()) || 
+                       (customPlayerData.activision_id && String(customPlayerData.activision_id).trim()) || 
+                       `${gamertag}#${1000000 + ((parseInt(String(signupId || 1).replace(/\D/g, ''), 10) || 123) * 123456) % 9000000}`;
+
       const newPlayerData = {
         gamertag: gamertag,
         role: signup?.role || customPlayerData.role || "Flex",
         team_id: teamId,
         kdr: customPlayerData.kdr != null ? parseFloat(customPlayerData.kdr) : 1.00,
-        activision_id: signup?.activision_id || customPlayerData.activision_id || null,
+        activision_id: cleanAct,
         discord_name: customPlayerData.discord_name || signup?.discord_username || signup?.discord_name || null,
         avatar_url: customPlayerData.avatar_url || signup?.avatar_url || null,
         platform: customPlayerData.platform || signup?.platform || "PC",
         region: customPlayerData.region || signup?.region || "NA East",
         user_id: customPlayerData.user_id || (this._isValidUUID && this._isValidUUID(signup?.user_id) ? signup.user_id : null),
+        rank: customPlayerData.rank || signup?.rank || "1.0",
+        skill_rank: customPlayerData.skill_rank || signup?.skill_rank || "1.0",
         total_kills: 0,
         total_deaths: 0,
         wins: 0,

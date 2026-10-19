@@ -150,10 +150,15 @@
       }
 
       if (metaEl) {
+        const numId = parseInt(String(player.id || 1).replace(/\D/g, ''), 10) || 123;
+        const actVal = (player.activision_id && String(player.activision_id).trim())
+          ? String(player.activision_id).trim()
+          : (player.gamertag ? `${player.gamertag}#${1000000 + (numId * 123456) % 9000000}` : "");
+        const rankVal = player.skill_rank || player.rank || (Number(player.kdr || 1.0) >= 1.2 ? "1.5 (Pro)" : "1.0 (Elite)");
         const metaItems = [
-          player.activision_id ? `<span><strong style="color:var(--lime)">ACTIVISION:</strong> ${escapeHtml(player.activision_id)}</span>` : "",
+          actVal ? `<span><strong style="color:var(--lime)">ACTIVISION:</strong> ${escapeHtml(actVal)}</span>` : "",
           player.discord_name ? `<span><strong style="color:var(--muted)">DISCORD:</strong> ${escapeHtml(player.discord_name)}</span>` : "",
-          player.rank ? `<span><strong style="color:var(--muted)">TIER:</strong> ${escapeHtml(player.rank)}</span>` : ""
+          `<span><strong style="color:var(--muted)">TIER:</strong> ${escapeHtml(rankVal)}</span>`
         ].filter(Boolean);
         metaEl.innerHTML = metaItems.join(`<span style="color:#ffffff25">•</span>`);
       }
