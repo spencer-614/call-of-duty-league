@@ -4024,7 +4024,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=admin-auth-restore-20261017"></script>
+    <script src="/supabase.js?v=20261018-staff-sync-v3"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -4744,6 +4744,8 @@
               if ((!existing.hasRealEmail || !existing.email) && rawEmail) {
                 existing.email = rawEmail;
                 existing.hasRealEmail = hasRealEmail;
+              } else if (!existing.email) {
+                existing.email = gamertag ? `${gamertag.toLowerCase().replace(/[^a-z0-9]/g, '')}@frontlineleague.com` : (safeUserId ? `user_${safeUserId.slice(0, 8)}@frontlineleague.com` : "");
               }
               if (!existing.gamertag && gamertag) existing.gamertag = gamertag;
               if (!existing.discord && discord) existing.discord = discord;
