@@ -11606,7 +11606,7 @@ window.LadderDB = {
     ];
 
     return roles.map((r, i) => {
-      const gname = i === 0 ? captainName : `${tag}_${r.suffix}`;
+      const gname = (team.roster && team.roster[i]) ? team.roster[i] : (i === 0 ? captainName : `${tag}_${r.suffix}`);
       const pElo = Math.max(800, teamElo + r.eloDelta);
       const pWins = Math.max(0, teamWins + r.wDelta);
       const pLosses = Math.max(0, teamLosses + r.lDelta);
@@ -14287,22 +14287,22 @@ window.LadderDB = {
   // ==============================================================================
   async generateDummyArenaTeams(ladderType = "4v4_variant", count = 8, eloMode = "distributed") {
     const CDL_FRANCHISES = [
-      { name: "Atlanta FaZe", tag: "FAZE", captain: "Simp", discord: "simp#0001", act: "Simp#FaZe", avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" },
-      { name: "OpTic Texas", tag: "OPT", captain: "Shotzhy", discord: "shotzhy#0002", act: "Shotzhy#OpTic", avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80" },
-      { name: "Toronto Ultra", tag: "TOR", captain: "CleanX", discord: "cleanx#0003", act: "CleanX#Ultra", avatar: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80" },
-      { name: "New York Subliners", tag: "NYSL", captain: "HyDra", discord: "hydra#0004", act: "HyDra#NYSL", avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
-      { name: "Miami Heretics", tag: "MIA", captain: "Vikul", discord: "vikul#0005", act: "Vikul#Heretics", avatar: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80" },
-      { name: "Seattle Surge", tag: "SEA", captain: "Abuzah", discord: "abuzah#0006", act: "Abuzah#Surge", avatar: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80" },
-      { name: "Los Angeles Thieves", tag: "LAT", captain: "Ghosty", discord: "ghosty#0007", act: "Ghosty#LAThieves", avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80" },
-      { name: "Boston Breach", tag: "BOS", captain: "Snoopy", discord: "snoopy#0008", act: "Snoopy#Breach", avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80" },
-      { name: "Carolina Royal Ravens", tag: "CAR", captain: "Gwinn", discord: "gwinn#0009", act: "Gwinn#Ravens", avatar: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=150&auto=format&fit=crop&q=80" },
-      { name: "Vegas Legion", tag: "VEG", captain: "Attach", discord: "attach#0010", act: "Attach#Legion", avatar: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=150&auto=format&fit=crop&q=80" },
-      { name: "Minnesota RØKKR", tag: "ROKKR", captain: "Accuracy", discord: "accuracy#0011", act: "Accuracy#ROKKR", avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150&auto=format&fit=crop&q=80" },
-      { name: "Los Angeles Guerrillas", tag: "LAG", captain: "Diamondcon", discord: "diamondcon#0012", act: "Diamond#LAG", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" },
-      { name: "Cloud9 New York", tag: "C9", captain: "Clayster", discord: "clayster#0013", act: "Clayster#C9", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80" },
-      { name: "Dallas Empire", tag: "DAL", captain: "Crimsix", discord: "crimsix#0014", act: "Crimsix#Empire", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
-      { name: "Chicago Huntsmen", tag: "CHI", captain: "Scump", discord: "scump#0015", act: "Scump#Huntsmen", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
-      { name: "London Ravens", tag: "LON", captain: "Zer0", discord: "zer0#0016", act: "Zer0#Ravens", avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" }
+      { name: "Atlanta FaZe", tag: "FAZE", captain: "Simp", discord: "simp#0001", act: "Simp#FaZe", avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80", roster: ["Simp", "aBeZy", "Cellium", "Drazah"] },
+      { name: "OpTic Texas", tag: "OPT", captain: "Shotzzy", discord: "shotzzy#0002", act: "Shotzzy#OpTic", avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80", roster: ["Shotzzy", "Pred", "Dashy", "Kenny"] },
+      { name: "Toronto Ultra", tag: "TOR", captain: "CleanX", discord: "cleanx#0003", act: "CleanX#Ultra", avatar: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80", roster: ["CleanX", "Envoy", "Insight", "Scrap"] },
+      { name: "New York Subliners", tag: "NYSL", captain: "HyDra", discord: "hydra#0004", act: "HyDra#NYSL", avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80", roster: ["HyDra", "Sib", "Skyz", "KiSMET"] },
+      { name: "Miami Heretics", tag: "MIA", captain: "Vikul", discord: "vikul#0005", act: "Vikul#Heretics", avatar: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80", roster: ["Vikul", "Lucky", "MettalZ", "ReeaL"] },
+      { name: "Seattle Surge", tag: "SEA", captain: "Abuzah", discord: "abuzah#0006", act: "Abuzah#Surge", avatar: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80", roster: ["Abuzah", "04", "Breszy", "Huke"] },
+      { name: "Los Angeles Thieves", tag: "LAT", captain: "Ghosty", discord: "ghosty#0007", act: "Ghosty#LAThieves", avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80", roster: ["Ghosty", "Nastie", "Kremp", "JoeDeceives"] },
+      { name: "Boston Breach", tag: "BOS", captain: "Snoopy", discord: "snoopy#0008", act: "Snoopy#Breach", avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80", roster: ["Snoopy", "Priestahh", "Beans", "MajorManiak"] },
+      { name: "Carolina Royal Ravens", tag: "CAR", captain: "Gwinn", discord: "gwinn#0009", act: "Gwinn#Ravens", avatar: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=150&auto=format&fit=crop&q=80", roster: ["Gwinn", "TJHaLy", "Clayster", "FeLo"] },
+      { name: "Vegas Legion", tag: "VEG", captain: "Attach", discord: "attach#0010", act: "Attach#Legion", avatar: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=150&auto=format&fit=crop&q=80", roster: ["Attach", "Gio", "Nero", "Purj"] },
+      { name: "Minnesota RØKKR", tag: "ROKKR", captain: "Accuracy", discord: "accuracy#0011", act: "Accuracy#ROKKR", avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150&auto=format&fit=crop&q=80", roster: ["Accuracy", "Standy", "Gunless", "Lyynnz"] },
+      { name: "Los Angeles Guerrillas", tag: "LAG", captain: "Diamondcon", discord: "diamondcon#0012", act: "Diamond#LAG", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80", roster: ["Diamondcon", "Estreal", "Fame", "Assault"] },
+      { name: "Cloud9 New York", tag: "C9", captain: "Clayster", discord: "clayster#0013", act: "Clayster#C9", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80", roster: ["Clayster", "Sib", "Skyz", "KiSMET"] },
+      { name: "Dallas Empire", tag: "DAL", captain: "Crimsix", discord: "crimsix#0014", act: "Crimsix#Empire", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80", roster: ["Crimsix", "Shotzzy", "Huke", "iLLeY"] },
+      { name: "Chicago Huntsmen", tag: "CHI", captain: "Scump", discord: "scump#0015", act: "Scump#Huntsmen", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80", roster: ["Scump", "FormaL", "Envoy", "Arcitys"] },
+      { name: "London Ravens", tag: "LON", captain: "Zer0", discord: "zer0#0016", act: "Zer0#Ravens", avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80", roster: ["Zer0", "Nastie", "Trei", "Afro"] }
     ];
 
     const distributedElos = [1950, 1820, 1680, 1540, 1420, 1310, 1200, 1120, 1050, 980, 920, 880, 850, 820, 800, 800];
@@ -14344,7 +14344,8 @@ window.LadderDB = {
         losses: losses,
         streak: streak,
         is_dummy: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        roster: f.roster || [f.captain]
       };
 
       teamObj.players = this.generateRosterForTeam(teamObj);
@@ -14511,6 +14512,67 @@ window.LadderDB = {
     teamB.losses = (Number(teamB.losses) || 0) + (!aWon ? 0 : 1);
     teamB.streak = !aWon ? (teamB.streak >= 0 ? teamB.streak + 1 : 1) : (teamB.streak <= 0 ? teamB.streak - 1 : -1);
 
+    // Update Individual Player ELO ratings for Team A and Team B
+    teamA.players = this.getTeamRoster(teamA);
+    teamB.players = this.getTeamRoster(teamB);
+
+    const maxEloB = Math.max(...teamB.players.map(p => Number(p.elo) || eloB), eloB);
+    const maxEloA = Math.max(...teamA.players.map(p => Number(p.elo) || eloA), eloA);
+
+    const playersTelemetryA = teamA.players.map(p => {
+      const oldElo = Number(p.elo) || eloA;
+      const pDelta = this.calculateIndividualPlayerEloDelta(oldElo, maxEloB, aWon);
+      const newElo = Math.max(800, oldElo + pDelta);
+      p.oldElo = oldElo;
+      p.elo = newElo;
+      p.delta = pDelta;
+      p.tier = this.getTier(newElo).name;
+      p.wins = (Number(p.wins) || 0) + (aWon ? 1 : 0);
+      p.losses = (Number(p.losses) || 0) + (!aWon ? 1 : 0);
+      const total = p.wins + p.losses;
+      p.win_rate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
+      return {
+        gamertag: p.gamertag,
+        role: p.role,
+        oldElo,
+        newElo,
+        delta: pDelta,
+        tier: p.tier,
+        wins: p.wins,
+        losses: p.losses,
+        win_rate: p.win_rate,
+        avatar_url: p.avatar_url,
+        activision_id: p.activision_id
+      };
+    });
+
+    const playersTelemetryB = teamB.players.map(p => {
+      const oldElo = Number(p.elo) || eloB;
+      const pDelta = this.calculateIndividualPlayerEloDelta(oldElo, maxEloA, !aWon);
+      const newElo = Math.max(800, oldElo + pDelta);
+      p.oldElo = oldElo;
+      p.elo = newElo;
+      p.delta = pDelta;
+      p.tier = this.getTier(newElo).name;
+      p.wins = (Number(p.wins) || 0) + (!aWon ? 1 : 0);
+      p.losses = (Number(p.losses) || 0) + (aWon ? 1 : 0);
+      const total = p.wins + p.losses;
+      p.win_rate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
+      return {
+        gamertag: p.gamertag,
+        role: p.role,
+        oldElo,
+        newElo,
+        delta: pDelta,
+        tier: p.tier,
+        wins: p.wins,
+        losses: p.losses,
+        win_rate: p.win_rate,
+        avatar_url: p.avatar_url,
+        activision_id: p.activision_id
+      };
+    });
+
     // Re-sort ladder teams
     teams.sort((a, b) => (b.elo || 0) - (a.elo || 0));
 
@@ -14560,8 +14622,8 @@ window.LadderDB = {
     return {
       success: true,
       ladderType,
-      teamA: { id: teamA.id, name: teamA.name, tag: teamA.tag, oldElo: eloA, newElo: newEloA, delta: deltaA, tier: teamA.tier },
-      teamB: { id: teamB.id, name: teamB.name, tag: teamB.tag, oldElo: eloB, newElo: newEloB, delta: deltaB, tier: teamB.tier },
+      teamA: { id: teamA.id, name: teamA.name, tag: teamA.tag, oldElo: eloA, newElo: newEloA, delta: deltaA, tier: teamA.tier, players: playersTelemetryA },
+      teamB: { id: teamB.id, name: teamB.name, tag: teamB.tag, oldElo: eloB, newElo: newEloB, delta: deltaB, tier: teamB.tier, players: playersTelemetryB },
       winner: winner.name,
       scoreA: winsA,
       scoreB: winsB,

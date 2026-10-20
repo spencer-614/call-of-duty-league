@@ -3751,15 +3751,21 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
                   <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label" for="arena-sim-team-a-select" style="font-size:11px; text-transform:uppercase; color:#38bdf8;">Team A (Blue) *</label>
-                    <select id="arena-sim-team-a-select" class="form-control" style="font-size:12px;">
+                    <select id="arena-sim-team-a-select" class="form-control" style="font-size:12px;" onchange="updateArenaSimMatchupLineups()">
                       <option value="">-- Choose Team A --</option>
                     </select>
+                    <div id="arena-sim-team-a-lineup-preview" style="margin-top:6px; display:none; background:#070a12; border:1px solid #1e293b; padding:8px 10px; border-radius:3px;">
+                      <!-- Populated via updateArenaSimMatchupLineups() -->
+                    </div>
                   </div>
                   <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label" for="arena-sim-team-b-select" style="font-size:11px; text-transform:uppercase; color:#ff3b3b;">Team B (Red) *</label>
-                    <select id="arena-sim-team-b-select" class="form-control" style="font-size:12px;">
+                    <select id="arena-sim-team-b-select" class="form-control" style="font-size:12px;" onchange="updateArenaSimMatchupLineups()">
                       <option value="">-- Choose Team B --</option>
                     </select>
+                    <div id="arena-sim-team-b-lineup-preview" style="margin-top:6px; display:none; background:#070a12; border:1px solid #1e293b; padding:8px 10px; border-radius:3px;">
+                      <!-- Populated via updateArenaSimMatchupLineups() -->
+                    </div>
                   </div>
                 </div>
 
@@ -6906,6 +6912,34 @@
                         <button type="button" class="btn-action-sm btn-delete-signup" data-id="${s.id}" data-gamer="${escapeHtml(s.gamertag)}" style="color:#ff6b6b; border-color:#ff6b6b50;">
                           Remove ✕
                         </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr id="roster-drawer-${escapeHtml(t.id)}" style="display:none; background:#070a12; border-bottom:2px solid #1e293b;">
+                    <td colspan="7" style="padding:12px 18px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:11px; text-transform:uppercase; color:#38bdf8; font-weight:800; letter-spacing:0.5px;">
+                          🛡 ${escapeHtml(t.name)} — Active Player Roster &amp; ELO Ratings
+                        </span>
+                        <span style="font-size:10.5px; color:#64748b;">${roster.length} Players Assigned</span>
+                      </div>
+                      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+                        ${roster.map(p => `
+                          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:4px; padding:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                              <strong style="color:#ffffff; font-size:12.5px;">${escapeHtml(p.gamertag)}</strong>
+                              <span style="font-weight:800; color:#38bdf8; font-size:13px; font-variant-numeric: tabular-nums;">${p.elo || 1200} ELO</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">${escapeHtml(p.role || 'Player')}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px;">
+                              ${getLadderTierBadge(p.elo || 1200)}
+                              <span style="color:#22c55e; font-weight:700;">${p.wins || 0}W - ${p.losses || 0}L <small style="color:var(--muted);">(${p.win_rate || 0}%)</small></span>
+                            </div>
+                            <div style="font-size:9.5px; color:#64748b; margin-top:5px; border-top:1px solid #1e293b; padding-top:4px;">
+                              Act: ${escapeHtml(p.activision_id || 'N/A')}
+                            </div>
+                          </div>
+                        `).join("")}
                       </div>
                     </td>
                   </tr>
@@ -12128,6 +12162,7 @@
                 const rankColor = rank === 1 ? "#fbbf24" : (rank === 2 ? "#cbd5e1" : (rank === 3 ? "#b45309" : "var(--muted)"));
                 const streakNum = Number(t.streak) || 0;
                 const streakDisplay = streakNum > 0 ? `<span style="color:#22c55e; font-weight:700;">+${streakNum} W</span>` : (streakNum < 0 ? `<span style="color:#ef4444; font-weight:700;">${streakNum} L</span>` : `<span style="color:#64748b;">-</span>`);
+                const roster = t.players || (window.LadderDB && typeof window.LadderDB.getTeamRoster === "function" ? window.LadderDB.getTeamRoster(t) : []);
 
                 return `
                   <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
@@ -12141,6 +12176,9 @@
                             ${isDummy ? `<span style="font-size:9.5px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:1px 5px; border-radius:2px; font-weight:700; text-transform:uppercase;">Dummy</span>` : ''}
                           </div>
                           <div style="font-size:11px; color:var(--muted);">[${escapeHtml(t.tag || "TAG")}] • Capt: ${escapeHtml(t.captain_activision_id || t.captain || "N/A")}</div>
+                          <button type="button" class="btn-action-sm" onclick="toggleLadderTeamRosterRow('${escapeHtml(t.id)}')" style="font-size:10px; padding:1px 6px; margin-top:3px; border-color:#334155; color:#94a3b8; display:inline-flex; align-items:center; gap:4px;" title="View individual players on this team and their ELO ratings">
+                            <span>👥</span> <span>View Roster (${roster.length} Players)</span>
+                          </button>
                         </div>
                       </div>
                     </td>
@@ -12180,10 +12218,68 @@
         }
         window.loadArenaSimulatorData = loadArenaSimulatorData;
 
+        function toggleLadderTeamRosterRow(teamId) {
+          const row = document.getElementById(`roster-drawer-${teamId}`);
+          if (!row) return;
+          row.style.display = row.style.display === "none" ? "table-row" : "none";
+        }
+        window.toggleLadderTeamRosterRow = toggleLadderTeamRosterRow;
+
+        async function updateArenaSimMatchupLineups() {
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const selectA = document.getElementById("arena-sim-team-a-select");
+          const selectB = document.getElementById("arena-sim-team-b-select");
+          const previewA = document.getElementById("arena-sim-team-a-lineup-preview");
+          const previewB = document.getElementById("arena-sim-team-b-lineup-preview");
+
+          const ladderType = ladderSelect?.value || "4v4_variant";
+          const teamAId = selectA?.value;
+          const teamBId = selectB?.value;
+
+          if (!window.LadderDB) return;
+          const teams = await window.LadderDB.getLadderTeams(ladderType);
+
+          const renderLineupBox = (container, teamId, labelColor) => {
+            if (!container) return;
+            const team = teams.find(t => String(t.id) === String(teamId));
+            if (!team) {
+              container.style.display = "none";
+              container.innerHTML = "";
+              return;
+            }
+            const roster = team.players || (typeof window.LadderDB.getTeamRoster === "function" ? window.LadderDB.getTeamRoster(team) : []);
+            container.style.display = "block";
+            container.innerHTML = `
+              <div style="font-size:10.5px; font-weight:800; color:${labelColor}; margin-bottom:4px; text-transform:uppercase;">
+                👤 ${escapeHtml(team.name)} Active Players (${roster.length}):
+              </div>
+              <div style="display:flex; flex-direction:column; gap:3px;">
+                ${roster.map(p => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:#cbd5e1; background:rgba(255,255,255,0.03); padding:2px 6px; border-radius:2px;">
+                    <div>
+                      <strong>${escapeHtml(p.gamertag)}</strong>
+                      <span style="color:#64748b; font-size:9.5px; margin-left:4px;">[${escapeHtml(p.role || 'Player')}]</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                      <span style="font-weight:700; color:#38bdf8;">${p.elo || 1200} ELO</span>
+                      ${getLadderTierBadge(p.elo || 1200)}
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            `;
+          };
+
+          renderLineupBox(previewA, teamAId, "#38bdf8");
+          renderLineupBox(previewB, teamBId, "#ff3b3b");
+        }
+        window.updateArenaSimMatchupLineups = updateArenaSimMatchupLineups;
+
         function pickTeamForSimulator(teamId, slot) {
           const select = document.getElementById(slot === 'A' ? "arena-sim-team-a-select" : "arena-sim-team-b-select");
           if (!select) return;
           select.value = teamId;
+          if (typeof updateArenaSimMatchupLineups === "function") updateArenaSimMatchupLineups();
           showToast(`Assigned ${slot === 'A' ? 'Team A (Blue)' : 'Team B (Red)'} from ladder.`);
         }
         window.pickTeamForSimulator = pickTeamForSimulator;
@@ -12408,6 +12504,67 @@
                   </div>
                 </div>
 
+                <!-- Individual Player ELO & Combat Progression -->
+                <div style="margin-bottom:14px; background:#080b12; border:1px solid #1e293b; border-radius:4px; padding:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:11px; text-transform:uppercase; color:#38bdf8; font-weight:800; letter-spacing:0.5px;">
+                      👤 Individual Player Combat &amp; ELO Progression
+                    </span>
+                    <span style="font-size:10px; color:#64748b;">Formula based on individual ELO vs highest opponent rating</span>
+                  </div>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+                    <!-- Team A Players -->
+                    <div>
+                      <div style="font-size:11px; color:#38bdf8; font-weight:700; margin-bottom:6px;">${escapeHtml(res.teamA.name)} Roster:</div>
+                      <div style="display:flex; flex-direction:column; gap:6px;">
+                        ${(res.teamA.players || []).map(p => `
+                          <div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; border:1px solid #1e293b; padding:6px 10px; border-radius:3px; font-size:11.5px;">
+                            <div>
+                              <strong style="color:#ffffff;">${escapeHtml(p.gamertag)}</strong>
+                              <small style="color:var(--muted); display:block; font-size:10px;">${escapeHtml(p.role || 'Combatant')}</small>
+                            </div>
+                            <div style="text-align:right;">
+                              <div style="font-weight:700; color:#f8fafc; font-size:11.5px;">
+                                ${p.oldElo} ➔ <strong style="color:#ffffff;">${p.newElo}</strong>
+                                <span style="font-weight:800; color:${p.delta >= 0 ? '#22c55e' : '#ef4444'}; margin-left:4px;">${p.delta >= 0 ? '+' : ''}${p.delta} ELO</span>
+                              </div>
+                              <div style="font-size:10px; color:#94a3b8; display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-top:2px;">
+                                ${getLadderTierBadge(p.newElo)}
+                                <span>${p.wins}W - ${p.losses}L</span>
+                              </div>
+                            </div>
+                          </div>
+                        `).join("")}
+                      </div>
+                    </div>
+
+                    <!-- Team B Players -->
+                    <div>
+                      <div style="font-size:11px; color:#ff3b3b; font-weight:700; margin-bottom:6px;">${escapeHtml(res.teamB.name)} Roster:</div>
+                      <div style="display:flex; flex-direction:column; gap:6px;">
+                        ${(res.teamB.players || []).map(p => `
+                          <div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; border:1px solid #1e293b; padding:6px 10px; border-radius:3px; font-size:11.5px;">
+                            <div>
+                              <strong style="color:#ffffff;">${escapeHtml(p.gamertag)}</strong>
+                              <small style="color:var(--muted); display:block; font-size:10px;">${escapeHtml(p.role || 'Combatant')}</small>
+                            </div>
+                            <div style="text-align:right;">
+                              <div style="font-weight:700; color:#f8fafc; font-size:11.5px;">
+                                ${p.oldElo} ➔ <strong style="color:#ffffff;">${p.newElo}</strong>
+                                <span style="font-weight:800; color:${p.delta >= 0 ? '#22c55e' : '#ef4444'}; margin-left:4px;">${p.delta >= 0 ? '+' : ''}${p.delta} ELO</span>
+                              </div>
+                              <div style="font-size:10px; color:#94a3b8; display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-top:2px;">
+                                ${getLadderTierBadge(p.newElo)}
+                                <span>${p.wins}W - ${p.losses}L</span>
+                              </div>
+                            </div>
+                          </div>
+                        `).join("")}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Per-Map Breakdown -->
                 <div>
                   <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700; margin-bottom:8px; letter-spacing:0.5px;">CDL Map Breakdown:</div>
@@ -12431,6 +12588,7 @@
 
             showToast(`✓ Simulated: ${res.winner} won (${res.scoreText})! ELO ratings updated.`);
             await loadArenaSimulatorData();
+            if (typeof updateArenaSimMatchupLineups === "function") updateArenaSimMatchupLineups();
           } catch (err) {
             console.error("Error simulating arena match:", err);
             showToast("Simulation error: " + (err.message || err), true);
