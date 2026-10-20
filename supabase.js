@@ -4371,6 +4371,83 @@ if (dbClient && cleanPayload.user_id) {
     return { success: true, data: record, mock: true };
   },
 
+
+  // ==========================================
+  // ARENA LADDER DETAILS & PRIZE POOL (COMMISSIONER)
+  // ==========================================
+  DEFAULT_LADDER_DETAILS_SETTINGS: {
+    has_prize_pool: true,
+    prize_title: "$1,000 Cash Pool",
+    prize_subtitle: "+ Custom Frontline Rings",
+    season_ends: "Sat 31 Dec 2026, 8:00 PM EST",
+    roster_lock: "Fri 14 Nov 2026",
+    playoffs_start: "Fri 21 Nov 2026"
+  },
+
+  async getArenaLadderDetailsSettings() {
+    let cached = null;
+    try {
+      const saved = localStorage.getItem("frontline_arena_ladder_settings");
+      if (saved) cached = JSON.parse(saved);
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("status_text")
+          .eq("id", "arena_ladder_settings")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          const parsed = JSON.parse(data.status_text);
+          try {
+            localStorage.setItem("frontline_arena_ladder_settings", JSON.stringify(parsed));
+          } catch (e) {}
+          return parsed;
+        }
+      } catch (err) {
+        console.warn("Supabase getArenaLadderDetailsSettings error:", err);
+      }
+    }
+
+    if (cached) return cached;
+    return { ...this.DEFAULT_LADDER_DETAILS_SETTINGS };
+  },
+
+  async updateArenaLadderDetailsSettings(newSettings) {
+    const merged = { ...this.DEFAULT_LADDER_DETAILS_SETTINGS, ...newSettings, updated_at: new Date().toISOString() };
+    try {
+      localStorage.setItem("frontline_arena_ladder_settings", JSON.stringify(merged));
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "arena_ladder_settings",
+          status_state: merged.has_prize_pool ? "active" : "inactive",
+          status_text: JSON.stringify(merged),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (err) {
+        console.warn("Supabase updateArenaLadderDetailsSettings error:", err);
+      }
+    }
+
+    try {
+      if (typeof window !== "undefined") {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel("frontline_ladder_details_channel");
+          bc.postMessage({ type: "LADDER_DETAILS_UPDATED", data: merged, timestamp: Date.now() });
+          bc.close();
+        }
+        window.dispatchEvent(new CustomEvent("frontline_ladder_details_updated", { detail: merged }));
+      }
+    } catch (_) {}
+
+    return { success: true, settings: merged };
+  },
+
   applyArenaSeasonBadge(settings) {
     if (!settings) return;
     const seasonNum = settings.season_number || 1;
@@ -14702,6 +14779,8 @@ window.LadderDB = {
 // Expose Arena simulation helpers on window.LeagueDB as well
 if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
   window.LeagueDB.generateDummyArenaTeams = window.LadderDB.generateDummyArenaTeams.bind(window.LadderDB);
+  window.LadderDB.getArenaLadderDetailsSettings = window.LeagueDB.getArenaLadderDetailsSettings.bind(window.LeagueDB);
+  window.LadderDB.updateArenaLadderDetailsSettings = window.LeagueDB.updateArenaLadderDetailsSettings.bind(window.LeagueDB);
   window.LadderDB.isUserCommissioner = window.LeagueDB.isUserCommissioner.bind(window.LeagueDB);
   window.isUserCommissioner = window.LeagueDB.isUserCommissioner.bind(window.LeagueDB);
   window.LeagueDB.clearDummyArenaTeams = window.LadderDB.clearDummyArenaTeams.bind(window.LadderDB);

@@ -3467,6 +3467,69 @@
             </form>
           </div>
 
+          <!-- Section 1b: Arena Ladder Details & Prize Pool Controls -->
+          <div class="admin-panel-card" style="border-top:3px solid #fbbf24; margin-bottom:28px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+              <div>
+                <h3 class="admin-card-title" style="margin:0; color:#fbbf24;">🏆 1b. Arena Ladder Details &amp; Prize Pool Controls</h3>
+                <p style="color:var(--muted); font-size:12.5px; margin:4px 0 0;">
+                  Controls the live "Ladder Details" sidebar on <code>/ladders/</code>. Edit the prize pool amount, customize rings/bounties, or completely remove the prize pool.
+                </p>
+              </div>
+              <a href="/ladders/#standings" target="_blank" class="btn-action-sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:#fbbf24; border-color:rgba(251,191,36,0.4); background:rgba(251,191,36,0.06);">
+                📊 View Live on Ladders ↗
+              </a>
+            </div>
+
+            <form id="form-ladder-details-settings">
+              <div style="background:#090d14; border:1px solid #1e293b; border-radius:4px; padding:16px; margin-bottom:18px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:800; font-size:13.5px; color:#f8fafc;">
+                  <input type="checkbox" id="ladder-has-prize-pool" style="width:18px; height:18px; accent-color:#fbbf24;" onchange="toggleLadderPrizePoolInputs()" />
+                  <span>Enable &amp; Display Prize Pool on Ladder Details</span>
+                </label>
+                <div style="font-size:11.5px; color:#94a3b8; margin-top:4px; margin-left:28px;">
+                  Uncheck this to completely remove the Prize Pool row from the public ladders page.
+                </div>
+              </div>
+
+              <div id="ladder-prize-pool-fields" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:18px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="ladder-prize-title">Prize Pool Headline *</label>
+                  <input type="text" id="ladder-prize-title" class="form-control" placeholder="e.g. $1,000 Cash Pool" value="$1,000 Cash Pool" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="ladder-prize-subtitle">Prize Subtitle / Ring Bounties (Optional)</label>
+                  <input type="text" id="ladder-prize-subtitle" class="form-control" placeholder="e.g. + Custom Frontline Rings (or leave blank)" value="+ Custom Frontline Rings" />
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:18px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="ladder-season-ends-input">Season Ends Display Text</label>
+                  <input type="text" id="ladder-season-ends-input" class="form-control" value="Sat 31 Dec 2026, 8:00 PM EST" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="ladder-roster-lock-input">Roster Lock Starts Text</label>
+                  <input type="text" id="ladder-roster-lock-input" class="form-control" value="Fri 14 Nov 2026" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="ladder-playoffs-start-input">Playoff Bracket Starts Text</label>
+                  <input type="text" id="ladder-playoffs-start-input" class="form-control" value="Fri 21 Nov 2026" />
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <button type="button" class="btn-action-sm btn-action-danger" onclick="removeLadderPrizePoolAction()">
+                  🗑 Remove / Clear Prize Pool
+                </button>
+                <button type="submit" class="btn-paypal-submit" style="width:auto; padding:10px 24px; font-size:13px; background:#fbbf24; border-color:#fbbf24; color:#0b0d14; font-weight:800;">
+                  <span>Save Ladder Details &amp; Prize Pool</span>
+                  <span>💾</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
           <!-- Section 2: Arena Announcements Dispatch & Management -->
           <div class="admin-panel-card" style="border-top:3px solid #ff1e44;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
@@ -11493,6 +11556,7 @@
           }
           await Promise.all([
             loadArenaSeasonSettings(),
+            loadArenaLadderDetailsSettings(),
             loadArenaAnnouncements(),
             loadArenaTournaments(),
             loadArenaSimulatorData()
@@ -11501,6 +11565,124 @@
         window.loadArenaCommandData = loadArenaCommandData;
 
         // --- Arena Season Lifecycle Logic ---
+        async function loadArenaLadderDetailsSettings() {
+          try {
+            if (!window.LeagueDB || typeof window.LeagueDB.getArenaLadderDetailsSettings !== "function") return;
+            const settings = await window.LeagueDB.getArenaLadderDetailsSettings();
+            if (!settings) return;
+
+            const chk = document.getElementById("ladder-has-prize-pool");
+            if (chk) chk.checked = settings.has_prize_pool !== false;
+
+            const tInput = document.getElementById("ladder-prize-title");
+            if (tInput) tInput.value = settings.prize_title || "";
+
+            const sInput = document.getElementById("ladder-prize-subtitle");
+            if (sInput) sInput.value = settings.prize_subtitle || "";
+
+            const endsInput = document.getElementById("ladder-season-ends-input");
+            if (endsInput) endsInput.value = settings.season_ends || "Sat 31 Dec 2026, 8:00 PM EST";
+
+            const lockInput = document.getElementById("ladder-roster-lock-input");
+            if (lockInput) lockInput.value = settings.roster_lock || "Fri 14 Nov 2026";
+
+            const playInput = document.getElementById("ladder-playoffs-start-input");
+            if (playInput) playInput.value = settings.playoffs_start || "Fri 21 Nov 2026";
+
+            toggleLadderPrizePoolInputs();
+          } catch (err) {
+            console.error("loadArenaLadderDetailsSettings error:", err);
+          }
+        }
+        window.loadArenaLadderDetailsSettings = loadArenaLadderDetailsSettings;
+
+        function toggleLadderPrizePoolInputs() {
+          const chk = document.getElementById("ladder-has-prize-pool");
+          const fields = document.getElementById("ladder-prize-pool-fields");
+          if (fields && chk) {
+            fields.style.opacity = chk.checked ? "1" : "0.4";
+            fields.style.pointerEvents = chk.checked ? "auto" : "none";
+          }
+        }
+        window.toggleLadderPrizePoolInputs = toggleLadderPrizePoolInputs;
+
+        async function removeLadderPrizePoolAction() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can edit ladder settings.", true);
+            return;
+          }
+          if (!confirm("Are you sure you want to remove the Prize Pool from the ladders page?\n\nThis will immediately hide the prize pool from competitors.")) return;
+          try {
+            const chk = document.getElementById("ladder-has-prize-pool");
+            if (chk) chk.checked = false;
+            const tInput = document.getElementById("ladder-prize-title");
+            if (tInput) tInput.value = "";
+            const sInput = document.getElementById("ladder-prize-subtitle");
+            if (sInput) sInput.value = "";
+            toggleLadderPrizePoolInputs();
+
+            const endsInput = document.getElementById("ladder-season-ends-input");
+            const lockInput = document.getElementById("ladder-roster-lock-input");
+            const playInput = document.getElementById("ladder-playoffs-start-input");
+
+            const payload = {
+              has_prize_pool: false,
+              prize_title: "",
+              prize_subtitle: "",
+              season_ends: endsInput?.value || "",
+              roster_lock: lockInput?.value || "",
+              playoffs_start: playInput?.value || ""
+            };
+
+            const res = await window.LeagueDB.updateArenaLadderDetailsSettings(payload);
+            if (res && res.success) {
+              showToast("✓ Prize pool removed from ladders page.");
+            } else {
+              showToast("Failed to update ladder details.", true);
+            }
+          } catch (err) {
+            console.error("removeLadderPrizePoolAction error:", err);
+            showToast("Error updating ladder settings.", true);
+          }
+        }
+        window.removeLadderPrizePoolAction = removeLadderPrizePoolAction;
+
+        document.getElementById("form-ladder-details-settings")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can edit ladder settings.", true);
+            return;
+          }
+
+          try {
+            const hasPrize = document.getElementById("ladder-has-prize-pool")?.checked;
+            const title = document.getElementById("ladder-prize-title")?.value.trim();
+            const subtitle = document.getElementById("ladder-prize-subtitle")?.value.trim();
+            const seasonEnds = document.getElementById("ladder-season-ends-input")?.value.trim();
+            const rosterLock = document.getElementById("ladder-roster-lock-input")?.value.trim();
+            const playoffsStart = document.getElementById("ladder-playoffs-start-input")?.value.trim();
+
+            const payload = {
+              has_prize_pool: hasPrize,
+              prize_title: title,
+              prize_subtitle: subtitle,
+              season_ends: seasonEnds,
+              roster_lock: rosterLock,
+              playoffs_start: playoffsStart
+            };
+
+            const res = await window.LeagueDB.updateArenaLadderDetailsSettings(payload);
+            if (res && res.success) {
+              showToast("✓ Ladder details and prize pool updated successfully!");
+            } else {
+              showToast("Failed to update ladder settings: " + (res?.error || "Error"), true);
+            }
+          } catch (err) {
+            console.error("Error saving ladder details:", err);
+            showToast("Error updating ladder details.", true);
+          }
+        });
+
         async function loadArenaSeasonSettings() {
           try {
             if (!window.LeagueDB || typeof window.LeagueDB.getArenaSeasonSettings !== "function") return;

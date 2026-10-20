@@ -381,7 +381,7 @@
 
               <div class="fl-detail-row">
                 <span class="fl-detail-label">Total Teams</span>
-                <span class="fl-detail-value" id="sidebar-team-count">142 Squads</span>
+                <span class="fl-detail-value" id="sidebar-team-count">0 Squads</span>
               </div>
 
               <div class="fl-detail-row">
@@ -391,12 +391,12 @@
 
               <div class="fl-detail-row">
                 <span class="fl-detail-label">Season Ends</span>
-                <span class="fl-detail-value">Sat 31 Dec 2026, 8:00 PM EST</span>
+                <span class="fl-detail-value" id="sidebar-season-ends">Sat 31 Dec 2026, 8:00 PM EST</span>
               </div>
 
-              <div class="fl-detail-row" style="padding-top:4px;">
+              <div class="fl-detail-row" style="padding-top:4px;" id="sidebar-prizepool-row">
                 <span class="fl-detail-label">🏆 Prize Pool</span>
-                <span class="fl-detail-value prize-text">
+                <span class="fl-detail-value prize-text" id="sidebar-prizepool-val">
                   $1,000 Cash Pool<br />
                   <span style="color:#fde047; font-size:11px; font-weight:600;">+ Custom Frontline Rings</span>
                 </span>
@@ -410,12 +410,12 @@
             <div class="fl-details-list" style="border-top:1px solid #1e293b; padding-top:14px; margin-top:14px;">
               <div class="fl-detail-row">
                 <span class="fl-detail-label">Roster Lock Starts</span>
-                <span class="fl-detail-value" style="color:#e2e8f0;">⏱ Fri 14 Nov 2026</span>
+                <span class="fl-detail-value" id="sidebar-roster-lock" style="color:#e2e8f0;">⏱ Fri 14 Nov 2026</span>
               </div>
 
               <div class="fl-detail-row">
                 <span class="fl-detail-label">Playoff Bracket Starts</span>
-                <span class="fl-detail-value" style="color:#e2e8f0;">Fri 21 Nov 2026</span>
+                <span class="fl-detail-value" id="sidebar-playoffs-start" style="color:#e2e8f0;">Fri 21 Nov 2026</span>
               </div>
             </div>
 
@@ -807,19 +807,82 @@
           title: "North American 4v4 CDL Variant Ladder",
           breadcrumb: "4v4 CDL Variant",
           pillId: "pill-4v4",
-          totalCountLabel: "142 Squads"
+          unitSingular: "Squad",
+          unitPlural: "Squads"
         },
         "2v2_snd": {
           title: "North American 2v2 Search & Destroy Ladder",
           breadcrumb: "2v2 Search & Destroy",
           pillId: "pill-2v2",
-          totalCountLabel: "86 Duos"
+          unitSingular: "Duo",
+          unitPlural: "Duos"
         },
         "1v1_radar": {
           title: "North American 1v1 Radar Gunfight Ladder",
           breadcrumb: "1v1 Radar Gunfight",
           pillId: "pill-1v1",
-          totalCountLabel: "64 Operators"
+          unitSingular: "Operator",
+          unitPlural: "Operators"
+        }
+      };
+
+      async function updateSidebarTeamCount() {
+        const countLabel = document.getElementById("sidebar-team-count");
+        if (!countLabel) return;
+        const conf = LADDER_CONFIG[currentLadder] || LADDER_CONFIG["4v4_variant"];
+        if (leaderboardMode === "players") {
+          const pCount = Array.isArray(cachedPlayers) ? cachedPlayers.length : 0;
+          countLabel.textContent = `${pCount} ${pCount === 1 ? 'Combatant' : 'Combatants'}`;
+          return;
+        }
+        let tCount = Array.isArray(cachedTeams) ? cachedTeams.length : 0;
+        if ((!cachedTeams || cachedTeams.length === 0) && window.LadderDB && typeof window.LadderDB.getLadderTeams === "function") {
+          try {
+            const teams = await window.LadderDB.getLadderTeams(currentLadder);
+            tCount = Array.isArray(teams) ? teams.length : 0;
+          } catch (_) {}
+        }
+        countLabel.textContent = `${tCount} ${tCount === 1 ? (conf.unitSingular || 'Squad') : (conf.unitPlural || 'Squads')}`;
+      }
+
+      async function renderLadderDetailsSidebar() {
+        try {
+          if (!window.LeagueDB || typeof window.LeagueDB.getArenaLadderDetailsSettings !== "function") return;
+          const settings = await window.LeagueDB.getArenaLadderDetailsSettings();
+          if (!settings) return;
+
+          const rowPrize = document.getElementById("sidebar-prizepool-row");
+          const valPrize = document.getElementById("sidebar-prizepool-val");
+
+          if (rowPrize) {
+            const hasPrize = settings.has_prize_pool !== false && !!(settings.prize_title && settings.prize_title.trim());
+            if (hasPrize) {
+              rowPrize.style.display = "flex";
+              if (valPrize) {
+                const subHtml = settings.prize_subtitle ? `<br /><span style="color:#fde047; font-size:11px; font-weight:600;">${escapeHtml(settings.prize_subtitle)}</span>` : "";
+                valPrize.innerHTML = `${escapeHtml(settings.prize_title)}${subHtml}`;
+              }
+            } else {
+              rowPrize.style.display = "none";
+            }
+          }
+
+          const elSeasonEnds = document.getElementById("sidebar-season-ends");
+          if (elSeasonEnds && settings.season_ends) {
+            elSeasonEnds.textContent = settings.season_ends;
+          }
+
+          const elRosterLock = document.getElementById("sidebar-roster-lock");
+          if (elRosterLock && settings.roster_lock) {
+            elRosterLock.textContent = `⏱ ${settings.roster_lock}`;
+          }
+
+          const elPlayoffs = document.getElementById("sidebar-playoffs-start");
+          if (elPlayoffs && settings.playoffs_start) {
+            elPlayoffs.textContent = settings.playoffs_start;
+          }
+        } catch (e) {
+          console.warn("renderLadderDetailsSidebar error:", e);
         }
       };
 
@@ -935,8 +998,7 @@
         const tableTitle = document.getElementById("standings-table-title");
         if (tableTitle) tableTitle.textContent = `${conf.breadcrumb.toUpperCase()} STANDINGS`;
 
-        const sidebarCount = document.getElementById("sidebar-team-count");
-        if (sidebarCount) sidebarCount.textContent = conf.totalCountLabel;
+        updateSidebarTeamCount();
 
         // Update URL query parameter without page reload
         const newUrl = new URL(window.location);
@@ -1045,10 +1107,7 @@
             }
             cachedPlayers = players || [];
 
-            const countLabel = document.getElementById("sidebar-team-count");
-            if (countLabel && cachedPlayers.length > 0) {
-              countLabel.textContent = `${cachedPlayers.length} Combatants`;
-            }
+            updateSidebarTeamCount();
 
             renderPlayerLeaderboardRows(cachedPlayers);
           } catch (err) {
@@ -1063,10 +1122,7 @@
             }
             cachedTeams = teams || [];
 
-            const countLabel = document.getElementById("sidebar-team-count");
-            if (countLabel && cachedTeams.length > 0) {
-              countLabel.textContent = `${cachedTeams.length} Squads`;
-            }
+            updateSidebarTeamCount();
 
             renderStandingsRows(cachedTeams);
           } catch (err) {
