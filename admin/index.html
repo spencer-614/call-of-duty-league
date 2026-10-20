@@ -3474,6 +3474,165 @@
               </table>
             </div>
           </div>
+
+          <!-- Section 4: Arena Ladder Dummy Squads & ELO Simulator Station -->
+          <div class="admin-panel-card" style="border-top:3px solid #ff1e44; margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div>
+                <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,30,68,0.15); border:1px solid rgba(255,30,68,0.35); color:#ff1e44; font-size:10px; font-weight:800; padding:2px 8px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  <span>⚡</span> <span>ARENA ENGINE // SIMULATION &amp; ELO LAB</span>
+                </div>
+                <h3 class="admin-card-title" style="margin:0; color:#ff1e44;">🎮 4. Arena Ladder Dummy Squads &amp; ELO Simulator</h3>
+                <p style="color:var(--muted); font-size:12.5px; margin:4px 0 0;">
+                  Generate test teams for competitive ladders, simulate individual or batch games, inspect realistic map scores, and test real-time ELO rating progression and tier advancements.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="/ladders/" target="_blank" class="btn-action-sm" style="border-color:#ff1e44; color:#ff1e44; font-weight:800;">
+                  📊 View Public Ladders ↗
+                </a>
+                <button type="button" class="btn-action-sm" onclick="loadArenaSimulatorData()">
+                  ↻ Refresh Simulator
+                </button>
+              </div>
+            </div>
+
+            <!-- Two-Column Control Panel: Generator Desk & Match Simulator Desk -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:20px; margin-bottom:24px;">
+              
+              <!-- Card A: Dummy Teams Generator -->
+              <div style="background:#0c0f16; border:1px solid #1e293b; padding:18px; border-radius:4px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+                  <span style="font-size:16px;">🤖</span>
+                  <strong style="color:#ffffff; font-size:13.5px; text-transform:uppercase; letter-spacing:0.5px;">Generate Dummy Arena Teams</strong>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label class="form-label" for="arena-sim-ladder-select" style="font-size:11px; text-transform:uppercase;">Select Arena Ladder *</label>
+                  <select id="arena-sim-ladder-select" class="form-control" onchange="loadArenaSimulatorData()">
+                    <option value="4v4_variant" selected>4v4 CDL Variant (Standard)</option>
+                    <option value="2v2_snd">2v2 Search &amp; Destroy</option>
+                    <option value="1v1_radar">1v1 Radar Always On</option>
+                  </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="arena-sim-team-count" style="font-size:11px; text-transform:uppercase;">Team Count *</label>
+                    <select id="arena-sim-team-count" class="form-control">
+                      <option value="4">4 Teams</option>
+                      <option value="8" selected>8 Teams (Standard)</option>
+                      <option value="12">12 Teams (Full CDL)</option>
+                      <option value="16">16 Teams (Extended)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="arena-sim-elo-mode" style="font-size:11px; text-transform:uppercase;">ELO Distribution *</label>
+                    <select id="arena-sim-elo-mode" class="form-control">
+                      <option value="distributed" selected>Distributed Tiers (1000 - 1950)</option>
+                      <option value="balanced">Flat Baseline (All 1200 ELO)</option>
+                      <option value="high">High Tier Contenders (1600 - 2100)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <p style="font-size:11.5px; color:var(--muted); line-height:1.4; margin-bottom:14px;">
+                  Generates CDL franchise squads (FaZe, OpTic, Ultra, Subliners, etc.) complete with captain Discord, Activision IDs, roles, and starter records.
+                </p>
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button type="button" class="btn-action-sm" id="btn-arena-gen-dummy-teams" style="background:rgba(255,30,68,0.18); border-color:#ff1e44; color:#ffffff; font-weight:800; padding:8px 14px; font-size:12px;" onclick="handleAdminGenerateArenaDummyTeams()">
+                    🤖 + Generate Teams
+                  </button>
+                  <button type="button" class="btn-action-sm btn-action-danger" id="btn-arena-clear-dummy-teams" style="font-size:12px; padding:8px 12px;" onclick="handleAdminClearArenaDummyTeams()">
+                    🗑 Clear Dummy Teams
+                  </button>
+                  <button type="button" class="btn-action-sm" id="btn-arena-reset-ladder" style="font-size:12px; padding:8px 12px; border-color:#475569; color:#94a3b8;" onclick="handleAdminResetArenaLadder()">
+                    ↺ Reset Ladder
+                  </button>
+                </div>
+              </div>
+
+              <!-- Card B: Match Simulator Station -->
+              <div style="background:#0c0f16; border:1px solid #1e293b; padding:18px; border-radius:4px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+                  <span style="font-size:16px;">⚔️</span>
+                  <strong style="color:#ffffff; font-size:13.5px; text-transform:uppercase; letter-spacing:0.5px;">Simulate Ladder Match &amp; ELO</strong>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="arena-sim-team-a-select" style="font-size:11px; text-transform:uppercase; color:#38bdf8;">Team A (Blue) *</label>
+                    <select id="arena-sim-team-a-select" class="form-control" style="font-size:12px;">
+                      <option value="">-- Choose Team A --</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="arena-sim-team-b-select" style="font-size:11px; text-transform:uppercase; color:#ff3b3b;">Team B (Red) *</label>
+                    <select id="arena-sim-team-b-select" class="form-control" style="font-size:12px;">
+                      <option value="">-- Choose Team B --</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label class="form-label" for="arena-sim-format-select" style="font-size:11px; text-transform:uppercase;">Match Format</label>
+                  <select id="arena-sim-format-select" class="form-control">
+                    <option value="5" selected>Best of 5 CDL (HP, SnD, Control, HP, SnD)</option>
+                    <option value="3">Best of 3 (HP, SnD, Control)</option>
+                  </select>
+                </div>
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                  <button type="button" class="btn-action-sm" id="btn-arena-sim-single-match" style="background:#22c55e; border-color:#22c55e; color:#0b1109; font-weight:800; padding:8px 16px; font-size:12px;" onclick="handleAdminSimulateArenaMatch()">
+                    🎲 Sim Match &amp; Apply ELO
+                  </button>
+                  <button type="button" class="btn-action-sm" style="background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#38bdf8; font-weight:800; padding:8px 12px; font-size:12px;" onclick="handleAdminSimulateArenaBatch(5)">
+                    ⚡ Sim 5 Games
+                  </button>
+                  <button type="button" class="btn-action-sm" style="background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800; padding:8px 12px; font-size:12px;" onclick="handleAdminSimulateArenaBatch(10)">
+                    ⚡ Sim 10 Games
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Real-Time Match Simulation Telemetry Output -->
+            <div id="arena-sim-telemetry-container" style="display:none; background:#070a10; border:1px solid #1e293b; border-left:4px solid #ff1e44; padding:16px 20px; border-radius:4px; margin-bottom:24px;">
+              <!-- Dynamic simulation results loaded here -->
+            </div>
+
+            <!-- Mini Live Ladder Preview Table -->
+            <div style="background:#0a0d14; border:1px solid #1a2538; padding:16px; border-radius:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <strong style="color:#ffffff; font-size:14px; text-transform:uppercase;">Live Ladder Standings (<span id="arena-sim-ladder-name-display">4v4 CDL Variant</span>)</strong>
+                  <span id="arena-sim-ladder-count-display" style="font-size:11px; color:var(--muted); background:#151c28; padding:2px 8px; border-radius:2px;">0 Teams</span>
+                </div>
+                <span style="font-size:11px; color:#64748b;">Updates immediately as matches are simulated</span>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th style="width:60px;">Rank</th>
+                      <th>Team &amp; Tag</th>
+                      <th>ELO Rating</th>
+                      <th>Division Tier</th>
+                      <th>Record (W - L)</th>
+                      <th>Streak</th>
+                      <th>Quick Matchup</th>
+                    </tr>
+                  </thead>
+                  <tbody id="arena-sim-ladder-preview-tbody">
+                    <tr><td colspan="7" style="text-align:center; padding:24px; color:var(--muted);">Loading ladder standings...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -10278,9 +10437,15 @@
                   ${squadCount} Teams Enlisted · Real-time match scoring and winner advancement enabled
                 </div>
               </div>
-              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 <button type="button" class="btn-action-sm" style="background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800; padding:6px 12px;" onclick="adminPromptGenerateDummySquads('${escapeHtml(tourneyId)}')">
                   🤖 + Test Dummy Teams
+                </button>
+                <button type="button" class="btn-action-sm" style="background:rgba(213,244,91,0.15); border-color:var(--lime); color:var(--lime); font-weight:800; padding:6px 12px;" onclick="adminSimulateNextRoundAction('${escapeHtml(tourneyId)}')">
+                  🎲 Sim Next Round
+                </button>
+                <button type="button" class="btn-action-sm" style="background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#38bdf8; font-weight:800; padding:6px 12px;" onclick="adminSimulateEntireTournamentAction('${escapeHtml(tourneyId)}')">
+                  ⚡ Sim Entire Bracket
                 </button>
                 <button type="button" class="btn-action-sm" style="background:rgba(255,30,68,0.15); border-color:#ff1e44; color:#ff3b3b; font-weight:800; padding:6px 12px;" onclick="adminSendLiveTournamentAlertAction('${escapeHtml(tourneyId)}')">
                   📢 Send Live Alerts (${squadCount} Squads)
@@ -10359,6 +10524,11 @@
                           <option value="${escapeHtml(m.team1?.name || '')}" ${t1Winner ? 'selected' : ''}>${escapeHtml(m.team1?.name || 'Team 1')}</option>
                           <option value="${escapeHtml(m.team2?.name || '')}" ${t2Winner ? 'selected' : ''}>${escapeHtml(m.team2?.name || 'Team 2')}</option>
                         </select>
+                        ${(!isDone && !isTBD) ? `
+                          <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24; font-weight:700;" title="Simulate this match outcome" onclick="adminSimulateSingleMatchAction('${escapeHtml(tourneyId)}', '${escapeHtml(m.id)}')">
+                            🎲 Sim
+                          </button>
+                        ` : ''}
                         <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; border-color:#22c55e; color:#22c55e;" onclick="adminAdvanceMatchAction('${escapeHtml(tourneyId)}', '${escapeHtml(m.id)}', '${escapeHtml(tourneyTitle)}')">
                           ✓ Save &amp; Advance
                         </button>
@@ -10475,6 +10645,68 @@
         }
         window.adminAdvanceMatchAction = adminAdvanceMatchAction;
 
+        async function adminSimulateSingleMatchAction(tourneyId, matchId) {
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.simulateTournamentMatch === 'function') {
+              const res = await window.LeagueDB.simulateTournamentMatch(tourneyId, matchId);
+              if (res && res.success) {
+                showToast(`🎲 Match simulated! "${res.winner}" won (${res.scoresText}).`);
+                const resolvedTitle = window.activeAdminTourneyTitle || activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+                await adminManageBracket(tourneyId, resolvedTitle);
+                await loadAdminTournaments();
+              } else {
+                showToast(res?.error || "Could not simulate match.", true);
+              }
+            }
+          } catch (err) {
+            console.error("adminSimulateSingleMatchAction error:", err);
+            showToast("Simulation error: " + err.message, true);
+          }
+        }
+        window.adminSimulateSingleMatchAction = adminSimulateSingleMatchAction;
+
+        async function adminSimulateNextRoundAction(tourneyId) {
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.simulateTournamentNextRound === 'function') {
+              const res = await window.LeagueDB.simulateTournamentNextRound(tourneyId);
+              if (res && res.success) {
+                showToast(`🎲 Simulated ${res.simulatedCount} matches in "${res.roundName}"!`);
+                const resolvedTitle = window.activeAdminTourneyTitle || activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+                await adminManageBracket(tourneyId, resolvedTitle);
+                await loadAdminTournaments();
+              } else {
+                showToast(res?.error || "Could not simulate next round.", true);
+              }
+            }
+          } catch (err) {
+            console.error("adminSimulateNextRoundAction error:", err);
+            showToast("Simulation error: " + err.message, true);
+          }
+        }
+        window.adminSimulateNextRoundAction = adminSimulateNextRoundAction;
+
+        async function adminSimulateEntireTournamentAction(tourneyId) {
+          if (!confirm("Simulate all remaining bracket rounds to completion and crown the tournament champion?")) return;
+          showToast("⚡ Simulating entire tournament bracket...");
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.simulateEntireTournament === 'function') {
+              const res = await window.LeagueDB.simulateEntireTournament(tourneyId);
+              if (res && res.success) {
+                showToast(`🏆 TOURNAMENT COMPLETE! Champion: "${res.champion}" (${res.totalSimulated} matches simulated).`);
+                const resolvedTitle = window.activeAdminTourneyTitle || activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+                await adminManageBracket(tourneyId, resolvedTitle);
+                await loadAdminTournaments();
+              } else {
+                showToast(res?.error || "Could not simulate entire tournament.", true);
+              }
+            }
+          } catch (err) {
+            console.error("adminSimulateEntireTournamentAction error:", err);
+            showToast("Simulation error: " + err.message, true);
+          }
+        }
+        window.adminSimulateEntireTournamentAction = adminSimulateEntireTournamentAction;
+
         async function adminRegenerateBracketAction(tourneyId, tourneyTitle) {
           if (!confirm("Are you sure you want to RESET and REGENERATE this bracket? All recorded match scores and vetoes will be reset to round 1 seeding.")) return;
           const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
@@ -10542,6 +10774,14 @@
               const bracketModal = document.getElementById("modal-admin-bracket-manager");
               if (bracketModal && (bracketModal.open || bracketModal.hasAttribute("open"))) {
                 await adminManageBracket(tId, resolvedTitle);
+              } else {
+                if (confirm(`✓ Generated ${res.count} test dummy squads!\n\nWould you like to generate the live tournament bracket now to start simulating games?`)) {
+                  if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
+                    regsModal.close();
+                  }
+                  await adminGenerateBracketAction(tId, resolvedTitle, true);
+                  await adminManageBracket(tId, resolvedTitle);
+                }
               }
               await loadAdminTournaments();
             } else {
@@ -10628,7 +10868,8 @@
           await Promise.all([
             loadArenaSeasonSettings(),
             loadArenaAnnouncements(),
-            loadArenaTournaments()
+            loadArenaTournaments(),
+            loadArenaSimulatorData()
           ]);
         }
         window.loadArenaCommandData = loadArenaCommandData;
@@ -11199,6 +11440,482 @@
           document.getElementById("tourney-title-input")?.focus();
         }
         window.quickCreateArenaTournament = quickCreateArenaTournament;
+
+        // ==========================================
+        // 17B. ARENA LADDER & ELO SIMULATOR CONTROLLER (COMMISSIONER ONLY)
+        // ==========================================
+        const ARENA_LADDER_LABELS = {
+          "4v4_variant": "4v4 CDL Variant",
+          "2v2_snd": "2v2 Search & Destroy",
+          "1v1_radar": "1v1 Radar Always On"
+        };
+
+        function getLadderTierBadge(elo) {
+          const val = Number(elo) || 1200;
+          if (val >= 2100) return `<span style="background:rgba(239,68,68,0.2); border:1px solid #ef4444; color:#f87171; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">🔥 APEX PRESTIGE</span>`;
+          if (val >= 1800) return `<span style="background:rgba(168,85,247,0.2); border:1px solid #a855f7; color:#c084fc; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">💎 COMMANDER</span>`;
+          if (val >= 1500) return `<span style="background:rgba(234,179,8,0.2); border:1px solid #eab308; color:#fde047; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">🏆 WARLORD</span>`;
+          if (val >= 1300) return `<span style="background:rgba(59,130,246,0.2); border:1px solid #3b82f6; color:#93c5fd; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">⚡ VANGUARD</span>`;
+          if (val >= 1100) return `<span style="background:rgba(34,197,94,0.2); border:1px solid #22c55e; color:#86efac; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">🛡 SPECIALIST</span>`;
+          if (val >= 900) return `<span style="background:rgba(148,163,184,0.2); border:1px solid #94a3b8; color:#cbd5e1; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">🎖 OPERATOR</span>`;
+          return `<span style="background:rgba(71,85,105,0.2); border:1px solid #475569; color:#94a3b8; font-size:10px; font-weight:800; padding:2px 7px; border-radius:3px;">🔰 RECRUIT</span>`;
+        }
+
+        async function loadArenaSimulatorData() {
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const ladderType = ladderSelect?.value || "4v4_variant";
+          const ladderNameDisplay = document.getElementById("arena-sim-ladder-name-display");
+          const ladderCountDisplay = document.getElementById("arena-sim-ladder-count-display");
+          const selectA = document.getElementById("arena-sim-team-a-select");
+          const selectB = document.getElementById("arena-sim-team-b-select");
+          const tbody = document.getElementById("arena-sim-ladder-preview-tbody");
+
+          if (ladderNameDisplay) {
+            ladderNameDisplay.textContent = ARENA_LADDER_LABELS[ladderType] || ladderType;
+          }
+
+          try {
+            let teams = [];
+            if (window.LadderDB && typeof window.LadderDB.getLadderTeams === "function") {
+              teams = await window.LadderDB.getLadderTeams(ladderType);
+            } else {
+              const local = localStorage.getItem("frontline_ladder_teams_" + ladderType);
+              if (local) {
+                try { teams = JSON.parse(local); } catch (_) {}
+              }
+            }
+
+            teams = (teams || []).sort((a, b) => (Number(b.elo || 1200) - Number(a.elo || 1200)) || (Number(b.wins || 0) - Number(a.wins || 0)));
+
+            if (ladderCountDisplay) {
+              ladderCountDisplay.textContent = `${teams.length} Team${teams.length === 1 ? '' : 's'}`;
+            }
+
+            // Populate Team Selects while preserving existing selections
+            const prevValA = selectA ? selectA.value : "";
+            const prevValB = selectB ? selectB.value : "";
+
+            if (selectA) {
+              selectA.innerHTML = `<option value="">-- Choose Team A --</option>` + teams.map(t =>
+                `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)} [${t.elo || 1200} ELO]</option>`
+              ).join("");
+              if (prevValA && teams.some(t => String(t.id) === String(prevValA))) {
+                selectA.value = prevValA;
+              } else if (teams.length >= 1) {
+                selectA.value = teams[0].id;
+              }
+            }
+
+            if (selectB) {
+              selectB.innerHTML = `<option value="">-- Choose Team B --</option>` + teams.map(t =>
+                `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)} [${t.elo || 1200} ELO]</option>`
+              ).join("");
+              if (prevValB && teams.some(t => String(t.id) === String(prevValB))) {
+                selectB.value = prevValB;
+              } else if (teams.length >= 2) {
+                selectB.value = teams[1].id;
+              }
+            }
+
+            // Render Preview Table
+            if (tbody) {
+              if (teams.length === 0) {
+                tbody.innerHTML = `
+                  <tr>
+                    <td colspan="7" style="text-align:center; padding:32px 16px; color:var(--muted);">
+                      <div style="font-size:24px; margin-bottom:8px;">🎯</div>
+                      <div style="font-size:13.5px; font-weight:700; color:#e2e8f0; margin-bottom:4px;">No Teams On This Ladder</div>
+                      <div style="font-size:12px; color:#64748b;">Click <strong>"+ Generate Teams"</strong> above to populate CDL franchises and test ELO matchmaking.</div>
+                    </td>
+                  </tr>
+                `;
+                return;
+              }
+
+              tbody.innerHTML = teams.map((t, index) => {
+                const rank = index + 1;
+                const isDummy = t.is_dummy || String(t.name).includes("(Dummy)") || String(t.id).startsWith("dummy_arena_");
+                const rankColor = rank === 1 ? "#fbbf24" : (rank === 2 ? "#cbd5e1" : (rank === 3 ? "#b45309" : "var(--muted)"));
+                const streakNum = Number(t.streak) || 0;
+                const streakDisplay = streakNum > 0 ? `<span style="color:#22c55e; font-weight:700;">+${streakNum} W</span>` : (streakNum < 0 ? `<span style="color:#ef4444; font-weight:700;">${streakNum} L</span>` : `<span style="color:#64748b;">-</span>`);
+
+                return `
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="font-weight:800; color:${rankColor};">#${rank}</td>
+                    <td>
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        ${t.avatar ? `<img src="${escapeHtml(t.avatar)}" alt="" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #334155;">` : `<div style="width:24px; height:24px; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size:11px;">🛡</div>`}
+                        <div>
+                          <div style="font-weight:700; color:#f8fafc; font-size:13px; display:flex; align-items:center; gap:6px;">
+                            <span>${escapeHtml(t.name)}</span>
+                            ${isDummy ? `<span style="font-size:9.5px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:1px 5px; border-radius:2px; font-weight:700; text-transform:uppercase;">Dummy</span>` : ''}
+                          </div>
+                          <div style="font-size:11px; color:var(--muted);">[${escapeHtml(t.tag || "TAG")}] • Capt: ${escapeHtml(t.captain_activision_id || t.captain || "N/A")}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <strong style="color:#ffffff; font-size:14px; font-variant-numeric: tabular-nums;">${t.elo || 1200}</strong>
+                    </td>
+                    <td>
+                      ${getLadderTierBadge(t.elo || 1200)}
+                    </td>
+                    <td>
+                      <span style="font-weight:700; color:#22c55e;">${t.wins || 0}W</span> - <span style="font-weight:700; color:#ef4444;">${t.losses || 0}L</span>
+                      <span style="font-size:11px; color:var(--muted); margin-left:4px;">(${((Number(t.wins) || 0) + (Number(t.losses) || 0)) > 0 ? Math.round(((Number(t.wins) || 0) / ((Number(t.wins) || 0) + (Number(t.losses) || 0))) * 100) : 0}%)</span>
+                    </td>
+                    <td>
+                      ${streakDisplay}
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn-action-sm" onclick="pickTeamForSimulator('${escapeHtml(t.id)}', 'A')" style="font-size:10px; padding:2px 7px; border-color:#38bdf8; color:#38bdf8; background:rgba(56,189,248,0.08);" title="Set as Team A (Blue)">
+                          VS A
+                        </button>
+                        <button type="button" class="btn-action-sm" onclick="pickTeamForSimulator('${escapeHtml(t.id)}', 'B')" style="font-size:10px; padding:2px 7px; border-color:#ff3b3b; color:#ff3b3b; background:rgba(255,59,59,0.08);" title="Set as Team B (Red)">
+                          VS B
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join("");
+            }
+          } catch (err) {
+            console.error("Error loading Arena simulator data:", err);
+            if (tbody) {
+              tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">Failed to load ladder data: ${escapeHtml(err.message || String(err))}</td></tr>`;
+            }
+          }
+        }
+        window.loadArenaSimulatorData = loadArenaSimulatorData;
+
+        function pickTeamForSimulator(teamId, slot) {
+          const select = document.getElementById(slot === 'A' ? "arena-sim-team-a-select" : "arena-sim-team-b-select");
+          if (!select) return;
+          select.value = teamId;
+          showToast(`Assigned ${slot === 'A' ? 'Team A (Blue)' : 'Team B (Red)'} from ladder.`);
+        }
+        window.pickTeamForSimulator = pickTeamForSimulator;
+
+        async function handleAdminGenerateArenaDummyTeams() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can generate dummy teams.", true);
+            return;
+          }
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const countSelect = document.getElementById("arena-sim-team-count");
+          const eloSelect = document.getElementById("arena-sim-elo-mode");
+          const btn = document.getElementById("btn-arena-gen-dummy-teams");
+
+          const ladderType = ladderSelect?.value || "4v4_variant";
+          const count = parseInt(countSelect?.value, 10) || 8;
+          const eloMode = eloSelect?.value || "distributed";
+
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span>Generating CDL Rosters...</span> <span>⏳</span>`;
+          }
+
+          try {
+            if (!window.LadderDB || typeof window.LadderDB.generateDummyArenaTeams !== "function") {
+              throw new Error("LadderDB simulation service is unavailable.");
+            }
+            const res = await window.LadderDB.generateDummyArenaTeams(ladderType, count, eloMode);
+            if (res.success) {
+              showToast(`✓ Generated ${res.count} dummy CDL squads on ${ARENA_LADDER_LABELS[ladderType] || ladderType}!`);
+              await loadArenaSimulatorData();
+            } else {
+              showToast(res.error || "Failed to generate dummy teams.", true);
+            }
+          } catch (err) {
+            console.error("Error generating arena dummy teams:", err);
+            showToast("Error generating teams: " + (err.message || err), true);
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = `🤖 + Generate Teams`;
+            }
+          }
+        }
+        window.handleAdminGenerateArenaDummyTeams = handleAdminGenerateArenaDummyTeams;
+
+        async function handleAdminClearArenaDummyTeams() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can clear dummy squads.", true);
+            return;
+          }
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const ladderType = ladderSelect?.value || "4v4_variant";
+
+          if (!confirm(`Are you sure you want to remove all dummy teams from "${ARENA_LADDER_LABELS[ladderType] || ladderType}"? Real registered player teams will remain untouched.`)) {
+            return;
+          }
+
+          const btn = document.getElementById("btn-arena-clear-dummy-teams");
+          if (btn) {
+            btn.disabled = true;
+            btn.textContent = "Clearing...";
+          }
+
+          try {
+            if (!window.LadderDB || typeof window.LadderDB.clearDummyArenaTeams !== "function") {
+              throw new Error("LadderDB service is unavailable.");
+            }
+            const res = await window.LadderDB.clearDummyArenaTeams(ladderType);
+            if (res.success) {
+              showToast(`✓ Cleared ${res.removedCount} dummy teams from ladder.`);
+              await loadArenaSimulatorData();
+            } else {
+              showToast(res.error || "Failed to clear dummy teams.", true);
+            }
+          } catch (err) {
+            console.error("Error clearing arena dummy teams:", err);
+            showToast("Error clearing dummy teams: " + (err.message || err), true);
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = "🗑 Clear Dummy Teams";
+            }
+          }
+        }
+        window.handleAdminClearArenaDummyTeams = handleAdminClearArenaDummyTeams;
+
+        async function handleAdminResetArenaLadder() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can reset ladders.", true);
+            return;
+          }
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const ladderType = ladderSelect?.value || "4v4_variant";
+
+          if (!confirm(`⚠️ WARNING: Are you sure you want to completely RESET the "${ARENA_LADDER_LABELS[ladderType] || ladderType}" ladder?\n\nThis will wipe all standings, win/loss records, and team assignments on this ladder.`)) {
+            return;
+          }
+
+          const btn = document.getElementById("btn-arena-reset-ladder");
+          if (btn) {
+            btn.disabled = true;
+            btn.textContent = "Resetting...";
+          }
+
+          try {
+            if (!window.LadderDB || typeof window.LadderDB.resetArenaLadder !== "function") {
+              throw new Error("LadderDB service is unavailable.");
+            }
+            const res = await window.LadderDB.resetArenaLadder(ladderType);
+            if (res.success) {
+              showToast(`✓ Reset ladder "${ARENA_LADDER_LABELS[ladderType] || ladderType}". Standings cleared.`);
+              const telem = document.getElementById("arena-sim-telemetry-container");
+              if (telem) telem.style.display = "none";
+              await loadArenaSimulatorData();
+            } else {
+              showToast(res.error || "Failed to reset ladder.", true);
+            }
+          } catch (err) {
+            console.error("Error resetting arena ladder:", err);
+            showToast("Error resetting ladder: " + (err.message || err), true);
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = "↺ Reset Ladder";
+            }
+          }
+        }
+        window.handleAdminResetArenaLadder = handleAdminResetArenaLadder;
+
+        async function handleAdminSimulateArenaMatch() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can simulate ladder games.", true);
+            return;
+          }
+
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const selectA = document.getElementById("arena-sim-team-a-select");
+          const selectB = document.getElementById("arena-sim-team-b-select");
+          const formatSelect = document.getElementById("arena-sim-format-select");
+          const telem = document.getElementById("arena-sim-telemetry-container");
+          const btn = document.getElementById("btn-arena-sim-single-match");
+
+          const ladderType = ladderSelect?.value || "4v4_variant";
+          const teamAId = selectA?.value;
+          const teamBId = selectB?.value;
+          const bestOf = parseInt(formatSelect?.value, 10) || 5;
+
+          if (!teamAId || !teamBId) {
+            showToast("Please select both Team A and Team B to simulate a matchup.", true);
+            return;
+          }
+
+          if (String(teamAId) === String(teamBId)) {
+            showToast("Cannot simulate a match between identical teams. Pick two distinct squads.", true);
+            return;
+          }
+
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span>Simulating Maps...</span> <span>🎲</span>`;
+          }
+
+          try {
+            if (!window.LadderDB || typeof window.LadderDB.simulateArenaMatch !== "function") {
+              throw new Error("Arena Match Simulator service is unavailable.");
+            }
+
+            const res = await window.LadderDB.simulateArenaMatch(teamAId, teamBId, ladderType, { bestOf });
+            if (!res.success) {
+              showToast(res.error || "Simulation failed.", true);
+              return;
+            }
+
+            // Render rich telemetry card
+            if (telem) {
+              const deltaAFormatted = res.teamA.delta >= 0 ? `+${res.teamA.delta}` : `${res.teamA.delta}`;
+              const deltaBFormatted = res.teamB.delta >= 0 ? `+${res.teamB.delta}` : `${res.teamB.delta}`;
+              const isWinA = res.winner === res.teamA.name;
+
+              telem.style.display = "block";
+              telem.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1px solid #1e293b; padding-bottom:10px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">🏆</span>
+                    <div>
+                      <strong style="color:#ffffff; font-size:14px; text-transform:uppercase; letter-spacing:0.5px;">Match Simulation Telemetry</strong>
+                      <div style="font-size:11px; color:#22c55e; font-weight:700;">WINNER: ${escapeHtml(res.winner)} (${res.scoreText} Best of ${res.bestOf})</div>
+                    </div>
+                  </div>
+                  <button type="button" onclick="document.getElementById('arena-sim-telemetry-container').style.display='none'" style="background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;" title="Dismiss telemetry">✕</button>
+                </div>
+
+                <!-- Scoreboard & ELO Deltas -->
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:14px;">
+                  <!-- Team A Card -->
+                  <div style="background:#0f172a; border:1px solid ${isWinA ? '#22c55e' : '#334155'}; border-radius:4px; padding:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                      <strong style="color:${isWinA ? '#22c55e' : '#94a3b8'}; font-size:13.5px;">
+                        ${isWinA ? '👑 ' : ''}${escapeHtml(res.teamA.name)} [${escapeHtml(res.teamA.tag)}]
+                      </strong>
+                      <span style="font-size:18px; font-weight:800; color:#ffffff;">${res.scoreA}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:#94a3b8; background:rgba(0,0,0,0.3); padding:4px 8px; border-radius:3px;">
+                      <span>Rating: ${res.teamA.oldElo} ➔ <strong style="color:#ffffff;">${res.teamA.newElo}</strong></span>
+                      <span style="font-weight:800; color:${res.teamA.delta >= 0 ? '#22c55e' : '#ef4444'};">${deltaAFormatted} ELO</span>
+                    </div>
+                  </div>
+
+                  <!-- Team B Card -->
+                  <div style="background:#0f172a; border:1px solid ${!isWinA ? '#22c55e' : '#334155'}; border-radius:4px; padding:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                      <strong style="color:${!isWinA ? '#22c55e' : '#94a3b8'}; font-size:13.5px;">
+                        ${!isWinA ? '👑 ' : ''}${escapeHtml(res.teamB.name)} [${escapeHtml(res.teamB.tag)}]
+                      </strong>
+                      <span style="font-size:18px; font-weight:800; color:#ffffff;">${res.scoreB}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:#94a3b8; background:rgba(0,0,0,0.3); padding:4px 8px; border-radius:3px;">
+                      <span>Rating: ${res.teamB.oldElo} ➔ <strong style="color:#ffffff;">${res.teamB.newElo}</strong></span>
+                      <span style="font-weight:800; color:${res.teamB.delta >= 0 ? '#22c55e' : '#ef4444'};">${deltaBFormatted} ELO</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Per-Map Breakdown -->
+                <div>
+                  <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700; margin-bottom:8px; letter-spacing:0.5px;">CDL Map Breakdown:</div>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${(res.maps || []).map(m => `
+                      <div style="display:flex; justify-content:space-between; align-items:center; background:#0b0f19; border:1px solid #1e293b; padding:6px 10px; border-radius:3px; font-size:11.5px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <span style="font-weight:700; color:#ff1e44; min-width:50px;">Map ${m.mapIndex}</span>
+                          <span style="color:#ffffff; font-weight:600;">${escapeHtml(m.mode)} - ${escapeHtml(m.mapName)}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <span style="font-weight:800; color:#f8fafc; font-variant-numeric:tabular-nums;">${m.scoreA} - ${m.scoreB}</span>
+                          <span style="color:#22c55e; font-weight:700; font-size:10.5px;">(${escapeHtml(m.winnerName)} won)</span>
+                        </div>
+                      </div>
+                    `).join("")}
+                  </div>
+                </div>
+              `;
+            }
+
+            showToast(`✓ Simulated: ${res.winner} won (${res.scoreText})! ELO ratings updated.`);
+            await loadArenaSimulatorData();
+          } catch (err) {
+            console.error("Error simulating arena match:", err);
+            showToast("Simulation error: " + (err.message || err), true);
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = `🎲 Sim Match &amp; Apply ELO`;
+            }
+          }
+        }
+        window.handleAdminSimulateArenaMatch = handleAdminSimulateArenaMatch;
+
+        async function handleAdminSimulateArenaBatch(count = 5) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can simulate batch games.", true);
+            return;
+          }
+
+          const ladderSelect = document.getElementById("arena-sim-ladder-select");
+          const formatSelect = document.getElementById("arena-sim-format-select");
+          const telem = document.getElementById("arena-sim-telemetry-container");
+          const ladderType = ladderSelect?.value || "4v4_variant";
+          const bestOf = parseInt(formatSelect?.value, 10) || 5;
+
+          showToast(`⚡ Simulating ${count} arena ladder matches...`);
+
+          try {
+            if (!window.LadderDB || typeof window.LadderDB.simulateArenaBatch !== "function") {
+              throw new Error("Arena Batch Simulator service is unavailable.");
+            }
+
+            const res = await window.LadderDB.simulateArenaBatch(count, ladderType, { bestOf });
+            if (!res.success) {
+              showToast(res.error || "Batch simulation failed.", true);
+              return;
+            }
+
+            if (telem) {
+              telem.style.display = "block";
+              telem.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+                  <div>
+                    <strong style="color:#38bdf8; font-size:14px; text-transform:uppercase;">⚡ Batch Simulation Complete</strong>
+                    <div style="font-size:11px; color:#94a3b8;">Executed ${res.simulatedCount} matches on ${ARENA_LADDER_LABELS[ladderType] || ladderType}</div>
+                  </div>
+                  <button type="button" onclick="document.getElementById('arena-sim-telemetry-container').style.display='none'" style="background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;" title="Dismiss telemetry">✕</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  ${(res.matches || []).map((m, idx) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; border:1px solid #1e293b; padding:6px 12px; border-radius:3px; font-size:12px;">
+                      <div>
+                        <span style="color:#64748b; font-weight:700; margin-right:8px;">#${idx + 1}</span>
+                        <strong style="color:#ffffff;">${escapeHtml(m.teamA.name)}</strong>
+                        <span style="color:var(--muted); margin:0 4px;">vs</span>
+                        <strong style="color:#ffffff;">${escapeHtml(m.teamB.name)}</strong>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-weight:800; color:#22c55e;">${m.scoreText}</span>
+                        <span style="font-size:11px; color:#38bdf8;">Winner: ${escapeHtml(m.winner)}</span>
+                        <span style="font-size:10px; color:#94a3b8; background:rgba(0,0,0,0.4); padding:1px 6px; border-radius:2px;">Δ ELO: ${m.teamA.delta >= 0 ? '+' : ''}${m.teamA.delta} / ${m.teamB.delta >= 0 ? '+' : ''}${m.teamB.delta}</span>
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              `;
+            }
+
+            showToast(`✓ Batch simulated ${res.simulatedCount} matches! Standings updated.`);
+            await loadArenaSimulatorData();
+          } catch (err) {
+            console.error("Error in batch arena simulation:", err);
+            showToast("Batch simulation error: " + (err.message || err), true);
+          }
+        }
+        window.handleAdminSimulateArenaBatch = handleAdminSimulateArenaBatch;
 
         // ==========================================
         // 15B. TOURNAMENT SUSPENSIONS CONTROLLER (COMMISSIONER ONLY)

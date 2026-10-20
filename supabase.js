@@ -6808,6 +6808,173 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   // ==============================================================================
+  // TOURNAMENT SIMULATION ENGINE (FOR DUMMY SQUADS & LIVE BRACKET TESTING)
+  // ==============================================================================
+  async simulateTournamentMatch(tournamentId, matchId, options = {}) {
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (!bracket) return { success: false, error: "Bracket not found." };
+
+    let targetMatch = null;
+    (bracket.stages || []).forEach(s => {
+      (s.rounds || []).forEach(r => {
+        (r.matches || []).forEach(m => {
+          if (String(m.id) === String(matchId) || String(m.code) === String(matchId)) targetMatch = m;
+        });
+      });
+    });
+
+    if (!targetMatch) return { success: false, error: "Match not found in bracket." };
+    if (targetMatch.isBye) return { success: false, error: "Cannot simulate a bye match." };
+    if (targetMatch.status === "Completed") return { success: false, error: "Match is already completed." };
+
+    const t1 = targetMatch.team1?.name;
+    const t2 = targetMatch.team2?.name;
+    if (!t1 || !t2 || t1.includes("TBD") || t2.includes("TBD")) {
+      return { success: false, error: "Both teams must be determined before simulating this match." };
+    }
+
+    // Determine Best of (BO3, BO5, or BO7)
+    let bestOf = 5;
+    if (targetMatch.bestOf) {
+      bestOf = parseInt(String(targetMatch.bestOf).replace(/\D/g, ""), 10) || 5;
+    }
+
+    // Win probabilities: weighted slightly towards higher seed if available
+    const seed1 = parseInt(targetMatch.team1?.seed, 10);
+    const seed2 = parseInt(targetMatch.team2?.seed, 10);
+    let winProb1 = 0.50;
+    if (!isNaN(seed1) && !isNaN(seed2)) {
+      if (seed1 < seed2) winProb1 = 0.65;
+      else if (seed2 < seed1) winProb1 = 0.35;
+    }
+
+    const t1Wins = Math.random() < winProb1;
+    const targetWins = Math.ceil(bestOf / 2); // e.g. 3 for BO5, 2 for BO3
+    const loserWins = Math.floor(Math.random() * targetWins); // e.g. 0, 1, or 2 for BO5
+
+    const score1 = t1Wins ? targetWins : loserWins;
+    const score2 = t1Wins ? loserWins : targetWins;
+    const winnerName = t1Wins ? t1 : t2;
+
+    const res = await this.advanceTournamentMatch(tournamentId, targetMatch.id, winnerName, score1, score2);
+    if (!res || !res.success) return res;
+
+    return {
+      success: true,
+      matchId: targetMatch.id,
+      matchCode: targetMatch.code,
+      team1: t1,
+      team2: t2,
+      team1Name: t1,
+      team2Name: t2,
+      winner: winnerName,
+      winnerName: winnerName,
+      score1,
+      score2,
+      scoresText: `${score1} - ${score2}`,
+      bracket: res.bracket
+    };
+  },
+
+  async simulateTournamentNextRound(tournamentId) {
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (!bracket) return { success: false, error: "Bracket not found." };
+
+    let readyMatches = [];
+    let targetRoundName = "";
+
+    // Scan rounds in order to find the earliest round with ready matches
+    for (const stage of (bracket.stages || [])) {
+      for (const round of (stage.rounds || [])) {
+        const uncompletedReady = (round.matches || []).filter(m => {
+          if (m.isBye || m.status === "Completed") return false;
+          const t1 = m.team1?.name;
+          const t2 = m.team2?.name;
+          return t1 && t2 && !t1.includes("TBD") && !t2.includes("TBD");
+        });
+
+        if (uncompletedReady.length > 0) {
+          readyMatches = uncompletedReady;
+          targetRoundName = round.name || "Round";
+          break;
+        }
+      }
+      if (readyMatches.length > 0) break;
+    }
+
+    if (readyMatches.length === 0) {
+      return { success: false, error: "No uncompleted ready matches found to simulate in this tournament." };
+    }
+
+    const results = [];
+    for (const m of readyMatches) {
+      const sim = await this.simulateTournamentMatch(tournamentId, m.id);
+      if (sim && sim.success) {
+        results.push(sim);
+      }
+    }
+
+    return {
+      success: true,
+      roundName: targetRoundName,
+      simulatedCount: results.length,
+      matches: results
+    };
+  },
+
+  async simulateEntireTournament(tournamentId) {
+    let totalSimulated = 0;
+    let roundCount = 0;
+    const maxIterations = 20;
+
+    while (roundCount < maxIterations) {
+      const roundRes = await this.simulateTournamentNextRound(tournamentId);
+      if (!roundRes || !roundRes.success || roundRes.simulatedCount === 0) {
+        break;
+      }
+      totalSimulated += roundRes.simulatedCount;
+      roundCount++;
+    }
+
+    if (totalSimulated === 0) {
+      return { success: false, error: "No matches could be simulated. Ensure live bracket has been generated." };
+    }
+
+    // Inspect bracket to find champion
+    const finalBracket = await this.getTournamentBracket(tournamentId);
+    let champion = null;
+    if (finalBracket && finalBracket.stages) {
+      const lastStage = finalBracket.stages[finalBracket.stages.length - 1];
+      const lastRound = lastStage?.rounds ? lastStage.rounds[lastStage.rounds.length - 1] : null;
+      const finalMatch = lastRound?.matches ? lastRound.matches[lastRound.matches.length - 1] : null;
+      if (finalMatch && finalMatch.status === "Completed") {
+        champion = finalMatch.team1?.winner ? finalMatch.team1.name : (finalMatch.team2?.winner ? finalMatch.team2.name : null);
+      }
+    }
+
+    // Update tournament status to Completed if champion crowned
+    if (champion) {
+      try {
+        const tourneys = await this.getTournaments();
+        const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
+        if (tourney) {
+          tourney.status = "Completed";
+          tourney.winner = champion;
+          await this.saveTournament(tourney);
+        }
+      } catch (_) {}
+    }
+
+    return {
+      success: true,
+      totalSimulated,
+      roundsSimulated: roundCount,
+      champion: champion || "Undetermined",
+      winner: champion || "Undetermined"
+    };
+  },
+
+  // ==============================================================================
   // TOURNAMENT MATCH CHAT (Strictly scoped to participating teams & staff)
   // ==============================================================================
     // ==============================================================================
@@ -13989,8 +14156,336 @@ window.LadderDB = {
     } catch (e) {
       return { success: false, error: e.message };
     }
+  },
+
+  // ==============================================================================
+  // ARENA LADDER DUMMY SQUADS & ELO SIMULATION ENGINE
+  // ==============================================================================
+  async generateDummyArenaTeams(ladderType = "4v4_variant", count = 8, eloMode = "distributed") {
+    const CDL_FRANCHISES = [
+      { name: "Atlanta FaZe", tag: "FAZE", captain: "Simp", discord: "simp#0001", act: "Simp#FaZe", avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" },
+      { name: "OpTic Texas", tag: "OPT", captain: "Shotzhy", discord: "shotzhy#0002", act: "Shotzhy#OpTic", avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80" },
+      { name: "Toronto Ultra", tag: "TOR", captain: "CleanX", discord: "cleanx#0003", act: "CleanX#Ultra", avatar: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80" },
+      { name: "New York Subliners", tag: "NYSL", captain: "HyDra", discord: "hydra#0004", act: "HyDra#NYSL", avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
+      { name: "Miami Heretics", tag: "MIA", captain: "Vikul", discord: "vikul#0005", act: "Vikul#Heretics", avatar: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=150&auto=format&fit=crop&q=80" },
+      { name: "Seattle Surge", tag: "SEA", captain: "Abuzah", discord: "abuzah#0006", act: "Abuzah#Surge", avatar: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80" },
+      { name: "Los Angeles Thieves", tag: "LAT", captain: "Ghosty", discord: "ghosty#0007", act: "Ghosty#LAThieves", avatar: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80" },
+      { name: "Boston Breach", tag: "BOS", captain: "Snoopy", discord: "snoopy#0008", act: "Snoopy#Breach", avatar: "https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80" },
+      { name: "Carolina Royal Ravens", tag: "CAR", captain: "Gwinn", discord: "gwinn#0009", act: "Gwinn#Ravens", avatar: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=150&auto=format&fit=crop&q=80" },
+      { name: "Vegas Legion", tag: "VEG", captain: "Attach", discord: "attach#0010", act: "Attach#Legion", avatar: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=150&auto=format&fit=crop&q=80" },
+      { name: "Minnesota RØKKR", tag: "ROKKR", captain: "Accuracy", discord: "accuracy#0011", act: "Accuracy#ROKKR", avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150&auto=format&fit=crop&q=80" },
+      { name: "Los Angeles Guerrillas", tag: "LAG", captain: "Diamondcon", discord: "diamondcon#0012", act: "Diamond#LAG", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" },
+      { name: "Cloud9 New York", tag: "C9", captain: "Clayster", discord: "clayster#0013", act: "Clayster#C9", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80" },
+      { name: "Dallas Empire", tag: "DAL", captain: "Crimsix", discord: "crimsix#0014", act: "Crimsix#Empire", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+      { name: "Chicago Huntsmen", tag: "CHI", captain: "Scump", discord: "scump#0015", act: "Scump#Huntsmen", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+      { name: "London Ravens", tag: "LON", captain: "Zer0", discord: "zer0#0016", act: "Zer0#Ravens", avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" }
+    ];
+
+    const distributedElos = [1950, 1820, 1680, 1540, 1420, 1310, 1200, 1120, 1050, 980, 920, 880, 850, 820, 800, 800];
+    const highElos = [2100, 2020, 1940, 1860, 1780, 1720, 1680, 1620, 1580, 1540, 1500, 1460, 1420, 1380, 1340, 1300];
+
+    let existingTeams = await this.getLadderTeams(ladderType);
+    existingTeams = existingTeams.filter(t => !t.is_dummy && !String(t.name).includes("(Dummy)") && !String(t.id).startsWith("dummy_arena_"));
+
+    const newDummyTeams = [];
+    const numToCreate = Math.min(count, CDL_FRANCHISES.length);
+
+    for (let i = 0; i < numToCreate; i++) {
+      const f = CDL_FRANCHISES[i];
+      let teamElo = 1200;
+      if (eloMode === "distributed") {
+        teamElo = distributedElos[i % distributedElos.length];
+      } else if (eloMode === "high") {
+        teamElo = highElos[i % highElos.length];
+      } else if (eloMode === "balanced") {
+        teamElo = 1200;
+      }
+
+      const wins = Math.max(0, Math.floor((teamElo - 900) / 40) + Math.floor(Math.random() * 3));
+      const losses = Math.max(0, Math.floor((1700 - teamElo) / 50) + Math.floor(Math.random() * 3));
+      const streak = wins > losses ? Math.min(8, wins - losses) : (losses > wins ? -Math.min(5, losses - wins) : 0);
+
+      const teamObj = {
+        id: "dummy_arena_" + ladderType + "_" + (i + 1) + "_" + Date.now().toString(36),
+        name: f.name + " (Dummy)",
+        tag: f.tag,
+        ladder_type: ladderType,
+        captain_name: f.captain,
+        captain_discord: f.discord,
+        captain_activision: f.act,
+        avatar_url: f.avatar,
+        elo: teamElo,
+        tier: this.getTier(teamElo).name,
+        wins: wins,
+        losses: losses,
+        streak: streak,
+        is_dummy: true,
+        created_at: new Date().toISOString()
+      };
+
+      teamObj.players = this.generateRosterForTeam(teamObj);
+      newDummyTeams.push(teamObj);
+    }
+
+    const merged = [...existingTeams, ...newDummyTeams];
+    merged.sort((a, b) => (b.elo || 0) - (a.elo || 0));
+
+    try {
+      localStorage.setItem("frontline_ladder_teams_" + ladderType, JSON.stringify(merged));
+    } catch (_) {}
+
+    if (dbClient) {
+      try {
+        for (const dt of newDummyTeams) {
+          await dbClient.from("ladder_teams").upsert({
+            name: dt.name,
+            tag: dt.tag,
+            ladder_type: dt.ladder_type,
+            captain_name: dt.captain_name,
+            captain_discord: dt.captain_discord,
+            avatar_url: dt.avatar_url,
+            elo: dt.elo,
+            tier: dt.tier,
+            wins: dt.wins,
+            losses: dt.losses,
+            streak: dt.streak,
+            is_active: true
+          });
+        }
+      } catch (err) {
+        console.warn("Supabase ladder_teams dummy insert notice:", err);
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_ladder_updated", { detail: { ladderType } }));
+    }
+
+    return { success: true, count: newDummyTeams.length, teams: newDummyTeams };
+  },
+
+  async clearDummyArenaTeams(ladderType = "4v4_variant") {
+    let existing = await this.getLadderTeams(ladderType);
+    const initialCount = existing.length;
+    const filtered = existing.filter(t => !t.is_dummy && !String(t.name).includes("(Dummy)") && !String(t.id).startsWith("dummy_arena_"));
+    const removedCount = initialCount - filtered.length;
+
+    try {
+      localStorage.setItem("frontline_ladder_teams_" + ladderType, JSON.stringify(filtered));
+    } catch (_) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("ladder_teams").delete().ilike("name", "%(Dummy)%").eq("ladder_type", ladderType);
+      } catch (_) {}
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_ladder_updated", { detail: { ladderType } }));
+    }
+
+    return { success: true, removedCount };
+  },
+
+  async resetArenaLadder(ladderType = "4v4_variant") {
+    try {
+      localStorage.removeItem("frontline_ladder_teams_" + ladderType);
+      localStorage.removeItem("frontline_my_team_" + ladderType);
+    } catch (_) {}
+
+    if (dbClient) {
+      try {
+        await dbClient.from("ladder_teams").delete().eq("ladder_type", ladderType);
+      } catch (_) {}
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_ladder_updated", { detail: { ladderType } }));
+    }
+
+    return { success: true };
+  },
+
+  async simulateArenaMatch(teamAId, teamBId, ladderType = "4v4_variant", options = {}) {
+    const teams = await this.getLadderTeams(ladderType);
+    const teamA = teams.find(t => String(t.id) === String(teamAId) || t.name === teamAId);
+    const teamB = teams.find(t => String(t.id) === String(teamBId) || t.name === teamBId);
+
+    if (!teamA || !teamB) {
+      return { success: false, error: "One or both teams not found on this ladder." };
+    }
+    if (String(teamA.id) === String(teamB.id)) {
+      return { success: false, error: "Cannot simulate a match between the same team." };
+    }
+
+    const eloA = Number(teamA.elo) || 1200;
+    const eloB = Number(teamB.elo) || 1200;
+
+    // Win probability based on Elo curve
+    const probA = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
+
+    // Best of series (default Best of 5 for variant, Best of 3 for SnD/1v1)
+    const bestOf = options.bestOf || (ladderType === "4v4_variant" ? 5 : 3);
+    const neededWins = Math.ceil(bestOf / 2);
+
+    let winsA = 0;
+    let winsB = 0;
+    const mapsPlayed = [];
+
+    const MAP_POOL = [
+      { mode: "Hardpoint", name: "Sub Base", winScore: 250, loseMin: 140, loseMax: 245 },
+      { mode: "Search & Destroy", name: "Karachi", winScore: 6, loseMin: 1, loseMax: 5 },
+      { mode: "Control", name: "Invasion", winScore: 3, loseMin: 0, loseMax: 2 },
+      { mode: "Hardpoint", name: "Rio", winScore: 250, loseMin: 150, loseMax: 242 },
+      { mode: "Search & Destroy", name: "6 Star", winScore: 6, loseMin: 2, loseMax: 5 }
+    ];
+
+    let mapIndex = 0;
+    while (winsA < neededWins && winsB < neededWins) {
+      const mapDef = MAP_POOL[mapIndex % MAP_POOL.length];
+      mapIndex++;
+
+      const aWinsMap = Math.random() < probA;
+      if (aWinsMap) winsA++;
+      else winsB++;
+
+      const sWinner = mapDef.winScore;
+      const sLoser = Math.floor(Math.random() * (mapDef.loseMax - mapDef.loseMin + 1)) + mapDef.loseMin;
+
+      mapsPlayed.push({
+        mapNumber: mapsPlayed.length + 1,
+        mapIndex: mapsPlayed.length + 1,
+        mode: mapDef.mode,
+        mapName: mapDef.name,
+        scoreA: aWinsMap ? sWinner : sLoser,
+        scoreB: aWinsMap ? sLoser : sWinner,
+        winner: aWinsMap ? teamA.name : teamB.name,
+        winnerName: aWinsMap ? teamA.name : teamB.name
+      });
+    }
+
+    const aWon = winsA > winsB;
+    const winner = aWon ? teamA : teamB;
+    const loser = aWon ? teamB : teamA;
+
+    // Calculate ELO Changes using official 5-step rules
+    const deltaA = this.calculateTeamEloDelta(eloA, eloB, aWon);
+    const deltaB = this.calculateTeamEloDelta(eloB, eloA, !aWon);
+
+    const newEloA = Math.max(800, eloA + deltaA);
+    const newEloB = Math.max(800, eloB + deltaB);
+
+    teamA.elo = newEloA;
+    teamA.tier = this.getTier(newEloA).name;
+    teamA.wins = (Number(teamA.wins) || 0) + (aWon ? 1 : 0);
+    teamA.losses = (Number(teamA.losses) || 0) + (aWon ? 0 : 1);
+    teamA.streak = aWon ? (teamA.streak >= 0 ? teamA.streak + 1 : 1) : (teamA.streak <= 0 ? teamA.streak - 1 : -1);
+
+    teamB.elo = newEloB;
+    teamB.tier = this.getTier(newEloB).name;
+    teamB.wins = (Number(teamB.wins) || 0) + (!aWon ? 1 : 0);
+    teamB.losses = (Number(teamB.losses) || 0) + (!aWon ? 0 : 1);
+    teamB.streak = !aWon ? (teamB.streak >= 0 ? teamB.streak + 1 : 1) : (teamB.streak <= 0 ? teamB.streak - 1 : -1);
+
+    // Re-sort ladder teams
+    teams.sort((a, b) => (b.elo || 0) - (a.elo || 0));
+
+    // Save to localStorage
+    try {
+      localStorage.setItem("frontline_ladder_teams_" + ladderType, JSON.stringify(teams));
+    } catch (_) {}
+
+    // Save to Supabase if connected
+    if (dbClient) {
+      try {
+        if (typeof teamA.id === "number") {
+          await dbClient.from("ladder_teams").update({ elo: newEloA, tier: teamA.tier, wins: teamA.wins, losses: teamA.losses, streak: teamA.streak }).eq("id", teamA.id);
+        }
+        if (typeof teamB.id === "number") {
+          await dbClient.from("ladder_teams").update({ elo: newEloB, tier: teamB.tier, wins: teamB.wins, losses: teamB.losses, streak: teamB.streak }).eq("id", teamB.id);
+        }
+      } catch (_) {}
+    }
+
+    // Record Match in History
+    const matchRecord = {
+      id: "sim_match_" + Date.now().toString(36),
+      ladder_type: ladderType,
+      team_a: teamA,
+      team_b: teamB,
+      team_a_score: winsA,
+      team_b_score: winsB,
+      winner_name: winner.name,
+      status: "completed",
+      maps_played: mapsPlayed,
+      elo_change_a: deltaA,
+      elo_change_b: deltaB,
+      completed_at: new Date().toISOString()
+    };
+
+    try {
+      let matches = JSON.parse(localStorage.getItem("frontline_ladder_matches")) || [];
+      matches.unshift(matchRecord);
+      localStorage.setItem("frontline_ladder_matches", JSON.stringify(matches.slice(0, 100)));
+    } catch (_) {}
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_ladder_updated", { detail: { ladderType, match: matchRecord } }));
+    }
+
+    return {
+      success: true,
+      ladderType,
+      teamA: { id: teamA.id, name: teamA.name, tag: teamA.tag, oldElo: eloA, newElo: newEloA, delta: deltaA, tier: teamA.tier },
+      teamB: { id: teamB.id, name: teamB.name, tag: teamB.tag, oldElo: eloB, newElo: newEloB, delta: deltaB, tier: teamB.tier },
+      winner: winner.name,
+      scoreA: winsA,
+      scoreB: winsB,
+      scoreText: `${winsA} - ${winsB}`,
+      bestOf,
+      maps: mapsPlayed
+    };
+  },
+
+  async simulateArenaBatch(count = 5, ladderType = "4v4_variant", options = {}) {
+    let teams = await this.getLadderTeams(ladderType);
+    if (!teams || teams.length < 2) {
+      await this.generateDummyArenaTeams(ladderType, 8, "distributed");
+      teams = await this.getLadderTeams(ladderType);
+    }
+
+    const batchResults = [];
+    for (let i = 0; i < count; i++) {
+      const idxA = Math.floor(Math.random() * teams.length);
+      let idxB = Math.floor(Math.random() * teams.length);
+      if (idxB === idxA) idxB = (idxA + 1) % teams.length;
+
+      const tA = teams[idxA];
+      const tB = teams[idxB];
+      const matchRes = await this.simulateArenaMatch(tA.id, tB.id, ladderType, options);
+      if (matchRes && matchRes.success) {
+        batchResults.push(matchRes);
+        teams = await this.getLadderTeams(ladderType);
+      }
+    }
+
+    return {
+      success: true,
+      simulatedCount: batchResults.length,
+      matches: batchResults,
+      ladderType
+    };
   }
 };
+
+// Expose Arena simulation helpers on window.LeagueDB as well
+if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
+  window.LeagueDB.generateDummyArenaTeams = window.LadderDB.generateDummyArenaTeams.bind(window.LadderDB);
+  window.LeagueDB.clearDummyArenaTeams = window.LadderDB.clearDummyArenaTeams.bind(window.LadderDB);
+  window.LeagueDB.resetArenaLadder = window.LadderDB.resetArenaLadder.bind(window.LadderDB);
+  window.LeagueDB.simulateArenaMatch = window.LadderDB.simulateArenaMatch.bind(window.LadderDB);
+  window.LeagueDB.simulateArenaBatch = window.LadderDB.simulateArenaBatch.bind(window.LadderDB);
+}
 
 // Auto-initialize global Arena Profile nav status across all pages
 (function initArenaNavWatcher() {
