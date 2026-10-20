@@ -454,6 +454,54 @@ const MOCK_DATA = {
 
 // Unified Data Access API
 window.LeagueDB = {
+  isUserCommissioner() {
+    try {
+      // 1. Check admin session in storage
+      const sAdmin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('frontline_admin_session');
+      const lAdmin = typeof localStorage !== 'undefined' && localStorage.getItem('frontline_admin_session');
+      if (sAdmin === 'authorized' || lAdmin === 'authorized') return true;
+
+      // 2. Check admin email
+      const sEmail = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('frontline_admin_email') || '').toLowerCase().trim();
+      const lEmail = (typeof localStorage !== 'undefined' && localStorage.getItem('frontline_admin_email') || '').toLowerCase().trim();
+      const adminEmails = ['admin@frontlineleague.com', 'todd061496@gmail.com', 'todd61496@gmail.com'];
+      if (adminEmails.includes(sEmail) || adminEmails.includes(lEmail) || sEmail.includes('todd') || lEmail.includes('todd')) return true;
+
+      // 3. Check authUser from storage
+      let authUser = null;
+      try {
+        authUser = JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
+                   JSON.parse(localStorage.getItem('frontline_auth_user')) ||
+                   JSON.parse(sessionStorage.getItem('frontline_league_auth_user')) || null;
+      } catch (e) {}
+
+      if (authUser) {
+        const uEmail = (authUser.email || '').toLowerCase().trim();
+        if (adminEmails.includes(uEmail) || uEmail.includes('todd')) return true;
+        const uRole = (authUser.role || authUser.user_metadata?.role || '').toLowerCase().trim();
+        if (uRole === 'commissioner' || uRole === 'admin') return true;
+        const uGamertag = (authUser.gamertag || authUser.username || authUser.user_metadata?.gamertag || authUser.user_metadata?.custom_claims?.global_name || '').toLowerCase().trim();
+        if (['invictus', 'itzinvictus', 'itzinvictus_', 'spencer', 'commissioner', 'savory'].some(n => uGamertag.includes(n))) return true;
+      }
+
+      // 4. Check activeStaffProfile global if present
+      if (typeof window !== 'undefined' && window.activeStaffProfile) {
+        const staffRole = (window.activeStaffProfile.role || '').toLowerCase().trim();
+        const staffEmail = (window.activeStaffProfile.email || '').toLowerCase().trim();
+        if (staffRole === 'commissioner' || adminEmails.includes(staffEmail) || staffEmail.includes('todd')) return true;
+      }
+
+      // 5. Check Arena current player
+      if (typeof window !== 'undefined' && window.LadderDB && typeof window.LadderDB.getCurrentPlayer === 'function') {
+        const cp = window.LadderDB.getCurrentPlayer();
+        if (cp && (cp.is_commissioner || cp.is_staff)) return true;
+      }
+    } catch (e) {
+      console.warn('isUserCommissioner check notice:', e);
+    }
+    return false;
+  },
+
   client: dbClient,
   getClient() {
     if (window.dbClient) return window.dbClient;
@@ -2631,6 +2679,16 @@ if (dbClient && cleanPayload.user_id) {
 
   async saveAllNotificationsRegistry(list) {
     if (!Array.isArray(list)) list = [];
+    // Purge legacy mock/placeholder tournaments so only posted tournaments appear
+    const legacyMockTourneyIds = new Set(['tourney_major_1', 'tourney_prime_snd', 'tourney_radar_1v1', 'tourney_challengers_cup']);
+    const prevLen = list.length;
+    list = list.filter(t => t && !legacyMockTourneyIds.has(t.id));
+    if (list.length !== prevLen) {
+      try {
+        localStorage.setItem('frontline_tournaments_data', JSON.stringify(list));
+        localStorage.setItem('frontline_tournaments_initialized', 'true');
+      } catch (_) {}
+    }
     try {
       localStorage.setItem("frontline_user_notifications", JSON.stringify(list));
     } catch (_) {}
@@ -4514,51 +4572,52 @@ if (dbClient && cleanPayload.user_id) {
     if (dbClient) {
       try {
         let query = dbClient
-          .from("arena_announcements")
-          .select("*")
-          .order("pinned", { ascending: false })
-          .order("created_at", { ascending: false });
+          .from('arena_announcements')
+          .select('*')
+          .order('pinned', { ascending: false })
+          .order('created_at', { ascending: false });
 
         if (!includeInactive) {
-          query = query.eq("is_active", true);
+          query = query.eq('is_active', true);
         }
 
         const { data, error } = await query;
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           list = data;
           this._saveStoredArenaAnnouncements(data);
         } else if (error) {
-          // Table might not exist yet, fallback to league_announcements where circuit/target is arena or local storage
-          console.warn("Supabase arena_announcements table note, falling back:", error.message || error);
+          console.warn('Supabase arena_announcements table note, falling back:', error.message || error);
         }
       } catch (err) {
-        console.warn("Supabase getArenaAnnouncements query error:", err);
+        console.warn('Supabase getArenaAnnouncements query error:', err);
       }
     }
 
-    if (!list || list.length === 0) {
+    // Try league_settings fallback row 'arena_announcements_registry'
+    if ((!list || list.length === 0) && dbClient) {
+      try {
+        const { data: regRow } = await dbClient
+          .from('league_settings')
+          .select('status_text')
+          .eq('id', 'arena_announcements_registry')
+          .maybeSingle();
+        if (regRow && regRow.status_text) {
+          const parsed = JSON.parse(regRow.status_text);
+          if (Array.isArray(parsed)) {
+            list = parsed;
+            this._saveStoredArenaAnnouncements(list);
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!list) {
       list = this._getStoredArenaAnnouncements();
     }
 
-    // Default starter mock announcement if completely empty
-    if (!list || list.length === 0) {
-      list = [
-        {
-          id: "arena_ann_1",
-          title: "⚔️ Competitive Arena Season 1 Ladders Open for Challenges",
-          message: "Welcome competitors! The 4v4 CDL Variant, 2v2 SnD, and 1v1 Radar ladders are officially open. Form your squad, check out the Match Finder to accept challenges, and strike maps in CDL veto rooms.",
-          tag: "Arena Launch",
-          tag_color: "red",
-          image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&h=675&auto=format&fit=crop&q=80",
-          image_fit: "contain",
-          link_url: "/match-finder/",
-          link_text: "Open Match Finder ↗",
-          is_active: true,
-          pinned: true,
-          created_at: new Date().toISOString()
-        }
-      ];
-      this._saveStoredArenaAnnouncements(list);
+    // Pure dynamic announcements - NO placeholder respawns
+    if (!Array.isArray(list)) {
+      list = [];
     }
 
     if (!includeInactive) {
@@ -4587,10 +4646,10 @@ if (dbClient && cleanPayload.user_id) {
     const record = {
       title: announcementData.title,
       message: announcementData.message,
-      tag: announcementData.tag || "Arena Bulletin",
-      tag_color: announcementData.tag_color || "red",
+      tag: announcementData.tag || 'Arena Bulletin',
+      tag_color: announcementData.tag_color || 'red',
       image_url: announcementData.image_url || null,
-      image_fit: announcementData.image_fit || "contain",
+      image_fit: announcementData.image_fit || 'contain',
       link_url: announcementData.link_url || null,
       link_text: announcementData.link_text || null,
       scheduled_for: announcementData.scheduled_for || null,
@@ -4604,7 +4663,7 @@ if (dbClient && cleanPayload.user_id) {
       try {
         let insertRecord = { ...record };
         let { data, error } = await dbClient
-          .from("arena_announcements")
+          .from('arena_announcements')
           .insert([insertRecord])
           .select();
 
@@ -4612,19 +4671,39 @@ if (dbClient && cleanPayload.user_id) {
           const stored = this._getStoredArenaAnnouncements() || [];
           stored.unshift(data[0]);
           this._saveStoredArenaAnnouncements(stored);
+          try {
+            localStorage.setItem('frontline_arena_announcements_initialized', 'true');
+            await dbClient.from('league_settings').upsert({
+              id: 'arena_announcements_registry',
+              status_state: 'active',
+              status_text: JSON.stringify(stored),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+          } catch (_) {}
           this._notifyArenaAnnouncementChange(data[0]);
           return { success: true, data: data[0] };
         }
       } catch (err) {
-        console.warn("Supabase createArenaAnnouncement error, fallback to local storage:", err);
+        console.warn('Supabase createArenaAnnouncement error, fallback to local storage:', err);
       }
     }
 
-    // Local Storage fallback
-    record.id = "arena_ann_" + Date.now();
+    // Local Storage fallback & sync
+    record.id = 'arena_ann_' + Date.now();
     const stored = this._getStoredArenaAnnouncements() || [];
     stored.unshift(record);
     this._saveStoredArenaAnnouncements(stored);
+    try {
+      localStorage.setItem('frontline_arena_announcements_initialized', 'true');
+      if (dbClient) {
+        await dbClient.from('league_settings').upsert({
+          id: 'arena_announcements_registry',
+          status_state: 'active',
+          status_text: JSON.stringify(stored),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      }
+    } catch (_) {}
     this._notifyArenaAnnouncementChange(record);
     return { success: true, data: record, mock: true };
   },
@@ -4634,9 +4713,9 @@ if (dbClient && cleanPayload.user_id) {
     if (dbClient) {
       try {
         let { data, error } = await dbClient
-          .from("arena_announcements")
+          .from('arena_announcements')
           .update(cleanUpdates)
-          .eq("id", id)
+          .eq('id', id)
           .select();
 
         if (!error && data && data.length > 0) {
@@ -4644,11 +4723,19 @@ if (dbClient && cleanPayload.user_id) {
           const idx = stored.findIndex(a => String(a.id) === String(id));
           if (idx !== -1) stored[idx] = { ...stored[idx], ...cleanUpdates };
           this._saveStoredArenaAnnouncements(stored);
+          try {
+            await dbClient.from('league_settings').upsert({
+              id: 'arena_announcements_registry',
+              status_state: 'active',
+              status_text: JSON.stringify(stored),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+          } catch (_) {}
           this._notifyArenaAnnouncementChange(data[0]);
           return { success: true, data: data[0] };
         }
       } catch (err) {
-        console.warn("Supabase updateArenaAnnouncement error, updating local storage:", err);
+        console.warn('Supabase updateArenaAnnouncement error, updating local storage:', err);
       }
     }
 
@@ -4657,27 +4744,48 @@ if (dbClient && cleanPayload.user_id) {
     if (idx !== -1) {
       stored[idx] = { ...stored[idx], ...cleanUpdates };
       this._saveStoredArenaAnnouncements(stored);
+      try {
+        if (dbClient) {
+          await dbClient.from('league_settings').upsert({
+            id: 'arena_announcements_registry',
+            status_state: 'active',
+            status_text: JSON.stringify(stored),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+        }
+      } catch (_) {}
       this._notifyArenaAnnouncementChange(stored[idx]);
       return { success: true, data: stored[idx] };
     }
-    return { success: false, error: "Announcement not found" };
+    return { success: false, error: 'Announcement not found' };
   },
 
   async deleteArenaAnnouncement(id) {
     if (dbClient) {
       try {
         await dbClient
-          .from("arena_announcements")
+          .from('arena_announcements')
           .delete()
-          .eq("id", id);
+          .eq('id', id);
       } catch (err) {
-        console.warn("Supabase deleteArenaAnnouncement error:", err);
+        console.warn('Supabase deleteArenaAnnouncement error:', err);
       }
     }
 
     const stored = this._getStoredArenaAnnouncements() || [];
     const filtered = stored.filter(a => String(a.id) !== String(id));
     this._saveStoredArenaAnnouncements(filtered);
+    try {
+      localStorage.setItem('frontline_arena_announcements_initialized', 'true');
+      if (dbClient) {
+        await dbClient.from('league_settings').upsert({
+          id: 'arena_announcements_registry',
+          status_state: 'active',
+          status_text: JSON.stringify(filtered),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      }
+    } catch (_) {}
     this._notifyArenaAnnouncementChange({ id, deleted: true });
     return { success: true, id };
   },
@@ -4886,80 +4994,7 @@ if (dbClient && cleanPayload.user_id) {
   // ==============================================================================
   // FRONTLINE TOURNAMENTS HUB SYSTEM
   // ==============================================================================
-  DEFAULT_TOURNAMENTS: [
-    {
-      id: "tourney_major_1",
-      title: "Frontline Spring Championship Major",
-      format: "4v4 CDL Variant",
-      bracket_type: "Double Elimination",
-      prize_pool: "$2,500 USD",
-      entry_fee: "Free Entry",
-      max_teams: 16,
-      registered_teams: 14,
-      start_date: "2026-10-24",
-      start_time: "6:00 PM EST",
-      status: "Registration Open",
-      image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/frontlinecodleague",
-      bracket_url: "/brackets/",
-      description: "Official 4v4 CDL Variant Premier Championship. Best of 5 series on official maps. Top squads battle live on broadcast.",
-      rules_notes: "CDL V4 Competitive Rulebook applies. Map vetoes in match room. Dedicated host server."
-    },
-    {
-      id: "tourney_prime_snd",
-      title: "Saturday Night SnD Prime Cup",
-      format: "2v2 Search & Destroy",
-      bracket_type: "Single Elimination",
-      prize_pool: "$750 USD",
-      entry_fee: "Free Entry",
-      max_teams: 32,
-      registered_teams: 28,
-      start_date: "2026-10-17",
-      start_time: "8:00 PM EST",
-      status: "Registration Open",
-      image_url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/frontlinecodleague",
-      bracket_url: "",
-      description: "High-octane 2v2 Search & Destroy prime tournament. First to 6 rounds wins. Knife for first blood / side choice.",
-      rules_notes: "SnD ruleset. Hardcore & Radar disabled. No snipers in 2v2."
-    },
-    {
-      id: "tourney_radar_1v1",
-      title: "Radar Always On 1v1 Gunfight Showdown",
-      format: "1v1 Radar",
-      bracket_type: "Double Elimination",
-      prize_pool: "$500 USD",
-      entry_fee: "Free Entry",
-      max_teams: 16,
-      registered_teams: 16,
-      start_date: "2026-10-18",
-      start_time: "7:00 PM EST",
-      status: "Live",
-      image_url: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&auto=format&fit=crop&q=80",
-      registration_url: "",
-      bracket_url: "",
-      description: "Constant UAV radar ping gunfight series. Test raw gunskill, pre-aim speed, and centering under live radar conditions.",
-      rules_notes: "Standard CDL weapon restrictions apply. First to 15 kills wins."
-    },
-    {
-      id: "tourney_challengers_cup",
-      title: "Division 2 Challengers Qualifier Cup",
-      format: "4v4 CDL Variant",
-      bracket_type: "Double Elimination",
-      prize_pool: "$1,000 USD",
-      entry_fee: "Free Entry",
-      max_teams: 16,
-      registered_teams: 8,
-      start_date: "2026-10-31",
-      start_time: "5:00 PM EST",
-      status: "Upcoming",
-      image_url: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=800&auto=format&fit=crop&q=80",
-      registration_url: "https://discord.gg/frontlinecodleague",
-      bracket_url: "",
-      description: "Path to Pro qualification cup for Division 2 Challengers squads seeking promotion seeds for the Premier division.",
-      rules_notes: "All squads must have active community roster on Frontline League."
-    }
-  ],
+  DEFAULT_TOURNAMENTS: [],
 
   async getTournaments(filters = {}) {
     let list = null;
@@ -14667,6 +14702,8 @@ window.LadderDB = {
 // Expose Arena simulation helpers on window.LeagueDB as well
 if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
   window.LeagueDB.generateDummyArenaTeams = window.LadderDB.generateDummyArenaTeams.bind(window.LadderDB);
+  window.LadderDB.isUserCommissioner = window.LeagueDB.isUserCommissioner.bind(window.LeagueDB);
+  window.isUserCommissioner = window.LeagueDB.isUserCommissioner.bind(window.LeagueDB);
   window.LeagueDB.clearDummyArenaTeams = window.LadderDB.clearDummyArenaTeams.bind(window.LadderDB);
   window.LeagueDB.resetArenaLadder = window.LadderDB.resetArenaLadder.bind(window.LadderDB);
   window.LeagueDB.simulateArenaMatch = window.LadderDB.simulateArenaMatch.bind(window.LadderDB);

@@ -10572,6 +10572,7 @@
               if (res.success) {
                 showToast(`✓ Tournament "${title}" removed.`);
                 await loadAdminTournaments();
+                if (typeof loadArenaTournaments === "function") await loadArenaTournaments();
               } else {
                 showToast(`Failed to delete tournament: ${res.error}`, true);
               }
@@ -10582,6 +10583,7 @@
               localStorage.setItem("frontline_tournaments_initialized", "true");
               showToast(`✓ Tournament "${title}" removed.`);
               await loadAdminTournaments();
+              if (typeof loadArenaTournaments === "function") await loadArenaTournaments();
             }
           } catch(err) {
             console.error("Delete tournament error:", err);

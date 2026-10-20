@@ -1182,6 +1182,10 @@
             return;
           }
 
+          const isCommish = (window.LeagueDB && typeof window.LeagueDB.isUserCommissioner === "function")
+            ? window.LeagueDB.isUserCommissioner()
+            : (typeof isUserCommissioner === "function" ? isUserCommissioner() : false);
+
           const colorMap = {
             red: { dot: "#ff1e44", border: "#ff1e44", tagBg: "rgba(255,30,68,0.12)", text: "#ff1e44" },
             lime: { dot: "var(--lime)", border: "var(--lime)", tagBg: "rgba(213,244,91,0.12)", text: "var(--lime)" },
@@ -1206,6 +1210,19 @@
               </div>
             ` : "";
 
+            const commishControlsHtml = isCommish ? `
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:12px; border-top:1px solid #1e283a; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="font-size:10.5px; color:#fbbf24; font-weight:800; letter-spacing:0.5px;">★ COMMISSIONER DIRECTIVE</span>
+                  <span style="font-size:10px; color:#64748b;">(Authorized Staff Control)</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <a href="/admin/#tab-arena-command" target="_blank" class="btn-crimson-outline" style="font-size:11px; padding:4px 10px; text-decoration:none;">✏️ Edit in Admin Panel ↗</a>
+                  <button type="button" class="btn-crimson" style="font-size:11px; padding:4px 12px; background:#ef4444; border-color:#dc2626; color:#ffffff;" onclick="deleteArenaAnnouncementOnArenaSide('${escapeHtml(ann.id)}')">🗑 Delete Announcement</button>
+                </div>
+              </div>
+            ` : "";
+
             return `
               <div style="background:#0e131d; border:1px solid #1e283a; border-left:4px solid ${scheme.border}; border-radius:4px; padding:18px 22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
@@ -1226,6 +1243,7 @@
                 </p>
                 ${mediaHtml}
                 ${linkHtml}
+                ${commishControlsHtml}
               </div>
             `;
           }).join("");
@@ -1236,6 +1254,24 @@
           container.style.display = "none";
         }
       }
+
+      async function deleteArenaAnnouncementOnArenaSide(id) {
+        if (!confirm("Are you sure you want to permanently delete this Arena announcement?\n\nThis will remove the announcement immediately for all competitors.")) return;
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.deleteArenaAnnouncement === "function") {
+            const res = await window.LeagueDB.deleteArenaAnnouncement(id);
+            if (res && res.success) {
+              await renderArenaAnnouncements();
+            } else {
+              alert("Failed to delete announcement: " + (res?.error || "Unknown error"));
+            }
+          }
+        } catch (err) {
+          console.error("deleteArenaAnnouncementOnArenaSide error:", err);
+          alert("Error deleting announcement.");
+        }
+      }
+      window.deleteArenaAnnouncementOnArenaSide = deleteArenaAnnouncementOnArenaSide;
 
       async function initArenaSeasonStatus() {
         try {

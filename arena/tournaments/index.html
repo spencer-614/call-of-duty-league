@@ -112,11 +112,11 @@
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:32px; padding-top:24px; border-top:1px solid #1d2738;">
           <div>
             <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Weekly Cash Pool</div>
-            <div style="font:900 24px var(--body); color:#22c55e;">$1,750 USD</div>
+            <div style="font:900 24px var(--body); color:#22c55e;" id="arena-telemetry-cash-pool">$0 USD</div>
           </div>
           <div>
             <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Active Tournaments</div>
-            <div style="font:900 24px var(--body); color:#ffffff;">4 Circuits</div>
+            <div style="font:900 24px var(--body); color:#ffffff;" id="arena-telemetry-active-tourneys">0 Circuits</div>
           </div>
           <div>
             <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Match Format</div>
@@ -133,7 +133,7 @@
       <div id="active-tournaments" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:24px;">
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button type="button" class="btn-crimson" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('all', this)">
-            All Tournaments (4)
+            <span id="filter-all-tourneys-label">All Tournaments (0)</span>
           </button>
           <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('4v4', this)">
             4v4 CDL Variant
@@ -153,168 +153,10 @@
 
       <!-- Tournament Cards Grid -->
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:48px;" id="tourney-cards-container">
-        
-        <!-- Tournament 1: $1,000 Major Cup -->
-        <div class="gb-card-box tourney-card" data-category="4v4" style="display:flex; flex-direction:column; overflow:hidden;">
-          <div style="position:relative; height:160px; overflow:hidden;">
-            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="4v4 Opening Major" />
-            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
-              <span class="gb-meta-tag accent">FLAGSHIP MAJOR</span>
-              <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;">REGISTRATION OPEN</span>
-            </div>
-            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
-              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$1,000 Opening Major Cup</h3>
-              <span style="font-size:12px; color:#cbd5e1;">4v4 CDL Variant · Double Elimination</span>
-            </div>
-          </div>
-
-          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
-                  <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">$1,000 Cash</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
-                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">12 / 16 Squads</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
-                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Sat 18 Oct · 4:00 PM EST</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
-                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Best of 5 CDL</div>
-                </div>
-              </div>
-
-              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
-                16-squad double elimination championship. Hardpoint, SnD, and Control played on 60Hz dedicated servers with automated CDL map veto.
-              </p>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-              <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('$1,000 Opening Major Cup')">
-                <span>⚔</span> <span>Register Squad</span>
-              </button>
-              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('major')">
-                View Bracket
-              </button>
-            </div>
-          </div>
+        <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:#94a3b8;">
+          Connecting to Frontline Arena Tournament circuit...
         </div>
-
-        <!-- Tournament 2: $500 Saturday SnD Prime -->
-        <div class="gb-card-box tourney-card" data-category="2v2" style="display:flex; flex-direction:column; overflow:hidden;">
-          <div style="position:relative; height:160px; overflow:hidden;">
-            <img src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="2v2 SnD Prime" />
-            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
-              <span class="gb-meta-tag accent">WEEKEND PRIME</span>
-              <span class="val-badge" style="background:#26180a; color:#f59e0b; border-color:#4a2b10;">CHECK-IN OPEN</span>
-            </div>
-            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
-              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$500 Saturday SnD Prime</h3>
-              <span style="font-size:12px; color:#cbd5e1;">2v2 Search &amp; Destroy · Single Elimination</span>
-            </div>
-          </div>
-
-          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
-                  <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">$500 Cash</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
-                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">26 / 32 Duos</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
-                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Tonight · 8:00 PM EST</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
-                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">First to 6 Rounds</div>
-                </div>
-              </div>
-
-              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
-                High-intensity tactical duos. Single elimination bracket with CDL SnD map veto and dedicated match rooms for quick reporting.
-              </p>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-              <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('$500 Saturday SnD Prime')">
-                <span>⚔</span> <span>Check In Duo</span>
-              </button>
-              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('snd')">
-                View Bracket
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tournament 3: $250 Solo Radar Showdown -->
-        <div class="gb-card-box tourney-card" data-category="1v1" style="display:flex; flex-direction:column; overflow:hidden;">
-          <div style="position:relative; height:160px; overflow:hidden;">
-            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="1v1 Radar Showdown" />
-            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
-              <span class="gb-meta-tag">SOLO DUEL</span>
-              <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;">REGISTRATION OPEN</span>
-            </div>
-            <div style="position:absolute; bottom:12px; left:14px; right:14px;">
-              <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$250 Radar Gunfight Showdown</h3>
-              <span style="font-size:12px; color:#cbd5e1;">1v1 Radar Always On · Single Elimination</span>
-            </div>
-          </div>
-
-          <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
-                  <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">$250 Cash</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
-                  <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">10 / 16 Players</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
-                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">Sun 19 Oct · 6:00 PM EST</div>
-                </div>
-                <div>
-                  <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
-                  <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">First to 7 Rounds</div>
-                </div>
-              </div>
-
-              <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
-                Radar sweep enabled constantly. Raw mechanical gunskill, centering, and strafe mastery. Zero hiding or timing luck.
-              </p>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-              <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('$250 Radar Gunfight Showdown')">
-                <span>⚔</span> <span>Register Solo</span>
-              </button>
-              <button type="button" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px;" onclick="showBracketPreview('solo')">
-                View Bracket
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tournament 4: $2,500 Apex Prestige Invitational -->
-        <div class="gb-card-box tourney-card" data-category="4v4" style="display:flex; flex-direction:column; overflow:hidden;">
-          <div style="position:relative; height:160px; overflow:hidden;">
-            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80" style="width:100%; height:100%; object-fit:cover; filter:brightness(0.6);" alt="Apex Invitational" />
-            <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
-              <span class="gb-meta-tag accent">SEASON FINALE</span>
-              <span class="val-badge" style="background:#1e1b4b; color:#a78bfa; border-color:#3730a3;">LADDER QUALIFIERS</span>
-            </div>
+      </div>
             <div style="position:absolute; bottom:12px; left:14px; right:14px;">
               <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">$2,500 Apex Prestige Invitational</h3>
               <span style="font-size:12px; color:#cbd5e1;">Top 8 Ladder Squads · Championship Double Elim</span>
@@ -523,102 +365,151 @@
             }
           }
 
+          const legacyMocks = new Set(['tourney_major_1', 'tourney_prime_snd', 'tourney_radar_1v1', 'tourney_challengers_cup']);
           const arenaTourneys = (list || []).filter(t => {
+            if (!t || legacyMocks.has(t.id)) return false;
             if (t.is_active === false) return false;
             const c = (t.circuit || 'arena').toLowerCase();
             return c === 'arena' || c === 'both';
           });
 
-          if (arenaTourneys && arenaTourneys.length > 0) {
-            container.innerHTML = arenaTourneys.map(t => {
-              const cat = deriveCategory(t.format);
-              const banner = t.banner_url || t.image_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80';
-              const enlisted = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
-              const max = t.max_teams || 32;
-              const statusRaw = (t.status || 'Registration Open').toLowerCase();
-              let badgeBg = '#0f2918';
-              let badgeColor = '#22c55e';
-              let badgeBorder = '#1b4d2c';
-              let badgeText = 'REGISTRATION OPEN';
+          // Telemetry and Filter Label Updates
+          let totalPrize = 0;
+          arenaTourneys.forEach(t => {
+            const m = String(t.prize_pool || '').replace(/[^0-9]/g, '');
+            if (m) totalPrize += parseInt(m, 10);
+          });
+          const poolEl = document.getElementById('arena-telemetry-cash-pool');
+          if (poolEl) poolEl.textContent = totalPrize > 0 ? ('$' + totalPrize.toLocaleString() + ' USD') : '$0 USD';
 
-              if (statusRaw.includes('live')) {
-                badgeBg = '#3b0d14';
-                badgeColor = '#ef4444';
-                badgeBorder = '#7f1d1d';
-                badgeText = '🔴 LIVE BRACKET';
-              } else if (statusRaw.includes('upcoming')) {
-                badgeBg = '#082f49';
-                badgeColor = '#38bdf8';
-                badgeBorder = '#075985';
-                badgeText = 'UPCOMING EVENT';
-              } else if (statusRaw.includes('completed')) {
-                badgeBg = '#1e2017';
-                badgeColor = '#94a3b8';
-                badgeBorder = '#333';
-                badgeText = 'COMPLETED';
-              }
+          const countEl = document.getElementById('arena-telemetry-active-tourneys');
+          if (countEl) countEl.textContent = arenaTourneys.length + (arenaTourneys.length === 1 ? ' Circuit' : ' Circuits');
 
-              const circuitTag = t.pinned ? 'FEATURED PRIME' : 'ARENA LADDER CUP';
+          const filterLabel = document.getElementById('filter-all-tourneys-label');
+          if (filterLabel) filterLabel.textContent = 'All Tournaments (' + arenaTourneys.length + ')';
 
-              return `
-                <div class="gb-card-box tourney-card" data-category="${escapeHtml(cat)}" style="display:flex; flex-direction:column; overflow:hidden;">
-                  <div style="position:relative; height:160px; overflow:hidden; background:#080a0f;">
-                    <img src="${escapeHtml(banner)}" style="width:100%; height:100%; object-fit:${escapeHtml(t.banner_fit || 'cover')}; filter:brightness(0.65);" alt="${escapeHtml(t.title)}" />
-                    <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
-                      <span class="gb-meta-tag accent">${escapeHtml(circuitTag)}</span>
-                      <span class="val-badge" style="background:${badgeBg}; color:${badgeColor}; border-color:${badgeBorder};">${escapeHtml(badgeText)}</span>
-                    </div>
-                    <div style="position:absolute; bottom:12px; left:14px; right:14px;">
-                      <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">${escapeHtml(t.title)}</h3>
-                      <span style="font-size:12px; color:#cbd5e1;">${escapeHtml(t.format || '4v4 CDL Variant')} · ${escapeHtml(t.bracket_type || 'Double Elimination')}</span>
-                    </div>
+          const bracketSection = document.getElementById('active-bracket-preview-section');
+
+          if (arenaTourneys.length === 0) {
+            container.innerHTML = `
+              <div style="grid-column:1/-1; text-align:center; padding:60px 20px; background:#0b0f19; border:1px dashed #1e293b; border-radius:6px;">
+                <div style="font-size:36px; margin-bottom:12px;">🏆</div>
+                <h3 style="font:800 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 8px;">No Active Arena Tournaments</h3>
+                <p style="color:#94a3b8; font-size:13px; max-width:460px; margin:0 auto 16px; line-height:1.6;">
+                  The Commissioner desk has not posted any active ladder tournaments or cash cups yet. Tournaments will appear here as they are officially scheduled.
+                </p>
+                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                  <a href="/arena/" class="btn-crimson" style="padding:9px 18px; font-size:12px; text-decoration:none;">Go to Arena Dashboard</a>
+                  <a href="/match-finder/" class="btn-crimson-outline" style="padding:9px 18px; font-size:12px; text-decoration:none;">Open Match Finder</a>
+                </div>
+              </div>
+            `;
+            if (bracketSection) bracketSection.style.display = 'none';
+            return;
+          }
+
+          if (bracketSection) {
+            const hasLive = arenaTourneys.some(t => String(t.status || '').toLowerCase().includes('live'));
+            bracketSection.style.display = hasLive ? 'block' : 'none';
+          }
+
+          container.innerHTML = arenaTourneys.map(t => {
+            const cat = deriveCategory(t.format);
+            const banner = t.banner_url || t.image_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80';
+            const enlisted = Number(t.teams_registered_count !== undefined ? t.teams_registered_count : (Array.isArray(t.registered_teams) ? t.registered_teams.length : Number(t.registered_teams || 0))) || 0;
+            const max = t.max_teams || 32;
+            const statusRaw = (t.status || 'Registration Open').toLowerCase();
+            let badgeBg = '#0f2918';
+            let badgeColor = '#22c55e';
+            let badgeBorder = '#1b4d2c';
+            let badgeText = 'REGISTRATION OPEN';
+
+            if (statusRaw.includes('live')) {
+              badgeBg = '#3b0d14';
+              badgeColor = '#ef4444';
+              badgeBorder = '#7f1d1d';
+              badgeText = '🔴 LIVE BRACKET';
+            } else if (statusRaw.includes('upcoming')) {
+              badgeBg = '#082f49';
+              badgeColor = '#38bdf8';
+              badgeBorder = '#075985';
+              badgeText = 'UPCOMING EVENT';
+            } else if (statusRaw.includes('completed')) {
+              badgeBg = '#1e2017';
+              badgeColor = '#94a3b8';
+              badgeBorder = '#333';
+              badgeText = 'COMPLETED';
+            }
+
+            const circuitTag = t.pinned ? 'FEATURED PRIME' : 'ARENA LADDER CUP';
+
+            return `
+              <div class="gb-card-box tourney-card" data-category="${escapeHtml(cat)}" style="display:flex; flex-direction:column; overflow:hidden;">
+                <div style="position:relative; height:160px; overflow:hidden; background:#080a0f;">
+                  <img src="${escapeHtml(banner)}" style="width:100%; height:100%; object-fit:${escapeHtml(t.banner_fit || 'cover')}; filter:brightness(0.65);" alt="${escapeHtml(t.title)}" />
+                  <div style="position:absolute; top:12px; left:12px; display:flex; gap:6px;">
+                    <span class="gb-meta-tag accent">${escapeHtml(circuitTag)}</span>
+                    <span class="val-badge" style="background:${badgeBg}; color:${badgeColor}; border-color:${badgeBorder};">${escapeHtml(badgeText)}</span>
                   </div>
-
-                  <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
-                    <div>
-                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
-                        <div>
-                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
-                          <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">${escapeHtml(t.prize_pool || '$500 Cash')}</div>
-                        </div>
-                        <div>
-                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
-                          <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">${enlisted} / ${max} Squads</div>
-                        </div>
-                        <div>
-                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
-                          <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">${escapeHtml(t.date || t.start_date || 'TBD')} · ${escapeHtml(t.time || t.start_time || '8:00 PM EST')}</div>
-                        </div>
-                        <div>
-                          <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Entry Fee</span>
-                          <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">${escapeHtml(t.entry_fee || 'FREE ENTRY')}</div>
-                        </div>
-                      </div>
-
-                      <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
-                        ${escapeHtml(t.description || 'Sanctioned Frontline Arena competitive tournament played under official CDL rules and automated map veto.')}
-                      </p>
-                    </div>
-
-                    <div style="display:flex; gap:10px;">
-                      <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('${escapeHtml(t.title)}')">
-                        <span>⚔</span> <span>Register Squad</span>
-                      </button>
-                      <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">
-                        View Bracket
-                      </a>
-                    </div>
+                  <div style="position:absolute; bottom:12px; left:14px; right:14px;">
+                    <h3 style="font:900 20px var(--body); color:#fff; text-transform:uppercase; margin:0 0 2px;">${escapeHtml(t.title)}</h3>
+                    <span style="font-size:12px; color:#cbd5e1;">${escapeHtml(t.format || '4v4 CDL Variant')} · ${escapeHtml(t.bracket_type || 'Double Elimination')}</span>
                   </div>
                 </div>
-              `;
-            }).join('');
 
-            filterTourneys(currentFilterCat, null);
-          }
+                <div style="padding:20px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#090d14; border:1px solid #182234; padding:12px; border-radius:4px; margin-bottom:16px;">
+                      <div>
+                        <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Prize Pool</span>
+                        <div style="font:900 16px var(--body); color:#22c55e; margin-top:2px;">${escapeHtml(t.prize_pool || '$500 Cash')}</div>
+                      </div>
+                      <div>
+                        <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Bracket Size</span>
+                        <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">${enlisted} / ${max} Squads</div>
+                      </div>
+                      <div>
+                        <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Start Date</span>
+                        <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">${escapeHtml(t.date || t.start_date || 'TBD')} · ${escapeHtml(t.time || t.start_time || '8:00 PM EST')}</div>
+                      </div>
+                      <div>
+                        <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Entry Fee</span>
+                        <div style="font:900 13px var(--body); color:#cbd5e1; margin-top:2px;">${escapeHtml(t.entry_fee || 'FREE ENTRY')}</div>
+                      </div>
+                    </div>
+
+                    <p style="font-size:12.5px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+                      ${escapeHtml(t.description || 'Sanctioned Frontline Arena competitive tournament played under official CDL rules and automated map veto.')}
+                    </p>
+                  </div>
+
+                  <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn-crimson" style="flex:1; padding:10px; font-size:12px;" onclick="registerForTourney('${escapeHtml(t.title)}')">
+                      <span>⚔</span> <span>Register Squad</span>
+                    </button>
+                    <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-crimson-outline" style="padding:10px 14px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">
+                      View Bracket
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          filterTourneys(currentFilterCat, null);
         } catch (err) {
           console.warn('Could not load dynamic Arena tournaments:', err);
         }
       }
+
+      window.addEventListener('frontline_tournaments_updated', () => {
+        loadArenaTournaments();
+      });
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'frontline_tournaments_data') {
+          loadArenaTournaments();
+        }
+      });
 
       function registerForTourney(title) {
         const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
