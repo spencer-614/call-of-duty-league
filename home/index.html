@@ -199,6 +199,41 @@
           <span>COMMUNITY FIRST ✳</span>
         </div>
       </div>
+            <script>
+        (function initImmediateTicker(){
+          try {
+            var raw = localStorage.getItem('frontline_homepage_ticker');
+            if (raw) {
+              var tData = JSON.parse(raw);
+              var tWrap = document.querySelector('.ticker');
+              var tTrack = document.querySelector('.ticker-track');
+              if (tWrap && tTrack) {
+                if (tData.enabled === false) {
+                  tWrap.style.display = 'none';
+                } else {
+                  tWrap.style.display = '';
+                  if (tData.bg_color) tWrap.style.background = tData.bg_color;
+                  if (tData.text_color) tWrap.style.color = tData.text_color;
+                  if (tData.speed_seconds) tTrack.style.animationDuration = tData.speed_seconds + 's';
+                  var items = Array.isArray(tData.items) && tData.items.length ? tData.items : null;
+                  if (items) {
+                    var sep = tData.separator || '✳';
+                    var halfSpans = '';
+                    var targetPerHalf = Math.max(items.length, 16);
+                    for (var i = 0; i < targetPerHalf; i++) {
+                      var item = items[i % items.length];
+                      var escaped = String(item).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      var escapedSep = String(sep).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      halfSpans += '<span>' + escaped + ' ' + escapedSep + '</span>\n';
+                    }
+                    tTrack.innerHTML = '<!-- First Half (0% to -50% translation) -->\n' + halfSpans + '<!-- Second Half (Identical duplicate for seamless wrap) -->\n' + halfSpans;
+                  }
+                }
+              }
+            }
+          } catch(e){}
+        })();
+      </script>
       <!-- League Announcements Dispatch Banner -->
       <aside class="wrap league-announcement-aside" id="league-announcements-aside" style="display:none;" aria-label="League Announcements">
         <!-- Rendered dynamically via renderAnnouncements() -->
@@ -497,7 +532,95 @@
       }
 
       renderAnnouncements();
+      
+      async function renderHomepageTicker(freshSettings) {
+        const tWrap = document.querySelector('.ticker');
+        const tTrack = document.querySelector('.ticker-track');
+        if (!tWrap || !tTrack) return;
+
+        try {
+          let settings = freshSettings;
+          if (!settings && window.LeagueDB && typeof window.LeagueDB.getHomepageTickerSettings === "function") {
+            settings = await window.LeagueDB.getHomepageTickerSettings();
+          } else if (!settings) {
+            const local = localStorage.getItem("frontline_homepage_ticker");
+            if (local) {
+              try { settings = JSON.parse(local); } catch (_) {}
+            }
+          }
+
+          if (!settings) {
+            settings = {
+              enabled: true,
+              items: [
+                "COMPETE TOGETHER",
+                "RESPECT THE GAME",
+                "ALL SKILL LEVELS WELCOME",
+                "PRIZE POOL TOURNAMENTS",
+                "WEEKLY SCRIMS",
+                "FREE & PAID DIVISIONS",
+                "CROSS-PLATFORM ACTION",
+                "COMMUNITY FIRST"
+              ],
+              separator: "✳",
+              bg_color: "#dcf836",
+              text_color: "#171811",
+              speed_seconds: 28
+            };
+          }
+
+          if (settings.enabled === false) {
+            tWrap.style.display = "none";
+            return;
+          }
+
+          tWrap.style.display = "";
+          if (settings.bg_color) tWrap.style.background = settings.bg_color;
+          if (settings.text_color) tWrap.style.color = settings.text_color;
+          if (settings.speed_seconds) tTrack.style.animationDuration = settings.speed_seconds + "s";
+
+          const items = (Array.isArray(settings.items) && settings.items.length > 0)
+            ? settings.items.map(s => String(s || "").trim()).filter(Boolean)
+            : ["COMPETE TOGETHER", "RESPECT THE GAME", "ALL SKILL LEVELS WELCOME", "PRIZE POOL TOURNAMENTS", "WEEKLY SCRIMS", "FREE & PAID DIVISIONS", "CROSS-PLATFORM ACTION", "COMMUNITY FIRST"];
+
+          const sep = (settings.separator && String(settings.separator).trim()) ? String(settings.separator).trim() : "✳";
+          
+          let halfSpans = "";
+          const targetCount = Math.max(items.length, 16);
+          for (let i = 0; i < targetCount; i++) {
+            const itemText = items[i % items.length];
+            halfSpans += "<span>" + escapeHtml(itemText) + " " + escapeHtml(sep) + "</span>\n";
+          }
+
+          tTrack.innerHTML = "<!-- First Half (0% to -50% translation) -->\n" + halfSpans + "<!-- Second Half (Identical duplicate for seamless wrap) -->\n" + halfSpans;
+        } catch (err) {
+          console.error("Error rendering homepage ticker:", err);
+        }
+      }
+
       renderStandings();
+
+      renderHomepageTicker();
+
+      window.addEventListener("frontline_ticker_updated", (e) => {
+        renderHomepageTicker(e.detail);
+      });
+      window.addEventListener("storage", (e) => {
+        if (e.key === "frontline_homepage_ticker") {
+          renderHomepageTicker();
+        }
+      });
+      if (typeof window !== "undefined" && window.BroadcastChannel) {
+        try {
+          const tickerBc = new BroadcastChannel("frontline_ticker_channel");
+          tickerBc.onmessage = (e) => {
+            if (e.data && e.data.type === "TICKER_UPDATED") {
+              renderHomepageTicker(e.data.data);
+            }
+          };
+        } catch (_) {}
+      }
+
 
       // Real-time Reactive Watchers: Auto-updates homepage when admin broadcasts announcements
       if (typeof window !== "undefined") {

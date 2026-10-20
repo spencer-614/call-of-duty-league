@@ -4350,6 +4350,130 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   // ==========================================
+  
+  // ==========================================
+  // HOMEPAGE TICKER & MARQUEE SETTINGS
+  // ==========================================
+  DEFAULT_HOMEPAGE_TICKER_SETTINGS: {
+    enabled: true,
+    items: [
+      "COMPETE TOGETHER",
+      "RESPECT THE GAME",
+      "ALL SKILL LEVELS WELCOME",
+      "PRIZE POOL TOURNAMENTS",
+      "WEEKLY SCRIMS",
+      "FREE & PAID DIVISIONS",
+      "CROSS-PLATFORM ACTION",
+      "COMMUNITY FIRST"
+    ],
+    separator: "✳",
+    bg_color: "#dcf836",
+    text_color: "#171811",
+    speed_seconds: 28
+  },
+
+  async getHomepageTickerSettings() {
+    let cached = null;
+    try {
+      const saved = localStorage.getItem("frontline_homepage_ticker");
+      if (saved) cached = JSON.parse(saved);
+    } catch (e) {
+      console.warn("Error reading homepage ticker from localStorage:", e);
+    }
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("*")
+          .eq("id", "homepage_ticker")
+          .limit(1);
+
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!error && row && row.status_text) {
+          try {
+            const parsed = JSON.parse(row.status_text);
+            const settings = {
+              ...this.DEFAULT_HOMEPAGE_TICKER_SETTINGS,
+              ...parsed,
+              enabled: row.status_state !== "hidden" && parsed.enabled !== false
+            };
+            try {
+              localStorage.setItem("frontline_homepage_ticker", JSON.stringify(settings));
+            } catch (_) {}
+            return settings;
+          } catch (pe) {
+            console.warn("Error parsing homepage ticker status_text:", pe);
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase getHomepageTickerSettings error, using fallback:", err);
+      }
+    }
+
+    if (cached) return { ...this.DEFAULT_HOMEPAGE_TICKER_SETTINGS, ...cached };
+    return { ...this.DEFAULT_HOMEPAGE_TICKER_SETTINGS };
+  },
+
+  async updateHomepageTickerSettings(newSettings) {
+    const current = await this.getHomepageTickerSettings();
+    const merged = {
+      ...current,
+      ...newSettings,
+      updated_at: new Date().toISOString()
+    };
+
+    if (!Array.isArray(merged.items) || merged.items.length === 0) {
+      merged.items = [...this.DEFAULT_HOMEPAGE_TICKER_SETTINGS.items];
+    }
+    merged.items = merged.items.map(s => String(s || "").trim()).filter(Boolean);
+    if (merged.items.length === 0) {
+      merged.items = [...this.DEFAULT_HOMEPAGE_TICKER_SETTINGS.items];
+    }
+
+    merged.separator = (merged.separator && String(merged.separator).trim()) ? String(merged.separator).trim() : "✳";
+    merged.bg_color = merged.bg_color || "#dcf836";
+    merged.text_color = merged.text_color || "#171811";
+    merged.speed_seconds = Math.max(10, Math.min(120, Number(merged.speed_seconds) || 28));
+    merged.enabled = merged.enabled !== false;
+
+    try {
+      localStorage.setItem("frontline_homepage_ticker", JSON.stringify(merged));
+    } catch (e) {}
+
+    if (dbClient) {
+      try {
+        const { error } = await dbClient
+          .from("league_settings")
+          .upsert({
+            id: "homepage_ticker",
+            status_state: merged.enabled ? "active" : "hidden",
+            status_text: JSON.stringify(merged),
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+
+        if (error) {
+          console.warn("Supabase league_settings upsert error for homepage_ticker:", error);
+        }
+      } catch (err) {
+        console.warn("Supabase updateHomepageTickerSettings error:", err);
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_ticker_updated", { detail: merged }));
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel("frontline_ticker_channel");
+          bc.postMessage({ type: "TICKER_UPDATED", data: merged, timestamp: Date.now() });
+          bc.close();
+        }
+      } catch (_) {}
+    }
+
+    return { success: true, settings: merged };
+  },
+
   // ARENA ANNOUNCEMENTS & INTEL BROADCAST
   // ==========================================
   _getStoredArenaAnnouncements() {
@@ -10442,7 +10566,7 @@ isDiscordLinkedToEmail(target) {
       title: "League Commissioner",
       badgeClass: "role-badge-commissioner",
       description: "Full command console access to all operations, league settings, and staff management.",
-      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command", "tab-tournament-suspensions"]
+      tabs: ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command", "tab-tournament-suspensions", "tab-ticker"]
     },
     referee: {
       key: "referee",

@@ -988,6 +988,9 @@
           <button type="button" class="admin-nav-btn" data-tab="tab-season" onclick="switchActiveTab('tab-season')">
             ⚡ Season Status
           </button>
+          <button type="button" class="admin-nav-btn" data-tab="tab-ticker" id="nav-btn-ticker" onclick="switchActiveTab('tab-ticker')" style="border-color:var(--lime); color:var(--lime); display:none;">
+            ⚡ Ticker Banner
+          </button>
           <button type="button" class="admin-nav-btn" data-tab="tab-rulebook" onclick="switchActiveTab('tab-rulebook')">
             📜 Rulebook Manager
           </button>
@@ -1847,6 +1850,190 @@
               </div>
             </form>
           </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 8B: HOMEPAGE TICKER & MARQUEE MANAGER  -->
+        <!-- ========================================== -->
+        <div id="tab-ticker" class="admin-tab-content" style="display:none;">
+          <!-- Top Card: Header & Controls -->
+          <div class="admin-panel-card" style="border-left: 4px solid var(--lime);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+              <div>
+                <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(220,248,54,0.15); border:1px solid rgba(220,248,54,0.35); color:var(--lime); font-size:10px; font-weight:800; padding:2px 8px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">
+                  <span>⚡</span> <span>COMMISSIONER COMMAND // BROADCAST HUD</span>
+                </div>
+                <h3 class="admin-card-title" style="margin:0; color:#ffffff;">Homepage Highlights Ticker Banner</h3>
+                <p style="color:var(--muted); font-size:13px; margin:4px 0 0;">
+                  Manage the continuous running marquee banner featured at the top of the Frontline homepage (<a href="/home/" target="_blank" style="color:var(--lime); font-weight:bold;">/home/ ↗</a>). Customize highlight messages, star dividers, speed, and theme colors.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="/home/" target="_blank" class="btn-action-sm" style="border-color:var(--lime); color:var(--lime); font-weight:bold;">
+                  👁 View Homepage ↗
+                </a>
+                <button type="button" class="btn-action-sm" onclick="resetAdminTickerToDefaults()" style="border-color:#475569; color:#cbd5e1;">
+                  ↺ Reset CDL Defaults
+                </button>
+              </div>
+            </div>
+
+            <!-- Live HUD Preview Card -->
+            <div style="margin-top:16px; border:1px solid var(--line); background:#0c0d0a; border-radius:4px; padding:14px; position:relative; overflow:hidden;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:11px; text-transform:uppercase; font-weight:800; letter-spacing:0.8px; color:var(--lime);">Live Real-Time Marquee Preview</span>
+                  <span id="preview-ticker-status-pill" style="font-size:10px; padding:1px 6px; border-radius:2px; background:rgba(34,197,94,0.2); border:1px solid #22c55e; color:#4ade80; font-weight:bold;">🟢 ACTIVE ON HOMEPAGE</span>
+                </div>
+                <div style="font-size:11px; color:#888;">
+                  <span id="preview-ticker-speed-text">Speed: 28s loop</span> • <span id="preview-ticker-count-text">8 Messages</span>
+                </div>
+              </div>
+
+              <!-- Preview Ticker Box matching homepage .ticker -->
+              <div id="admin-preview-ticker-wrapper" class="ticker" style="border-radius:3px; box-shadow:0 0 16px rgba(0,0,0,0.4); margin:4px 0;">
+                <div id="admin-preview-ticker-track" class="ticker-track">
+                  <!-- Generated via updateAdminTickerPreview() -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration Form -->
+          <form id="form-ticker-settings">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:20px;">
+              
+              <!-- Left Column: Display & Theme Configuration -->
+              <div class="admin-panel-card" style="margin-bottom:0;">
+                <h4 style="margin:0 0 14px; font-size:14px; text-transform:uppercase; color:#ffffff; letter-spacing:0.5px; border-bottom:1px solid var(--line); padding-bottom:8px;">
+                  ⚙ Display &amp; Visual Styling
+                </h4>
+
+                <!-- Visibility State Toggle -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label">Ticker Visibility on Homepage *</label>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
+                    <label id="label-ticker-active" style="display:flex; align-items:center; gap:8px; background:#1a1f14; border:2px solid var(--lime); padding:10px 12px; cursor:pointer; border-radius:3px; transition:all 0.2s;">
+                      <input type="radio" name="ticker-enabled" id="radio-ticker-enabled" value="true" checked style="accent-color:var(--lime);" onchange="updateAdminTickerPreview()" />
+                      <span style="font-weight:700; color:var(--lime); font-size:12px;">🟢 Active &amp; Visible</span>
+                    </label>
+                    <label id="label-ticker-hidden" style="display:flex; align-items:center; gap:8px; background:#141511; border:2px solid var(--line); padding:10px 12px; cursor:pointer; border-radius:3px; transition:all 0.2s;">
+                      <input type="radio" name="ticker-enabled" id="radio-ticker-disabled" value="false" style="accent-color:#ef4444;" onchange="updateAdminTickerPreview()" />
+                      <span style="font-weight:700; color:#ef4444; font-size:12px;">🔴 Off-Air / Hidden</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Scrolling Speed & Separator Symbol -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="ticker-speed-select">Scroll Speed *</label>
+                    <select id="ticker-speed-select" class="form-control" onchange="updateAdminTickerPreview()">
+                      <option value="18">Turbo (18s)</option>
+                      <option value="24">Fast (24s)</option>
+                      <option value="28" selected>Standard (28s - Recommended)</option>
+                      <option value="36">Relaxed (36s)</option>
+                      <option value="48">Slow (48s)</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="ticker-separator-select">Divider Symbol *</label>
+                    <select id="ticker-separator-select" class="form-control" onchange="handleAdminTickerSeparatorChange(this.value)">
+                      <option value="✳" selected>✳ Asterisk (Default)</option>
+                      <option value="★">★ Solid Star</option>
+                      <option value="⚡">⚡ Lightning Bolt</option>
+                      <option value="✦">✦ Sparkle Star</option>
+                      <option value="•">• Bullet Point</option>
+                      <option value="//">// Double Slash</option>
+                      <option value="custom">✎ Custom Symbol...</option>
+                    </select>
+                    <input type="text" id="ticker-separator-custom" class="form-control" style="display:none; margin-top:6px; font-weight:800;" placeholder="Enter custom divider" maxlength="6" oninput="updateAdminTickerPreview()" />
+                  </div>
+                </div>
+
+                <!-- Theme Presets & Color Selectors -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label">Color Theme Presets</label>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+                    <button type="button" class="btn-action-sm" onclick="applyAdminTickerTheme('lime')" style="background:#dcf836; color:#171811; font-weight:800; border:none; padding:5px 9px; font-size:11px;">
+                      ⚡ Lime
+                    </button>
+                    <button type="button" class="btn-action-sm" onclick="applyAdminTickerTheme('red')" style="background:#ff1e44; color:#ffffff; font-weight:800; border:none; padding:5px 9px; font-size:11px;">
+                      🔥 Red
+                    </button>
+                    <button type="button" class="btn-action-sm" onclick="applyAdminTickerTheme('cyan')" style="background:#38bdf8; color:#0f172a; font-weight:800; border:none; padding:5px 9px; font-size:11px;">
+                      💎 Cyan
+                    </button>
+                    <button type="button" class="btn-action-sm" onclick="applyAdminTickerTheme('gold')" style="background:#fbbf24; color:#1c1404; font-weight:800; border:none; padding:5px 9px; font-size:11px;">
+                      🏆 Gold
+                    </button>
+                    <button type="button" class="btn-action-sm" onclick="applyAdminTickerTheme('dark')" style="background:#151921; color:#dcf836; font-weight:800; border:1px solid #334155; padding:5px 9px; font-size:11px;">
+                      🖤 Stealth
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="ticker-bg-color-picker">Background Color</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <input type="color" id="ticker-bg-color-picker" value="#dcf836" style="width:36px; height:36px; border:none; cursor:pointer; background:none; padding:0;" oninput="document.getElementById('ticker-bg-color-text').value = this.value; updateAdminTickerPreview();" />
+                      <input type="text" id="ticker-bg-color-text" class="form-control" value="#dcf836" style="font-size:12px; font-family:monospace;" oninput="document.getElementById('ticker-bg-color-picker').value = this.value; updateAdminTickerPreview();" />
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="ticker-text-color-picker">Text Color</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <input type="color" id="ticker-text-color-picker" value="#171811" style="width:36px; height:36px; border:none; cursor:pointer; background:none; padding:0;" oninput="document.getElementById('ticker-text-color-text').value = this.value; updateAdminTickerPreview();" />
+                      <input type="text" id="ticker-text-color-text" class="form-control" value="#171811" style="font-size:12px; font-family:monospace;" oninput="document.getElementById('ticker-text-color-picker').value = this.value; updateAdminTickerPreview();" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Messages Manager -->
+              <div class="admin-panel-card" style="margin-bottom:0; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:14px;">
+                  <h4 style="margin:0; font-size:14px; text-transform:uppercase; color:#ffffff; letter-spacing:0.5px;">
+                    💬 Highlight Messages (<span id="admin-ticker-items-count">8</span>)
+                  </h4>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn-action-sm" onclick="toggleAdminTickerBulkMode()" id="btn-toggle-ticker-bulk" style="font-size:11px; padding:3px 8px;">
+                      📝 Bulk Edit Mode
+                    </button>
+                    <button type="button" class="btn-action-sm" onclick="addAdminTickerItem()" style="background:rgba(220,248,54,0.15); border-color:var(--lime); color:var(--lime); font-weight:800; font-size:11px; padding:3px 8px;">
+                      ＋ Add Message
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Visual Items List Container -->
+                <div id="admin-ticker-items-visual-container" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
+                  <!-- Rendered dynamically via renderAdminTickerItems() -->
+                </div>
+
+                <!-- Bulk Textarea Mode (Hidden by default) -->
+                <div id="admin-ticker-items-bulk-container" style="display:none; flex-direction:column; flex:1;">
+                  <p style="color:var(--muted); font-size:11.5px; margin:0 0 6px;">
+                    Enter one headline or highlight per line. Changes update the visual preview automatically:
+                  </p>
+                  <textarea id="admin-ticker-bulk-textarea" class="form-control" style="font-family:monospace; font-size:12px; line-height:1.5; min-height:220px; resize:vertical;" oninput="handleAdminTickerBulkInput()"></textarea>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Submit Broadcast Bar -->
+            <div style="margin-top:20px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:16px 20px; background:#0c0d0a; border:1px solid var(--line); border-radius:4px;">
+              <button type="submit" id="btn-save-ticker" class="btn-paypal-submit" style="width:auto; padding:12px 28px;">
+                <span>Broadcast &amp; Publish Ticker</span>
+                <span>⚡</span>
+              </button>
+              <span id="ticker-save-status" style="font-size:13px; color:var(--lime); display:none; font-weight:bold;">
+                ✓ Ticker published globally to homepage!
+              </span>
+            </div>
+          </form>
         </div>
 
         <!-- ========================================== -->
@@ -4332,7 +4519,7 @@
           activeAllowedTabs = (window.LeagueDB && typeof window.LeagueDB.getRoleTabs === "function")
             ? window.LeagueDB.getRoleTabs(roleKey, activeStaffProfile?.custom_permissions)
             : (isCommissionerRole
-                ? ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command", "tab-tournament-suspensions"]
+                ? ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-staff", "tab-ladder-disputes", "tab-platform-switcher", "tab-tournaments-hub", "tab-tournament-disputes", "tab-arena-command", "tab-tournament-suspensions", "tab-ticker"]
                 : ["tab-teams", "tab-players", "tab-player-stats", "tab-matches", "tab-schedule", "tab-signups", "tab-broadcast", "tab-announcements", "tab-season", "tab-rulebook", "tab-ladder-disputes"]);
 
           // 2. Update Top Status Bar
@@ -4369,6 +4556,10 @@
           const arenaCmdNavBtn = document.getElementById("nav-btn-arena-command");
           if (arenaCmdNavBtn) {
             arenaCmdNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
+          }
+          const tickerNavBtn = document.getElementById("nav-btn-ticker");
+          if (tickerNavBtn) {
+            tickerNavBtn.style.display = isCommissionerRole ? "inline-flex" : "none";
           }
 
           // 4. Filter Tab Navigation Buttons based on Role Permissions
@@ -4670,6 +4861,9 @@
           if (targetId === "tab-season") {
             loadSeasonSettings();
           }
+          if (targetId === "tab-ticker") {
+            if (typeof loadAdminTickerSettings === "function") loadAdminTickerSettings();
+          }
           if (targetId === "tab-schedule") {
             loadAdminSchedule();
           }
@@ -4721,6 +4915,7 @@
           { id: "tab-broadcast", label: "Broadcast Media" },
           { id: "tab-announcements", label: "Announcements" },
           { id: "tab-season", label: "Season Settings" },
+          { id: "tab-ticker", label: "Homepage Ticker Banner (Commissioner)" },
           { id: "tab-rulebook", label: "CDL Rulebook" },
           { id: "tab-staff", label: "Staff & Roles" },
           { id: "tab-ladder-disputes", label: "Ladder Disputes" },
@@ -8324,6 +8519,401 @@
             if (saveBtn) {
               saveBtn.disabled = false;
               saveBtn.innerHTML = `<span>Broadcast & Save Season Status</span><span>⚡</span>`;
+            }
+          }
+        });
+
+        // ==========================================
+        // 11B. HOMEPAGE TICKER & MARQUEE BANNER CONTROLLER (COMMISSIONER ONLY)
+        // ==========================================
+        let cachedAdminTickerSettings = null;
+        let adminTickerItems = [];
+        let adminTickerBulkMode = false;
+
+        const TICKER_THEME_PRESETS = {
+          lime: { bg: "#dcf836", text: "#171811" },
+          red: { bg: "#ff1e44", text: "#ffffff" },
+          cyan: { bg: "#38bdf8", text: "#0f172a" },
+          gold: { bg: "#fbbf24", text: "#1c1404" },
+          dark: { bg: "#151921", text: "#dcf836" }
+        };
+
+        async function loadAdminTickerSettings() {
+          try {
+            let settings = null;
+            if (window.LeagueDB && typeof window.LeagueDB.getHomepageTickerSettings === "function") {
+              settings = await window.LeagueDB.getHomepageTickerSettings();
+            } else {
+              const local = localStorage.getItem("frontline_homepage_ticker");
+              if (local) {
+                try { settings = JSON.parse(local); } catch (_) {}
+              }
+            }
+
+            if (!settings) {
+              settings = {
+                enabled: true,
+                items: [
+                  "COMPETE TOGETHER",
+                  "RESPECT THE GAME",
+                  "ALL SKILL LEVELS WELCOME",
+                  "PRIZE POOL TOURNAMENTS",
+                  "WEEKLY SCRIMS",
+                  "FREE & PAID DIVISIONS",
+                  "CROSS-PLATFORM ACTION",
+                  "COMMUNITY FIRST"
+                ],
+                separator: "✳",
+                bg_color: "#dcf836",
+                text_color: "#171811",
+                speed_seconds: 28
+              };
+            }
+
+            cachedAdminTickerSettings = settings;
+            adminTickerItems = Array.isArray(settings.items) && settings.items.length > 0
+              ? [...settings.items]
+              : ["COMPETE TOGETHER", "RESPECT THE GAME", "ALL SKILL LEVELS WELCOME", "PRIZE POOL TOURNAMENTS", "WEEKLY SCRIMS", "FREE & PAID DIVISIONS", "CROSS-PLATFORM ACTION", "COMMUNITY FIRST"];
+
+            // Set radio
+            const radioEnabled = document.getElementById("radio-ticker-enabled");
+            const radioDisabled = document.getElementById("radio-ticker-disabled");
+            if (settings.enabled === false) {
+              if (radioDisabled) radioDisabled.checked = true;
+            } else {
+              if (radioEnabled) radioEnabled.checked = true;
+            }
+
+            // Set speed
+            const speedSel = document.getElementById("ticker-speed-select");
+            if (speedSel) speedSel.value = String(settings.speed_seconds || 28);
+
+            // Set separator
+            const sepSel = document.getElementById("ticker-separator-select");
+            const sepCustom = document.getElementById("ticker-separator-custom");
+            const knownSeps = ["✳", "★", "⚡", "✦", "•", "//"];
+            const currentSep = settings.separator || "✳";
+            if (knownSeps.includes(currentSep)) {
+              if (sepSel) sepSel.value = currentSep;
+              if (sepCustom) sepCustom.style.display = "none";
+            } else {
+              if (sepSel) sepSel.value = "custom";
+              if (sepCustom) {
+                sepCustom.style.display = "block";
+                sepCustom.value = currentSep;
+              }
+            }
+
+            // Set colors
+            const bgPick = document.getElementById("ticker-bg-color-picker");
+            const bgText = document.getElementById("ticker-bg-color-text");
+            const textPick = document.getElementById("ticker-text-color-picker");
+            const textText = document.getElementById("ticker-text-color-text");
+            if (bgPick) bgPick.value = settings.bg_color || "#dcf836";
+            if (bgText) bgText.value = settings.bg_color || "#dcf836";
+            if (textPick) textPick.value = settings.text_color || "#171811";
+            if (textText) textText.value = settings.text_color || "#171811";
+
+            renderAdminTickerItems();
+            updateAdminTickerPreview();
+          } catch (err) {
+            console.error("Error loading admin ticker settings:", err);
+          }
+        }
+        window.loadAdminTickerSettings = loadAdminTickerSettings;
+
+        function getActiveAdminTickerSeparator() {
+          const sepSel = document.getElementById("ticker-separator-select");
+          const sepCustom = document.getElementById("ticker-separator-custom");
+          if (sepSel && sepSel.value === "custom") {
+            return (sepCustom?.value && sepCustom.value.trim()) ? sepCustom.value.trim() : "✳";
+          }
+          return sepSel?.value || "✳";
+        }
+
+        function handleAdminTickerSeparatorChange(val) {
+          const customInp = document.getElementById("ticker-separator-custom");
+          if (customInp) {
+            customInp.style.display = val === "custom" ? "block" : "none";
+            if (val === "custom") customInp.focus();
+          }
+          updateAdminTickerPreview();
+        }
+        window.handleAdminTickerSeparatorChange = handleAdminTickerSeparatorChange;
+
+        function applyAdminTickerTheme(themeName) {
+          const theme = TICKER_THEME_PRESETS[themeName];
+          if (!theme) return;
+          const bgPick = document.getElementById("ticker-bg-color-picker");
+          const bgText = document.getElementById("ticker-bg-color-text");
+          const textPick = document.getElementById("ticker-text-color-picker");
+          const textText = document.getElementById("ticker-text-color-text");
+          if (bgPick) bgPick.value = theme.bg;
+          if (bgText) bgText.value = theme.bg;
+          if (textPick) textPick.value = theme.text;
+          if (textText) textText.value = theme.text;
+          updateAdminTickerPreview();
+        }
+        window.applyAdminTickerTheme = applyAdminTickerTheme;
+
+        function renderAdminTickerItems() {
+          const container = document.getElementById("admin-ticker-items-visual-container");
+          const countBadge = document.getElementById("admin-ticker-items-count");
+          const bulkTextarea = document.getElementById("admin-ticker-bulk-textarea");
+
+          if (countBadge) countBadge.textContent = adminTickerItems.length;
+          if (bulkTextarea) bulkTextarea.value = adminTickerItems.join("\n");
+
+          if (!container) return;
+
+          if (adminTickerItems.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--muted); font-size:12px;">No messages in ticker. Click "+ Add Message" above.</div>`;
+            return;
+          }
+
+          container.innerHTML = adminTickerItems.map((item, idx) => {
+            return `
+              <div style="display:flex; align-items:center; gap:8px; background:#12140f; border:1px solid #262b1b; padding:6px 10px; border-radius:3px;">
+                <span style="color:#64748b; font-size:11px; font-weight:700; width:22px; text-align:center;">#${idx + 1}</span>
+                <input type="text" class="form-control" value="${escapeHtml(item)}" style="flex:1; font-weight:700; font-size:12px; padding:6px 10px; text-transform:uppercase;" oninput="adminTickerItems[${idx}] = this.value; updateAdminTickerPreview();" />
+                <div style="display:flex; gap:4px;">
+                  <button type="button" class="btn-action-sm" onclick="moveAdminTickerItem(${idx}, -1)" title="Move Up" style="padding:4px 6px; font-size:10px;" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
+                  <button type="button" class="btn-action-sm" onclick="moveAdminTickerItem(${idx}, 1)" title="Move Down" style="padding:4px 6px; font-size:10px;" ${idx === adminTickerItems.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+                  <button type="button" class="btn-action-sm btn-action-danger" onclick="removeAdminTickerItem(${idx})" title="Delete" style="padding:4px 8px; font-size:11px;">🗑</button>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+
+        function addAdminTickerItem(text = "") {
+          const newItem = text ? String(text).trim() : "NEW HIGHLIGHT HEADLINE";
+          adminTickerItems.push(newItem);
+          renderAdminTickerItems();
+          updateAdminTickerPreview();
+          const container = document.getElementById("admin-ticker-items-visual-container");
+          if (container) container.scrollTop = container.scrollHeight;
+        }
+        window.addAdminTickerItem = addAdminTickerItem;
+
+        function removeAdminTickerItem(index) {
+          if (index < 0 || index >= adminTickerItems.length) return;
+          adminTickerItems.splice(index, 1);
+          renderAdminTickerItems();
+          updateAdminTickerPreview();
+        }
+        window.removeAdminTickerItem = removeAdminTickerItem;
+
+        function moveAdminTickerItem(index, dir) {
+          const target = index + dir;
+          if (target < 0 || target >= adminTickerItems.length) return;
+          const temp = adminTickerItems[index];
+          adminTickerItems[index] = adminTickerItems[target];
+          adminTickerItems[target] = temp;
+          renderAdminTickerItems();
+          updateAdminTickerPreview();
+        }
+        window.moveAdminTickerItem = moveAdminTickerItem;
+
+        function toggleAdminTickerBulkMode() {
+          adminTickerBulkMode = !adminTickerBulkMode;
+          const visual = document.getElementById("admin-ticker-items-visual-container");
+          const bulk = document.getElementById("admin-ticker-items-bulk-container");
+          const toggleBtn = document.getElementById("btn-toggle-ticker-bulk");
+
+          if (adminTickerBulkMode) {
+            if (visual) visual.style.display = "none";
+            if (bulk) bulk.style.display = "flex";
+            if (toggleBtn) {
+              toggleBtn.textContent = "👁 Visual Mode";
+              toggleBtn.style.color = "var(--lime)";
+            }
+            const bulkTextarea = document.getElementById("admin-ticker-bulk-textarea");
+            if (bulkTextarea) {
+              bulkTextarea.value = adminTickerItems.join("\n");
+              bulkTextarea.focus();
+            }
+          } else {
+            if (visual) visual.style.display = "flex";
+            if (bulk) bulk.style.display = "none";
+            if (toggleBtn) {
+              toggleBtn.textContent = "📝 Bulk Edit Mode";
+              toggleBtn.style.color = "";
+            }
+            renderAdminTickerItems();
+          }
+        }
+        window.toggleAdminTickerBulkMode = toggleAdminTickerBulkMode;
+
+        function handleAdminTickerBulkInput() {
+          const bulkTextarea = document.getElementById("admin-ticker-bulk-textarea");
+          if (!bulkTextarea) return;
+          const lines = bulkTextarea.value.split("\n").map(s => s.trim()).filter(Boolean);
+          adminTickerItems = lines.length ? lines : ["COMPETE TOGETHER"];
+          const countBadge = document.getElementById("admin-ticker-items-count");
+          if (countBadge) countBadge.textContent = adminTickerItems.length;
+          updateAdminTickerPreview();
+        }
+        window.handleAdminTickerBulkInput = handleAdminTickerBulkInput;
+
+        function resetAdminTickerToDefaults() {
+          if (!confirm("Reset ticker to official Frontline CDL default highlights, divider, and electric lime theme?")) return;
+          adminTickerItems = [
+            "COMPETE TOGETHER",
+            "RESPECT THE GAME",
+            "ALL SKILL LEVELS WELCOME",
+            "PRIZE POOL TOURNAMENTS",
+            "WEEKLY SCRIMS",
+            "FREE & PAID DIVISIONS",
+            "CROSS-PLATFORM ACTION",
+            "COMMUNITY FIRST"
+          ];
+          const sepSel = document.getElementById("ticker-separator-select");
+          const sepCustom = document.getElementById("ticker-separator-custom");
+          if (sepSel) sepSel.value = "✳";
+          if (sepCustom) {
+            sepCustom.style.display = "none";
+            sepCustom.value = "";
+          }
+          const speedSel = document.getElementById("ticker-speed-select");
+          if (speedSel) speedSel.value = "28";
+          const radioEnabled = document.getElementById("radio-ticker-enabled");
+          if (radioEnabled) radioEnabled.checked = true;
+          applyAdminTickerTheme("lime");
+          renderAdminTickerItems();
+          updateAdminTickerPreview();
+          showToast("↺ Ticker restored to CDL defaults.");
+        }
+        window.resetAdminTickerToDefaults = resetAdminTickerToDefaults;
+
+        function updateAdminTickerPreview() {
+          const wrapper = document.getElementById("admin-preview-ticker-wrapper");
+          const track = document.getElementById("admin-preview-ticker-track");
+          const statusPill = document.getElementById("preview-ticker-status-pill");
+          const speedText = document.getElementById("preview-ticker-speed-text");
+          const countText = document.getElementById("preview-ticker-count-text");
+
+          const radioDisabled = document.getElementById("radio-ticker-disabled");
+          const isEnabled = !radioDisabled?.checked;
+
+          const speedVal = parseInt(document.getElementById("ticker-speed-select")?.value, 10) || 28;
+          const sep = getActiveAdminTickerSeparator();
+          const bgVal = document.getElementById("ticker-bg-color-text")?.value || "#dcf836";
+          const textVal = document.getElementById("ticker-text-color-text")?.value || "#171811";
+
+          const labelActive = document.getElementById("label-ticker-active");
+          const labelHidden = document.getElementById("label-ticker-hidden");
+          if (labelActive && labelHidden) {
+            if (isEnabled) {
+              labelActive.style.borderColor = "var(--lime)";
+              labelActive.style.background = "#1a1f14";
+              labelHidden.style.borderColor = "var(--line)";
+              labelHidden.style.background = "#141511";
+            } else {
+              labelHidden.style.borderColor = "#ef4444";
+              labelHidden.style.background = "#1c0d0f";
+              labelActive.style.borderColor = "var(--line)";
+              labelActive.style.background = "#141511";
+            }
+          }
+
+          if (statusPill) {
+            if (isEnabled) {
+              statusPill.style.background = "rgba(34,197,94,0.2)";
+              statusPill.style.borderColor = "#22c55e";
+              statusPill.style.color = "#4ade80";
+              statusPill.textContent = "🟢 ACTIVE ON HOMEPAGE";
+            } else {
+              statusPill.style.background = "rgba(239,68,68,0.2)";
+              statusPill.style.borderColor = "#ef4444";
+              statusPill.style.color = "#f87171";
+              statusPill.textContent = "🔴 OFF-AIR / HIDDEN";
+            }
+          }
+
+          if (speedText) speedText.textContent = `Speed: ${speedVal}s loop`;
+          if (countText) countText.textContent = `${adminTickerItems.length} Message${adminTickerItems.length === 1 ? '' : 's'}`;
+
+          if (wrapper) {
+            wrapper.style.background = bgVal;
+            wrapper.style.color = textVal;
+            wrapper.style.opacity = isEnabled ? "1" : "0.4";
+          }
+
+          if (track) {
+            track.style.animationDuration = `${speedVal}s`;
+            const items = adminTickerItems.length ? adminTickerItems : ["COMPETE TOGETHER"];
+            const targetCount = Math.max(items.length, 16);
+            let halfSpans = "";
+            for (let i = 0; i < targetCount; i++) {
+              const item = items[i % items.length];
+              halfSpans += `<span>${escapeHtml(item)} ${escapeHtml(sep)}</span>\n`;
+            }
+            track.innerHTML = `<!-- First Half -->\n${halfSpans}<!-- Second Half -->\n${halfSpans}`;
+          }
+        }
+        window.updateAdminTickerPreview = updateAdminTickerPreview;
+
+        // Form Submit Handler
+        document.getElementById("form-ticker-settings")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners are authorized to publish the Ticker.", true);
+            return;
+          }
+
+          const saveBtn = document.getElementById("btn-save-ticker");
+          const statusMsg = document.getElementById("ticker-save-status");
+          const radioDisabled = document.getElementById("radio-ticker-disabled");
+          const isEnabled = !radioDisabled?.checked;
+          const speedVal = parseInt(document.getElementById("ticker-speed-select")?.value, 10) || 28;
+          const sep = getActiveAdminTickerSeparator();
+          const bgVal = document.getElementById("ticker-bg-color-text")?.value || "#dcf836";
+          const textVal = document.getElementById("ticker-text-color-text")?.value || "#171811";
+
+          if (adminTickerItems.length === 0) {
+            showToast("Please provide at least one message for the ticker.", true);
+            return;
+          }
+
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span>Broadcasting Ticker...</span> <span>⏳</span>`;
+          }
+
+          try {
+            if (!window.LeagueDB || typeof window.LeagueDB.updateHomepageTickerSettings !== "function") {
+              throw new Error("LeagueDB ticker service is unavailable.");
+            }
+
+            const payload = {
+              enabled: isEnabled,
+              items: adminTickerItems,
+              separator: sep,
+              bg_color: bgVal,
+              text_color: textVal,
+              speed_seconds: speedVal
+            };
+
+            const res = await window.LeagueDB.updateHomepageTickerSettings(payload);
+            if (res.success) {
+              showToast("✓ Homepage ticker published globally to cloud & live site!");
+              if (statusMsg) {
+                statusMsg.style.display = "inline";
+                statusMsg.style.color = "var(--lime)";
+                statusMsg.textContent = "✓ Ticker published globally to homepage!";
+                setTimeout(() => { statusMsg.style.display = "none"; }, 4000);
+              }
+            } else {
+              showToast(res.error || "Failed to update ticker.", true);
+            }
+          } catch (err) {
+            console.error("Error saving ticker settings:", err);
+            showToast("Error updating ticker: " + (err.message || err), true);
+          } finally {
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = `<span>Broadcast &amp; Publish Ticker</span> <span>⚡</span>`;
             }
           }
         });
