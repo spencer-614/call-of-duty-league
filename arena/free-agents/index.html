@@ -62,6 +62,8 @@
           <a href="/ladders/">Ladders</a>
           <a href="/arena/tournaments/">Tournaments</a>
           <a href="/arena/profile/#my-teams">My Teams</a>
+        
+          <a href="/arena/profile/" id="nav-arena-profile-link" class="nav-arena-profile-link"><span id="nav-arena-profile-icon">👤</span> <span id="nav-arena-profile-text">Profile</span></a>
         </nav>
 
         <div id="arena-header-squad-container">
@@ -935,7 +937,7 @@
         if (bio) bio.textContent = `“${agent.bio || 'Competitive operator looking for team.'}”`;
         if (discord) discord.textContent = agent.discord || `${agent.gamertag.toLowerCase()}#0001`;
         if (act) act.textContent = agent.activision_id || `${agent.gamertag}#1234567`;
-        if (profLink) profLink.href = `arena-profile.html?player=${encodeURIComponent(agent.gamertag)}`;
+        if (profLink) profLink.href = `/arena/profile/?player=${encodeURIComponent(agent.gamertag)}`;
 
         const modal = document.getElementById("modal-free-agent-dossier");
         if (modal) modal.classList.add("active");

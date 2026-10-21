@@ -13976,8 +13976,8 @@ window.LadderDB = {
         const tag = isStaff ? (player.tag || "COMM") : (player.tag || "TAG");
         const badgeColor = isStaff ? "var(--lime, #d5f45b)" : "#ff1e44";
         const badgeText = isStaff ? "COMMISSIONER" : `${player.elo || 1200} ELO`;
-        const linkTarget = isStaff ? "/profile/" : "/arena/profile/#my-teams";
-        const linkTitle = isStaff ? "Signed in as League Commissioner — Open League Profile" : "View Active Teams";
+        const linkTarget = "/arena/profile/";
+        const linkTitle = isStaff ? "Signed in as League Commissioner — Open Arena Profile" : "View Arena Profile & Stats";
 
         squadHeaderEl.innerHTML = `
           <a href="${linkTarget}" class="gb-my-squad-pill" title="${linkTitle}" style="text-decoration:none;">
