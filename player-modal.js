@@ -1,5 +1,6 @@
 // ==============================================================================
-// FRONTLINE CALL OF DUTY LEAGUE - PLAYER COMBAT DOSSIER MODAL (<dialog>)
+// FRONTLINE CALL OF DUTY LEAGUE & ARENA - PLAYER COMBAT DOSSIER MODAL (<dialog>)
+// Strict Mode Separation: League Dossier (League stats only) vs Arena Dossier (Arena stats only)
 // ==============================================================================
 
 (function () {
@@ -27,7 +28,7 @@
         <div class="modal-header">
           <div class="modal-header-content">
             <div class="modal-kicker-row">
-              <span class="modal-kicker">FRONT-LINE OPS // COMBAT DOSSIER</span>
+              <span class="modal-kicker" id="modal-kicker-title">FRONT-LINE OPS // COMBAT DOSSIER</span>
               <span class="modal-status-badge" id="modal-player-status">ACTIVE</span>
             </div>
             <div class="modal-title-group" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -84,16 +85,31 @@
   }
 
   // 2. Open and populate player dossier modal
-  async function openPlayerDossier(playerId) {
+  async function openPlayerDossier(playerId, forcedMode = null) {
     const dialog = getOrCreateModal();
+    const kickerEl = document.getElementById("modal-kicker-title");
     const titleEl = document.getElementById("modal-player-title");
     const roleEl = document.getElementById("modal-player-role");
     const teamEl = document.getElementById("modal-player-team");
     const statusEl = document.getElementById("modal-player-status");
     const metaEl = document.getElementById("modal-player-meta");
     const bodyEl = document.getElementById("modal-content-body");
+    const avatarEl = document.getElementById("modal-player-avatar");
+
+    // Auto-detect mode: Arena vs League
+    const isArena = forcedMode === 'arena' || (
+      forcedMode !== 'league' && (
+        window.location.pathname.includes('/arena') ||
+        window.location.pathname.includes('/ladders') ||
+        window.location.pathname.includes('/match-finder')
+      )
+    );
 
     // Open modal in loading state and lock background scrolling
+    if (kickerEl) {
+      kickerEl.textContent = isArena ? "FRONTLINE ARENA // COMBAT DOSSIER" : "FRONT-LINE OPS // LEAGUE COMBAT DOSSIER";
+      kickerEl.style.color = isArena ? "#ff1e44" : "var(--lime)";
+    }
     titleEl.textContent = "DECRYPTING...";
     roleEl.textContent = "—";
     teamEl.textContent = "—";
@@ -106,7 +122,246 @@
     dialog.showModal();
 
     try {
-      // Fetch player details and map stats
+      if (isArena) {
+        // =========================================================================
+        // ARENA MODE: STRICT ARENA LADDER STATS, ELO & SQUADS (NO LEAGUE FRANCHISE)
+        // =========================================================================
+        let arenaPlayer = null;
+        if (window.LadderDB && typeof window.LadderDB.getPlayerByGamertag === "function") {
+          arenaPlayer = window.LadderDB.getPlayerByGamertag(playerId);
+        }
+
+        if (!arenaPlayer && window.LadderDB && typeof window.LadderDB.getCurrentPlayer === "function") {
+          const cur = window.LadderDB.getCurrentPlayer();
+          if (cur && (cur.gamertag?.toLowerCase() === String(playerId).toLowerCase() || cur.id === playerId)) {
+            arenaPlayer = cur;
+          }
+        }
+
+        if (!arenaPlayer) {
+          // Fallback lookup from LeagueDB to fetch operative identity
+          try {
+            const lp = await window.LeagueDB.getPlayerById(playerId);
+            if (lp) {
+              arenaPlayer = {
+                id: lp.id,
+                gamertag: lp.gamertag,
+                username: lp.gamertag,
+                tag: lp.teams?.tag || "ARENA",
+                team_name: lp.teams?.name || "Free Agent",
+                activision_id: lp.activision_id || `${lp.gamertag}#1234567`,
+                discord: lp.discord_name || `${lp.gamertag.toLowerCase()}#0001`,
+                elo: 1200,
+                tier: "Specialist",
+                avatar_url: lp.avatar_url || ""
+              };
+            }
+          } catch (_) {}
+        }
+
+        if (!arenaPlayer) {
+          arenaPlayer = {
+            id: playerId,
+            gamertag: String(playerId),
+            username: String(playerId),
+            tag: "ARENA",
+            team_name: "Arena Free Agent",
+            elo: 1200,
+            tier: "Specialist",
+            activision_id: `${playerId}#1234567`,
+            discord: `${String(playerId).toLowerCase()}#0001`,
+            avatar_url: ""
+          };
+        }
+
+        const gamertag = arenaPlayer.gamertag || arenaPlayer.username || "Operative";
+        const tag = arenaPlayer.tag || "ARENA";
+        const tierObj = window.LadderDB && typeof window.LadderDB.getTier === "function"
+          ? window.LadderDB.getTier(arenaPlayer.elo || 1200)
+          : { name: arenaPlayer.tier || "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+
+        titleEl.textContent = gamertag;
+        roleEl.textContent = arenaPlayer.role || "Flex";
+        roleEl.style.color = "#ff1e44";
+        roleEl.style.borderColor = "#ff1e4450";
+
+        if (avatarEl) {
+          if (arenaPlayer.avatar_url) {
+            avatarEl.src = arenaPlayer.avatar_url;
+            avatarEl.style.borderColor = "#ff1e44";
+            avatarEl.style.display = "inline-block";
+          } else {
+            avatarEl.style.display = "none";
+          }
+        }
+
+        teamEl.innerHTML = `<span style="color:#ff1e44; font-weight:800;">[${escapeHtml(tag)}] ${escapeHtml(arenaPlayer.team_name || "Arena Operative")}</span>`;
+
+        if (statusEl) {
+          statusEl.textContent = tierObj.name.toUpperCase();
+          statusEl.className = "modal-status-badge status-active";
+          statusEl.style.borderColor = "#ff1e44";
+          statusEl.style.color = "#ff1e44";
+        }
+
+        if (metaEl) {
+          const actVal = arenaPlayer.activision_id || `${gamertag}#1234567`;
+          const discVal = arenaPlayer.discord || `${gamertag.toLowerCase()}#0001`;
+          const metaItems = [
+            `<span><strong style="color:#ff1e44">ELO:</strong> ${arenaPlayer.elo || 1200}</span>`,
+            `<span><strong style="color:#cbd5e1">ACTIVISION:</strong> ${escapeHtml(actVal)}</span>`,
+            `<span><strong style="color:var(--muted)">DISCORD:</strong> ${escapeHtml(discVal)}</span>`,
+            `<span><strong style="color:var(--muted)">TIER:</strong> ${escapeHtml(tierObj.name)}</span>`
+          ];
+          metaEl.innerHTML = metaItems.join(`<span style="color:#ffffff25">•</span>`);
+        }
+
+        // Get Arena ladder stats & squads
+        const stats = window.LadderDB && typeof window.LadderDB.getPlayerStats === "function"
+          ? window.LadderDB.getPlayerStats(arenaPlayer)
+          : { wins: 0, losses: 0, winRate: "0.0%", streak: "0", totalMatches: 0 };
+
+        const ladderTeams = window.LadderDB && typeof window.LadderDB.getUserTeams === "function"
+          ? (window.LadderDB.getUserTeams(arenaPlayer) || []).filter(item => item.team)
+          : [];
+
+        const matchHistory = window.LadderDB && typeof window.LadderDB.getPlayerMatchHistory === "function"
+          ? (window.LadderDB.getPlayerMatchHistory(arenaPlayer) || [])
+          : [];
+
+        // Build Ladder Squads HTML
+        let squadsHtml = "";
+        if (ladderTeams.length > 0) {
+          squadsHtml = ladderTeams.map(lt => {
+            const t = lt.team;
+            return `
+              <div style="background:#161014; border:1px solid #421e28; border-left:3px solid #ff1e44; padding:12px 14px; border-radius:3px; flex:1; min-width:240px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="font-size:10px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.8px;">🎯 ARENA LADDER (${lt.icon || '⚔'})</span>
+                  <span style="background:rgba(255,30,68,0.15); color:#ff1e44; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:2px;">${escapeHtml(t.role || 'Member')}</span>
+                </div>
+                <div style="font-size:15px; font-weight:800; color:#fff; font-family:var(--display);">
+                  [${escapeHtml(t.tag || 'TAG')}] ${escapeHtml(t.name || 'Arena Team')}
+                </div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                  ${escapeHtml(lt.ladder_name || 'Arena Circuit')} • <strong style="color:#fff;">${t.elo || 1200} ELO</strong> (${t.wins || 0}W - ${t.losses || 0}L)
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          squadsHtml = `
+            <div style="background:#13150f; border:1px dashed #3a1a24; padding:14px 18px; border-radius:3px; font-size:12px; color:var(--muted); width:100%; box-sizing:border-box;">
+              🛡️ Currently not enlisted on any active ladder teams (4v4 Variant, 2v2 SnD, or 1v1 Radar).
+            </div>
+          `;
+        }
+
+        // Build Arena Match History Rows
+        let matchRowsHtml = "";
+        if (matchHistory.length > 0) {
+          matchRowsHtml = matchHistory.slice(0, 8).map(m => {
+            const isWin = m.outcome === "victory";
+            const badgeClass = isWin ? "badge-w" : (m.outcome === "defeat" ? "badge-l" : "badge-disputed");
+            const resultText = isWin ? "VICTORY" : (m.outcome === "defeat" ? "DEFEAT" : (m.status || "IN PROGRESS").toUpperCase());
+            const scoreText = m.score ? `<span style="color:var(--muted); font-size:10px; margin-left:4px;">${escapeHtml(m.score)}</span>` : "";
+            const opponent = m.opponent_team_name || m.opponent_team || "Opponent";
+            const dateStr = m.date || m.match_date || "—";
+            return `
+              <tr>
+                <td>
+                  <strong style="color:#ffffff; font-family:var(--display); font-size:13px;">${escapeHtml(m.ladder_name || m.ladder || "Arena Match")}</strong>
+                  <div style="font-size:9.5px; color:var(--muted);">${escapeHtml(m.circuit || "Standard CDL Rules")}</div>
+                </td>
+                <td>
+                  <span class="${badgeClass}">${resultText}</span>
+                  ${scoreText}
+                </td>
+                <td style="color:#cbd5e1;">vs ${escapeHtml(opponent)}</td>
+                <td style="color:#ff1e44; font-weight:800;">${m.elo_delta ? (m.elo_delta > 0 ? `+${m.elo_delta}` : m.elo_delta) : "—"}</td>
+                <td style="color:var(--muted); font-size:10px;">${escapeHtml(dateStr)}</td>
+              </tr>
+            `;
+          }).join("");
+        } else {
+          matchRowsHtml = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--muted);">No sanctioned Arena ladder matches completed yet.</td></tr>`;
+        }
+
+        bodyEl.innerHTML = `
+          <!-- Section 1: Arena Combat Summary HUD -->
+          <div class="modal-section-title" style="margin-top:0;">
+            <div class="section-title-left">
+              <span class="title-accent" style="color:#ff1e44;">//</span>
+              <span>Arena Ladder Combat Performance</span>
+            </div>
+            <span class="title-count" style="color:#ff1e44;">GRASSROOTS ARENA 2026</span>
+          </div>
+          <div class="overall-stats-hud">
+            <div class="hud-item" style="border-color:#421e28;">
+              <div class="hud-label">Ladder ELO Rating</div>
+              <div class="hud-value" style="color:#ff1e44;">${arenaPlayer.elo || 1200}</div>
+              <div class="hud-sub" style="color:#cbd5e1;">${escapeHtml(tierObj.name.toUpperCase())} TIER</div>
+            </div>
+            <div class="hud-item" style="border-color:#421e28;">
+              <div class="hud-label">Arena Record</div>
+              <div class="hud-value">${stats.wins}W - ${stats.losses}L</div>
+              <div class="hud-sub">${stats.winRate} WIN RATE</div>
+            </div>
+            <div class="hud-item" style="border-color:#421e28;">
+              <div class="hud-label">Momentum Streak</div>
+              <div class="hud-value" style="color:${stats.streak?.includes('-') ? '#ff6b6b' : '#22c55e'};">${stats.streak}</div>
+              <div class="hud-sub">WIN / LOSS STREAK</div>
+            </div>
+            <div class="hud-item" style="border-color:#421e28;">
+              <div class="hud-label">Total Arena Matches</div>
+              <div class="hud-value">${stats.totalMatches}</div>
+              <div class="hud-sub">${stats.completedMatches || (stats.wins + stats.losses)} COMPLETED</div>
+            </div>
+          </div>
+
+          <!-- Section 2: Active Ladder Squads (Strictly 1 Team Per Circuit) -->
+          <div class="modal-section-title">
+            <div class="section-title-left">
+              <span class="title-accent" style="color:#ff1e44;">//</span>
+              <span>Sanctioned Ladder Squads (${ladderTeams.length})</span>
+            </div>
+            <span class="title-count">4v4 • 2v2 • 1v1 CIRCUITS</span>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px;">
+            ${squadsHtml}
+          </div>
+
+          <!-- Section 3: Arena Match History Log -->
+          <div class="modal-section-title">
+            <div class="section-title-left">
+              <span class="title-accent" style="color:#ff1e44;">//</span>
+              <span>Recent Arena Ladder Matches</span>
+            </div>
+            <span class="title-count">${matchHistory.length} Matches Logged</span>
+          </div>
+          <div class="map-stats-table-wrapper" style="margin-bottom:16px;">
+            <table class="map-stats-table">
+              <thead>
+                <tr>
+                  <th>Circuit / Ladder</th>
+                  <th>Result</th>
+                  <th>Opponent Squad</th>
+                  <th>ELO Delta</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${matchRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+        return;
+      }
+
+      // =========================================================================
+      // LEAGUE MODE: STRICT FRANCHISED LEAGUE TELEMETRY & VODS (NO ARENA LADDER)
+      // =========================================================================
       const [player, mapStats] = await Promise.all([
         window.LeagueDB.getPlayerById(playerId),
         window.LeagueDB.getPlayerMapStats(playerId)
@@ -128,15 +383,19 @@
 
       titleEl.textContent = gamertag;
       roleEl.textContent = role;
-      const avatarEl = document.getElementById("modal-player-avatar");
+      roleEl.style.color = "var(--lime)";
+      roleEl.style.borderColor = "rgba(213,244,91,0.3)";
+
       if (avatarEl) {
         if (player.avatar_url) {
           avatarEl.src = player.avatar_url;
+          avatarEl.style.borderColor = "var(--lime)";
           avatarEl.style.display = "inline-block";
         } else {
           avatarEl.style.display = "none";
         }
       }
+
       if (!isFreeAgent && (player.teams || (player.team_name && player.team_name !== "Free Agent" && player.team_name !== "Unassigned" && player.team_name !== "FA"))) {
         const teamLookup = player.teams?.id || player.teams?.name || player.team_name;
         teamEl.innerHTML = `<span class="clickable-team" data-team-id="${escapeHtml(teamLookup)}" style="cursor:pointer; color:var(--lime); text-decoration:underline; text-underline-offset:3px;" title="Click to view squad dossier">${teamTag ? `${teamTag} ` : ""}${escapeHtml(teamName)} ↗</span>`;
@@ -147,6 +406,8 @@
       if (statusEl) {
         statusEl.textContent = (player.status || (isFreeAgent ? "Free Agent" : "Active")).toUpperCase();
         statusEl.className = `modal-status-badge ${isFreeAgent ? "status-fa" : "status-active"}`;
+        statusEl.style.borderColor = "var(--lime)";
+        statusEl.style.color = "var(--lime)";
       }
 
       if (metaEl) {
@@ -158,7 +419,7 @@
         const metaItems = [
           actVal ? `<span><strong style="color:var(--lime)">ACTIVISION:</strong> ${escapeHtml(actVal)}</span>` : "",
           player.discord_name ? `<span><strong style="color:var(--muted)">DISCORD:</strong> ${escapeHtml(player.discord_name)}</span>` : "",
-          `<span><strong style="color:var(--muted)">TIER:</strong> ${escapeHtml(rankVal)}</span>`
+          `<span><strong style="color:var(--muted)">SKILL RANK:</strong> ${escapeHtml(rankVal)}</span>`
         ].filter(Boolean);
         metaEl.innerHTML = metaItems.join(`<span style="color:#ffffff25">•</span>`);
       }
@@ -231,7 +492,7 @@
           }).join("")
         : `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted);">No map telemetry recorded yet.</td></tr>`;
 
-      // Fetch player tournament squads & ladder teams
+      // Fetch player tournament squads (strictly Franchised / Tournament Circuit)
       let playerTourneyTeams = [];
       try {
         if (window.LeagueDB && typeof window.LeagueDB.getPlayerTournamentTeams === "function") {
@@ -239,21 +500,10 @@
         }
       } catch (_) {}
 
-      let playerLadderTeams = [];
-      try {
-        if (window.LadderDB && typeof window.LadderDB.getUserTeams === "function") {
-          const lTeams = window.LadderDB.getUserTeams(player);
-          playerLadderTeams = (lTeams || []).filter(item => item.team);
-        }
-      } catch (_) {}
-
-      // Build "All Teams & Squads" HTML block
+      // Build League Team & Squad Affiliations HTML
       const hasFranchise = !isFreeAgent && (player.teams || (player.team_name && player.team_name !== "Free Agent" && player.team_name !== "Unassigned" && player.team_name !== "FA"));
-      let allTeamsHtml = "";
-
       const teamBadges = [];
 
-      // 1. Franchised League Team
       if (hasFranchise) {
         const teamLookup = player.teams?.id || player.teams?.name || player.team_name;
         teamBadges.push(`
@@ -270,7 +520,6 @@
         `);
       }
 
-      // 2. Tournament Squads
       if (playerTourneyTeams.length > 0) {
         playerTourneyTeams.forEach(ts => {
           const isCap = String(ts.captain_gamertag || "").toLowerCase() === String(gamertag || "").toLowerCase();
@@ -284,7 +533,7 @@
               <div style="font-size:20px; font-weight:800; color:#ffffff; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing:0.8px; margin:4px 0 2px;">
                 ${escapeHtml(ts.team_name || 'Tournament Squad')}
               </div>
-              <div style="font-size:13.5px; color:#cbd5e1; margin-top:4px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <div style="font-size:13.5px; color:#cbd5e1; margin-top:4px;">
                 Event: <strong style="color:#ffffff; font-weight:700;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
               </div>
               <div style="font-size:12px; color:#cbd5e1; margin-top:6px; background:#0b0f16; border:1px solid #1f2c3e; padding:6px 10px; border-radius:3px;">
@@ -295,36 +544,15 @@
         });
       }
 
-      // 3. Ladder Squads (if any)
-      if (playerLadderTeams.length > 0) {
-        playerLadderTeams.forEach(lt => {
-          const t = lt.team;
-          teamBadges.push(`
-            <div style="background:#161014; border:1px solid #421e28; border-left:3px solid #ff1e44; padding:12px 14px; border-radius:3px; flex:1; min-width:240px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <span style="font-size:10px; font-weight:800; color:#ff1e44; text-transform:uppercase; letter-spacing:0.8px;">🎯 ARENA LADDER (${lt.icon || '⚔'})</span>
-                <span style="background:rgba(255,30,68,0.15); color:#ff1e44; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:2px;">${escapeHtml(t.role || 'Member')}</span>
-              </div>
-              <div style="font-size:15px; font-weight:800; color:#fff; font-family:var(--display);">
-                [${escapeHtml(t.tag || 'TAG')}] ${escapeHtml(t.name || 'Arena Team')}
-              </div>
-              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
-                ${escapeHtml(lt.ladder_name || 'Arena Circuit')} • <strong style="color:#fff;">${t.elo || 1200} ELO</strong> (${t.wins || 0}W - ${t.losses || 0}L)
-              </div>
-            </div>
-          `);
-        });
-      }
-
+      let allTeamsHtml = "";
       if (teamBadges.length > 0) {
         allTeamsHtml = `
-          <!-- Section 0: All Teams & Squad Affiliations -->
           <div class="modal-section-title" style="margin-top:0;">
             <div class="section-title-left">
               <span class="title-accent">//</span>
-              <span>Squad &amp; Team Affiliations (${teamBadges.length})</span>
+              <span>Franchise &amp; Tournament Affiliations (${teamBadges.length})</span>
             </div>
-            <span class="title-count">FRANCHISE • TOURNAMENTS • ARENA</span>
+            <span class="title-count">LEAGUE CIRCUIT</span>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px;">
             ${teamBadges.join("")}
@@ -540,9 +768,10 @@
 
     if (playerTrigger) {
       const pid = playerTrigger.getAttribute("data-player-id");
+      const pMode = playerTrigger.getAttribute("data-player-mode");
       if (pid) {
         e.preventDefault();
-        openPlayerDossier(pid);
+        openPlayerDossier(pid, pMode);
       }
     }
   });
@@ -557,10 +786,17 @@
       } else {
         // Look up by gamertag
         try {
-          const players = await window.LeagueDB.getPlayers();
-          const found = players.find(p => p.gamertag.toLowerCase() === paramPlayer.toLowerCase());
-          if (found) openPlayerDossier(found.id);
-        } catch (_) {}
+          if (window.location.pathname.includes('/arena') || window.location.pathname.includes('/ladders')) {
+            openPlayerDossier(paramPlayer, 'arena');
+          } else {
+            const players = await window.LeagueDB.getPlayers();
+            const found = players.find(p => p.gamertag.toLowerCase() === paramPlayer.toLowerCase());
+            if (found) openPlayerDossier(found.id, 'league');
+            else openPlayerDossier(paramPlayer);
+          }
+        } catch (_) {
+          openPlayerDossier(paramPlayer);
+        }
       }
     }
   });

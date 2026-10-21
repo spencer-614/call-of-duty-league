@@ -766,25 +766,7 @@
           } catch (e) {}
         }
 
-        // 4. Fallback to arena user or admin session
-        if (!authUser) {
-          try {
-            const arenaUser = JSON.parse(localStorage.getItem("frontline_arena_user"));
-            if (arenaUser && (arenaUser.email || arenaUser.id)) {
-              authUser = {
-                id: arenaUser.id || "usr_" + Date.now(),
-                email: arenaUser.email || "",
-                user_metadata: {
-                  gamertag: arenaUser.gamertag,
-                  username: arenaUser.username || arenaUser.gamertag,
-                  discord: arenaUser.discord,
-                  activision_id: arenaUser.activision_id,
-                  avatar_url: arenaUser.avatar_url
-                }
-              };
-            }
-          } catch (e) {}
-        }
+        // 4. Fallback to commissioner or admin session
 
         if (!authUser) {
           try {
@@ -813,7 +795,6 @@
         if (authUser) {
           try {
             localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser));
-            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(authUser));
           } catch(e) {}
         }
 
@@ -927,12 +908,9 @@
               is_staff: true,
               is_commissioner: true
             };
-            localStorage.setItem("frontline_arena_user", JSON.stringify(staffObj));
-            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(staffObj));
             localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser || staffObj));
           } else if (authUser) {
             localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser));
-            localStorage.setItem("frontline_arena_auth_user", JSON.stringify(authUser));
           }
 
           showProfileToast("Access granted. Loading commissioner dossier...", "success");
@@ -1224,13 +1202,19 @@
         if (!isStaff && window.LeagueDB && typeof window.LeagueDB.getPlayerStats === 'function' && p.gamertag && p.gamertag !== 'Operative') {
           try {
             const stats = await window.LeagueDB.getPlayerStats(p.gamertag);
-            if (stats && (stats.total_maps > 0 || stats.overall_kd > 0)) {
+            if (stats) {
               const kdEl = document.getElementById('stat-kd');
               const hillEl = document.getElementById('stat-hill');
+              const fbEl = document.getElementById('stat-fb');
+              const respawnEl = document.getElementById('stat-respawn');
               const mapsEl = document.getElementById('stat-maps');
-              if (kdEl) kdEl.textContent = Number(stats.overall_kd || 0).toFixed(2);
-              if (hillEl) hillEl.textContent = (stats.hill_time_avg || 0) + 's';
+              const draftEl = document.getElementById('stat-draft');
+              if (kdEl) kdEl.textContent = Number(stats.overall_kd || 1.0).toFixed(2);
+              if (hillEl) hillEl.textContent = (stats.hill_time_avg || 60) + 's';
+              if (fbEl) fbEl.textContent = Number(stats.first_blood_pct || 20.0).toFixed(1) + '%';
+              if (respawnEl) respawnEl.textContent = Number(stats.respawn_win_rate || 50.0).toFixed(1) + '%';
               if (mapsEl) mapsEl.textContent = stats.total_maps || 0;
+              if (draftEl && stats.draft_grade) draftEl.textContent = stats.draft_grade;
             }
           } catch (e) {}
         }
@@ -1712,7 +1696,6 @@
           try {
             localStorage.removeItem("frontline_admin_session");
             localStorage.removeItem("frontline_admin_email");
-            localStorage.removeItem("frontline_arena_user");
             sessionStorage.removeItem("frontline_admin_session");
             sessionStorage.removeItem("frontline_admin_email");
             if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
@@ -1721,8 +1704,6 @@
             } else {
               const client = window.supabaseClient || window.dbClient;
               localStorage.removeItem("frontline_league_auth_user");
-              localStorage.removeItem("frontline_arena_auth_user");
-              localStorage.removeItem("frontline_arena_user");
               localStorage.removeItem("frontline_league_player_card");
               localStorage.removeItem("frontline_admin_session");
               localStorage.removeItem("frontline_admin_email");

@@ -789,7 +789,6 @@
               try {
                 localStorage.setItem("frontline_arena_user", JSON.stringify(userObj));
                 localStorage.setItem("frontline_arena_auth_user", JSON.stringify(userObj));
-                localStorage.setItem("frontline_league_auth_user", JSON.stringify(u));
               } catch(e) {}
               if (!isStaff && window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
                 window.LeagueDB.autoCheckDiscordOnboarding();
@@ -1527,8 +1526,6 @@
           try {
             localStorage.removeItem("frontline_arena_user");
             localStorage.removeItem("frontline_arena_auth_user");
-            localStorage.removeItem("frontline_league_auth_user");
-            localStorage.removeItem("frontline_league_player_card");
             localStorage.removeItem("frontline_admin_session");
             localStorage.removeItem("frontline_admin_email");
             sessionStorage.removeItem("frontline_admin_session");
@@ -1544,9 +1541,7 @@
             if (window.LadderDB && typeof window.LadderDB.logoutArenaPlayer === "function") {
               window.LadderDB.logoutArenaPlayer();
             }
-            if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
-              await window.LeagueDB.signOutPlayer();
-            }
+            // League session remains intact
             if (window.supabaseClient && window.supabaseClient.auth) {
               await window.supabaseClient.auth.signOut().catch(() => {});
             }
