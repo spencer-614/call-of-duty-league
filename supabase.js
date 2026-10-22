@@ -5934,13 +5934,14 @@ if (dbClient && cleanPayload.user_id) {
 
   async getLeaguePaymentConfig() {
     let config = {
+      payment_policy: "free",
+      payment_enabled: false,
       cashapp_tag: "$FrontlineLeague",
       paypal_handle: "frontlinecdl",
       paypal_me_url: "https://paypal.me/frontlinecdl",
       cashapp_url: "https://cash.app/$FrontlineLeague",
       default_entry_fee: "$25 / Team",
       payment_instructions: "Include your Team Name in the payment note/memo!",
-      payment_enabled: true
     };
 
     if (dbClient) {
