@@ -3096,13 +3096,44 @@
 
                 <div class="form-group">
                   <label class="form-label" for="tourney-format-input">Format / Game Mode *</label>
-                  <select id="tourney-format-input" class="form-control" required>
-                    <option value="4v4 CDL Variant">4v4 CDL Variant (HP / SnD / Ctrl)</option>
-                    <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
-                    <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
-                    <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
-                    <option value="Open CDL Bracket">Open CDL Multi-Stage Bracket</option>
+                  <select id="tourney-format-input" class="form-control" required onchange="handleTourneyFormatChange(this.value)">
+                    <optgroup label="2v2 Duo Switch Formats">
+                      <option value="Duo Switch (All Modes)">2v2 Duo Switch (All Modes - HP / SnD / Ctrl)</option>
+                      <option value="Duo Switch (HP & SnD)">2v2 Duo Switch (Hardpoint &amp; SnD Only)</option>
+                      <option value="Duo Switch (SnD Only)">2v2 Duo Switch (Search &amp; Destroy Only)</option>
+                    </optgroup>
+                    <optgroup label="CDL &amp; Team Formats">
+                      <option value="4v4 CDL Variant" selected>4v4 CDL Variant (HP / SnD / Ctrl)</option>
+                      <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
+                      <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
+                      <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
+                      <option value="Open CDL Bracket">Open CDL Multi-Stage Bracket</option>
+                    </optgroup>
                   </select>
+                </div>
+
+                <!-- Duo Switch Game Modes Directive (appears when any Duo Switch format is selected) -->
+                <div id="tourney-duo-switch-modes-wrap" style="display:none; grid-column: 1 / -1; background:#12160d; border:1px solid #2e3b1c; border-left:3px solid #fbbf24; padding:12px 14px; border-radius:3px;">
+                  <label class="form-label" style="font-size:12px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <span>⚡ Duo Switch Game Mode Directive *</span>
+                  </label>
+                  <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">
+                    Choose the competitive game modes for this Duo Switch tournament:
+                  </div>
+                  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
+                      <input type="radio" name="tourney-duo-mode-radio" id="duo-radio-all" value="all" checked onchange="onDuoSwitchRadioChange('composer', this.value)" style="accent-color:#fbbf24;" />
+                      <span>All Game Modes (HP, SnD, Ctrl)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
+                      <input type="radio" name="tourney-duo-mode-radio" id="duo-radio-hp-snd" value="hp_snd" onchange="onDuoSwitchRadioChange('composer', this.value)" style="accent-color:#fbbf24;" />
+                      <span>Hardpoint &amp; SnD Only (HP &amp; SnD)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
+                      <input type="radio" name="tourney-duo-mode-radio" id="duo-radio-snd" value="snd_only" onchange="onDuoSwitchRadioChange('composer', this.value)" style="accent-color:#fbbf24;" />
+                      <span>Search &amp; Destroy Only (SnD Only)</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -4364,13 +4395,44 @@
 
             <div class="form-group">
               <label class="form-label" for="modal-edit-tourney-format">Format / Game Mode *</label>
-              <select id="modal-edit-tourney-format" class="form-control" required>
-                <option value="4v4 CDL Variant">4v4 CDL Variant (HP / SnD / Ctrl)</option>
-                <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
-                <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
-                <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
-                <option value="Open CDL Bracket">Open CDL Multi-Stage Bracket</option>
+              <select id="modal-edit-tourney-format" class="form-control" required onchange="handleModalEditFormatChange(this.value)">
+                <optgroup label="2v2 Duo Switch Formats">
+                  <option value="Duo Switch (All Modes)">2v2 Duo Switch (All Modes - HP / SnD / Ctrl)</option>
+                  <option value="Duo Switch (HP & SnD)">2v2 Duo Switch (Hardpoint &amp; SnD Only)</option>
+                  <option value="Duo Switch (SnD Only)">2v2 Duo Switch (Search &amp; Destroy Only)</option>
+                </optgroup>
+                <optgroup label="CDL &amp; Team Formats">
+                  <option value="4v4 CDL Variant">4v4 CDL Variant (HP / SnD / Ctrl)</option>
+                  <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
+                  <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
+                  <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
+                  <option value="Open CDL Bracket">Open CDL Multi-Stage Bracket</option>
+                </optgroup>
               </select>
+            </div>
+
+            <!-- Modal Duo Switch Game Modes Directive -->
+            <div id="modal-edit-tourney-duo-modes-wrap" style="display:none; grid-column: 1 / -1; background:#12160d; border:1px solid #2e3b1c; border-left:3px solid #fbbf24; padding:12px 14px; border-radius:3px;">
+              <label class="form-label" style="font-size:12px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                <span>⚡ Duo Switch Game Mode Directive *</span>
+              </label>
+              <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">
+                Choose the competitive game modes for this Duo Switch tournament:
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
+                  <input type="radio" name="modal-duo-mode-radio" id="modal-duo-radio-all" value="all" checked onchange="onDuoSwitchRadioChange('modal', this.value)" style="accent-color:#fbbf24;" />
+                  <span>All Game Modes (HP, SnD, Ctrl)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
+                  <input type="radio" name="modal-duo-mode-radio" id="modal-duo-radio-hp-snd" value="hp_snd" onchange="onDuoSwitchRadioChange('modal', this.value)" style="accent-color:#fbbf24;" />
+                  <span>Hardpoint &amp; SnD Only (HP &amp; SnD)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
+                  <input type="radio" name="modal-duo-mode-radio" id="modal-duo-radio-snd" value="snd_only" onchange="onDuoSwitchRadioChange('modal', this.value)" style="accent-color:#fbbf24;" />
+                  <span>Search &amp; Destroy Only (SnD Only)</span>
+                </label>
+              </div>
             </div>
 
             <div class="form-group">
@@ -10288,6 +10350,82 @@
         }
         window.handleAdminVerifyPayment = handleAdminVerifyPayment;
 
+
+        function handleTourneyFormatChange(formatVal) {
+          const wrap = document.getElementById("tourney-duo-switch-modes-wrap");
+          const isDuo = String(formatVal || "").toLowerCase().includes("duo");
+          if (wrap) wrap.style.display = isDuo ? "block" : "none";
+
+          if (isDuo) {
+            const fLower = String(formatVal || "").toLowerCase();
+            if (fLower.includes("hp") && fLower.includes("snd")) {
+              const r = document.getElementById("duo-radio-hp-snd");
+              if (r) r.checked = true;
+            } else if (fLower.includes("snd")) {
+              const r = document.getElementById("duo-radio-snd");
+              if (r) r.checked = true;
+            } else {
+              const r = document.getElementById("duo-radio-all");
+              if (r) r.checked = true;
+            }
+
+            // Adjust default rules notes if currently generic
+            const rulesEl = document.getElementById("tourney-rules-notes-input");
+            if (rulesEl && (!rulesEl.value || rulesEl.value.includes("CDL 2026 Competitive Ruleset."))) {
+              if (fLower.includes("hp") && fLower.includes("snd")) {
+                rulesEl.value = "• Official 2v2 Duo Switch Competitive Ruleset (Hardpoint & SnD Only).\n• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\n• Map 1: Hardpoint, Map 2: SnD, Map 3 (if needed): SnD.\n• Teams switch hosts between maps. Dedicated Central host required.\n• Check-in opens 45 minutes prior to bracket start in Discord.";
+              } else if (fLower.includes("snd")) {
+                rulesEl.value = "• Official 2v2 Duo Switch Competitive Ruleset (Search & Destroy Only).\n• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\n• Teams switch host each map. Dedicated Central host required.\n• Check-in opens 45 minutes prior to bracket start in Discord.";
+              } else {
+                rulesEl.value = "• Official 2v2 Duo Switch Competitive Ruleset (All Game Modes: HP / SnD / Ctrl).\n• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\n• Teams switch hosts between maps. Dedicated Central host required.\n• Check-in opens 45 minutes prior to bracket start in Discord.";
+              }
+            }
+          }
+
+          if (typeof updateTournamentPreview === "function") {
+            updateTournamentPreview();
+          }
+        }
+        window.handleTourneyFormatChange = handleTourneyFormatChange;
+
+        function handleModalEditFormatChange(formatVal) {
+          const wrap = document.getElementById("modal-edit-tourney-duo-modes-wrap");
+          const isDuo = String(formatVal || "").toLowerCase().includes("duo");
+          if (wrap) wrap.style.display = isDuo ? "block" : "none";
+
+          if (isDuo) {
+            const fLower = String(formatVal || "").toLowerCase();
+            if (fLower.includes("hp") && fLower.includes("snd")) {
+              const r = document.getElementById("modal-duo-radio-hp-snd");
+              if (r) r.checked = true;
+            } else if (fLower.includes("snd")) {
+              const r = document.getElementById("modal-duo-radio-snd");
+              if (r) r.checked = true;
+            } else {
+              const r = document.getElementById("modal-duo-radio-all");
+              if (r) r.checked = true;
+            }
+          }
+        }
+        window.handleModalEditFormatChange = handleModalEditFormatChange;
+
+        function onDuoSwitchRadioChange(target, mode) {
+          let formatString = "Duo Switch (All Modes)";
+          if (mode === "hp_snd") formatString = "Duo Switch (HP & SnD)";
+          else if (mode === "snd_only") formatString = "Duo Switch (SnD Only)";
+
+          if (target === "composer") {
+            const sel = document.getElementById("tourney-format-input");
+            if (sel) sel.value = formatString;
+            handleTourneyFormatChange(formatString);
+          } else if (target === "modal") {
+            const sel = document.getElementById("modal-edit-tourney-format");
+            if (sel) sel.value = formatString;
+            handleModalEditFormatChange(formatString);
+          }
+        }
+        window.onDuoSwitchRadioChange = onDuoSwitchRadioChange;
+
         function updateTournamentPreview() {
           const title = document.getElementById("tourney-title-input")?.value.trim() || "Frontline Premier Major #1";
           const desc = document.getElementById("tourney-desc-input")?.value.trim() || "Official sanctioned CDL variant tournament bracket. Top seeds advance to Championship Sunday.";
@@ -10460,6 +10598,7 @@
           const defaultRules = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
           document.getElementById("modal-edit-tourney-rules-notes").value = tourney.rules_notes || defaultRules;
           document.getElementById("modal-edit-tourney-format").value = tourney.format || "4v4 CDL Variant";
+          handleModalEditFormatChange(tourney.format || "4v4 CDL Variant");
           document.getElementById("modal-edit-tourney-bracket-type").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("modal-edit-tourney-prize").value = tourney.prize_pool || "$1,500 USD";
           const isTourneyPaid = !!(tourney.has_entry_fee || (tourney.entry_fee && !String(tourney.entry_fee).toLowerCase().includes("free")));
@@ -10702,6 +10841,7 @@
           const defaultRulesComposer = "Matches conducted under official CDL 2026 Competitive Ruleset.\nDouble Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\nDedicated Central host location (Dallas, TX / Chicago, IL) required.\nCheck-in opens 45 minutes prior to bracket start in Discord.";
           if (rulesInput) rulesInput.value = tourney.rules_notes || defaultRulesComposer;
           document.getElementById("tourney-format-input").value = tourney.format || "4v4 CDL Variant";
+          handleTourneyFormatChange(tourney.format || "4v4 CDL Variant");
           document.getElementById("tourney-bracket-type-input").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("tourney-prize-input").value = tourney.prize_pool || "$1,500 USD";
           const isCompPaid = !!(tourney.has_entry_fee || (tourney.entry_fee && !String(tourney.entry_fee).toLowerCase().includes("free")));

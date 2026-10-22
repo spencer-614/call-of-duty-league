@@ -677,6 +677,7 @@
               <span class="tourney-filter-label">Format:</span>
               <button type="button" class="tourney-pill-btn active" data-format="all" onclick="setFormatFilter('all', this)">All</button>
               <button type="button" class="tourney-pill-btn" data-format="4v4" onclick="setFormatFilter('4v4', this)">4v4 Variant</button>
+              <button type="button" class="tourney-pill-btn" data-format="duo" onclick="setFormatFilter('duo', this)">2v2 Duo Switch</button>
               <button type="button" class="tourney-pill-btn" data-format="2v2" onclick="setFormatFilter('2v2', this)">2v2 SnD</button>
               <button type="button" class="tourney-pill-btn" data-format="1v1" onclick="setFormatFilter('1v1', this)">1v1 Duels</button>
             </div>
@@ -1229,7 +1230,13 @@
           // Format filter
           if (activeFormat !== 'all') {
             const f = (t.format || '').toLowerCase();
-            if (!f.includes(activeFormat.toLowerCase())) return false;
+            if (activeFormat === 'duo') {
+              if (!f.includes('duo')) return false;
+            } else if (activeFormat === '2v2') {
+              if (!f.includes('2v2') && !f.includes('duo')) return false;
+            } else {
+              if (!f.includes(activeFormat.toLowerCase())) return false;
+            }
           }
           // Status filter
           if (activeStatus !== 'all') {

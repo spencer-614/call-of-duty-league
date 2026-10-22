@@ -140,6 +140,9 @@
           <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('4v4', this)">
             4v4 CDL Variant
           </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('duo', this)">
+            2v2 Duo Switch
+          </button>
           <button type="button" class="btn-crimson-outline" style="padding:8px 16px; font-size:12px;" onclick="filterTourneys('2v2', this)">
             2v2 SnD Primes
           </button>
@@ -229,8 +232,9 @@
 
       function deriveCategory(format) {
         const f = (format || '').toLowerCase();
+        if (f.includes('duo')) return 'duo';
         if (f.includes('1v1') || f.includes('solo') || f.includes('radar')) return '1v1';
-        if (f.includes('2v2') || f.includes('duo')) return '2v2';
+        if (f.includes('2v2')) return '2v2';
         return '4v4';
       }
 
