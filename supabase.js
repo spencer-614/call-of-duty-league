@@ -6819,7 +6819,66 @@ if (dbClient && cleanPayload.user_id) {
       if (data?.length) return { success: false, error: 'Reporting or veto data already exists. Bracket was not changed. Do not regenerate this tournament.' };
     }
 
-    const N = regs.length;
+    const isDuoSwitch = String(tourney.format || '').toLowerCase().includes('duo');
+
+    if (isDuoSwitch && (!regs || regs.length < 4)) {
+      return {
+        success: false,
+        error: `Duo Switch tournaments require at least 4 registered duos to form 4v4 matchups (currently ${regs ? regs.length : 0} registered). Pairs of duos form full 4v4 squads.`
+      };
+    }
+
+    let seededTeams = [];
+    if (isDuoSwitch) {
+      // Duo Switch: Shuffle registered duos so pairing into 4v4 squads is completely random
+      const shuffledDuos = [...regs];
+      for (let i = shuffledDuos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledDuos[i], shuffledDuos[j]] = [shuffledDuos[j], shuffledDuos[i]];
+      }
+
+      // Combine duos two-by-two into full 4v4 squads
+      for (let i = 0; i < shuffledDuos.length; i += 2) {
+        const d1 = shuffledDuos[i];
+        const d2 = shuffledDuos[i + 1];
+        if (d2) {
+          const r1 = Array.isArray(d1.roster) ? d1.roster : [d1.captain_gamertag];
+          const r2 = Array.isArray(d2.roster) ? d2.roster : [d2.captain_gamertag];
+          const combinedRoster = [...r1, ...r2];
+          seededTeams.push({
+            name: `${d1.team_name} & ${d2.team_name}`,
+            tag: `${(d1.team_name || 'D1').slice(0, 2)}/${(d2.team_name || 'D2').slice(0, 2)}`.toUpperCase(),
+            duo1_id: d1.id,
+            duo2_id: d2.id,
+            duo1_name: d1.team_name,
+            duo2_name: d2.team_name,
+            roster: combinedRoster,
+            isDuoSwitch: true
+          });
+        } else {
+          // Odd duo out
+          seededTeams.push({
+            name: `${d1.team_name} (Solo Duo)`,
+            tag: (d1.team_name || 'DUO').slice(0, 4).toUpperCase(),
+            duo1_id: d1.id,
+            duo2_id: null,
+            duo1_name: d1.team_name,
+            duo2_name: null,
+            roster: Array.isArray(d1.roster) ? d1.roster : [d1.captain_gamertag],
+            isDuoSwitch: true
+          });
+        }
+      }
+    } else {
+      seededTeams = regs.map(r => ({
+        name: r.team_name,
+        tag: (r.team_name || 'TBD').slice(0, 4).toUpperCase(),
+        roster: r.roster || [r.captain_gamertag],
+        isDuoSwitch: false
+      }));
+    }
+
+    const N = seededTeams.length;
     const isDoubleElim = String(tourney.bracket_type || '').toLowerCase().includes('double');
     const bracketSize = Math.pow(2, Math.ceil(Math.log2(Math.max(N, 2))));
 
@@ -6841,13 +6900,19 @@ if (dbClient && cleanPayload.user_id) {
 
     const seedPairs = getChallongeSeedPairs(bracketSize);
     const teamBySeed = new Map();
-    regs.forEach((r, idx) => {
+    seededTeams.forEach((r, idx) => {
       teamBySeed.set(idx + 1, {
         seed: idx + 1,
-        name: r.team_name,
-        tag: (r.team_name || 'TBD').slice(0, 4).toUpperCase(),
+        name: r.name,
+        tag: r.tag,
         score: 0,
-        winner: null
+        winner: null,
+        roster: r.roster,
+        duo1_name: r.duo1_name || null,
+        duo2_name: r.duo2_name || null,
+        duo1_id: r.duo1_id || null,
+        duo2_id: r.duo2_id || null,
+        isDuoSwitch: Boolean(r.isDuoSwitch)
       });
     });
 

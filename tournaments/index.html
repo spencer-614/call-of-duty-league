@@ -677,7 +677,7 @@
               <span class="tourney-filter-label">Format:</span>
               <button type="button" class="tourney-pill-btn active" data-format="all" onclick="setFormatFilter('all', this)">All</button>
               <button type="button" class="tourney-pill-btn" data-format="4v4" onclick="setFormatFilter('4v4', this)">4v4 Variant</button>
-              <button type="button" class="tourney-pill-btn" data-format="duo" onclick="setFormatFilter('duo', this)">2v2 Duo Switch</button>
+              <button type="button" class="tourney-pill-btn" data-format="duo" onclick="setFormatFilter('duo', this)">Duo Switch (4v4)</button>
               <button type="button" class="tourney-pill-btn" data-format="2v2" onclick="setFormatFilter('2v2', this)">2v2 SnD</button>
               <button type="button" class="tourney-pill-btn" data-format="1v1" onclick="setFormatFilter('1v1', this)">1v1 Duels</button>
             </div>
@@ -1388,6 +1388,11 @@
         document.getElementById('modal-detail-prize').textContent = t.prize_pool || '$500 USD';
         document.getElementById('modal-detail-entry').textContent = t.entry_fee || 'FREE ENTRY';
         document.getElementById('modal-detail-format').textContent = `${t.format || '4v4 CDL Variant'} · ${t.bracket_type || 'Double Elimination'}`;
+        const duoBanner = document.getElementById('modal-detail-duo-banner');
+        if (duoBanner) {
+          const isDuo = String(t.format || '').toLowerCase().includes('duo');
+          duoBanner.style.display = isDuo ? 'block' : 'none';
+        }
         document.getElementById('modal-detail-date').textContent = `${t.date || t.start_date || 'TBD'} ${t.time || t.start_time ? '· ' + (t.time || t.start_time) : ''}`;
 
         // Render Official CDL Rules & Map Veto Directive
