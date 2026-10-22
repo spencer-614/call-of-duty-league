@@ -5271,6 +5271,11 @@ if (dbClient && cleanPayload.user_id) {
       registered_teams: Number(tournamentData.registered_teams !== undefined ? tournamentData.registered_teams : (existingObj.registered_teams || 0)),
       teams_registered_count: Number(tournamentData.teams_registered_count !== undefined ? tournamentData.teams_registered_count : (existingObj.teams_registered_count || existingObj.registered_teams || 0)),
       rules_notes: tournamentData.rules_notes !== undefined ? tournamentData.rules_notes : (existingObj.rules_notes || ''),
+      has_entry_fee: tournamentData.has_entry_fee !== undefined ? !!tournamentData.has_entry_fee : (existingObj.has_entry_fee !== undefined ? !!existingObj.has_entry_fee : (tournamentData.entry_fee ? !String(tournamentData.entry_fee).toLowerCase().includes('free') : false)),
+      entry_fee_amount: tournamentData.entry_fee_amount || existingObj.entry_fee_amount || tournamentData.entry_fee || existingObj.entry_fee || 'FREE ENTRY',
+      cashapp_tag: tournamentData.cashapp_tag !== undefined ? tournamentData.cashapp_tag : (existingObj.cashapp_tag || ''),
+      paypal_handle: tournamentData.paypal_handle !== undefined ? tournamentData.paypal_handle : (existingObj.paypal_handle || ''),
+      payment_instructions: tournamentData.payment_instructions !== undefined ? tournamentData.payment_instructions : (existingObj.payment_instructions || ''),
       pinned: !!(tournamentData.pinned !== undefined ? tournamentData.pinned : existingObj.pinned),
       is_active: tournamentData.is_active !== undefined ? tournamentData.is_active : (existingObj.is_active !== false),
       updated_at: new Date().toISOString()
@@ -5681,7 +5686,17 @@ if (dbClient && cleanPayload.user_id) {
       status: "accepted", // Automatically accepted upon passing all registration checks
       auto_accepted: true,
       accepted_at: squadData.registered_at || new Date().toISOString(),
-      registered_at: squadData.registered_at || new Date().toISOString()
+      registered_at: squadData.registered_at || new Date().toISOString(),
+      has_entry_fee: !!(item.has_entry_fee || (item.entry_fee && !String(item.entry_fee).toLowerCase().includes('free'))),
+      entry_fee: item.entry_fee || (item.has_entry_fee ? (item.entry_fee_amount || '$25 / Team') : 'FREE ENTRY'),
+      entry_fee_amount: item.entry_fee_amount || item.entry_fee || '',
+      payment_status: (item.has_entry_fee || (item.entry_fee && !String(item.entry_fee).toLowerCase().includes('free'))) ? (squadData.payment_status || 'pending_verification') : 'free',
+      payment_method: squadData.payment_method || ((item.has_entry_fee || (item.entry_fee && !String(item.entry_fee).toLowerCase().includes('free'))) ? 'Cash App' : null),
+      payment_sender_handle: squadData.payment_sender_handle || '',
+      payment_note: squadData.payment_note || '',
+      payment_amount: squadData.payment_amount || item.entry_fee || item.entry_fee_amount || '',
+      payment_verified_at: null,
+      payment_verified_by: null
     };
 
     // Save the authoritative registration to tournament_registrations table (only passing known columns)
@@ -5915,6 +5930,156 @@ if (dbClient && cleanPayload.user_id) {
       return list.filter(r => String(r.tournament_id) === String(tournamentId));
     }
     return list;
+  },
+
+  async getLeaguePaymentConfig() {
+    let config = {
+      cashapp_tag: "$FrontlineLeague",
+      paypal_handle: "frontlinecdl",
+      paypal_me_url: "https://paypal.me/frontlinecdl",
+      cashapp_url: "https://cash.app/$FrontlineLeague",
+      default_entry_fee: "$25 / Team",
+      payment_instructions: "Include your Team Name in the payment note/memo!",
+      payment_enabled: true
+    };
+
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from("league_settings")
+          .select("status_text")
+          .eq("id", "league_payment_config")
+          .maybeSingle();
+
+        if (!error && data && data.status_text) {
+          try {
+            const parsed = JSON.parse(data.status_text);
+            if (parsed && typeof parsed === "object") {
+              config = { ...config, ...parsed };
+              try {
+                localStorage.setItem("frontline_league_payment_config", JSON.stringify(config));
+              } catch (_) {}
+              return config;
+            }
+          } catch (_) {}
+        }
+      } catch (err) {}
+    }
+
+    try {
+      const local = JSON.parse(localStorage.getItem("frontline_league_payment_config"));
+      if (local && typeof local === "object") {
+        config = { ...config, ...local };
+      }
+    } catch (_) {}
+
+    return config;
+  },
+
+  async saveLeaguePaymentConfig(newConfig) {
+    if (!newConfig || typeof newConfig !== "object") {
+      return { success: false, error: "Invalid payment configuration." };
+    }
+
+    const current = await this.getLeaguePaymentConfig();
+    const merged = { ...current, ...newConfig, updated_at: new Date().toISOString() };
+
+    if (merged.cashapp_tag) {
+      const cleanTag = String(merged.cashapp_tag).replace(/^[$@]/, "").trim();
+      merged.cashapp_tag = "$" + cleanTag;
+      merged.cashapp_url = "https://cash.app/$" + cleanTag;
+    }
+    if (merged.paypal_handle) {
+      const cleanPaypal = String(merged.paypal_handle).replace(/^https?:\/\/(www\.)?paypal\.me\//i, "").replace(/^@/, "").trim();
+      merged.paypal_handle = cleanPaypal;
+      merged.paypal_me_url = "https://paypal.me/" + cleanPaypal;
+    }
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "league_payment_config",
+          status_state: "active",
+          status_text: JSON.stringify(merged),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (err) {
+        console.warn("Could not upsert league_payment_config:", err);
+      }
+    }
+
+    try {
+      localStorage.setItem("frontline_league_payment_config", JSON.stringify(merged));
+    } catch (_) {}
+
+    window.dispatchEvent(new CustomEvent("frontline_league_payment_config_updated", { detail: merged }));
+    return { success: true, config: merged };
+  },
+
+  async verifyTournamentPayment(registrationId, tournamentId = null, isVerified = true, adminGamertag = "Commissioner") {
+    if (!registrationId) return { success: false, error: "Registration ID is required." };
+
+    const allRegs = await this.getTournamentRegistrations(null);
+    const reg = allRegs.find(r => String(r.id) === String(registrationId));
+    if (!reg) return { success: false, error: "Registration record not found." };
+
+    const newStatus = isVerified ? "verified" : (reg.payment_sender_handle ? "pending_verification" : "unpaid");
+    reg.payment_status = newStatus;
+    reg.payment_verified_at = isVerified ? new Date().toISOString() : null;
+    reg.payment_verified_by = isVerified ? (adminGamertag || "Commissioner") : null;
+
+    if (dbClient) {
+      try {
+        await dbClient.from("league_settings").upsert({
+          id: "tournament_registrations_registry",
+          status_state: "active",
+          status_text: JSON.stringify(allRegs),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "id" });
+      } catch (e) {
+        console.warn("league_settings registrations upsert notice:", e);
+      }
+
+      try {
+        await dbClient.from("tournament_registrations").update({
+          status: isVerified ? "accepted" : reg.status
+        }).eq("id", registrationId);
+      } catch (_) {}
+    }
+
+    try {
+      localStorage.setItem("frontline_tournament_registrations", JSON.stringify(allRegs));
+    } catch (_) {}
+
+    // Send confirmation notification to team captain if verified
+    if (isVerified && reg.captain_gamertag) {
+      try {
+        await this.sendUserNotification({
+          target_gamertag: reg.captain_gamertag,
+          target_user_id: reg.registered_by,
+          target_discord: reg.captain_discord || "",
+          target_activision: reg.captain_activision_id || "",
+          title: "Entry Fee Verified ✓",
+          message: `Your entry fee for squad "${reg.team_name}" in "${reg.tournament_title}" has been verified by ${adminGamertag || "League Administration"}. Your squad is locked into the bracket!`,
+          type: "tournament_payment_verified",
+          metadata: {
+            registration_id: reg.id,
+            tournament_id: reg.tournament_id,
+            team_name: reg.team_name,
+            payment_status: "verified"
+          }
+        });
+      } catch (_) {}
+    }
+
+    window.dispatchEvent(new CustomEvent("frontline_tournament_payment_verified", {
+      detail: { registrationId, tournamentId: reg.tournament_id, payment_status: newStatus, registration: reg }
+    }));
+    window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", {
+      detail: { tournamentId: reg.tournament_id }
+    }));
+
+    return { success: true, registration: reg, payment_status: newStatus };
   },
 
   async getPlayerTournamentTeams(playerOrGamertag) {

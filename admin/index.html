@@ -2957,6 +2957,55 @@
             </button>
           </div>
 
+          <!-- League Payment Gateways Card (Cash App & PayPal Directive) -->
+          <div class="admin-panel-card" style="background:#0e130c; border:1px solid #2e3a1f; border-left:4px solid #22c55e; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+              <div>
+                <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.35); color:#4ade80; font-size:10px; font-weight:800; padding:2px 7px; border-radius:2px; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">
+                  <span>💳</span> <span>COMMISSIONER DIRECTIVE // LEAGUE PAYMENT GATEWAYS</span>
+                </div>
+                <h4 style="margin:2px 0 4px; font-size:16px; color:#ffffff; font-weight:800; text-transform:uppercase; display:flex; align-items:center; gap:8px;">
+                  <span>League Payment Accounts (Cash App &amp; PayPal)</span>
+                </h4>
+                <div style="font-size:12px; color:#cbd5e1; line-height:1.4;">
+                  Configure the official League Cash App ($Cashtag) and PayPal accounts where teams pay entry fees. These settings pre-populate all new paid tournaments.
+                </div>
+              </div>
+              <button type="button" class="btn-action-sm" onclick="saveAdminLeaguePaymentSettings()" style="background:#22c55e; border-color:#22c55e; color:#0b1109; font-weight:800; padding:7px 16px; font-size:12px;" id="btn-save-payment-config">
+                💾 Save Payment Gateways
+              </button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px;">
+              <div>
+                <label class="form-label" for="league-cashapp-tag-input" style="font-size:11.5px; font-weight:800; color:#4ade80; display:flex; align-items:center; gap:6px;">
+                  <span>🟢 Official Cash App $Cashtag</span>
+                </label>
+                <input type="text" id="league-cashapp-tag-input" class="form-control" placeholder="e.g. $FrontlineLeague" value="$FrontlineLeague" style="font-size:12.5px; font-weight:700; background:#080a06; border-color:#233016;" />
+                <div style="font-size:10.5px; color:#9ca3af; margin-top:3px;">Combatants can 1-click open https://cash.app/$Cashtag</div>
+              </div>
+              <div>
+                <label class="form-label" for="league-paypal-handle-input" style="font-size:11.5px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+                  <span>🔵 Official PayPal Username or Link</span>
+                </label>
+                <input type="text" id="league-paypal-handle-input" class="form-control" placeholder="e.g. frontlinecdl or paypal.me/frontlinecdl" value="frontlinecdl" style="font-size:12.5px; font-weight:700; background:#080a06; border-color:#233016;" />
+                <div style="font-size:10.5px; color:#9ca3af; margin-top:3px;">Combatants can 1-click open https://paypal.me/handle</div>
+              </div>
+              <div>
+                <label class="form-label" for="league-default-entry-fee-input" style="font-size:11.5px; font-weight:800; color:#fbbf24;">
+                  Default Entry Fee
+                </label>
+                <input type="text" id="league-default-entry-fee-input" class="form-control" placeholder="e.g. $25 / Team" value="$25 / Team" style="font-size:12.5px; background:#080a06; border-color:#233016;" />
+                <div style="font-size:10.5px; color:#9ca3af; margin-top:3px;">Default amount for paid tournaments</div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <label class="form-label" for="league-payment-instructions-input" style="font-size:11.5px; font-weight:800; color:#e2e8f0;">
+                  Payment Instructions / Memo Directive
+                </label>
+                <input type="text" id="league-payment-instructions-input" class="form-control" placeholder="e.g. Include your Team Name in the payment note/memo so commissioners can verify!" value="Include your Team Name in the payment note/memo so commissioners can verify!" style="font-size:12.5px; background:#080a06; border-color:#233016;" />
+              </div>
+            </div>
+          </div>
+
           <!-- Tournament Composer (Mirrors Announcements Composer) -->
             <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; font:800 10.5px var(--body); letter-spacing:1px; text-transform:uppercase; padding:3px 8px; margin-bottom:12px; border-radius:2px;">
               <span>★</span> <span>COMMISSIONER DIRECTIVE // ARENA &amp; HUB TOURNAMENT ENGINE</span>
@@ -3046,8 +3095,42 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" for="tourney-entry-input">Entry Fee</label>
-                  <input type="text" id="tourney-entry-input" class="form-control" placeholder="e.g. FREE ENTRY or $25 / Team" value="FREE ENTRY" />
+                  <label class="form-label" for="tourney-entry-mode-select" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Entry Fee Model *</span>
+                    <span id="tourney-entry-mode-badge" style="font-size:10px; color:#22c55e; font-weight:800; text-transform:uppercase;">Free Entry</span>
+                  </label>
+                  <select id="tourney-entry-mode-select" class="form-control" onchange="toggleTourneyEntryMode(this.value)">
+                    <option value="free" selected>🆓 Free Entry (No Fee Required)</option>
+                    <option value="paid">💳 Paid Entry Fee (Cash App / PayPal Required)</option>
+                  </select>
+                </div>
+
+                <!-- Hidden sync field for backwards compatibility -->
+                <input type="hidden" id="tourney-entry-input" value="FREE ENTRY" />
+
+                <!-- Paid Tournament Gateway Directives -->
+                <div id="tourney-paid-fields-container" style="display:none; grid-column: 1 / -1; background:#0c1109; border:1px solid #273616; border-left:3px solid #22c55e; padding:16px; border-radius:3px;">
+                  <div style="font-weight:800; font-size:12.5px; color:#4ade80; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                    <span>💰</span> <span>Entry Fee &amp; Payment Gateway Directive</span>
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:10px;">
+                    <div>
+                      <label class="form-label" for="tourney-entry-amount-input" style="font-size:11.5px; font-weight:800; color:#fbbf24;">Entry Fee Amount *</label>
+                      <input type="text" id="tourney-entry-amount-input" class="form-control" placeholder="e.g. $25 / Team or $10 / Player" value="$25 / Team" oninput="syncTourneyEntryInput()" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="tourney-cashapp-tag-input" style="font-size:11.5px; font-weight:800; color:#4ade80;">Tournament Cash App $Cashtag</label>
+                      <input type="text" id="tourney-cashapp-tag-input" class="form-control" placeholder="e.g. $FrontlineLeague" value="$FrontlineLeague" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="tourney-paypal-handle-input" style="font-size:11.5px; font-weight:800; color:#38bdf8;">Tournament PayPal Handle / Link</label>
+                      <input type="text" id="tourney-paypal-handle-input" class="form-control" placeholder="e.g. frontlinecdl or paypal.me/frontlinecdl" value="frontlinecdl" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label" for="tourney-payment-instructions-input" style="font-size:11.5px; font-weight:800; color:#cbd5e1;">Payment Memo Directive / Note to Squads</label>
+                    <input type="text" id="tourney-payment-instructions-input" class="form-control" placeholder="e.g. Put Squad Name in payment note. Entry verified upon admin check." value="Include your Team Name in the payment note/memo so commissioners can verify!" />
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -4280,8 +4363,41 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="modal-edit-tourney-entry">Entry Fee</label>
-              <input type="text" id="modal-edit-tourney-entry" class="form-control" placeholder="e.g. FREE ENTRY or $25 / Team" />
+              <label class="form-label" for="modal-edit-tourney-entry-mode" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Entry Fee Model *</span>
+                <span id="modal-edit-tourney-entry-mode-badge" style="font-size:10px; color:#22c55e; font-weight:800; text-transform:uppercase;">Free Entry</span>
+              </label>
+              <select id="modal-edit-tourney-entry-mode" class="form-control" onchange="toggleModalEditTourneyEntryMode(this.value)">
+                <option value="free" selected>🆓 Free Entry (No Fee Required)</option>
+                <option value="paid">💳 Paid Entry Fee (Cash App / PayPal Required)</option>
+              </select>
+            </div>
+
+            <!-- Hidden sync field for backwards compatibility -->
+            <input type="hidden" id="modal-edit-tourney-entry" value="FREE ENTRY" />
+
+            <div id="modal-edit-tourney-paid-fields" style="display:none; grid-column: 1 / -1; background:#0c1109; border:1px solid #273616; border-left:3px solid #22c55e; padding:14px; border-radius:3px;">
+              <div style="font-weight:800; font-size:12px; color:#4ade80; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                <span>💰</span> <span>Entry Fee &amp; Payment Gateway Directive</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:8px;">
+                <div>
+                  <label class="form-label" for="modal-edit-tourney-entry-amount" style="font-size:11px; font-weight:800; color:#fbbf24;">Entry Fee Amount *</label>
+                  <input type="text" id="modal-edit-tourney-entry-amount" class="form-control" placeholder="e.g. $25 / Team" value="$25 / Team" oninput="syncModalEditTourneyEntryInput()" />
+                </div>
+                <div>
+                  <label class="form-label" for="modal-edit-tourney-cashapp" style="font-size:11px; font-weight:800; color:#4ade80;">Tournament Cash App $Cashtag</label>
+                  <input type="text" id="modal-edit-tourney-cashapp" class="form-control" placeholder="e.g. $FrontlineLeague" />
+                </div>
+                <div>
+                  <label class="form-label" for="modal-edit-tourney-paypal" style="font-size:11px; font-weight:800; color:#38bdf8;">Tournament PayPal Handle</label>
+                  <input type="text" id="modal-edit-tourney-paypal" class="form-control" placeholder="e.g. frontlinecdl" />
+                </div>
+              </div>
+              <div>
+                <label class="form-label" for="modal-edit-tourney-instructions" style="font-size:11px; font-weight:800; color:#cbd5e1;">Payment Memo Directive</label>
+                <input type="text" id="modal-edit-tourney-instructions" class="form-control" placeholder="e.g. Include your Team Name in the payment note/memo!" />
+              </div>
             </div>
 
             <div class="form-group">
@@ -9896,13 +10012,244 @@
         // ==========================================
         let cachedAdminTournaments = [];
 
+
+        // =========================================================================
+        // LEAGUE PAYMENT GATEWAYS & ENTRY FEE DIRECTIVES
+        // =========================================================================
+        let cachedLeaguePaymentConfig = {
+          cashapp_tag: "$FrontlineLeague",
+          paypal_handle: "frontlinecdl",
+          default_entry_fee: "$25 / Team",
+          payment_instructions: "Include your Team Name in the payment note/memo so commissioners can verify!"
+        };
+
+        async function initAdminLeaguePaymentSettings() {
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.getLeaguePaymentConfig === 'function') {
+              const cfg = await window.LeagueDB.getLeaguePaymentConfig();
+              if (cfg) cachedLeaguePaymentConfig = { ...cachedLeaguePaymentConfig, ...cfg };
+            }
+          } catch (e) {
+            console.warn("Could not load League payment config:", e);
+          }
+
+          const cTag = document.getElementById("league-cashapp-tag-input");
+          const pHandle = document.getElementById("league-paypal-handle-input");
+          const defFee = document.getElementById("league-default-entry-fee-input");
+          const pInst = document.getElementById("league-payment-instructions-input");
+
+          if (cTag && cachedLeaguePaymentConfig.cashapp_tag) cTag.value = cachedLeaguePaymentConfig.cashapp_tag;
+          if (pHandle && cachedLeaguePaymentConfig.paypal_handle) pHandle.value = cachedLeaguePaymentConfig.paypal_handle;
+          if (defFee && cachedLeaguePaymentConfig.default_entry_fee) defFee.value = cachedLeaguePaymentConfig.default_entry_fee;
+          if (pInst && cachedLeaguePaymentConfig.payment_instructions) pInst.value = cachedLeaguePaymentConfig.payment_instructions;
+
+          // Also set default values in composer if empty
+          const compCash = document.getElementById("tourney-cashapp-tag-input");
+          const compPaypal = document.getElementById("tourney-paypal-handle-input");
+          const compFee = document.getElementById("tourney-entry-amount-input");
+          const compInst = document.getElementById("tourney-payment-instructions-input");
+
+          if (compCash && !compCash.value) compCash.value = cachedLeaguePaymentConfig.cashapp_tag || "$FrontlineLeague";
+          if (compPaypal && !compPaypal.value) compPaypal.value = cachedLeaguePaymentConfig.paypal_handle || "frontlinecdl";
+          if (compFee && !compFee.value) compFee.value = cachedLeaguePaymentConfig.default_entry_fee || "$25 / Team";
+          if (compInst && !compInst.value) compInst.value = cachedLeaguePaymentConfig.payment_instructions || "";
+        }
+        window.initAdminLeaguePaymentSettings = initAdminLeaguePaymentSettings;
+
+        async function saveAdminLeaguePaymentSettings() {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can update payment settings.", true);
+            return;
+          }
+          const btn = document.getElementById("btn-save-payment-config");
+          const cashapp_tag = (document.getElementById("league-cashapp-tag-input")?.value || "").trim();
+          const paypal_handle = (document.getElementById("league-paypal-handle-input")?.value || "").trim();
+          const default_entry_fee = (document.getElementById("league-default-entry-fee-input")?.value || "$25 / Team").trim();
+          const payment_instructions = (document.getElementById("league-payment-instructions-input")?.value || "").trim();
+
+          if (!cashapp_tag && !paypal_handle) {
+            showToast("Please provide at least a Cash App $Cashtag or PayPal link.", true);
+            return;
+          }
+
+          if (btn) {
+            btn.disabled = true;
+            btn.textContent = "Saving Gateways...";
+          }
+
+          try {
+            const payload = {
+              cashapp_tag,
+              paypal_handle,
+              default_entry_fee,
+              payment_instructions,
+              payment_enabled: true
+            };
+            if (window.LeagueDB && typeof window.LeagueDB.saveLeaguePaymentConfig === 'function') {
+              await window.LeagueDB.saveLeaguePaymentConfig(payload);
+            } else {
+              localStorage.setItem("frontline_league_payment_config", JSON.stringify(payload));
+            }
+            cachedLeaguePaymentConfig = { ...cachedLeaguePaymentConfig, ...payload };
+            showToast("✓ League Payment Accounts successfully updated!");
+          } catch (err) {
+            console.error(err);
+            showToast("Failed to save payment settings: " + err.message, true);
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = "💾 Save Payment Gateways";
+            }
+          }
+        }
+        window.saveAdminLeaguePaymentSettings = saveAdminLeaguePaymentSettings;
+
+        function toggleTourneyEntryMode(mode) {
+          const paidBox = document.getElementById("tourney-paid-fields-container");
+          const badge = document.getElementById("tourney-entry-mode-badge");
+          const hiddenInput = document.getElementById("tourney-entry-input");
+          const amountInput = document.getElementById("tourney-entry-amount-input");
+
+          if (mode === "paid") {
+            if (paidBox) paidBox.style.display = "block";
+            if (badge) {
+              badge.textContent = "Paid Entry Fee";
+              badge.style.color = "#fbbf24";
+            }
+            if (hiddenInput && amountInput) {
+              hiddenInput.value = amountInput.value.trim() || "$25 / Team";
+            }
+          } else {
+            if (paidBox) paidBox.style.display = "none";
+            if (badge) {
+              badge.textContent = "Free Entry";
+              badge.style.color = "#22c55e";
+            }
+            if (hiddenInput) {
+              hiddenInput.value = "FREE ENTRY";
+            }
+          }
+          if (typeof updateTournamentPreview === "function") {
+            updateTournamentPreview();
+          }
+        }
+        window.toggleTourneyEntryMode = toggleTourneyEntryMode;
+
+        function syncTourneyEntryInput() {
+          const hiddenInput = document.getElementById("tourney-entry-input");
+          const amountInput = document.getElementById("tourney-entry-amount-input");
+          const modeSelect = document.getElementById("tourney-entry-mode-select");
+          if (modeSelect?.value === "paid" && hiddenInput && amountInput) {
+            hiddenInput.value = amountInput.value.trim() || "$25 / Team";
+          }
+          if (typeof updateTournamentPreview === "function") {
+            updateTournamentPreview();
+          }
+        }
+        window.syncTourneyEntryInput = syncTourneyEntryInput;
+
+        function toggleModalEditTourneyEntryMode(mode) {
+          const paidBox = document.getElementById("modal-edit-tourney-paid-fields");
+          const badge = document.getElementById("modal-edit-tourney-entry-mode-badge");
+          const hiddenInput = document.getElementById("modal-edit-tourney-entry");
+          const amountInput = document.getElementById("modal-edit-tourney-entry-amount");
+
+          if (mode === "paid") {
+            if (paidBox) paidBox.style.display = "block";
+            if (badge) {
+              badge.textContent = "Paid Entry Fee";
+              badge.style.color = "#fbbf24";
+            }
+            if (hiddenInput && amountInput) {
+              hiddenInput.value = amountInput.value.trim() || "$25 / Team";
+            }
+          } else {
+            if (paidBox) paidBox.style.display = "none";
+            if (badge) {
+              badge.textContent = "Free Entry";
+              badge.style.color = "#22c55e";
+            }
+            if (hiddenInput) {
+              hiddenInput.value = "FREE ENTRY";
+            }
+          }
+        }
+        window.toggleModalEditTourneyEntryMode = toggleModalEditTourneyEntryMode;
+
+        function syncModalEditTourneyEntryInput() {
+          const hiddenInput = document.getElementById("modal-edit-tourney-entry");
+          const amountInput = document.getElementById("modal-edit-tourney-entry-amount");
+          const modeSelect = document.getElementById("modal-edit-tourney-entry-mode");
+          if (modeSelect?.value === "paid" && hiddenInput && amountInput) {
+            hiddenInput.value = amountInput.value.trim() || "$25 / Team";
+          }
+        }
+        window.syncModalEditTourneyEntryInput = syncModalEditTourneyEntryInput;
+
+        async function handleAdminVerifyPayment(regId, tourneyId, isVerified, btnEl) {
+          if (!isUserCommissioner()) {
+            showToast("Access Denied: Only League Commissioners can verify entry fee payments.", true);
+            return;
+          }
+          const origText = btnEl ? btnEl.textContent : "";
+          if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.textContent = isVerified ? "Verifying..." : "Revoking...";
+          }
+
+          try {
+            let adminTag = "Commissioner";
+            try {
+              const u = JSON.parse(localStorage.getItem("frontline_auth_user")) || JSON.parse(localStorage.getItem("frontline_league_auth_user"));
+              if (u && (u.gamertag || u.username)) adminTag = u.gamertag || u.username;
+            } catch (_) {}
+
+            if (window.LeagueDB && typeof window.LeagueDB.verifyTournamentPayment === 'function') {
+              const res = await window.LeagueDB.verifyTournamentPayment(regId, tourneyId, isVerified, adminTag);
+              if (!res || !res.success) {
+                showToast("Failed to verify payment: " + (res?.error || "Unknown error"), true);
+                return;
+              }
+            } else {
+              // Local fallback
+              const all = JSON.parse(localStorage.getItem("frontline_tournament_registrations")) || [];
+              const target = all.find(r => String(r.id) === String(regId));
+              if (target) {
+                target.payment_status = isVerified ? "verified" : "unpaid";
+                target.payment_verified_at = isVerified ? new Date().toISOString() : null;
+                target.payment_verified_by = isVerified ? adminTag : null;
+                localStorage.setItem("frontline_tournament_registrations", JSON.stringify(all));
+              }
+            }
+
+            showToast(isVerified ? "✓ Squad entry fee payment verified!" : "Payment status reverted.");
+            if (typeof adminViewTourneyRegistrations === 'function') {
+              const title = window.activeAdminTourneyTitle || "Tournament";
+              await adminViewTourneyRegistrations(tourneyId, title);
+            }
+          } catch (err) {
+            console.error(err);
+            showToast("Error updating payment verification: " + err.message, true);
+          } finally {
+            if (btnEl) {
+              btnEl.disabled = false;
+              btnEl.textContent = origText;
+            }
+          }
+        }
+        window.handleAdminVerifyPayment = handleAdminVerifyPayment;
+
         function updateTournamentPreview() {
           const title = document.getElementById("tourney-title-input")?.value.trim() || "Frontline Premier Major #1";
           const desc = document.getElementById("tourney-desc-input")?.value.trim() || "Official sanctioned CDL variant tournament bracket. Top seeds advance to Championship Sunday.";
           const format = document.getElementById("tourney-format-input")?.value || "4v4 CDL Variant";
           const bracket = document.getElementById("tourney-bracket-type-input")?.value || "Double Elimination";
           const prize = document.getElementById("tourney-prize-input")?.value.trim() || "$1,500 USD";
-          const entry = document.getElementById("tourney-entry-input")?.value.trim() || "FREE ENTRY";
+          const entryMode = document.getElementById("tourney-entry-mode-select")?.value || "free";
+          const entryAmount = (document.getElementById("tourney-entry-amount-input")?.value || "$25 / Team").trim();
+          const entry = entryMode === "paid" ? (entryAmount || "$25 / Team") : "FREE ENTRY";
+          const hiddenEntry = document.getElementById("tourney-entry-input");
+          if (hiddenEntry) hiddenEntry.value = entry;
           const maxTeams = document.getElementById("tourney-max-teams-input")?.value || "32";
           const status = document.getElementById("tourney-status-input")?.value || "Registration Open";
           const date = document.getElementById("tourney-date-input")?.value.trim() || "Sat, Nov 14";
@@ -10066,7 +10413,19 @@
           document.getElementById("modal-edit-tourney-format").value = tourney.format || "4v4 CDL Variant";
           document.getElementById("modal-edit-tourney-bracket-type").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("modal-edit-tourney-prize").value = tourney.prize_pool || "$1,500 USD";
-          document.getElementById("modal-edit-tourney-entry").value = tourney.entry_fee || "FREE ENTRY";
+          const isTourneyPaid = !!(tourney.has_entry_fee || (tourney.entry_fee && !String(tourney.entry_fee).toLowerCase().includes("free")));
+          const editEntryModeSelect = document.getElementById("modal-edit-tourney-entry-mode");
+          if (editEntryModeSelect) editEntryModeSelect.value = isTourneyPaid ? "paid" : "free";
+          toggleModalEditTourneyEntryMode(isTourneyPaid ? "paid" : "free");
+          const editEntryAmount = document.getElementById("modal-edit-tourney-entry-amount");
+          if (editEntryAmount) editEntryAmount.value = tourney.entry_fee_amount || tourney.entry_fee || "$25 / Team";
+          const editCashapp = document.getElementById("modal-edit-tourney-cashapp");
+          if (editCashapp) editCashapp.value = tourney.cashapp_tag || cachedLeaguePaymentConfig.cashapp_tag || "$FrontlineLeague";
+          const editPaypal = document.getElementById("modal-edit-tourney-paypal");
+          if (editPaypal) editPaypal.value = tourney.paypal_handle || cachedLeaguePaymentConfig.paypal_handle || "frontlinecdl";
+          const editInstructions = document.getElementById("modal-edit-tourney-instructions");
+          if (editInstructions) editInstructions.value = tourney.payment_instructions || cachedLeaguePaymentConfig.payment_instructions || "";
+          document.getElementById("modal-edit-tourney-entry").value = tourney.entry_fee || (isTourneyPaid ? "$25 / Team" : "FREE ENTRY");
           document.getElementById("modal-edit-tourney-max-teams").value = tourney.max_teams || 32;
           document.getElementById("modal-edit-tourney-status").value = tourney.status || "Registration Open";
           document.getElementById("modal-edit-tourney-date").value = tourney.date || tourney.start_date || "";
@@ -10175,7 +10534,13 @@
           const format = document.getElementById("modal-edit-tourney-format").value;
           const bracketType = document.getElementById("modal-edit-tourney-bracket-type").value;
           const prizePool = document.getElementById("modal-edit-tourney-prize").value.trim();
-          const entryFee = document.getElementById("modal-edit-tourney-entry").value.trim() || "FREE ENTRY";
+          const editMode = document.getElementById("modal-edit-tourney-entry-mode")?.value || "free";
+          const hasEntryFee = editMode === "paid";
+          const entryAmount = (document.getElementById("modal-edit-tourney-entry-amount")?.value || "$25 / Team").trim();
+          const entryFee = hasEntryFee ? (entryAmount || "$25 / Team") : "FREE ENTRY";
+          const cashappTag = hasEntryFee ? (document.getElementById("modal-edit-tourney-cashapp")?.value.trim() || cachedLeaguePaymentConfig.cashapp_tag || "$FrontlineLeague") : "";
+          const paypalHandle = hasEntryFee ? (document.getElementById("modal-edit-tourney-paypal")?.value.trim() || cachedLeaguePaymentConfig.paypal_handle || "frontlinecdl") : "";
+          const paymentInstructions = hasEntryFee ? (document.getElementById("modal-edit-tourney-instructions")?.value.trim() || cachedLeaguePaymentConfig.payment_instructions || "") : "";
           const maxTeams = parseInt(document.getElementById("modal-edit-tourney-max-teams").value || "32", 10);
           const status = document.getElementById("modal-edit-tourney-status").value || "Registration Open";
           const date = document.getElementById("modal-edit-tourney-date").value.trim();
@@ -10210,6 +10575,11 @@
             bracket_type: bracketType,
             prize_pool: prizePool,
             entry_fee: entryFee,
+            has_entry_fee: hasEntryFee,
+            entry_fee_amount: hasEntryFee ? entryFee : "FREE ENTRY",
+            cashapp_tag: cashappTag,
+            paypal_handle: paypalHandle,
+            payment_instructions: paymentInstructions,
             max_teams: maxTeams,
             status,
             date,
@@ -10285,7 +10655,19 @@
           document.getElementById("tourney-format-input").value = tourney.format || "4v4 CDL Variant";
           document.getElementById("tourney-bracket-type-input").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("tourney-prize-input").value = tourney.prize_pool || "$1,500 USD";
-          document.getElementById("tourney-entry-input").value = tourney.entry_fee || "FREE ENTRY";
+          const isCompPaid = !!(tourney.has_entry_fee || (tourney.entry_fee && !String(tourney.entry_fee).toLowerCase().includes("free")));
+          const compModeSelect = document.getElementById("tourney-entry-mode-select");
+          if (compModeSelect) compModeSelect.value = isCompPaid ? "paid" : "free";
+          toggleTourneyEntryMode(isCompPaid ? "paid" : "free");
+          const compAmountInput = document.getElementById("tourney-entry-amount-input");
+          if (compAmountInput) compAmountInput.value = tourney.entry_fee_amount || tourney.entry_fee || "$25 / Team";
+          const compCashInput = document.getElementById("tourney-cashapp-tag-input");
+          if (compCashInput) compCashInput.value = tourney.cashapp_tag || cachedLeaguePaymentConfig.cashapp_tag || "$FrontlineLeague";
+          const compPayInput = document.getElementById("tourney-paypal-handle-input");
+          if (compPayInput) compPayInput.value = tourney.paypal_handle || cachedLeaguePaymentConfig.paypal_handle || "frontlinecdl";
+          const compInstInput = document.getElementById("tourney-payment-instructions-input");
+          if (compInstInput) compInstInput.value = tourney.payment_instructions || cachedLeaguePaymentConfig.payment_instructions || "";
+          document.getElementById("tourney-entry-input").value = tourney.entry_fee || (isCompPaid ? "$25 / Team" : "FREE ENTRY");
           document.getElementById("tourney-max-teams-input").value = tourney.max_teams || "32";
           document.getElementById("tourney-status-input").value = tourney.status || "Registration Open";
           document.getElementById("tourney-date-input").value = tourney.date || tourney.start_date || "";
@@ -10374,6 +10756,9 @@
         window.deleteCurrentEditingTourney = deleteCurrentEditingTourney;
 
         async function loadAdminTournaments() {
+          if (typeof initAdminLeaguePaymentSettings === 'function') {
+            initAdminLeaguePaymentSettings().catch(() => {});
+          }
           const tbody = document.getElementById("admin-tournaments-tbody");
           if (!tbody) return;
 
@@ -10513,7 +10898,13 @@
           const format = document.getElementById("tourney-format-input")?.value;
           const bracketType = document.getElementById("tourney-bracket-type-input")?.value;
           const prizePool = document.getElementById("tourney-prize-input")?.value.trim();
-          const entryFee = document.getElementById("tourney-entry-input")?.value.trim() || "FREE ENTRY";
+          const entryMode = document.getElementById("tourney-entry-mode-select")?.value || "free";
+          const hasEntryFee = entryMode === "paid";
+          const entryAmount = (document.getElementById("tourney-entry-amount-input")?.value || "$25 / Team").trim();
+          const entryFee = hasEntryFee ? (entryAmount || "$25 / Team") : "FREE ENTRY";
+          const cashappTag = hasEntryFee ? (document.getElementById("tourney-cashapp-tag-input")?.value.trim() || cachedLeaguePaymentConfig.cashapp_tag || "$FrontlineLeague") : "";
+          const paypalHandle = hasEntryFee ? (document.getElementById("tourney-paypal-handle-input")?.value.trim() || cachedLeaguePaymentConfig.paypal_handle || "frontlinecdl") : "";
+          const paymentInstructions = hasEntryFee ? (document.getElementById("tourney-payment-instructions-input")?.value.trim() || cachedLeaguePaymentConfig.payment_instructions || "") : "";
           const maxTeams = parseInt(document.getElementById("tourney-max-teams-input")?.value || "32", 10);
           const status = document.getElementById("tourney-status-input")?.value || "Registration Open";
           const date = document.getElementById("tourney-date-input")?.value.trim();
@@ -10541,6 +10932,11 @@
             bracket_type: bracketType,
             prize_pool: prizePool,
             entry_fee: entryFee,
+            has_entry_fee: hasEntryFee,
+            entry_fee_amount: hasEntryFee ? entryFee : "FREE ENTRY",
+            cashapp_tag: cashappTag,
+            paypal_handle: paypalHandle,
+            payment_instructions: paymentInstructions,
             max_teams: maxTeams,
             status,
             date,
@@ -10726,6 +11122,15 @@
                       <span style="background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.4); color:#4ade80; font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 6px; border-radius:2px;">
                         ✓ ${reg.registered_by_admin ? 'Admin Registered' : 'Confirmed Entry'}
                       </span>
+                      ${(() => {
+                        const hasFee = !!(reg.has_entry_fee || (reg.entry_fee && !String(reg.entry_fee).toLowerCase().includes("free")));
+                        const pStatus = reg.payment_status || (hasFee ? "pending_verification" : "free");
+                        const feeAmt = reg.payment_amount || reg.entry_fee || reg.entry_fee_amount || "$25 / Team";
+                        if (!hasFee) return '<span style="background:rgba(148,163,184,0.12); border:1px solid #475569; color:#94a3b8; font-size:9.5px; font-weight:700; text-transform:uppercase; padding:1px 6px; border-radius:2px;">Free Entry</span>';
+                        if (pStatus === "verified") return `<span style="background:rgba(34,197,94,0.18); border:1px solid #22c55e; color:#4ade80; font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 7px; border-radius:2px; display:inline-flex; align-items:center; gap:4px;"><span>✓</span> <span>PAID &amp; VERIFIED (${escapeHtml(feeAmt)})</span></span>`;
+                        if (pStatus === "pending_verification") return `<span style="background:rgba(234,179,8,0.18); border:1px solid #eab308; color:#fef08a; font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 7px; border-radius:2px; display:inline-flex; align-items:center; gap:4px;"><span>⏳</span> <span>PENDING PAYMENT (${escapeHtml(feeAmt)})</span></span>`;
+                        return `<span style="background:rgba(239,68,68,0.18); border:1px solid #ef4444; color:#fca5a5; font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 7px; border-radius:2px; display:inline-flex; align-items:center; gap:4px;"><span>⚠️</span> <span>UNPAID (${escapeHtml(feeAmt)})</span></span>`;
+                      })()}
                     </div>
                     <h4 style="margin:2px 0; color:#ffffff; font-size:15px; font-weight:800;">
                       Captain: ${escapeHtml(reg.captain_gamertag || 'Captain')}
@@ -10736,7 +11141,16 @@
                       <span>Enlisted: <strong>${escapeHtml(dateStr)}</strong></span>
                     </div>
                   </div>
-                  <div style="display:flex; gap:6px; align-items:center;">
+                  <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    ${(() => {
+                      const hasFee = !!(reg.has_entry_fee || (reg.entry_fee && !String(reg.entry_fee).toLowerCase().includes("free")));
+                      const pStatus = reg.payment_status || (hasFee ? "pending_verification" : "free");
+                      if (!hasFee) return "";
+                      if (pStatus === "verified") {
+                        return `<button type="button" class="btn-action-sm" style="border-color:#eab308; color:#facc15; font-size:10.5px; padding:3px 8px;" onclick="handleAdminVerifyPayment('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', false, this)" title="Revoke verified status">Revoke Paid</button>`;
+                      }
+                      return `<button type="button" class="btn-action-sm" style="background:#22c55e; border-color:#22c55e; color:#0b1109; font-weight:800; font-size:11px; padding:3px 10px;" onclick="handleAdminVerifyPayment('${escapeHtml(reg.id)}', '${escapeHtml(tourneyId)}', true, this)" title="Verify that the payment was received in Cash App or PayPal">✓ Verify Payment</button>`;
+                    })()}
                     <button type="button" class="btn-action-sm" style="border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:4px 8px;" onclick="promptAdminAddTeammate('${escapeHtml(reg.id)}', '${escapeHtml(reg.team_name || 'Squad')}')">
                       + Add Player
                     </button>
@@ -10745,6 +11159,16 @@
                     </button>
                   </div>
                 </div>
+                ${(() => {
+                  const hasFee = !!(reg.has_entry_fee || (reg.entry_fee && !String(reg.entry_fee).toLowerCase().includes("free")));
+                  if (!hasFee || (!reg.payment_sender_handle && !reg.payment_method && !reg.payment_note)) return "";
+                  return `<div style="background:#090d07; border:1px dashed #283a15; padding:7px 10px; border-radius:2px; font-size:11px; margin-bottom:10px; color:#cbd5e1; display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+                    <span>Gateway: <strong style="color:${reg.payment_method === "Cash App" ? "#4ade80" : "#38bdf8"};">${escapeHtml(reg.payment_method || "Cash App / PayPal")}</strong></span>
+                    ${reg.payment_sender_handle ? `<span>Sender Tag: <strong style="color:#ffffff;">${escapeHtml(reg.payment_sender_handle)}</strong></span>` : ""}
+                    ${reg.payment_note ? `<span>Memo/Note: <strong style="color:#fbbf24;">${escapeHtml(reg.payment_note)}</strong></span>` : ""}
+                    ${reg.payment_verified_by ? `<span style="color:#86efac; font-size:10px;">(Verified by ${escapeHtml(reg.payment_verified_by)})</span>` : ""}
+                  </div>`;
+                })()}
                 ${rosterList.length > 0 || (reg.roster_status && reg.roster_status.length > 0) ? `
                   <div style="background:#0a0c0e; border:1px solid #1e2430; padding:10px 12px; border-radius:2px; font-size:11.5px; color:#cbd5e1;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">

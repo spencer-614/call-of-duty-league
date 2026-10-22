@@ -738,6 +738,40 @@
           </div>
         </div>
 
+        <!-- Entry Fee Payment Gateways (shown if tournament requires entry fee) -->
+        <div id="modal-detail-payment-box" style="display:none; background:#0b1208; border:1px solid #2e431a; border-left:4px solid #22c55e; padding:16px; border-radius:3px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <div style="font:800 13px var(--body); color:#4ade80; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
+              <span>💳</span> <span>Entry Fee &amp; Payment Directives</span>
+            </div>
+            <span id="modal-detail-payment-fee-badge" style="background:rgba(34,197,94,0.18); border:1px solid #22c55e; color:#4ade80; font-size:11px; font-weight:800; padding:2px 8px; border-radius:3px;">$25 / Team</span>
+          </div>
+          <p style="font-size:12px; color:#cbd5e1; margin:0 0 12px; line-height:1.5;" id="modal-detail-payment-instructions">
+            This tournament requires an entry fee. Send payment to Frontline League via Cash App or PayPal. Include your Team Name in the memo!
+          </p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+            <div style="background:#060a04; border:1px solid #1e2e12; padding:10px 12px; border-radius:3px; display:flex; flex-direction:column; justify-content:space-between; gap:6px;">
+              <div>
+                <span style="font-size:10px; font-weight:800; color:#4ade80; text-transform:uppercase;">🟢 Cash App</span>
+                <div style="font-size:13px; font-weight:800; color:#ffffff; margin-top:2px;" id="modal-detail-cashapp-display">$FrontlineLeague</div>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:4px;">
+                <button type="button" class="btn-tourney-outline" style="font-size:10.5px; padding:3px 8px;" onclick="copyPaymentHandle('cashapp', this)">Copy $Cashtag</button>
+                <a id="modal-detail-cashapp-link" href="https://cash.app/$FrontlineLeague" target="_blank" class="btn-tourney-primary" style="font-size:10.5px; padding:3px 8px; text-decoration:none; display:inline-flex; align-items:center;">Open App ↗</a>
+              </div>
+            </div>
+            <div style="background:#060a04; border:1px solid #132738; padding:10px 12px; border-radius:3px; display:flex; flex-direction:column; justify-content:space-between; gap:6px;">
+              <div>
+                <span style="font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase;">🔵 PayPal</span>
+                <div style="font-size:13px; font-weight:800; color:#ffffff; margin-top:2px;" id="modal-detail-paypal-display">paypal.me/frontlinecdl</div>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:4px;">
+                <button type="button" class="btn-tourney-outline" style="font-size:10.5px; padding:3px 8px;" onclick="copyPaymentHandle('paypal', this)">Copy Link</button>
+                <a id="modal-detail-paypal-link" href="https://paypal.me/frontlinecdl" target="_blank" class="btn-tourney-primary" style="background:#0284c7; border-color:#38bdf8; font-size:10.5px; padding:3px 8px; text-decoration:none; display:inline-flex; align-items:center;">Open PayPal ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
         <div style="background:#0c0e09; border:1px solid #232918; padding:16px; border-radius:2px; margin-bottom:20px;">
           <h4 style="font:800 13px var(--body); color:#fbbf24; text-transform:uppercase; margin:0 0 8px; letter-spacing:0.5px;">
             Official CDL Rules &amp; Map Veto Directive
@@ -883,6 +917,65 @@
               </div>
             </div>
 
+            <!-- Entry Fee Payment Section (revealed if tournament is paid) -->
+            <div id="reg-payment-section" style="display:none; background:#0c1109; border:1px solid #283a15; border-left:3px solid #22c55e; border-radius:3px; padding:14px; margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label style="display:block; font-size:11px; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:0.5px; margin:0;">
+                  💳 TOURNAMENT ENTRY FEE PAYMENT *
+                </label>
+                <span id="reg-payment-fee-badge" style="font-size:11px; font-weight:800; color:#4ade80; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); padding:2px 8px; border-radius:10px;">
+                  $25 / Team
+                </span>
+              </div>
+              <p style="font-size:11.5px; color:#cbd5e1; margin:0 0 10px; line-height:1.4;" id="reg-payment-instructions-text">
+                Please pay the entry fee using Cash App or PayPal. Provide your sender tag / note so the Commissioner can verify your payment.
+              </p>
+              <!-- Quick Pay Links -->
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:12px;">
+                <div style="background:#060a04; border:1px solid #1a2810; padding:8px 10px; border-radius:2px; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size:9.5px; color:#4ade80; font-weight:800; text-transform:uppercase;">🟢 Cash App</div>
+                    <div style="font-size:12px; font-weight:800; color:#fff;" id="reg-cashapp-display">$FrontlineLeague</div>
+                  </div>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn-tourney-outline" style="font-size:10px; padding:2px 6px;" onclick="copyPaymentHandle('reg-cashapp', this)">Copy</button>
+                    <a id="reg-cashapp-link" href="https://cash.app/$FrontlineLeague" target="_blank" class="btn-tourney-primary" style="font-size:10px; padding:2px 6px; text-decoration:none;">Open ↗</a>
+                  </div>
+                </div>
+                <div style="background:#060a04; border:1px solid #122332; padding:8px 10px; border-radius:2px; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size:9.5px; color:#38bdf8; font-weight:800; text-transform:uppercase;">🔵 PayPal</div>
+                    <div style="font-size:12px; font-weight:800; color:#fff;" id="reg-paypal-display">paypal.me/frontlinecdl</div>
+                  </div>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn-tourney-outline" style="font-size:10px; padding:2px 6px;" onclick="copyPaymentHandle('reg-paypal', this)">Copy</button>
+                    <a id="reg-paypal-link" href="https://paypal.me/frontlinecdl" target="_blank" class="btn-tourney-primary" style="background:#0284c7; border-color:#38bdf8; font-size:10px; padding:2px 6px; text-decoration:none;">Open ↗</a>
+                  </div>
+                </div>
+              </div>
+              <!-- Payment Method Selection -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                  <label style="display:block; font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">Payment Method Used *</label>
+                  <select id="reg-payment-method" class="tourney-search-input" style="width:100%; box-sizing:border-box; font-size:12px; background:#0b0e08; color:#fff;">
+                    <option value="Cash App" selected>🟢 Cash App</option>
+                    <option value="PayPal">🔵 PayPal</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block; font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">Your Cash App Tag or PayPal Name *</label>
+                  <input type="text" id="reg-payment-sender" placeholder="e.g. $YourCashtag or Name" class="tourney-search-input" style="width:100%; box-sizing:border-box; font-size:12px;" />
+                </div>
+              </div>
+              <div style="margin-bottom:10px;">
+                <label style="display:block; font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">Payment Note / Memo Used (Optional)</label>
+                <input type="text" id="reg-payment-note" placeholder="e.g. Entry fee for Dallas Outlaws" class="tourney-search-input" style="width:100%; box-sizing:border-box; font-size:12px;" />
+              </div>
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:11px; color:#cbd5e1;">
+                <input type="checkbox" id="reg-payment-confirm-chk" />
+                <span>I have submitted or agree to pay the entry fee prior to bracket seed generation.</span>
+              </label>
+            </div>
             <div style="font-size:11.5px; color:#9ca3af;">
               <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                 <input type="checkbox" required checked />
@@ -1009,6 +1102,21 @@
         updateTourneyAuthUI();
 
         // Check if returning from Discord OAuth redirect with pending tournament registration
+        // Deep-linking support via query parameters (e.g. ?open=t_123 or ?register=1)
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const openId = urlParams.get('open') || urlParams.get('tournament');
+          const autoReg = urlParams.get('register') === '1' || urlParams.get('register') === 'true';
+          if (openId) {
+            setTimeout(() => {
+              const found = (currentTournaments || []).find(t => String(t.id) === String(openId));
+              if (found) {
+                if (autoReg) openTourneyRegisterModal(found.id);
+                else openTourneyDetailsModal(found);
+              }
+            }, 350);
+          }
+        } catch (_) {}
         const pendingTourney = sessionStorage.getItem('frontline_pending_tourney_reg');
         if (pendingTourney) {
           sessionStorage.removeItem('frontline_pending_tourney_reg');
@@ -1336,6 +1444,36 @@
         }
 
         // Display modal immediately on click for instant zero-latency feedback
+        // Populate Payment Directives
+        const paymentBox = document.getElementById('modal-detail-payment-box');
+        const hasFee = !!(t.has_entry_fee || (t.entry_fee && !String(t.entry_fee).toLowerCase().includes('free')));
+        if (paymentBox) {
+          if (hasFee) {
+            paymentBox.style.display = 'block';
+            const feeBadge = document.getElementById('modal-detail-payment-fee-badge');
+            const instEl = document.getElementById('modal-detail-payment-instructions');
+            const cashDisplay = document.getElementById('modal-detail-cashapp-display');
+            const cashLink = document.getElementById('modal-detail-cashapp-link');
+            const paypalDisplay = document.getElementById('modal-detail-paypal-display');
+            const paypalLink = document.getElementById('modal-detail-paypal-link');
+
+            const feeAmt = t.entry_fee_amount || t.entry_fee || '$25 / Team';
+            if (feeBadge) feeBadge.textContent = feeAmt;
+            if (instEl) instEl.textContent = t.payment_instructions || 'This tournament requires an entry fee. Send payment to Frontline League via Cash App or PayPal. Include your Team Name in the memo!';
+
+            const cashTag = t.cashapp_tag || '$FrontlineLeague';
+            const cleanCash = String(cashTag).replace(/^[$@]/, '').trim();
+            if (cashDisplay) cashDisplay.textContent = "$" + cleanCash;
+            if (cashLink) cashLink.href = "https://cash.app/$" + cleanCash;
+
+            const payHandle = t.paypal_handle || 'frontlinecdl';
+            const cleanPay = String(payHandle).replace(/^https?:\/\/(www\.)?paypal\.me\//i, '').replace(/^@/, '').trim();
+            if (paypalDisplay) paypalDisplay.textContent = "paypal.me/" + cleanPay;
+            if (paypalLink) paypalLink.href = "https://paypal.me/" + cleanPay;
+          } else {
+            paymentBox.style.display = 'none';
+          }
+        }
         document.getElementById('modal-tourney-details').style.display = 'flex';
 
         // Load enlisted squads into details modal asynchronously
@@ -2112,6 +2250,39 @@
         document.getElementById('reg-modal-title').textContent = `Enlist: ${t.title || 'Tournament'}`;
 
         const warningEl = document.getElementById('reg-modal-duplicate-warning');
+        // Check entry fee if required
+        const currentTourneyObj = (currentTournaments || []).find(t => String(t.id) === String(tourneyId));
+        const isRegTourneyPaid = !!(currentTourneyObj && (currentTourneyObj.has_entry_fee || (currentTourneyObj.entry_fee && !String(currentTourneyObj.entry_fee).toLowerCase().includes('free'))));
+        let paymentData = {};
+
+        if (isRegTourneyPaid) {
+          const pMethod = document.getElementById('reg-payment-method')?.value || 'Cash App';
+          const pSender = (document.getElementById('reg-payment-sender')?.value || '').trim();
+          const pNote = (document.getElementById('reg-payment-note')?.value || '').trim();
+          const pConfirmed = !!document.getElementById('reg-payment-confirm-chk')?.checked;
+
+          if (!pSender) {
+            showToast('Please enter your Cash App $Cashtag or PayPal sender name used for the entry fee.', true);
+            const sendInput = document.getElementById('reg-payment-sender');
+            if (sendInput) sendInput.focus();
+            return;
+          }
+
+          if (!pConfirmed) {
+            showToast('Please check the confirmation box acknowledging the tournament entry fee directive.', true);
+            return;
+          }
+
+          paymentData = {
+            has_entry_fee: true,
+            entry_fee: currentTourneyObj.entry_fee || '$25 / Team',
+            payment_status: 'pending_verification',
+            payment_method: pMethod,
+            payment_sender_handle: pSender,
+            payment_note: pNote,
+            payment_amount: currentTourneyObj.entry_fee_amount || currentTourneyObj.entry_fee || '$25 / Team'
+          };
+        }
         const submitBtn = document.getElementById('btn-submit-reg');
         if (warningEl) warningEl.style.display = 'none';
         if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
@@ -2303,6 +2474,39 @@
           };
         }
 
+        // Setup Payment Gateway Directives
+        const regPaySection = document.getElementById('reg-payment-section');
+        const isTourneyPaid = !!(targetTourney && (targetTourney.has_entry_fee || (targetTourney.entry_fee && !String(targetTourney.entry_fee).toLowerCase().includes('free'))));
+        if (regPaySection) {
+          if (isTourneyPaid) {
+            regPaySection.style.display = 'block';
+            const feeAmt = targetTourney.entry_fee_amount || targetTourney.entry_fee || '$25 / Team';
+            const badge = document.getElementById('reg-payment-fee-badge');
+            if (badge) badge.textContent = feeAmt;
+
+            const inst = document.getElementById('reg-payment-instructions-text');
+            if (inst) inst.textContent = targetTourney.payment_instructions || ('Please pay the ' + feeAmt + ' entry fee using Cash App or PayPal. Include your squad name in the note!');
+
+            const cashTag = targetTourney.cashapp_tag || '$FrontlineLeague';
+            const cleanCash = String(cashTag).replace(/^[$@]/, '').trim();
+            const cashDisp = document.getElementById('reg-cashapp-display');
+            const cashLnk = document.getElementById('reg-cashapp-link');
+            if (cashDisp) cashDisp.textContent = "$" + cleanCash;
+            if (cashLnk) cashLnk.href = "https://cash.app/$" + cleanCash;
+
+            const payHandle = targetTourney.paypal_handle || 'frontlinecdl';
+            const cleanPay = String(payHandle).replace(/^https?:\/\/(www\.)?paypal\.me\//i, '').replace(/^@/, '').trim();
+            const payDisp = document.getElementById('reg-paypal-display');
+            const payLnk = document.getElementById('reg-paypal-link');
+            if (payDisp) payDisp.textContent = "paypal.me/" + cleanPay;
+            if (payLnk) payLnk.href = "https://paypal.me/" + cleanPay;
+
+            const chk = document.getElementById('reg-payment-confirm-chk');
+            if (chk) chk.checked = false;
+          } else {
+            regPaySection.style.display = 'none';
+          }
+        }
         document.getElementById('modal-tourney-register').style.display = 'flex';
       }
 
@@ -2390,6 +2594,7 @@
             captain_activision_id: captainActId,
             roster: fullRoster,
             roster_text: fullRoster.join(', '),
+            ...paymentData,
             registered_at: new Date().toISOString()
           };
 
@@ -2423,6 +2628,37 @@
       // Event Listeners
       document.getElementById('tourney-search')?.addEventListener('input', renderTournaments);
 
+      // 1-Click Clipboard copy for Cash App and PayPal handles
+      window.copyPaymentHandle = function(type, btnEl) {
+        let textToCopy = '';
+        if (type === 'cashapp') {
+          textToCopy = document.getElementById('modal-detail-cashapp-display')?.textContent || '$FrontlineLeague';
+        } else if (type === 'paypal') {
+          textToCopy = document.getElementById('modal-detail-paypal-link')?.href || 'https://paypal.me/frontlinecdl';
+        } else if (type === 'reg-cashapp') {
+          textToCopy = document.getElementById('reg-cashapp-display')?.textContent || '$FrontlineLeague';
+        } else if (type === 'reg-paypal') {
+          textToCopy = document.getElementById('reg-paypal-link')?.href || 'https://paypal.me/frontlinecdl';
+        }
+        if (!textToCopy) return;
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          if (btnEl) {
+            const orig = btnEl.textContent;
+            btnEl.textContent = 'Copied! ✓';
+            btnEl.style.borderColor = '#22c55e';
+            btnEl.style.color = '#4ade80';
+            setTimeout(() => {
+              btnEl.textContent = orig;
+              btnEl.style.borderColor = '';
+              btnEl.style.color = '';
+            }, 2000);
+          }
+          showToast('Copied to clipboard: ' + textToCopy);
+        }).catch(() => {
+          showToast('Handle: ' + textToCopy);
+        });
+      };
       // Close teammate autocomplete dropdown on outside click
       document.addEventListener('click', (e) => {
         const wrap = document.getElementById('teammate-search-box-wrap');
