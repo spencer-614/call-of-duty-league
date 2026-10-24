@@ -248,6 +248,31 @@
         animation: timerPulse 0.8s infinite;
       }
 
+      /* Multi-Match Lobby Bar */
+      .lobby-tab-pill {
+        background: #0f1522;
+        border: 1px solid #1f2b3e;
+        color: #94a3b8;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+      }
+      .lobby-tab-pill:hover {
+        border-color: #38bdf8;
+        color: #ffffff;
+      }
+      .lobby-tab-pill.active {
+        background: rgba(56, 189, 248, 0.12);
+        border-color: #38bdf8;
+        color: #ffffff;
+      }
+
       /* Modal Styling */
       .arena-modal-backdrop {
         position: fixed;
@@ -417,8 +442,31 @@
            ======================================================================= -->
       <div id="tab-content-queue" class="arena-8s-tab-pane">
         
+        <!-- NeatQueue Active Lobbies & Multi-Match Bar -->
+        <div id="active-lobbies-bar" style="display:none; margin-bottom:18px; background:#070a10; border:1px solid #1c2637; border-radius:6px; padding:10px 14px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;" id="active-lobbies-pills-list">
+            <!-- Dynamically populated pills -->
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="gb-meta-tag accent" id="active-matches-count-badge" style="font-size:10.5px; padding:2px 8px; background:#1e293b; color:#38bdf8; border-color:#38bdf8;">
+              0 ACTIVE LOBBIES
+            </span>
+          </div>
+        </div>
+
         <!-- Queue Inactive / Populating Box -->
         <div id="queue-lobby-panel" style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:24px; margin-bottom:24px;">
+          
+          <!-- Active Matches Ongoing Banner in Queue -->
+          <div id="active-matches-notice-banner" style="display:none; margin-bottom:16px; background:rgba(30,58,138,0.22); border:1px solid #3b82f6; border-radius:4px; padding:10px 14px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:#e2e8f0;">
+              <span style="font-size:16px;">🚀</span>
+              <span><strong>A match lobby popped and is active!</strong> This matchmaking queue is open to form the next lobby.</span>
+            </div>
+            <div style="display:flex; gap:8px;" id="active-matches-quick-links">
+              <!-- Dynamically populated buttons to view active match(es) -->
+            </div>
+          </div>
           <!-- Queue Header & Controls -->
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
             <div>
@@ -525,6 +573,9 @@
                 </button>
                 <button type="button" class="btn-crimson-outline" onclick="autoBalanceTeamsQuick()" style="padding:8px 14px; font-size:12px; border-color:#38bdf8; color:#38bdf8;" id="btn-autobalance">
                   <span>⚖</span> <span>Auto-Balance 4v4</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="switchToQueueView()" style="padding:8px 14px; font-size:12px; border-color:#22c55e; color:#22c55e;" title="Switch view to open matchmaking queue">
+                  <span>⚔</span> <span>View Open Queue (<span id="match-view-queue-count">0</span>/8)</span>
                 </button>
                 <button type="button" class="btn-crimson-outline" onclick="cancelActiveMatch()" style="padding:8px 14px; font-size:12px; border-color:#ef4444; color:#ef4444;">
                   <span>✖</span> <span>Cancel Match</span>
@@ -1000,7 +1051,19 @@
           { gamertag: "Pred", activision_id: "Pred#9941", role: "Entry SMG", platform: "PC", elo: 1320, avatar_url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80" },
           { gamertag: "Kenny", activision_id: "Kenny#8812", role: "Flex", platform: "PC", elo: 1310, avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" },
           { gamertag: "HyDra", activision_id: "HyDra#5512", role: "Entry SMG", platform: "PC", elo: 1370, avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
-          { gamertag: "Scrap", activision_id: "Scrap#2144", role: "Main AR", platform: "PC", elo: 1345, avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" }
+          { gamertag: "Scrap", activision_id: "Scrap#2144", role: "Main AR", platform: "PC", elo: 1345, avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "CleanX", activision_id: "CleanX#9102", role: "Entry SMG", platform: "PC", elo: 1335, avatar_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Envoy", activision_id: "Envoy#3141", role: "Entry SMG", platform: "PC", elo: 1325, avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Insight", activision_id: "Insight#4192", role: "Main AR", platform: "PC", elo: 1315, avatar_url: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Ghosty", activision_id: "Ghosty#6621", role: "Flex", platform: "PC", elo: 1320, avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Drazah", activision_id: "Drazah#8821", role: "Flex", platform: "PC", elo: 1330, avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "aBeZy", activision_id: "aBeZy#1111", role: "Entry SMG", platform: "PC", elo: 1355, avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "KiSMET", activision_id: "KiSMET#4412", role: "Entry SMG", platform: "PC", elo: 1305, avatar_url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Skyz", activision_id: "Skyz#2214", role: "Main AR", platform: "PC", elo: 1300, avatar_url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Attach", activision_id: "Attach#7821", role: "Main AR", platform: "PC", elo: 1305, avatar_url: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Standy", activision_id: "Standy#9912", role: "Entry SMG", platform: "PC", elo: 1285, avatar_url: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Gwinn", activision_id: "Gwinn#5514", role: "Entry SMG", platform: "PC", elo: 1310, avatar_url: "https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Sib", activision_id: "Sib#7718", role: "Flex", platform: "PC", elo: 1310, avatar_url: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=150&auto=format&fit=crop&q=80" }
         ];
 
         // Seed Leaderboard Initial Data if empty
@@ -1015,17 +1078,15 @@
 
         // State Machine
         let queuePlayers = [];
+        let activeMatches = [];
         let activeMatch = null;
+        let currentViewMode = "queue"; // "queue" or "match"
         let localPlayer = null;
         let broadcastChannel = null;
         let captainSelectionMode = localStorage.getItem("frontline_arena_8s_captain_mode") || "vote";
-        let votingTimer = null;
-        let votingSecondsLeft = 15;
         let userCaptainVote = null;
         let captainCandidates = [];
-        let draftPickTimer = null;
-        let draftPickSecondsLeft = 25;
-        let botPickTimeout = null;
+        let global8sTicker = null;
 
         window.handleCaptainModeChange = function(mode) {
           captainSelectionMode = mode;
@@ -1040,21 +1101,40 @@
           broadcastChannel.onmessage = function(event) {
             const data = event.data;
             if (!data) return;
-            if (data.type === "QUEUE_UPDATE") {
+            if (data.type === "LOBBIES_UPDATE") {
+              queuePlayers = data.players || [];
+              activeMatches = data.matches || [];
+              if (activeMatch) {
+                activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
+              } else if (activeMatches.length > 0) {
+                activeMatch = activeMatches[0];
+              }
+              renderQueueUI();
+              renderActiveLobbiesBar();
+              if (activeMatch && currentViewMode === "match") renderMatchUI();
+            } else if (data.type === "QUEUE_UPDATE") {
               queuePlayers = data.players || [];
               renderQueueUI();
             } else if (data.type === "MATCH_STARTED") {
+              if (data.match && !activeMatches.some(m => m.id === data.match.id)) {
+                activeMatches.push(data.match);
+              }
               activeMatch = data.match;
-              queuePlayers = [];
+              queuePlayers = data.players || [];
               renderQueueUI();
+              renderActiveLobbiesBar();
               renderMatchUI();
               playSynthesizedSound('pop');
-            } else if (data.type === "MATCH_UPDATE") {
-              activeMatch = data.match;
-              renderMatchUI();
             } else if (data.type === "MATCH_ENDED") {
-              activeMatch = null;
+              if (data.matchId) {
+                activeMatches = activeMatches.filter(m => m.id !== data.matchId);
+              }
+              if (activeMatch && data.matchId === activeMatch.id) {
+                activeMatch = activeMatches[0] || null;
+                if (!activeMatch) currentViewMode = "queue";
+              }
               renderQueueUI();
+              renderActiveLobbiesBar();
               loadLeaderboard();
               loadMatchHistory();
             }
@@ -1091,10 +1171,21 @@
           return null;
         }
 
+        function isPlayerInMatch(gamertag, match) {
+          if (!match || !gamertag) return false;
+          const gt = gamertag.toLowerCase();
+          const inAll = match.all_players && match.all_players.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
+          const inA = match.team_a && match.team_a.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
+          const inB = match.team_b && match.team_b.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
+          const inPool = match.draft_pool && match.draft_pool.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
+          return !!(inAll || inA || inB || inPool);
+        }
+
         // Persistence Helpers
         function saveQueueState() {
           try {
             localStorage.setItem("frontline_arena_8s_queue", JSON.stringify(queuePlayers));
+            localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
             if (activeMatch) {
               localStorage.setItem("frontline_arena_8s_active_match", JSON.stringify(activeMatch));
             } else {
@@ -1102,9 +1193,10 @@
             }
             if (broadcastChannel) {
               broadcastChannel.postMessage({
-                type: activeMatch ? "MATCH_UPDATE" : "QUEUE_UPDATE",
+                type: "LOBBIES_UPDATE",
                 players: queuePlayers,
-                match: activeMatch
+                matches: activeMatches,
+                activeMatchId: activeMatch ? activeMatch.id : null
               });
             }
           } catch(e) {}
@@ -1114,8 +1206,27 @@
           try {
             const rawQ = localStorage.getItem("frontline_arena_8s_queue");
             if (rawQ) queuePlayers = JSON.parse(rawQ) || [];
-            const rawM = localStorage.getItem("frontline_arena_8s_active_match");
-            if (rawM) activeMatch = JSON.parse(rawM);
+
+            const rawMatches = localStorage.getItem("frontline_arena_8s_active_matches");
+            if (rawMatches) {
+              activeMatches = JSON.parse(rawMatches) || [];
+            } else {
+              const rawM = localStorage.getItem("frontline_arena_8s_active_match");
+              if (rawM) {
+                const single = JSON.parse(rawM);
+                if (single) activeMatches = [single];
+              }
+            }
+
+            if (activeMatches.length > 0) {
+              const curUser = resolveCurrentPlayer();
+              const userMatch = curUser ? activeMatches.find(m => isPlayerInMatch(curUser.gamertag, m)) : null;
+              activeMatch = userMatch || activeMatches[0];
+              currentViewMode = "match";
+            } else {
+              activeMatch = null;
+              currentViewMode = "queue";
+            }
           } catch(e) {}
         }
 
@@ -1125,8 +1236,16 @@
         window.handleJoinQueue = function() {
           const user = resolveCurrentPlayer();
           if (!user) {
-            // Open modal to set gamertag / Activision ID
             openJoinModal();
+            return;
+          }
+
+          // If user is currently playing in an active match, offer quick jump
+          const userMatch = activeMatches.find(m => isPlayerInMatch(user.gamertag, m));
+          if (userMatch) {
+            if (confirm(`You are currently playing in active Match #${userMatch.match_code}!\n\nWould you like to jump to your active match lobby?`)) {
+              switchToMatchView(userMatch.id);
+            }
             return;
           }
 
@@ -1150,7 +1269,6 @@
           saveQueueState();
           renderQueueUI();
 
-          // Check if queue full
           checkQueueFull();
         };
 
@@ -1165,21 +1283,35 @@
         window.addBotCombatant = function() {
           if (queuePlayers.length >= 8) return;
           const availableBots = BOT_COMBATANTS.filter(b => 
-            !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase())
+            !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
+            !activeMatches.some(m => isPlayerInMatch(b.gamertag, m))
           );
-          if (availableBots.length === 0) return;
-          const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+
+          let botToUse = null;
+          if (availableBots.length > 0) {
+            botToUse = availableBots[Math.floor(Math.random() * availableBots.length)];
+          } else {
+            const fallbackTemplate = BOT_COMBATANTS[Math.floor(Math.random() * BOT_COMBATANTS.length)];
+            const salt = Math.floor(10 + Math.random() * 90);
+            botToUse = {
+              ...fallbackTemplate,
+              gamertag: `${fallbackTemplate.gamertag}_${salt}`,
+              activision_id: `${fallbackTemplate.gamertag}#${Math.floor(1000 + Math.random()*9000)}`
+            };
+          }
+
           queuePlayers.push({
             id: "bot_" + Date.now() + "_" + Math.floor(Math.random()*1000),
-            gamertag: bot.gamertag,
-            activision_id: bot.activision_id,
-            role: bot.role,
-            platform: bot.platform,
-            elo: bot.elo,
-            avatar_url: bot.avatar_url,
+            gamertag: botToUse.gamertag,
+            activision_id: botToUse.activision_id,
+            role: botToUse.role,
+            platform: botToUse.platform,
+            elo: botToUse.elo,
+            avatar_url: botToUse.avatar_url,
             is_bot: true,
             joined_at: new Date().toISOString()
           });
+
           playSynthesizedSound('join');
           saveQueueState();
           renderQueueUI();
@@ -1188,27 +1320,41 @@
 
         window.fillQueueInstant = function() {
           const user = resolveCurrentPlayer();
-          if (user && !queuePlayers.some(p => p.gamertag.toLowerCase() === user.gamertag.toLowerCase())) {
+          const userMatch = user ? activeMatches.find(m => isPlayerInMatch(user.gamertag, m)) : null;
+          if (user && !userMatch && !queuePlayers.some(p => p.gamertag.toLowerCase() === user.gamertag.toLowerCase())) {
             queuePlayers.push({ ...user, joined_at: new Date().toISOString() });
           }
 
-          let botIdx = 0;
-          while (queuePlayers.length < 8 && botIdx < BOT_COMBATANTS.length) {
-            const candidate = BOT_COMBATANTS[botIdx];
-            if (!queuePlayers.some(p => p.gamertag.toLowerCase() === candidate.gamertag.toLowerCase())) {
-              queuePlayers.push({
-                id: "bot_" + Date.now() + "_" + botIdx,
-                gamertag: candidate.gamertag,
-                activision_id: candidate.activision_id,
-                role: candidate.role,
-                platform: candidate.platform,
-                elo: candidate.elo,
-                avatar_url: candidate.avatar_url,
-                is_bot: true,
-                joined_at: new Date().toISOString()
-              });
+          while (queuePlayers.length < 8) {
+            const availableBots = BOT_COMBATANTS.filter(b => 
+              !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
+              !activeMatches.some(m => isPlayerInMatch(b.gamertag, m))
+            );
+
+            let candidate = null;
+            if (availableBots.length > 0) {
+              candidate = availableBots[0];
+            } else {
+              const template = BOT_COMBATANTS[Math.floor(Math.random() * BOT_COMBATANTS.length)];
+              const salt = Math.floor(10 + Math.random() * 90);
+              candidate = {
+                ...template,
+                gamertag: `${template.gamertag}_${salt}`,
+                activision_id: `${template.gamertag}#${Math.floor(1000 + Math.random()*9000)}`
+              };
             }
-            botIdx++;
+
+            queuePlayers.push({
+              id: "bot_" + Date.now() + "_" + queuePlayers.length,
+              gamertag: candidate.gamertag,
+              activision_id: candidate.activision_id,
+              role: candidate.role,
+              platform: candidate.platform,
+              elo: candidate.elo,
+              avatar_url: candidate.avatar_url,
+              is_bot: true,
+              joined_at: new Date().toISOString()
+            });
           }
 
           playSynthesizedSound('join');
@@ -1218,39 +1364,13 @@
         };
 
         window.clearQueueConfirm = function() {
-          if (confirm("Reset current queue lobby?")) {
-            stopDraftPickTimer();
+          if (confirm("Reset current matchmaking queue? (Active match lobbies will not be affected)")) {
             queuePlayers = [];
-            activeMatch = null;
             saveQueueState();
             renderQueueUI();
-            const panel = document.getElementById('active-match-session-panel');
-            if (panel) panel.style.display = 'none';
+            renderActiveLobbiesBar();
           }
         };
-
-        function checkQueueFull() {
-          if (queuePlayers.length >= 8) {
-            playSynthesizedSound('pop');
-            const players = [...queuePlayers];
-            queuePlayers = []; // Queue reset for next squad
-            saveQueueState();
-            renderQueueUI();
-
-            if (captainSelectionMode === "vote") {
-              startCaptainVotingPhase(players);
-            } else if (captainSelectionMode === "random") {
-              const shuffled = [...players].sort(() => Math.random() - 0.5);
-              launchMatchSessionWithCaptains(players, shuffled[0], shuffled[1]);
-              addLobbyChatMessage("SYSTEM", `🎲 Random Captains Selected: ${shuffled[0].gamertag} & ${shuffled[1].gamertag}!`);
-            } else {
-              // Top MMR
-              const sorted = [...players].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
-              launchMatchSessionWithCaptains(players, sorted[0], sorted[1]);
-              addLobbyChatMessage("SYSTEM", `⭐ Top MMR Captains Assigned: ${sorted[0].gamertag} & ${sorted[1].gamertag}!`);
-            }
-          }
-        }
 
         function generateDefaultSeriesMaps() {
           const rollMap = (mode) => {
@@ -1267,175 +1387,281 @@
         }
 
         // =====================================================================
-        // CAPTAIN VOTING & RANDOM SELECTION (NEATQUEUE ENGINE)
+        // NEATQUEUE MULTI-MATCH ENGINE & QUEUE POP
         // =====================================================================
-        window.startCaptainVotingPhase = function(candidatePlayers) {
-          stopDraftPickTimer();
-          if (votingTimer) clearInterval(votingTimer);
-          const allPlayers = candidatePlayers || (activeMatch ? (activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool]) : []);
-          if (!allPlayers || allPlayers.length < 2) return;
+        function checkQueueFull() {
+          if (queuePlayers.length >= 8) {
+            playSynthesizedSound('pop');
+            const players = [...queuePlayers];
+            queuePlayers = []; // Queue resets immediately for the next lobby!
 
-          userCaptainVote = null;
-          votingSecondsLeft = 15;
-          captainCandidates = allPlayers.map(p => ({
-            ...p,
-            votes: 0
-          }));
+            const matchCode = "8S-" + Math.floor(1000 + Math.random() * 9000);
+            const newMatchId = "match_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
-          const matchCode = activeMatch ? activeMatch.match_code : ("8S-" + Math.floor(1000 + Math.random() * 9000));
-          activeMatch = {
-            id: activeMatch ? activeMatch.id : ("match_" + Date.now()),
-            match_code: matchCode,
-            status: "voting_captains",
-            format: "4v4 MW4 Variant",
-            all_players: allPlayers,
-            candidates: captainCandidates,
-            maps: activeMatch?.maps && activeMatch.maps.length ? activeMatch.maps : generateDefaultSeriesMaps(),
-            series_score: { team_a: 0, team_b: 0 },
-            winning_team: null,
-            created_at: new Date().toISOString()
-          };
+            let newMatch = null;
 
-          addLobbyChatMessage("SYSTEM", "🗳️ Captain Election started! All 8 players cast votes to elect Team Alpha and Bravo captains.");
-          saveQueueState();
-          renderMatchUI();
+            if (captainSelectionMode === "vote") {
+              newMatch = {
+                id: newMatchId,
+                match_code: matchCode,
+                status: "voting_captains",
+                format: "4v4 MW4 Variant",
+                all_players: players,
+                candidates: players.map(p => ({ ...p, votes: 0 })),
+                voting_seconds_left: 15,
+                maps: generateDefaultSeriesMaps(),
+                series_score: { team_a: 0, team_b: 0 },
+                winning_team: null,
+                chat_messages: [{ sender: "SYSTEM", text: `🚀 Lobby #${matchCode} created! All 8 players cast votes to elect Team Alpha & Bravo captains.`, time: new Date().toLocaleTimeString() }],
+                created_at: new Date().toISOString()
+              };
 
-          // Bot realistic voting simulation for quick testing
-          setTimeout(() => {
-            if (activeMatch && activeMatch.status === "voting_captains") {
-              allPlayers.filter(p => p.is_bot).forEach(bot => {
-                const randomTarget = allPlayers[Math.floor(Math.random() * allPlayers.length)];
-                const cand = captainCandidates.find(c => c.gamertag === randomTarget.gamertag);
-                if (cand) cand.votes += 1;
+              // Simulated bot realistic voting
+              setTimeout(() => {
+                if (newMatch && newMatch.status === "voting_captains") {
+                  players.filter(p => p.is_bot).forEach(bot => {
+                    const randomTarget = players[Math.floor(Math.random() * players.length)];
+                    const cand = newMatch.candidates.find(c => c.gamertag === randomTarget.gamertag);
+                    if (cand) cand.votes = (cand.votes || 0) + 1;
+                  });
+                  if (activeMatch && activeMatch.id === newMatch.id) {
+                    renderCaptainVotingUI();
+                  }
+                }
+              }, 1500);
+            } else if (captainSelectionMode === "random") {
+              const shuffled = [...players].sort(() => Math.random() - 0.5);
+              const capA = shuffled[0];
+              const capB = shuffled[1];
+              const draftPool = players.filter(p => p.gamertag !== capA.gamertag && p.gamertag !== capB.gamertag);
+              newMatch = {
+                id: newMatchId,
+                match_code: matchCode,
+                status: "drafting",
+                format: "4v4 MW4 Variant",
+                all_players: players,
+                captain_a: capA,
+                captain_b: capB,
+                team_a: [capA],
+                team_b: [capB],
+                draft_pool: draftPool,
+                current_pick_team: "team_a",
+                pick_turn: 1,
+                coin_flip_winner: "Team Alpha",
+                host_player: capA,
+                draft_seconds_left: 25,
+                bot_think_ticks: 0,
+                maps: generateDefaultSeriesMaps(),
+                series_score: { team_a: 0, team_b: 0 },
+                winning_team: null,
+                chat_messages: [{ sender: "SYSTEM", text: `🎲 Random Captains Selected: ${capA.gamertag} & ${capB.gamertag}! Draft is LIVE.`, time: new Date().toLocaleTimeString() }],
+                created_at: new Date().toISOString()
+              };
+            } else {
+              // Top MMR
+              const sorted = [...players].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+              const capA = sorted[0];
+              const capB = sorted[1];
+              const draftPool = players.filter(p => p.gamertag !== capA.gamertag && p.gamertag !== capB.gamertag);
+              newMatch = {
+                id: newMatchId,
+                match_code: matchCode,
+                status: "drafting",
+                format: "4v4 MW4 Variant",
+                all_players: players,
+                captain_a: capA,
+                captain_b: capB,
+                team_a: [capA],
+                team_b: [capB],
+                draft_pool: draftPool,
+                current_pick_team: "team_a",
+                pick_turn: 1,
+                coin_flip_winner: "Team Alpha",
+                host_player: capA,
+                draft_seconds_left: 25,
+                bot_think_ticks: 0,
+                maps: generateDefaultSeriesMaps(),
+                series_score: { team_a: 0, team_b: 0 },
+                winning_team: null,
+                chat_messages: [{ sender: "SYSTEM", text: `⭐ Top MMR Captains Assigned: ${capA.gamertag} & ${capB.gamertag}! Draft is LIVE.`, time: new Date().toLocaleTimeString() }],
+                created_at: new Date().toISOString()
+              };
+            }
+
+            activeMatches.push(newMatch);
+            activeMatch = newMatch;
+            currentViewMode = "match";
+
+            saveQueueState();
+            renderQueueUI();
+            renderActiveLobbiesBar();
+            renderMatchUI();
+
+            addLobbyChatMessage("SYSTEM", `🚀 Match #${newMatch.match_code} popped! Matchmaking queue is now open to fill the next lobby.`);
+
+            if (broadcastChannel) {
+              broadcastChannel.postMessage({
+                type: "MATCH_STARTED",
+                match: newMatch,
+                players: queuePlayers
               });
-              renderCaptainVotingUI();
             }
-          }, 1500);
-
-          // 15s Countdown Timer
-          votingTimer = setInterval(() => {
-            votingSecondsLeft--;
-            const timerBadge = document.getElementById('voting-timer-badge');
-            if (timerBadge) {
-              timerBadge.textContent = `⏳ ${votingSecondsLeft}s Remaining`;
-            }
-            if (votingSecondsLeft <= 0) {
-              clearInterval(votingTimer);
-              votingTimer = null;
-              finalizeCaptainVotes();
-            }
-          }, 1000);
-        };
-
-        window.castCaptainVote = function(gamertag) {
-          if (!activeMatch || activeMatch.status !== "voting_captains") return;
-          if (userCaptainVote) {
-            const prev = captainCandidates.find(c => c.gamertag === userCaptainVote);
-            if (prev && prev.votes > 0) prev.votes--;
-          }
-          userCaptainVote = gamertag;
-          const cand = captainCandidates.find(c => c.gamertag === gamertag);
-          if (cand) {
-            cand.votes += 1;
-            playSynthesizedSound('draft');
-            addLobbyChatMessage("SYSTEM", `Vote cast for ${cand.gamertag}.`);
-          }
-          renderCaptainVotingUI();
-          saveQueueState();
-        };
-
-        window.finalizeCaptainVotes = function() {
-          if (votingTimer) {
-            clearInterval(votingTimer);
-            votingTimer = null;
-          }
-          if (!activeMatch || !activeMatch.all_players) return;
-
-          // Sort candidates by votes desc; tie break with random or ELO
-          const sorted = [...captainCandidates].sort((a,b) => {
-            if (b.votes !== a.votes) return b.votes - a.votes;
-            return (b.elo || 1200) - (a.elo || 1200);
-          });
-
-          const capA = sorted[0];
-          const capB = sorted[1];
-
-          addLobbyChatMessage("SYSTEM", `🗳️ Voting concluded! ${capA.gamertag} (${capA.votes} votes) & ${capB.gamertag} (${capB.votes} votes) elected Captains!`);
-          playSynthesizedSound('victory');
-
-          launchMatchSessionWithCaptains(activeMatch.all_players, capA, capB);
-        };
-
-        window.randomizeCaptainsInstant = function() {
-          if (votingTimer) {
-            clearInterval(votingTimer);
-            votingTimer = null;
-          }
-          const all = activeMatch?.all_players || (activeMatch ? [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool] : []);
-          if (!all || all.length < 2) return;
-
-          const shuffled = [...all].sort(() => Math.random() - 0.5);
-          const capA = shuffled[0];
-          const capB = shuffled[1];
-
-          playSynthesizedSound('draft');
-          addLobbyChatMessage("SYSTEM", `🎲 Captains Randomly Selected: ${capA.gamertag} (Team Alpha) & ${capB.gamertag} (Team Bravo)!`);
-
-          launchMatchSessionWithCaptains(all, capA, capB);
-        };
-
-        function startDraftPickTimer() {
-          stopDraftPickTimer();
-          if (!activeMatch || activeMatch.status !== "drafting") return;
-
-          draftPickSecondsLeft = 25;
-          updateDraftPickTimerUI();
-
-          draftPickTimer = setInterval(() => {
-            if (!activeMatch || activeMatch.status !== "drafting") {
-              stopDraftPickTimer();
-              return;
-            }
-
-            draftPickSecondsLeft--;
-            updateDraftPickTimerUI();
-
-            if (draftPickSecondsLeft <= 0) {
-              stopDraftPickTimer();
-              // Auto-pick fallback: randomly select unpicked player from draft_pool
-              handleDraftPick(null, true);
-            }
-          }, 1000);
-
-          // If current captain is a simulated bot, pick after a 4-5s delay
-          const currentCaptain = (activeMatch.current_pick_team === "team_a") ? activeMatch.captain_a : activeMatch.captain_b;
-          if (currentCaptain && currentCaptain.is_bot && activeMatch.draft_pool && activeMatch.draft_pool.length > 0) {
-            botPickTimeout = setTimeout(() => {
-              if (activeMatch && activeMatch.status === "drafting" && activeMatch.draft_pool && activeMatch.draft_pool.length > 0) {
-                const sortedPool = [...activeMatch.draft_pool].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
-                const chosen = Math.random() < 0.7 ? sortedPool[0] : sortedPool[Math.floor(Math.random() * sortedPool.length)];
-                handleDraftPick(chosen.gamertag, false);
-              }
-            }, 4500);
           }
         }
 
-        function stopDraftPickTimer() {
-          if (draftPickTimer) {
-            clearInterval(draftPickTimer);
-            draftPickTimer = null;
+        // =====================================================================
+        // VIEW SWITCHING (QUEUE vs ACTIVE MATCHES)
+        // =====================================================================
+        window.switchToQueueView = function() {
+          currentViewMode = "queue";
+          renderQueueUI();
+          renderActiveLobbiesBar();
+        };
+
+        window.switchToMatchView = function(matchId) {
+          const target = activeMatches.find(m => m.id === matchId);
+          if (!target) return;
+          activeMatch = target;
+          currentViewMode = "match";
+          renderQueueUI();
+          renderMatchUI();
+          renderActiveLobbiesBar();
+        };
+
+        function renderActiveLobbiesBar() {
+          const bar = document.getElementById('active-lobbies-bar');
+          const pillsList = document.getElementById('active-lobbies-pills-list');
+          const countBadge = document.getElementById('active-matches-count-badge');
+          const noticeBanner = document.getElementById('active-matches-notice-banner');
+          const quickLinks = document.getElementById('active-matches-quick-links');
+          const matchQueueCount = document.getElementById('match-view-queue-count');
+
+          if (matchQueueCount) {
+            matchQueueCount.textContent = queuePlayers.length;
           }
-          if (botPickTimeout) {
-            clearTimeout(botPickTimeout);
-            botPickTimeout = null;
+
+          if (!bar) return;
+
+          if (activeMatches.length === 0) {
+            bar.style.display = "none";
+            if (noticeBanner) noticeBanner.style.display = "none";
+            return;
           }
+
+          bar.style.display = "flex";
+          if (countBadge) {
+            countBadge.textContent = `${activeMatches.length} ACTIVE ${activeMatches.length === 1 ? 'LOBBY' : 'LOBBIES'}`;
+          }
+
+          const curUser = resolveCurrentPlayer();
+
+          if (pillsList) {
+            const isQueueActive = (currentViewMode === "queue");
+            let html = `
+              <button type="button" class="lobby-tab-pill ${isQueueActive ? 'active' : ''}" onclick="switchToQueueView()">
+                <span class="fl-live-dot" style="background:#22c55e;"></span>
+                <span>Open Queue (${queuePlayers.length}/8)</span>
+              </button>
+            `;
+
+            activeMatches.forEach((m, idx) => {
+              const isSelected = (currentViewMode === "match" && activeMatch && activeMatch.id === m.id);
+              const isUserIn = curUser && isPlayerInMatch(curUser.gamertag, m);
+              let statusIcon = "⚡";
+              let statusText = "Drafting";
+              if (m.status === "voting_captains") {
+                statusIcon = "🗳️";
+                statusText = "Voting";
+              } else if (m.status === "in_progress") {
+                statusIcon = "⚔️";
+                statusText = `Live (${m.series_score ? `${m.series_score.team_a}-${m.series_score.team_b}` : '0-0'})`;
+              }
+
+              html += `
+                <button type="button" class="lobby-tab-pill ${isSelected ? 'active' : ''}" onclick="switchToMatchView('${m.id}')">
+                  <span>${statusIcon}</span>
+                  <span>Lobby #${idx + 1}: ${m.match_code}</span>
+                  <span style="font-size:10px; opacity:0.8;">[${statusText}]</span>
+                  ${isUserIn ? '<span class="gb-meta-tag accent" style="font-size:9px; padding:1px 4px; background:#eab308; color:#000; font-weight:800;">YOU</span>' : ''}
+                </button>
+              `;
+            });
+
+            pillsList.innerHTML = html;
+          }
+
+          if (noticeBanner) {
+            if (activeMatches.length > 0 && currentViewMode === "queue") {
+              noticeBanner.style.display = "flex";
+              if (quickLinks) {
+                quickLinks.innerHTML = activeMatches.map(m => `
+                  <button type="button" class="btn-dark" onclick="switchToMatchView('${m.id}')" style="padding:4px 10px; font-size:11px; border-color:#3b82f6; color:#93c5fd; cursor:pointer;">
+                    View Match #${m.match_code} ↗
+                  </button>
+                `).join('');
+              }
+            } else {
+              noticeBanner.style.display = "none";
+            }
+          }
+        }
+
+        // =====================================================================
+        // GLOBAL TIMERS RUNNER (HANDLES MULTI-MATCH TICKERS)
+        // =====================================================================
+        function startGlobal8sTicker() {
+          if (global8sTicker) return;
+          global8sTicker = setInterval(() => {
+            if (activeMatches.length === 0) return;
+
+            let stateChanged = false;
+
+            activeMatches.forEach(match => {
+              if (match.status === "voting_captains") {
+                match.voting_seconds_left = (match.voting_seconds_left !== undefined ? match.voting_seconds_left : 15) - 1;
+                stateChanged = true;
+                if (match.voting_seconds_left <= 0) {
+                  finalizeCaptainVotesForMatch(match);
+                }
+              } else if (match.status === "drafting") {
+                match.draft_seconds_left = (match.draft_seconds_left !== undefined ? match.draft_seconds_left : 25) - 1;
+                match.bot_think_ticks = (match.bot_think_ticks || 0) + 1;
+                stateChanged = true;
+
+                // Check if current turn captain is a simulated bot
+                const curCap = (match.current_pick_team === "team_a") ? match.captain_a : match.captain_b;
+                if (curCap && curCap.is_bot && match.bot_think_ticks >= 4 && match.draft_pool && match.draft_pool.length > 0) {
+                  const sortedPool = [...match.draft_pool].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+                  const chosen = Math.random() < 0.75 ? sortedPool[0] : sortedPool[Math.floor(Math.random() * sortedPool.length)];
+                  handleDraftPickForMatch(match, chosen.gamertag, false);
+                } else if (match.draft_seconds_left <= 0) {
+                  // Turn expired! Auto pick randomly
+                  handleDraftPickForMatch(match, null, true);
+                }
+              }
+            });
+
+            if (stateChanged) {
+              saveQueueState();
+              if (activeMatch && currentViewMode === "match") {
+                if (activeMatch.status === "drafting") {
+                  updateDraftPickTimerUI();
+                } else if (activeMatch.status === "voting_captains") {
+                  const badge = document.getElementById('voting-timer-badge');
+                  if (badge) badge.textContent = `⏳ ${Math.max(0, activeMatch.voting_seconds_left || 0)}s Remaining`;
+                }
+              }
+              renderActiveLobbiesBar();
+            }
+          }, 1000);
         }
 
         function updateDraftPickTimerUI() {
           const badge = document.getElementById('draft-pick-timer-badge');
-          if (!badge) return;
-          badge.textContent = `⏳ ${draftPickSecondsLeft}s`;
-          if (draftPickSecondsLeft <= 5) {
+          if (!badge || !activeMatch) return;
+          const seconds = (activeMatch.draft_seconds_left !== undefined) ? activeMatch.draft_seconds_left : 25;
+          badge.textContent = `⏳ ${Math.max(0, seconds)}s`;
+          if (seconds <= 5) {
             badge.style.background = "#7f1d1d";
             badge.style.borderColor = "#ef4444";
             badge.style.color = "#ffffff";
@@ -1450,130 +1676,197 @@
 
         window.forceDraftPickTimeout = function() {
           if (!activeMatch || activeMatch.status !== "drafting") return;
-          stopDraftPickTimer();
-          handleDraftPick(null, true);
+          handleDraftPickForMatch(activeMatch, null, true);
         };
 
-        function launchMatchSessionWithCaptains(players, captainA, captainB) {
-          const matchCode = activeMatch ? activeMatch.match_code : ("8S-" + Math.floor(1000 + Math.random() * 9000));
-          const draftPool = players.filter(p => p.gamertag !== captainA.gamertag && p.gamertag !== captainB.gamertag);
+        // =====================================================================
+        // CAPTAIN VOTING ENGINE
+        // =====================================================================
+        window.startCaptainVotingPhase = function(candidatePlayers) {
+          if (!activeMatch) return;
+          const allPlayers = candidatePlayers || activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
+          if (!allPlayers || allPlayers.length < 2) return;
 
-          activeMatch = {
-            id: activeMatch ? activeMatch.id : ("match_" + Date.now()),
-            match_code: matchCode,
-            status: "drafting",
-            format: "4v4 MW4 Variant",
-            all_players: players,
-            captain_a: captainA,
-            captain_b: captainB,
-            team_a: [captainA],
-            team_b: [captainB],
-            draft_pool: draftPool,
-            current_pick_team: "team_a", // Team A gets 1st pick
-            pick_turn: 1,
-            coin_flip_winner: "Team Alpha",
-            host_player: captainA, // Designated host
-            maps: activeMatch?.maps && activeMatch.maps.length ? activeMatch.maps : generateDefaultSeriesMaps(),
-            series_score: { team_a: 0, team_b: 0 },
-            winning_team: null,
-            created_at: activeMatch?.created_at || new Date().toISOString()
-          };
+          userCaptainVote = null;
+          activeMatch.status = "voting_captains";
+          activeMatch.all_players = allPlayers;
+          activeMatch.candidates = allPlayers.map(p => ({ ...p, votes: 0 }));
+          activeMatch.voting_seconds_left = 15;
 
+          addLobbyChatMessage("SYSTEM", `🗳️ Captain Election started for Match #${activeMatch.match_code}! Cast your vote.`);
           saveQueueState();
-          renderQueueUI();
           renderMatchUI();
-          startDraftPickTimer();
+          renderActiveLobbiesBar();
+        };
 
-          if (broadcastChannel) {
-            broadcastChannel.postMessage({
-              type: "MATCH_STARTED",
-              match: activeMatch
-            });
+        window.castCaptainVote = function(gamertag) {
+          if (!activeMatch || activeMatch.status !== "voting_captains" || !activeMatch.candidates) return;
+          if (userCaptainVote) {
+            const prev = activeMatch.candidates.find(c => c.gamertag === userCaptainVote);
+            if (prev && prev.votes > 0) prev.votes--;
           }
+          userCaptainVote = gamertag;
+          const cand = activeMatch.candidates.find(c => c.gamertag === gamertag);
+          if (cand) {
+            cand.votes = (cand.votes || 0) + 1;
+            playSynthesizedSound('draft');
+            addLobbyChatMessage("SYSTEM", `Vote cast for ${cand.gamertag}.`);
+          }
+          renderCaptainVotingUI();
+          saveQueueState();
+        };
+
+        function finalizeCaptainVotesForMatch(match) {
+          if (!match || !match.all_players) return;
+          const candidates = match.candidates || match.all_players.map(p => ({ ...p, votes: 0 }));
+          const sorted = [...candidates].sort((a,b) => {
+            if (b.votes !== a.votes) return (b.votes || 0) - (a.votes || 0);
+            return (b.elo || 1200) - (a.elo || 1200);
+          });
+          const capA = sorted[0];
+          const capB = sorted[1];
+          launchMatchSessionWithCaptainsForMatch(match, match.all_players, capA, capB);
         }
 
-        window.handleDraftPick = function(playerId, isAutoPick = false) {
-          if (!activeMatch || activeMatch.status !== "drafting") return;
-          if (!activeMatch.draft_pool || activeMatch.draft_pool.length === 0) return;
+        window.finalizeCaptainVotes = function() {
+          if (!activeMatch) return;
+          finalizeCaptainVotesForMatch(activeMatch);
+        };
 
-          stopDraftPickTimer();
+        window.randomizeCaptainsInstant = function() {
+          if (!activeMatch) return;
+          const all = activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
+          if (!all || all.length < 2) return;
+
+          const shuffled = [...all].sort(() => Math.random() - 0.5);
+          const capA = shuffled[0];
+          const capB = shuffled[1];
+
+          playSynthesizedSound('draft');
+          launchMatchSessionWithCaptainsForMatch(activeMatch, all, capA, capB);
+        };
+
+        function launchMatchSessionWithCaptainsForMatch(match, players, captainA, captainB) {
+          const draftPool = players.filter(p => p.gamertag !== captainA.gamertag && p.gamertag !== captainB.gamertag);
+          match.status = "drafting";
+          match.captain_a = captainA;
+          match.captain_b = captainB;
+          match.team_a = [captainA];
+          match.team_b = [captainB];
+          match.draft_pool = draftPool;
+          match.current_pick_team = "team_a";
+          match.pick_turn = 1;
+          match.coin_flip_winner = "Team Alpha";
+          match.host_player = captainA;
+          match.draft_seconds_left = 25;
+          match.bot_think_ticks = 0;
+
+          const msg = `⚡ Captains locked for Match #${match.match_code}: ${captainA.gamertag} & ${captainB.gamertag}! Team Alpha has 1st pick.`;
+          if (activeMatch && activeMatch.id === match.id) {
+            addLobbyChatMessage("SYSTEM", msg);
+            playSynthesizedSound('victory');
+            renderMatchUI();
+          }
+          saveQueueState();
+          renderActiveLobbiesBar();
+        }
+
+        // =====================================================================
+        // DRAFTING ENGINE (PER MATCH)
+        // =====================================================================
+        function handleDraftPickForMatch(match, playerId, isAutoPick = false) {
+          if (!match || match.status !== "drafting") return;
+          if (!match.draft_pool || match.draft_pool.length === 0) return;
+
+          match.draft_seconds_left = 25;
+          match.bot_think_ticks = 0;
 
           let pickedPlayer = null;
           if (playerId) {
-            const idx = activeMatch.draft_pool.findIndex(p => p.id === playerId || p.gamertag === playerId);
+            const idx = match.draft_pool.findIndex(p => p.id === playerId || p.gamertag === playerId);
             if (idx >= 0) {
-              pickedPlayer = activeMatch.draft_pool.splice(idx, 1)[0];
+              pickedPlayer = match.draft_pool.splice(idx, 1)[0];
             }
           }
 
-          // If no player specified or not found (e.g. timeout / auto pick fallback), pick random from draft_pool
           if (!pickedPlayer) {
-            const randomIdx = Math.floor(Math.random() * activeMatch.draft_pool.length);
-            pickedPlayer = activeMatch.draft_pool.splice(randomIdx, 1)[0];
+            const randomIdx = Math.floor(Math.random() * match.draft_pool.length);
+            pickedPlayer = match.draft_pool.splice(randomIdx, 1)[0];
             isAutoPick = true;
           }
 
-          playSynthesizedSound('draft');
-
-          const isAlpha = activeMatch.current_pick_team === "team_a";
+          const isAlpha = match.current_pick_team === "team_a";
           const teamName = isAlpha ? "Team Alpha" : "Team Bravo";
-          const captainObj = isAlpha ? activeMatch.captain_a : activeMatch.captain_b;
+          const captainObj = isAlpha ? match.captain_a : match.captain_b;
           const captainName = captainObj ? captainObj.gamertag : teamName;
 
           if (isAlpha) {
-            activeMatch.team_a.push(pickedPlayer);
+            match.team_a.push(pickedPlayer);
           } else {
-            activeMatch.team_b.push(pickedPlayer);
+            match.team_b.push(pickedPlayer);
           }
 
-          if (isAutoPick) {
-            addLobbyChatMessage("SYSTEM", `⏱️ Turn expired for ${captainName}! ${pickedPlayer.gamertag} was randomly drafted to ${teamName}.`);
-          } else {
-            addLobbyChatMessage("SYSTEM", `${teamName} drafted ${pickedPlayer.gamertag}.`);
+          const msg = isAutoPick 
+            ? `⏱️ Turn expired for ${captainName}! ${pickedPlayer.gamertag} was randomly drafted to ${teamName}.`
+            : `${teamName} drafted ${pickedPlayer.gamertag}.`;
+
+          if (activeMatch && activeMatch.id === match.id) {
+            addLobbyChatMessage("SYSTEM", msg);
+            playSynthesizedSound('draft');
           }
 
-          // Advance draft sequence:
-          // If only 1 player remains in draft pool, they automatically go to the other team
-          if (activeMatch.draft_pool.length === 1) {
-            const lastPlayer = activeMatch.draft_pool.pop();
-            const remainingTeam = isAlpha ? activeMatch.team_b : activeMatch.team_a;
+          // Advance draft sequence: If 1 player remains, assign to other team
+          if (match.draft_pool.length === 1) {
+            const lastPlayer = match.draft_pool.pop();
+            const remainingTeam = isAlpha ? match.team_b : match.team_a;
             const remainingTeamName = isAlpha ? "Team Bravo" : "Team Alpha";
             remainingTeam.push(lastPlayer);
-            addLobbyChatMessage("SYSTEM", `Final pick: ${lastPlayer.gamertag} automatically assigned to ${remainingTeamName}.`);
+            const finalMsg = `Final pick: ${lastPlayer.gamertag} automatically assigned to ${remainingTeamName}.`;
+            if (activeMatch && activeMatch.id === match.id) {
+              addLobbyChatMessage("SYSTEM", finalMsg);
+            }
           }
 
-          if (activeMatch.team_a.length >= 4 && activeMatch.team_b.length >= 4) {
-            // Draft complete! Transition to live series
-            stopDraftPickTimer();
-            activeMatch.status = "in_progress";
-            addLobbyChatMessage("SYSTEM", "Draft complete! Rosters finalized. Series is now LIVE.");
+          if (match.team_a.length >= 4 && match.team_b.length >= 4) {
+            match.status = "in_progress";
+            const liveMsg = `Draft complete for Match #${match.match_code}! Rosters finalized. Series is now LIVE.`;
+            if (activeMatch && activeMatch.id === match.id) {
+              addLobbyChatMessage("SYSTEM", liveMsg);
+            }
           } else {
-            activeMatch.current_pick_team = (activeMatch.current_pick_team === "team_a") ? "team_b" : "team_a";
-            activeMatch.pick_turn += 1;
-            startDraftPickTimer();
+            match.current_pick_team = (match.current_pick_team === "team_a") ? "team_b" : "team_a";
+            match.pick_turn = (match.pick_turn || 1) + 1;
+            match.draft_seconds_left = 25;
+            match.bot_think_ticks = 0;
           }
 
           saveQueueState();
-          renderMatchUI();
+          if (activeMatch && activeMatch.id === match.id) {
+            renderMatchUI();
+          }
+          renderActiveLobbiesBar();
+        }
+
+        window.handleDraftPick = function(playerId, isAutoPick = false) {
+          if (!activeMatch) return;
+          handleDraftPickForMatch(activeMatch, playerId, isAutoPick);
         };
 
         window.autoBalanceTeamsQuick = function() {
           if (!activeMatch || activeMatch.status !== "drafting") return;
-          stopDraftPickTimer();
-          // Combine all 8 players and balance by ELO
           const all = [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           all.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
 
-          // 1, 4, 5, 8 vs 2, 3, 6, 7 snake balance
           activeMatch.team_a = [all[0], all[3], all[4], all[7]];
           activeMatch.team_b = [all[1], all[2], all[5], all[6]];
           activeMatch.draft_pool = [];
           activeMatch.status = "in_progress";
 
-          addLobbyChatMessage("SYSTEM", "Teams auto-balanced by competitive MMR ratings. Series LIVE.");
+          addLobbyChatMessage("SYSTEM", `Teams for Match #${activeMatch.match_code} auto-balanced by competitive MMR. Series LIVE.`);
           playSynthesizedSound('draft');
           saveQueueState();
           renderMatchUI();
+          renderActiveLobbiesBar();
         };
 
         window.recordGameWinner = function(gameNum, winnerTeam) {
@@ -1590,7 +1883,6 @@
           });
           activeMatch.series_score = { team_a: aScore, team_b: bScore };
 
-          // First to 3 wins series
           if (aScore >= 3) {
             reportMatchWinner("team_a");
             return;
@@ -1601,11 +1893,11 @@
 
           saveQueueState();
           renderMatchUI();
+          renderActiveLobbiesBar();
         };
 
         window.reportMatchWinner = function(winner) {
           if (!activeMatch) return;
-          stopDraftPickTimer();
           activeMatch.winning_team = winner;
           activeMatch.status = "completed";
           playSynthesizedSound('victory');
@@ -1614,33 +1906,52 @@
           const winningRoster = (winner === "team_a") ? activeMatch.team_a : activeMatch.team_b;
           const losingRoster = (winner === "team_a") ? activeMatch.team_b : activeMatch.team_a;
 
-          // Update Leaderboard ELO (+25 / -25)
           updateLeaderboardAfterMatch(winningRoster, losingRoster);
-
-          // Archive into Match History
           archiveCompletedMatch(activeMatch);
 
-          alert(`🎉 8'S MATCH CONCLUDED!\n${winnerName} is Victorious (+25 MMR awarded).\nMatch archived into 8's Match History.`);
+          alert(`🎉 8'S MATCH #${activeMatch.match_code} CONCLUDED!\n${winnerName} is Victorious (+25 MMR awarded).\nMatch archived into 8's Match History.`);
 
-          activeMatch = null;
+          // Remove completed match from activeMatches
+          const finishedId = activeMatch.id;
+          activeMatches = activeMatches.filter(m => m.id !== finishedId);
+
+          if (activeMatches.length > 0) {
+            activeMatch = activeMatches[0];
+            currentViewMode = "match";
+          } else {
+            activeMatch = null;
+            currentViewMode = "queue";
+          }
+
           saveQueueState();
           renderQueueUI();
+          renderActiveLobbiesBar();
           loadLeaderboard();
           loadMatchHistory();
 
           if (broadcastChannel) {
-            broadcastChannel.postMessage({ type: "MATCH_ENDED" });
+            broadcastChannel.postMessage({ type: "MATCH_ENDED", matchId: finishedId });
           }
         };
 
         window.cancelActiveMatch = function() {
-          if (!confirm("Are you sure you want to cancel this 8's match?")) return;
-          stopDraftPickTimer();
-          activeMatch = null;
+          if (!activeMatch) return;
+          if (!confirm(`Are you sure you want to cancel Match #${activeMatch.match_code}?`)) return;
+
+          const cancelledId = activeMatch.id;
+          activeMatches = activeMatches.filter(m => m.id !== cancelledId);
+
+          if (activeMatches.length > 0) {
+            activeMatch = activeMatches[0];
+            currentViewMode = "match";
+          } else {
+            activeMatch = null;
+            currentViewMode = "queue";
+          }
+
           saveQueueState();
           renderQueueUI();
-          const panel = document.getElementById('active-match-session-panel');
-          if (panel) panel.style.display = 'none';
+          renderActiveLobbiesBar();
         };
 
         window.copyHostActivisionId = function() {
@@ -1781,15 +2092,19 @@
             }
           }
 
-          // Toggle visibility of Active Match Panel
+          // Toggle visibility between Queue and Match based on currentViewMode
           const matchPanel = document.getElementById('active-match-session-panel');
           const queuePanel = document.getElementById('queue-lobby-panel');
-          if (activeMatch) {
+
+          if (currentViewMode === "match" && activeMatch) {
+            if (queuePanel) queuePanel.style.display = "none";
             if (matchPanel) matchPanel.style.display = "block";
             renderMatchUI();
           } else {
+            if (queuePanel) queuePanel.style.display = "block";
             if (matchPanel) matchPanel.style.display = "none";
           }
+          renderActiveLobbiesBar();
         }
 
         function renderMatchUI() {
@@ -1974,8 +2289,9 @@
 
         function renderCaptainVotingUI() {
           const grid = document.getElementById('captain-voting-grid');
-          if (!grid) return;
-          grid.innerHTML = captainCandidates.map((cand) => {
+          if (!grid || !activeMatch) return;
+          const candidates = activeMatch.candidates || activeMatch.all_players || [];
+          grid.innerHTML = candidates.map((cand) => {
             const isVoted = userCaptainVote === cand.gamertag;
             return `
               <div style="background:#111827; border:1px solid ${isVoted ? '#a855f7' : '#243048'}; border-radius:4px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px; ${isVoted ? 'box-shadow:0 0 12px rgba(168,85,247,0.3);' : ''}">
@@ -2230,11 +2546,10 @@
           const modeSel = document.getElementById('select-captain-mode');
           if (modeSel) modeSel.value = captainSelectionMode;
           renderQueueUI();
-          if (activeMatch && activeMatch.status === "drafting") {
-            startDraftPickTimer();
-          }
+          renderActiveLobbiesBar();
           loadLeaderboard();
           loadMatchHistory();
+          startGlobal8sTicker();
 
           // Connect to Supabase Realtime if client is available
           if (window.supabaseClient && typeof window.supabaseClient.channel === 'function') {
