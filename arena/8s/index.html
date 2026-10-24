@@ -239,6 +239,15 @@
         color: #fca5a5;
       }
 
+      @keyframes timerPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+        100% { transform: scale(1); }
+      }
+      .pulse-timer {
+        animation: timerPulse 0.8s infinite;
+      }
+
       /* Modal Styling */
       .arena-modal-backdrop {
         position: fixed;
@@ -530,6 +539,12 @@
                 <span style="font:800 13px var(--body); text-transform:uppercase; color:#ffffff;" id="draft-turn-text">
                   Team Alpha Captain's Turn to Draft (Pick 1 of 6)
                 </span>
+                <span class="gb-meta-tag accent" style="background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:2px 8px; margin-left:6px;" id="draft-pick-timer-badge">
+                  ⏳ 25s
+                </span>
+                <button type="button" onclick="forceDraftPickTimeout()" title="Force pick timer timeout (auto-pick random player)" style="background:transparent; border:1px solid #334155; color:#94a3b8; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:3px; cursor:pointer; text-transform:uppercase; margin-left:4px;">
+                  🎲 Auto-Pick
+                </button>
               </div>
               <div style="font-size:12px; color:#eab308; font-weight:700;" id="coin-flip-banner">
                 🪙 Coin Flip: Team Alpha won 1st pick!
@@ -1008,6 +1023,9 @@
         let votingSecondsLeft = 15;
         let userCaptainVote = null;
         let captainCandidates = [];
+        let draftPickTimer = null;
+        let draftPickSecondsLeft = 25;
+        let botPickTimeout = null;
 
         window.handleCaptainModeChange = function(mode) {
           captainSelectionMode = mode;
@@ -1201,6 +1219,7 @@
 
         window.clearQueueConfirm = function() {
           if (confirm("Reset current queue lobby?")) {
+            stopDraftPickTimer();
             queuePlayers = [];
             activeMatch = null;
             saveQueueState();
@@ -1251,6 +1270,7 @@
         // CAPTAIN VOTING & RANDOM SELECTION (NEATQUEUE ENGINE)
         // =====================================================================
         window.startCaptainVotingPhase = function(candidatePlayers) {
+          stopDraftPickTimer();
           if (votingTimer) clearInterval(votingTimer);
           const allPlayers = candidatePlayers || (activeMatch ? (activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool]) : []);
           if (!allPlayers || allPlayers.length < 2) return;
@@ -1364,6 +1384,76 @@
           launchMatchSessionWithCaptains(all, capA, capB);
         };
 
+        function startDraftPickTimer() {
+          stopDraftPickTimer();
+          if (!activeMatch || activeMatch.status !== "drafting") return;
+
+          draftPickSecondsLeft = 25;
+          updateDraftPickTimerUI();
+
+          draftPickTimer = setInterval(() => {
+            if (!activeMatch || activeMatch.status !== "drafting") {
+              stopDraftPickTimer();
+              return;
+            }
+
+            draftPickSecondsLeft--;
+            updateDraftPickTimerUI();
+
+            if (draftPickSecondsLeft <= 0) {
+              stopDraftPickTimer();
+              // Auto-pick fallback: randomly select unpicked player from draft_pool
+              handleDraftPick(null, true);
+            }
+          }, 1000);
+
+          // If current captain is a simulated bot, pick after a 4-5s delay
+          const currentCaptain = (activeMatch.current_pick_team === "team_a") ? activeMatch.captain_a : activeMatch.captain_b;
+          if (currentCaptain && currentCaptain.is_bot && activeMatch.draft_pool && activeMatch.draft_pool.length > 0) {
+            botPickTimeout = setTimeout(() => {
+              if (activeMatch && activeMatch.status === "drafting" && activeMatch.draft_pool && activeMatch.draft_pool.length > 0) {
+                const sortedPool = [...activeMatch.draft_pool].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+                const chosen = Math.random() < 0.7 ? sortedPool[0] : sortedPool[Math.floor(Math.random() * sortedPool.length)];
+                handleDraftPick(chosen.gamertag, false);
+              }
+            }, 4500);
+          }
+        }
+
+        function stopDraftPickTimer() {
+          if (draftPickTimer) {
+            clearInterval(draftPickTimer);
+            draftPickTimer = null;
+          }
+          if (botPickTimeout) {
+            clearTimeout(botPickTimeout);
+            botPickTimeout = null;
+          }
+        }
+
+        function updateDraftPickTimerUI() {
+          const badge = document.getElementById('draft-pick-timer-badge');
+          if (!badge) return;
+          badge.textContent = `⏳ ${draftPickSecondsLeft}s`;
+          if (draftPickSecondsLeft <= 5) {
+            badge.style.background = "#7f1d1d";
+            badge.style.borderColor = "#ef4444";
+            badge.style.color = "#ffffff";
+            badge.classList.add("pulse-timer");
+          } else {
+            badge.style.background = "#1e293b";
+            badge.style.borderColor = "#38bdf8";
+            badge.style.color = "#38bdf8";
+            badge.classList.remove("pulse-timer");
+          }
+        }
+
+        window.forceDraftPickTimeout = function() {
+          if (!activeMatch || activeMatch.status !== "drafting") return;
+          stopDraftPickTimer();
+          handleDraftPick(null, true);
+        };
+
         function launchMatchSessionWithCaptains(players, captainA, captainB) {
           const matchCode = activeMatch ? activeMatch.match_code : ("8S-" + Math.floor(1000 + Math.random() * 9000));
           const draftPool = players.filter(p => p.gamertag !== captainA.gamertag && p.gamertag !== captainB.gamertag);
@@ -1392,6 +1482,7 @@
           saveQueueState();
           renderQueueUI();
           renderMatchUI();
+          startDraftPickTimer();
 
           if (broadcastChannel) {
             broadcastChannel.postMessage({
@@ -1401,42 +1492,65 @@
           }
         }
 
-        window.handleDraftPick = function(playerId) {
+        window.handleDraftPick = function(playerId, isAutoPick = false) {
           if (!activeMatch || activeMatch.status !== "drafting") return;
-          const idx = activeMatch.draft_pool.findIndex(p => p.id === playerId || p.gamertag === playerId);
-          if (idx < 0) return;
+          if (!activeMatch.draft_pool || activeMatch.draft_pool.length === 0) return;
 
-          const pickedPlayer = activeMatch.draft_pool.splice(idx, 1)[0];
+          stopDraftPickTimer();
+
+          let pickedPlayer = null;
+          if (playerId) {
+            const idx = activeMatch.draft_pool.findIndex(p => p.id === playerId || p.gamertag === playerId);
+            if (idx >= 0) {
+              pickedPlayer = activeMatch.draft_pool.splice(idx, 1)[0];
+            }
+          }
+
+          // If no player specified or not found (e.g. timeout / auto pick fallback), pick random from draft_pool
+          if (!pickedPlayer) {
+            const randomIdx = Math.floor(Math.random() * activeMatch.draft_pool.length);
+            pickedPlayer = activeMatch.draft_pool.splice(randomIdx, 1)[0];
+            isAutoPick = true;
+          }
+
           playSynthesizedSound('draft');
 
-          if (activeMatch.current_pick_team === "team_a") {
+          const isAlpha = activeMatch.current_pick_team === "team_a";
+          const teamName = isAlpha ? "Team Alpha" : "Team Bravo";
+          const captainObj = isAlpha ? activeMatch.captain_a : activeMatch.captain_b;
+          const captainName = captainObj ? captainObj.gamertag : teamName;
+
+          if (isAlpha) {
             activeMatch.team_a.push(pickedPlayer);
-            addLobbyChatMessage("SYSTEM", `Team Alpha drafted ${pickedPlayer.gamertag}.`);
           } else {
             activeMatch.team_b.push(pickedPlayer);
-            addLobbyChatMessage("SYSTEM", `Team Bravo drafted ${pickedPlayer.gamertag}.`);
+          }
+
+          if (isAutoPick) {
+            addLobbyChatMessage("SYSTEM", `⏱️ Turn expired for ${captainName}! ${pickedPlayer.gamertag} was randomly drafted to ${teamName}.`);
+          } else {
+            addLobbyChatMessage("SYSTEM", `${teamName} drafted ${pickedPlayer.gamertag}.`);
           }
 
           // Advance draft sequence:
-          // Pick 1: Alpha (Pool: 6 -> 5) -> Turn to Bravo
-          // Pick 2: Bravo (Pool: 5 -> 4) -> Turn to Alpha
-          // Pick 3: Alpha (Pool: 4 -> 3) -> Turn to Bravo
-          // Pick 4: Bravo (Pool: 3 -> 2) -> Turn to Alpha
-          // Pick 5: Alpha (Pool: 2 -> 1) -> Last remaining player automatically goes to Bravo!
+          // If only 1 player remains in draft pool, they automatically go to the other team
           if (activeMatch.draft_pool.length === 1) {
-            // Auto assign last remaining player to Team Bravo
             const lastPlayer = activeMatch.draft_pool.pop();
-            activeMatch.team_b.push(lastPlayer);
-            addLobbyChatMessage("SYSTEM", `Final pick: ${lastPlayer.gamertag} assigned to Team Bravo.`);
+            const remainingTeam = isAlpha ? activeMatch.team_b : activeMatch.team_a;
+            const remainingTeamName = isAlpha ? "Team Bravo" : "Team Alpha";
+            remainingTeam.push(lastPlayer);
+            addLobbyChatMessage("SYSTEM", `Final pick: ${lastPlayer.gamertag} automatically assigned to ${remainingTeamName}.`);
           }
 
-          if (activeMatch.team_a.length === 4 && activeMatch.team_b.length === 4) {
+          if (activeMatch.team_a.length >= 4 && activeMatch.team_b.length >= 4) {
             // Draft complete! Transition to live series
+            stopDraftPickTimer();
             activeMatch.status = "in_progress";
             addLobbyChatMessage("SYSTEM", "Draft complete! Rosters finalized. Series is now LIVE.");
           } else {
             activeMatch.current_pick_team = (activeMatch.current_pick_team === "team_a") ? "team_b" : "team_a";
             activeMatch.pick_turn += 1;
+            startDraftPickTimer();
           }
 
           saveQueueState();
@@ -1445,6 +1559,7 @@
 
         window.autoBalanceTeamsQuick = function() {
           if (!activeMatch || activeMatch.status !== "drafting") return;
+          stopDraftPickTimer();
           // Combine all 8 players and balance by ELO
           const all = [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           all.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
@@ -1490,6 +1605,7 @@
 
         window.reportMatchWinner = function(winner) {
           if (!activeMatch) return;
+          stopDraftPickTimer();
           activeMatch.winning_team = winner;
           activeMatch.status = "completed";
           playSynthesizedSound('victory');
@@ -1519,6 +1635,7 @@
 
         window.cancelActiveMatch = function() {
           if (!confirm("Are you sure you want to cancel this 8's match?")) return;
+          stopDraftPickTimer();
           activeMatch = null;
           saveQueueState();
           renderQueueUI();
@@ -2113,6 +2230,9 @@
           const modeSel = document.getElementById('select-captain-mode');
           if (modeSel) modeSel.value = captainSelectionMode;
           renderQueueUI();
+          if (activeMatch && activeMatch.status === "drafting") {
+            startDraftPickTimer();
+          }
           loadLeaderboard();
           loadMatchHistory();
 
