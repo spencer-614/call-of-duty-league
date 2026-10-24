@@ -7184,34 +7184,6 @@
                       </div>
                     </td>
                   </tr>
-                  <tr id="roster-drawer-${escapeHtml(t.id)}" style="display:none; background:#070a12; border-bottom:2px solid #1e293b;">
-                    <td colspan="7" style="padding:12px 18px;">
-                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:11px; text-transform:uppercase; color:#38bdf8; font-weight:800; letter-spacing:0.5px;">
-                          🛡 ${escapeHtml(t.name)} — Active Player Roster &amp; ELO Ratings
-                        </span>
-                        <span style="font-size:10.5px; color:#64748b;">${roster.length} Players Assigned</span>
-                      </div>
-                      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
-                        ${roster.map(p => `
-                          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:4px; padding:10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                              <strong style="color:#ffffff; font-size:12.5px;">${escapeHtml(p.gamertag)}</strong>
-                              <span style="font-weight:800; color:#38bdf8; font-size:13px; font-variant-numeric: tabular-nums;">${p.elo || 1200} ELO</span>
-                            </div>
-                            <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">${escapeHtml(p.role || 'Player')}</div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px;">
-                              ${getLadderTierBadge(p.elo || 1200)}
-                              <span style="color:#22c55e; font-weight:700;">${p.wins || 0}W - ${p.losses || 0}L <small style="color:var(--muted);">(${p.win_rate || 0}%)</small></span>
-                            </div>
-                            <div style="font-size:9.5px; color:#64748b; margin-top:5px; border-top:1px solid #1e293b; padding-top:4px;">
-                              Act: ${escapeHtml(p.activision_id || 'N/A')}
-                            </div>
-                          </div>
-                        `).join("")}
-                      </div>
-                    </td>
-                  </tr>
                 `;
               }).join("");
 
