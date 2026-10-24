@@ -501,15 +501,16 @@
                 <span>✖</span> <span>Leave Queue</span>
               </button>
               
-              <!-- NeatQueue Simulator Tools for instant testing -->
-              <div style="display:inline-flex; gap:6px;">
-                <button type="button" class="btn-crimson-outline" onclick="addBotCombatant()" title="Add 1 simulated player into the queue for testing" style="padding:9px 12px; font-size:11px;">
+              <!-- Commissioner Queue Tools (Visible only to League Commissioners) -->
+              <div id="commissioner-queue-tools" style="display:none; align-items:center; gap:6px;">
+                <span class="gb-meta-tag" style="font-size:9.5px; background:rgba(168,85,247,0.15); border-color:#a855f7; color:#d8b4fe; padding:3px 7px;">★ COMMISSIONER</span>
+                <button type="button" class="btn-crimson-outline" onclick="addBotCombatant()" title="Commissioner Tool: Add 1 simulated bot to queue" style="padding:8px 12px; font-size:11px;">
                   <span>🤖</span> <span>+1 Bot</span>
                 </button>
-                <button type="button" class="btn-crimson-outline" onclick="fillQueueInstant()" title="Instantly fill queue to 8/8 to pop match" style="padding:9px 12px; font-size:11px; border-color:#eab308; color:#fde047;">
-                  <span>⚡</span> <span>Fill 8/8</span>
+                <button type="button" class="btn-crimson-outline" onclick="fillQueueWithBots()" title="Commissioner Tool: Fill queue full of 8 bots and pop lobby" style="padding:8px 12px; font-size:11px; border-color:#eab308; color:#fde047;">
+                  <span>⚡</span> <span>Fill 8 Bots</span>
                 </button>
-                <button type="button" class="btn-crimson-outline" onclick="clearQueueConfirm()" title="Clear queue" style="padding:9px 12px; font-size:11px; opacity:0.75;">
+                <button type="button" class="btn-crimson-outline" onclick="clearQueueConfirm()" title="Commissioner Tool: Reset queue" style="padding:8px 12px; font-size:11px; opacity:0.75;">
                   <span>🔄</span> <span>Reset</span>
                 </button>
               </div>
@@ -565,20 +566,23 @@
                     Copy ID
                   </button>
                 </div>
-                <button type="button" class="btn-crimson-outline" onclick="randomizeCaptainsInstant()" style="padding:8px 12px; font-size:11.5px; border-color:#eab308; color:#fde047;" title="Randomly select 2 captains from the 8 players">
-                  <span>🎲</span> <span>Random Captains</span>
-                </button>
-                <button type="button" class="btn-crimson-outline" onclick="startCaptainVotingPhase()" style="padding:8px 12px; font-size:11.5px; border-color:#a855f7; color:#c084fc;" title="Open voting for team captains">
-                  <span>🗳️</span> <span>Vote Captains</span>
-                </button>
-                <button type="button" class="btn-crimson-outline" onclick="autoBalanceTeamsQuick()" style="padding:8px 14px; font-size:12px; border-color:#38bdf8; color:#38bdf8;" id="btn-autobalance">
-                  <span>⚖</span> <span>Auto-Balance 4v4</span>
-                </button>
+                <!-- Commissioner Match Directives (Visible only to League Commissioners) -->
+                <div id="commissioner-match-controls" style="display:none; align-items:center; gap:8px;">
+                  <button type="button" class="btn-crimson-outline" onclick="randomizeCaptainsInstant()" style="padding:8px 12px; font-size:11.5px; border-color:#eab308; color:#fde047;" title="Commissioner Directive: Randomly pick 2 captains">
+                    <span>🎲</span> <span>Random Captains</span>
+                  </button>
+                  <button type="button" class="btn-crimson-outline" onclick="startCaptainVotingPhase()" style="padding:8px 12px; font-size:11.5px; border-color:#a855f7; color:#c084fc;" title="Commissioner Directive: Open captain voting">
+                    <span>🗳️</span> <span>Vote Captains</span>
+                  </button>
+                  <button type="button" class="btn-crimson-outline" onclick="autoBalanceTeamsQuick()" style="padding:8px 14px; font-size:12px; border-color:#38bdf8; color:#38bdf8;" id="btn-autobalance" title="Commissioner Directive: Auto-balance teams by MMR">
+                    <span>⚖</span> <span>Auto-Balance 4v4</span>
+                  </button>
+                  <button type="button" class="btn-crimson-outline" onclick="cancelActiveMatch()" style="padding:8px 14px; font-size:12px; border-color:#ef4444; color:#ef4444;" title="Commissioner Directive: Cancel active match">
+                    <span>✖</span> <span>Cancel Match</span>
+                  </button>
+                </div>
                 <button type="button" class="btn-crimson-outline" onclick="switchToQueueView()" style="padding:8px 14px; font-size:12px; border-color:#22c55e; color:#22c55e;" title="Switch view to open matchmaking queue">
                   <span>⚔</span> <span>View Open Queue (<span id="match-view-queue-count">0</span>/8)</span>
-                </button>
-                <button type="button" class="btn-crimson-outline" onclick="cancelActiveMatch()" style="padding:8px 14px; font-size:12px; border-color:#ef4444; color:#ef4444;">
-                  <span>✖</span> <span>Cancel Match</span>
                 </button>
               </div>
             </div>
@@ -593,7 +597,7 @@
                 <span class="gb-meta-tag accent" style="background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:2px 8px; margin-left:6px;" id="draft-pick-timer-badge">
                   ⏳ 25s
                 </span>
-                <button type="button" onclick="forceDraftPickTimeout()" title="Force pick timer timeout (auto-pick random player)" style="background:transparent; border:1px solid #334155; color:#94a3b8; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:3px; cursor:pointer; text-transform:uppercase; margin-left:4px;">
+                <button type="button" id="btn-commissioner-autopick" onclick="forceDraftPickTimeout()" title="Commissioner Tool: Force pick timer timeout (auto-pick random player)" style="display:none; background:transparent; border:1px solid #334155; color:#94a3b8; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:3px; cursor:pointer; text-transform:uppercase; margin-left:4px;">
                   🎲 Auto-Pick
                 </button>
               </div>
@@ -1230,6 +1234,29 @@
           } catch(e) {}
         }
 
+        function checkIsCommissioner() {
+          try {
+            if (typeof window.isUserCommissioner === 'function' && window.isUserCommissioner()) return true;
+            if (window.LeagueDB && typeof window.LeagueDB.isUserCommissioner === 'function' && window.LeagueDB.isUserCommissioner()) return true;
+            if (window.LadderDB && typeof window.LadderDB.isUserCommissioner === 'function' && window.LadderDB.isUserCommissioner()) return true;
+          } catch(e) {}
+
+          const cur = resolveCurrentPlayer();
+          if (cur) {
+            if (cur.is_commissioner === true || cur.is_staff === true) return true;
+            const gt = String(cur.gamertag || '').toLowerCase().trim();
+            if (['invictus', 'itzinvictus', 'itzinvictus_', 'spencer', 'commissioner', 'savory'].some(n => gt.includes(n))) return true;
+          }
+
+          try {
+            if (localStorage.getItem('frontline_admin_session') === 'authorized' || sessionStorage.getItem('frontline_admin_session') === 'authorized') return true;
+            const email = (localStorage.getItem('frontline_admin_email') || sessionStorage.getItem('frontline_admin_email') || '').toLowerCase();
+            if (email.includes('todd') || email.includes('admin@frontlineleague.com')) return true;
+          } catch(e) {}
+
+          return false;
+        }
+
         // =====================================================================
         // QUEUE ACTIONS
         // =====================================================================
@@ -1281,6 +1308,11 @@
         };
 
         window.addBotCombatant = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can add simulated bots to the queue.");
+            return;
+          }
+
           if (queuePlayers.length >= 8) return;
           const availableBots = BOT_COMBATANTS.filter(b => 
             !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
@@ -1318,11 +1350,10 @@
           checkQueueFull();
         };
 
-        window.fillQueueInstant = function() {
-          const user = resolveCurrentPlayer();
-          const userMatch = user ? activeMatches.find(m => isPlayerInMatch(user.gamertag, m)) : null;
-          if (user && !userMatch && !queuePlayers.some(p => p.gamertag.toLowerCase() === user.gamertag.toLowerCase())) {
-            queuePlayers.push({ ...user, joined_at: new Date().toISOString() });
+        window.fillQueueWithBots = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can simulate filling the queue with bots.");
+            return;
           }
 
           while (queuePlayers.length < 8) {
@@ -1362,8 +1393,14 @@
           renderQueueUI();
           checkQueueFull();
         };
+        window.fillQueueInstant = window.fillQueueWithBots;
 
         window.clearQueueConfirm = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can reset the matchmaking queue.");
+            return;
+          }
+
           if (confirm("Reset current matchmaking queue? (Active match lobbies will not be affected)")) {
             queuePlayers = [];
             saveQueueState();
@@ -1675,6 +1712,10 @@
         }
 
         window.forceDraftPickTimeout = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can force draft timeouts.");
+            return;
+          }
           if (!activeMatch || activeMatch.status !== "drafting") return;
           handleDraftPickForMatch(activeMatch, null, true);
         };
@@ -1683,6 +1724,10 @@
         // CAPTAIN VOTING ENGINE
         // =====================================================================
         window.startCaptainVotingPhase = function(candidatePlayers) {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can manually start captain voting.");
+            return;
+          }
           if (!activeMatch) return;
           const allPlayers = candidatePlayers || activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           if (!allPlayers || allPlayers.length < 2) return;
@@ -1734,6 +1779,10 @@
         };
 
         window.randomizeCaptainsInstant = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can manually randomize captains.");
+            return;
+          }
           if (!activeMatch) return;
           const all = activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           if (!all || all.length < 2) return;
@@ -1853,6 +1902,10 @@
         };
 
         window.autoBalanceTeamsQuick = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can auto-balance teams.");
+            return;
+          }
           if (!activeMatch || activeMatch.status !== "drafting") return;
           const all = [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           all.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
@@ -1935,6 +1988,10 @@
         };
 
         window.cancelActiveMatch = function() {
+          if (!checkIsCommissioner()) {
+            alert("Unauthorized: Only League Commissioners can cancel active match lobbies.");
+            return;
+          }
           if (!activeMatch) return;
           if (!confirm(`Are you sure you want to cancel Match #${activeMatch.match_code}?`)) return;
 
@@ -2047,6 +2104,12 @@
             }
           }
 
+          // Commissioner Queue Tools (Visible only to authorized League Commissioners)
+          const commishQueueTools = document.getElementById('commissioner-queue-tools');
+          if (commishQueueTools) {
+            commishQueueTools.style.display = checkIsCommissioner() ? 'inline-flex' : 'none';
+          }
+
           // Render 8 Slots Cards Grid
           const slotsContainer = document.getElementById('queue-slots-container');
           if (slotsContainer) {
@@ -2129,6 +2192,17 @@
           if (codeEl) codeEl.textContent = `MATCH #${activeMatch.match_code}`;
           if (hostName && activeMatch.host_player) {
             hostName.textContent = `${activeMatch.host_player.gamertag} (${activeMatch.host_player.activision_id})`;
+          }
+
+          // Commissioner Match Directives (Visible only to authorized League Commissioners)
+          const isCommish = checkIsCommissioner();
+          const commishMatchControls = document.getElementById('commissioner-match-controls');
+          if (commishMatchControls) {
+            commishMatchControls.style.display = isCommish ? 'inline-flex' : 'none';
+          }
+          const commishAutoPick = document.getElementById('btn-commissioner-autopick');
+          if (commishAutoPick) {
+            commishAutoPick.style.display = isCommish ? 'inline-block' : 'none';
           }
 
           // Draft Turn Banner & Voting Panel

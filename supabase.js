@@ -14179,6 +14179,7 @@ window.LadderDB = {
     const iconEl = document.getElementById("nav-arena-profile-icon");
     const textEl = document.getElementById("nav-arena-profile-text");
     const myTeamsLink = document.getElementById("nav-arena-my-teams-link");
+    const squadHeaderEl = document.getElementById("arena-header-squad-container");
 
     if (myTeamsLink) {
       myTeamsLink.href = player && player.gamertag ? "/arena/profile/#my-teams" : "/arena/profile/#login";
@@ -14204,7 +14205,6 @@ window.LadderDB = {
     }
 
     // Also update any arena header squad/user pill if present
-    const squadHeaderEl = document.getElementById("arena-header-squad-container");
     if (squadHeaderEl) {
       if (player && player.gamertag) {
         const cleanPUserEmail = (player.email || "").toLowerCase().trim();
