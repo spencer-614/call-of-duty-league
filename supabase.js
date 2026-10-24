@@ -14185,12 +14185,17 @@ window.LadderDB = {
     }
 
     if (linkEl) {
-      if (player && player.gamertag) {
+      if (squadHeaderEl) {
+        // Hide duplicate text profile link when the dedicated user profile pill exists in the topbar
+        linkEl.style.display = "none";
+      } else if (player && player.gamertag) {
+        linkEl.style.display = "inline-flex";
         linkEl.href = "/arena/profile/";
         linkEl.title = `Signed in as ${player.gamertag} - View Profile & Records`;
         if (iconEl) iconEl.textContent = "👤";
         if (textEl) textEl.textContent = `Profile (${player.gamertag})`;
       } else {
+        linkEl.style.display = "inline-flex";
         linkEl.href = "/arena/profile/#login";
         linkEl.title = "Sign in to Frontline Arena";
         if (iconEl) iconEl.textContent = "🔑";
