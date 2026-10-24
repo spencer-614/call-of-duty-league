@@ -427,6 +427,16 @@
 
             <!-- Action Buttons Row -->
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <!-- Captain Selection Mode Selector -->
+              <div style="display:inline-flex; align-items:center; gap:6px; background:#070a10; border:1px solid #1f2a3c; border-radius:4px; padding:6px 10px;">
+                <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Captains:</span>
+                <select id="select-captain-mode" onchange="handleCaptainModeChange(this.value)" style="background:transparent; border:none; color:#22c55e; font-size:11.5px; font-weight:800; cursor:pointer; outline:none;">
+                  <option value="vote" style="background:#0e131d; color:#fff;" selected>🗳️ Vote on Captains</option>
+                  <option value="random" style="background:#0e131d; color:#fff;">🎲 Random Captains</option>
+                  <option value="top_mmr" style="background:#0e131d; color:#fff;">⭐ Top MMR Captains</option>
+                </select>
+              </div>
+
               <button type="button" class="btn-crimson" id="btn-join-queue" onclick="handleJoinQueue()" style="background:#16a34a; border-color:#22c55e; padding:10px 20px; font-size:13px; font-weight:800;">
                 <span>➕</span> <span>Join Queue</span>
               </button>
@@ -498,6 +508,12 @@
                     Copy ID
                   </button>
                 </div>
+                <button type="button" class="btn-crimson-outline" onclick="randomizeCaptainsInstant()" style="padding:8px 12px; font-size:11.5px; border-color:#eab308; color:#fde047;" title="Randomly select 2 captains from the 8 players">
+                  <span>🎲</span> <span>Random Captains</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="startCaptainVotingPhase()" style="padding:8px 12px; font-size:11.5px; border-color:#a855f7; color:#c084fc;" title="Open voting for team captains">
+                  <span>🗳️</span> <span>Vote Captains</span>
+                </button>
                 <button type="button" class="btn-crimson-outline" onclick="autoBalanceTeamsQuick()" style="padding:8px 14px; font-size:12px; border-color:#38bdf8; color:#38bdf8;" id="btn-autobalance">
                   <span>⚖</span> <span>Auto-Balance 4v4</span>
                 </button>
@@ -518,6 +534,40 @@
               <div style="font-size:12px; color:#eab308; font-weight:700;" id="coin-flip-banner">
                 🪙 Coin Flip: Team Alpha won 1st pick!
               </div>
+            </div>
+          </div>
+
+          <!-- Captain Voting Panel (NeatQueue Election Screen) -->
+          <div id="captain-voting-panel" style="display:none; background:#0e131d; border:1px solid #a855f7; border-radius:6px; padding:22px; margin-bottom:20px; box-shadow:0 0 25px rgba(168,85,247,0.18);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:20px;">🗳️</span>
+                  <h3 style="font:800 18px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
+                    Vote on Team Captains
+                  </h3>
+                  <span class="gb-meta-tag accent" style="background:#a855f7; border-color:#c084fc; color:#ffffff;" id="voting-timer-badge">
+                    ⏳ 15s Remaining
+                  </span>
+                </div>
+                <div style="font-size:12px; color:#cbd5e1; margin-top:4px;">
+                  Cast your vote for who should lead Team Alpha and Team Bravo into the MW4 6v6 draft. Top 2 vote receivers will be elected Captains!
+                </div>
+              </div>
+
+              <div style="display:flex; gap:10px;">
+                <button type="button" class="btn-crimson-outline" onclick="randomizeCaptainsInstant()" style="border-color:#eab308; color:#fde047; padding:8px 14px; font-size:12px;">
+                  <span>🎲</span> <span>Skip &amp; Pick Random</span>
+                </button>
+                <button type="button" class="btn-crimson" onclick="finalizeCaptainVotes()" style="background:#a855f7; border-color:#c084fc; padding:8px 16px; font-size:12px; font-weight:800;">
+                  <span>✓</span> <span>Lock In Votes</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 8 Player Voting Cards Grid -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;" id="captain-voting-grid">
+              <!-- Dynamically populated candidate cards -->
             </div>
           </div>
 
@@ -953,6 +1003,18 @@
         let activeMatch = null;
         let localPlayer = null;
         let broadcastChannel = null;
+        let captainSelectionMode = localStorage.getItem("frontline_arena_8s_captain_mode") || "vote";
+        let votingTimer = null;
+        let votingSecondsLeft = 15;
+        let userCaptainVote = null;
+        let captainCandidates = [];
+
+        window.handleCaptainModeChange = function(mode) {
+          captainSelectionMode = mode;
+          try {
+            localStorage.setItem("frontline_arena_8s_captain_mode", mode);
+          } catch(e) {}
+        };
 
         // Initialize Cross-Tab Broadcast Channel
         try {
@@ -1151,42 +1213,167 @@
         function checkQueueFull() {
           if (queuePlayers.length >= 8) {
             playSynthesizedSound('pop');
-            // Pop Match Session
-            launchMatchSession([...queuePlayers]);
+            const players = [...queuePlayers];
+            queuePlayers = []; // Queue reset for next squad
+            saveQueueState();
+            renderQueueUI();
+
+            if (captainSelectionMode === "vote") {
+              startCaptainVotingPhase(players);
+            } else if (captainSelectionMode === "random") {
+              const shuffled = [...players].sort(() => Math.random() - 0.5);
+              launchMatchSessionWithCaptains(players, shuffled[0], shuffled[1]);
+              addLobbyChatMessage("SYSTEM", `🎲 Random Captains Selected: ${shuffled[0].gamertag} & ${shuffled[1].gamertag}!`);
+            } else {
+              // Top MMR
+              const sorted = [...players].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+              launchMatchSessionWithCaptains(players, sorted[0], sorted[1]);
+              addLobbyChatMessage("SYSTEM", `⭐ Top MMR Captains Assigned: ${sorted[0].gamertag} & ${sorted[1].gamertag}!`);
+            }
           }
         }
 
-        // =====================================================================
-        // MATCH SESSION & CAPTAINS DRAFT (NEATQUEUE ENGINE)
-        // =====================================================================
-        function launchMatchSession(players) {
-          const matchCode = "8S-" + Math.floor(1000 + Math.random() * 9000);
-          
-          // Select 2 Captains based on highest ELO or top seeds
-          const sorted = [...players].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
-          const captainA = sorted[0];
-          const captainB = sorted[1];
-          const draftPool = sorted.slice(2); // Remaining 6 players
-
-          // Roll random MW4 6v6 series maps
+        function generateDefaultSeriesMaps() {
           const rollMap = (mode) => {
             const list = MAP_POOL[mode];
             return list[Math.floor(Math.random() * list.length)];
           };
-
-          const maps = [
+          return [
             { game: 1, mode: "Hardpoint", map: rollMap("Hardpoint"), winner: null, score: null },
             { game: 2, mode: "Search & Destroy", map: rollMap("SearchAndDestroy"), winner: null, score: null },
             { game: 3, mode: "Hijack", map: rollMap("Hijack"), winner: null, score: null },
             { game: 4, mode: "Hardpoint", map: rollMap("Hardpoint"), winner: null, score: null },
             { game: 5, mode: "Search & Destroy", map: rollMap("SearchAndDestroy"), winner: null, score: null }
           ];
+        }
+
+        // =====================================================================
+        // CAPTAIN VOTING & RANDOM SELECTION (NEATQUEUE ENGINE)
+        // =====================================================================
+        window.startCaptainVotingPhase = function(candidatePlayers) {
+          if (votingTimer) clearInterval(votingTimer);
+          const allPlayers = candidatePlayers || (activeMatch ? (activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool]) : []);
+          if (!allPlayers || allPlayers.length < 2) return;
+
+          userCaptainVote = null;
+          votingSecondsLeft = 15;
+          captainCandidates = allPlayers.map(p => ({
+            ...p,
+            votes: 0
+          }));
+
+          const matchCode = activeMatch ? activeMatch.match_code : ("8S-" + Math.floor(1000 + Math.random() * 9000));
+          activeMatch = {
+            id: activeMatch ? activeMatch.id : ("match_" + Date.now()),
+            match_code: matchCode,
+            status: "voting_captains",
+            format: "4v4 MW4 Variant",
+            all_players: allPlayers,
+            candidates: captainCandidates,
+            maps: activeMatch?.maps && activeMatch.maps.length ? activeMatch.maps : generateDefaultSeriesMaps(),
+            series_score: { team_a: 0, team_b: 0 },
+            winning_team: null,
+            created_at: new Date().toISOString()
+          };
+
+          addLobbyChatMessage("SYSTEM", "🗳️ Captain Election started! All 8 players cast votes to elect Team Alpha and Bravo captains.");
+          saveQueueState();
+          renderMatchUI();
+
+          // Bot realistic voting simulation for quick testing
+          setTimeout(() => {
+            if (activeMatch && activeMatch.status === "voting_captains") {
+              allPlayers.filter(p => p.is_bot).forEach(bot => {
+                const randomTarget = allPlayers[Math.floor(Math.random() * allPlayers.length)];
+                const cand = captainCandidates.find(c => c.gamertag === randomTarget.gamertag);
+                if (cand) cand.votes += 1;
+              });
+              renderCaptainVotingUI();
+            }
+          }, 1500);
+
+          // 15s Countdown Timer
+          votingTimer = setInterval(() => {
+            votingSecondsLeft--;
+            const timerBadge = document.getElementById('voting-timer-badge');
+            if (timerBadge) {
+              timerBadge.textContent = `⏳ ${votingSecondsLeft}s Remaining`;
+            }
+            if (votingSecondsLeft <= 0) {
+              clearInterval(votingTimer);
+              votingTimer = null;
+              finalizeCaptainVotes();
+            }
+          }, 1000);
+        };
+
+        window.castCaptainVote = function(gamertag) {
+          if (!activeMatch || activeMatch.status !== "voting_captains") return;
+          if (userCaptainVote) {
+            const prev = captainCandidates.find(c => c.gamertag === userCaptainVote);
+            if (prev && prev.votes > 0) prev.votes--;
+          }
+          userCaptainVote = gamertag;
+          const cand = captainCandidates.find(c => c.gamertag === gamertag);
+          if (cand) {
+            cand.votes += 1;
+            playSynthesizedSound('draft');
+            addLobbyChatMessage("SYSTEM", `Vote cast for ${cand.gamertag}.`);
+          }
+          renderCaptainVotingUI();
+          saveQueueState();
+        };
+
+        window.finalizeCaptainVotes = function() {
+          if (votingTimer) {
+            clearInterval(votingTimer);
+            votingTimer = null;
+          }
+          if (!activeMatch || !activeMatch.all_players) return;
+
+          // Sort candidates by votes desc; tie break with random or ELO
+          const sorted = [...captainCandidates].sort((a,b) => {
+            if (b.votes !== a.votes) return b.votes - a.votes;
+            return (b.elo || 1200) - (a.elo || 1200);
+          });
+
+          const capA = sorted[0];
+          const capB = sorted[1];
+
+          addLobbyChatMessage("SYSTEM", `🗳️ Voting concluded! ${capA.gamertag} (${capA.votes} votes) & ${capB.gamertag} (${capB.votes} votes) elected Captains!`);
+          playSynthesizedSound('victory');
+
+          launchMatchSessionWithCaptains(activeMatch.all_players, capA, capB);
+        };
+
+        window.randomizeCaptainsInstant = function() {
+          if (votingTimer) {
+            clearInterval(votingTimer);
+            votingTimer = null;
+          }
+          const all = activeMatch?.all_players || (activeMatch ? [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool] : []);
+          if (!all || all.length < 2) return;
+
+          const shuffled = [...all].sort(() => Math.random() - 0.5);
+          const capA = shuffled[0];
+          const capB = shuffled[1];
+
+          playSynthesizedSound('draft');
+          addLobbyChatMessage("SYSTEM", `🎲 Captains Randomly Selected: ${capA.gamertag} (Team Alpha) & ${capB.gamertag} (Team Bravo)!`);
+
+          launchMatchSessionWithCaptains(all, capA, capB);
+        };
+
+        function launchMatchSessionWithCaptains(players, captainA, captainB) {
+          const matchCode = activeMatch ? activeMatch.match_code : ("8S-" + Math.floor(1000 + Math.random() * 9000));
+          const draftPool = players.filter(p => p.gamertag !== captainA.gamertag && p.gamertag !== captainB.gamertag);
 
           activeMatch = {
-            id: "match_" + Date.now(),
+            id: activeMatch ? activeMatch.id : ("match_" + Date.now()),
             match_code: matchCode,
             status: "drafting",
             format: "4v4 MW4 Variant",
+            all_players: players,
             captain_a: captainA,
             captain_b: captainB,
             team_a: [captainA],
@@ -1196,13 +1383,12 @@
             pick_turn: 1,
             coin_flip_winner: "Team Alpha",
             host_player: captainA, // Designated host
-            maps: maps,
+            maps: activeMatch?.maps && activeMatch.maps.length ? activeMatch.maps : generateDefaultSeriesMaps(),
             series_score: { team_a: 0, team_b: 0 },
             winning_team: null,
-            created_at: new Date().toISOString()
+            created_at: activeMatch?.created_at || new Date().toISOString()
           };
 
-          queuePlayers = []; // Queue reset for next squad
           saveQueueState();
           renderQueueUI();
           renderMatchUI();
@@ -1497,20 +1683,40 @@
           const codeEl = document.getElementById('match-code-display');
           const hostName = document.getElementById('match-host-name');
           if (badge) {
-            badge.textContent = activeMatch.status === "drafting" ? "⚡ CAPTAINS DRAFTING" : "⚔️ SERIES IN PROGRESS";
-            badge.style.background = activeMatch.status === "drafting" ? "#22c55e" : "#ff1e44";
+            if (activeMatch.status === "voting_captains") {
+              badge.textContent = "🗳️ VOTING ON CAPTAINS";
+              badge.style.background = "#a855f7";
+            } else if (activeMatch.status === "drafting") {
+              badge.textContent = "⚡ CAPTAINS DRAFTING";
+              badge.style.background = "#22c55e";
+            } else {
+              badge.textContent = "⚔️ SERIES IN PROGRESS";
+              badge.style.background = "#ff1e44";
+            }
           }
           if (codeEl) codeEl.textContent = `MATCH #${activeMatch.match_code}`;
           if (hostName && activeMatch.host_player) {
             hostName.textContent = `${activeMatch.host_player.gamertag} (${activeMatch.host_player.activision_id})`;
           }
 
-          // Draft Turn Banner
+          // Draft Turn Banner & Voting Panel
+          const votingPanel = document.getElementById('captain-voting-panel');
           const turnBanner = document.getElementById('draft-turn-banner');
           const turnText = document.getElementById('draft-turn-text');
           const turnDot = document.getElementById('turn-beacon-dot');
           const draftBoard = document.getElementById('draft-board-layout');
           const liveSeriesPanel = document.getElementById('match-live-series-panel');
+
+          if (activeMatch.status === "voting_captains") {
+            if (votingPanel) votingPanel.style.display = "block";
+            if (turnBanner) turnBanner.style.display = "none";
+            if (draftBoard) draftBoard.style.display = "none";
+            if (liveSeriesPanel) liveSeriesPanel.style.display = "none";
+            renderCaptainVotingUI();
+            return;
+          } else {
+            if (votingPanel) votingPanel.style.display = "none";
+          }
 
           if (activeMatch.status === "drafting") {
             if (turnBanner) turnBanner.style.display = "flex";
@@ -1647,6 +1853,34 @@
               `;
             }).join('');
           }
+        }
+
+        function renderCaptainVotingUI() {
+          const grid = document.getElementById('captain-voting-grid');
+          if (!grid) return;
+          grid.innerHTML = captainCandidates.map((cand) => {
+            const isVoted = userCaptainVote === cand.gamertag;
+            return `
+              <div style="background:#111827; border:1px solid ${isVoted ? '#a855f7' : '#243048'}; border-radius:4px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px; ${isVoted ? 'box-shadow:0 0 12px rgba(168,85,247,0.3);' : ''}">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${cand.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:36px; height:36px; border-radius:4px; object-fit:cover; border:1px solid #283548;" />
+                    <div>
+                      <strong style="color:#ffffff; font-size:13px;">${escapeHtml(cand.gamertag)}</strong>
+                      <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(cand.role || 'Flex')} · ${cand.elo || 1200} ELO</div>
+                    </div>
+                  </div>
+                  <span class="gb-meta-tag accent" style="font-size:10px; background:${cand.votes > 0 ? '#a855f7' : '#141c2b'}; border-color:${cand.votes > 0 ? '#c084fc' : '#243048'}; color:#fff;">
+                    ${cand.votes} ${cand.votes === 1 ? 'Vote' : 'Votes'}
+                  </span>
+                </div>
+
+                <button type="button" class="btn-crimson" onclick="castCaptainVote('${escapeHtml(cand.gamertag)}')" style="width:100%; justify-content:center; padding:7px; font-size:11.5px; background:${isVoted ? '#a855f7' : '#1f2a3c'}; border-color:${isVoted ? '#c084fc' : '#2d3b52'}; cursor:pointer;">
+                  ${isVoted ? '✓ Your Vote' : '🗳️ Vote for Captain'}
+                </button>
+              </div>
+            `;
+          }).join('');
         }
 
         // =====================================================================
@@ -1876,6 +2110,8 @@
         document.addEventListener("DOMContentLoaded", function() {
           resolveCurrentPlayer();
           loadQueueState();
+          const modeSel = document.getElementById('select-captain-mode');
+          if (modeSel) modeSel.value = captainSelectionMode;
           renderQueueUI();
           loadLeaderboard();
           loadMatchHistory();
