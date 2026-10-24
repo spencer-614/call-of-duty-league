@@ -507,29 +507,30 @@
     </div>
 
     <script>
-      // Official CDL Maps & Modes Pool (Black Ops Ruleset: HP, SnD, Overload)
+      // Official CDL Maps & Modes Pool (MW4 6v6 Ruleset: HP, SnD, Hijack)
       const CDL_MAP_POOL = {
         Hardpoint: [
-          { name: "Colossus", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
-          { name: "Den", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
-          { name: "Gridlock", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
-          { name: "Hacienda", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
-          { name: "Sake", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" },
-          { name: "Scar", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" }
+          { name: "Coal", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
+          { name: "Lithium", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
+          { name: "Lotus", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
+          { name: "Mumbai", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" },
+          { name: "Reactor U92", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
+          { name: "Transit 213", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" }
         ],
         SearchAndDestroy: [
-          { name: "Den", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
-          { name: "Fringe", image: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=400&auto=format&fit=crop&q=80" },
-          { name: "Gridlock", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
-          { name: "Hacienda", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
-          { name: "Raid", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
-          { name: "Sake", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" }
+          { name: "Cachette", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
+          { name: "Munition", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
+          { name: "Nautical", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
+          { name: "Rooftops", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" },
+          { name: "Sentry", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
+          { name: "Silkworm", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" }
         ],
-        Overload: [
-          { name: "Den", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
-          { name: "Exposure", image: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=400&auto=format&fit=crop&q=80" },
-          { name: "Gridlock", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
-          { name: "Scar", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" }
+        Hijack: [
+          { name: "Lithium", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
+          { name: "Mumbai", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" },
+          { name: "Reactor U92", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
+          { name: "Silkworm", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
+          { name: "Transit 213", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" }
         ]
       };
 
@@ -543,7 +544,7 @@
       let vetoSeries = [
         { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
         { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
-        { game: 3, mode: "Overload", map: null, status: "pending", pool: [...CDL_MAP_POOL.Overload], struckBy: [] },
+        { game: 3, mode: "Hijack", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hijack], struckBy: [] },
         { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
         { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
       ];
@@ -1040,7 +1041,7 @@
         vetoSeries = [
           { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
           { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
-          { game: 3, mode: "Overload", map: null, status: "pending", pool: [...CDL_MAP_POOL.Overload], struckBy: [] },
+          { game: 3, mode: "Hijack", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hijack], struckBy: [] },
           { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
           { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
         ];

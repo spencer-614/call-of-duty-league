@@ -1,31 +1,32 @@
 /* ==============================================================================
    Frontline Tournaments — Live Bracket Map Pick & Veto Engine
-   Supports CDL 2026 / Black Ops Maps: Search & Destroy, Overload, Hardpoint
+   Supports CDL 2026 / MW4 6v6 Maps: Search & Destroy, Hijack, Hardpoint
    Only available when tournament bracket is LIVE.
    ============================================================================== */
 (function() {
   const CDL_TOURNAMENT_MAP_POOL = {
     Hardpoint: [
-      { name: "Colossus" },
-      { name: "Den" },
-      { name: "Gridlock" },
-      { name: "Hacienda" },
-      { name: "Sake" },
-      { name: "Scar" }
+      { name: "Coal" },
+      { name: "Lithium" },
+      { name: "Lotus" },
+      { name: "Mumbai" },
+      { name: "Reactor U92" },
+      { name: "Transit 213" }
     ],
     SearchAndDestroy: [
-      { name: "Den" },
-      { name: "Fringe" },
-      { name: "Gridlock" },
-      { name: "Hacienda" },
-      { name: "Raid" },
-      { name: "Sake" }
+      { name: "Cachette" },
+      { name: "Munition" },
+      { name: "Nautical" },
+      { name: "Rooftops" },
+      { name: "Sentry" },
+      { name: "Silkworm" }
     ],
-    Overload: [
-      { name: "Den" },
-      { name: "Exposure" },
-      { name: "Gridlock" },
-      { name: "Scar" }
+    Hijack: [
+      { name: "Lithium" },
+      { name: "Mumbai" },
+      { name: "Reactor U92" },
+      { name: "Silkworm" },
+      { name: "Transit 213" }
     ]
   };
 
@@ -33,7 +34,7 @@
     return [
       { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hardpoint.map(m => ({ name: m.name })), struckBy: [] },
       { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.SearchAndDestroy.map(m => ({ name: m.name })), struckBy: [] },
-      { game: 3, mode: "Overload", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Overload.map(m => ({ name: m.name })), struckBy: [] },
+      { game: 3, mode: "Hijack", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hijack.map(m => ({ name: m.name })), struckBy: [] },
       { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hardpoint.map(m => ({ name: m.name })), struckBy: [] },
       { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.SearchAndDestroy.map(m => ({ name: m.name })), struckBy: [] }
     ];
@@ -127,7 +128,7 @@
 
         <!-- Copy and Quick Share Strip -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px solid #212814; padding-top:12px;">
-          <div style="font-size:11px; color:#6b7280;">Best of 5 Rotation: HP ➔ SnD ➔ Overload ➔ HP ➔ SnD</div>
+          <div style="font-size:11px; color:#6b7280;">Best of 5 Rotation: HP ➔ SnD ➔ Hijack ➔ HP ➔ SnD</div>
           <div style="display:flex; gap:8px;">
             <button type="button" class="btn-tourney-outline" id="btn-veto-copy-rotation" style="font-size:11px; padding:5px 12px;">
               📋 Copy Match Rotation

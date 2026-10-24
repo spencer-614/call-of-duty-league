@@ -132,6 +132,7 @@ header .wrap {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 .brand {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 14px;
@@ -139,6 +140,28 @@ header .wrap {
   color: var(--text);
   flex-shrink: 0;
 }
+
+.brand::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 34px;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(213, 244, 91, 0.42) 0%, rgba(213, 244, 91, 0.12) 50%, transparent 70%);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.brand:hover::before {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
 .brand-logo {
   float: left;
   width: 68px;
@@ -146,12 +169,31 @@ header .wrap {
   object-fit: contain;
   margin-right: 0;
   flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s ease, filter 0.2s ease;
 }
+
+.brand:hover .brand-logo,
+.brand-logo:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 16px rgba(213, 244, 91, 0.75)) drop-shadow(0 4px 22px rgba(213, 244, 91, 0.45));
+}
+
 .footer-logo {
   width: 64px;
   height: 64px;
   object-fit: contain;
   flex-shrink: 0;
+  position: relative;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.footer-logo:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 16px rgba(213, 244, 91, 0.75)) drop-shadow(0 4px 22px rgba(213, 244, 91, 0.45));
 }
 .brand-text {
   display: flex;
@@ -1655,6 +1697,11 @@ textarea.form-control {
   }
   .brand {
     gap: 10px;
+  }
+  .brand::before {
+    left: 26px;
+    width: 58px;
+    height: 58px;
   }
   .brand-logo {
     width: 52px;

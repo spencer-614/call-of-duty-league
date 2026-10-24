@@ -1291,16 +1291,18 @@
                   <div class="form-group">
                     <label class="form-label" for="combined-map-name">Map Name *</label>
                     <select id="combined-map-name" class="form-control" required>
-                      <option value="Karachi">Karachi</option>
-                      <option value="Rio">Rio</option>
-                      <option value="Sub Base">Sub Base</option>
-                      <option value="Highrise">Highrise</option>
-                      <option value="Invasion">Invasion</option>
-                      <option value="6 Star">6 Star</option>
-                      <option value="Vista">Vista</option>
-                      <option value="Terminal">Terminal</option>
-                      <option value="Skidrow">Skidrow</option>
-                      <option value="Departure">Departure</option>
+                      <option value="Cachette">Cachette (MW4)</option>
+                      <option value="Coal">Coal (MW4)</option>
+                      <option value="Lithium">Lithium (MW4)</option>
+                      <option value="Lotus">Lotus (MW4)</option>
+                      <option value="Mumbai">Mumbai (MW4)</option>
+                      <option value="Munition">Munition (MW4)</option>
+                      <option value="Nautical">Nautical (MW4)</option>
+                      <option value="Reactor U92">Reactor U92 (MW4)</option>
+                      <option value="Rooftops">Rooftops (MW4)</option>
+                      <option value="Sentry">Sentry (MW4)</option>
+                      <option value="Silkworm">Silkworm (MW4)</option>
+                      <option value="Transit 213">Transit 213 (MW4)</option>
                       <option value="__custom__">-- Custom Map Name... --</option>
                     </select>
                   </div>
@@ -1313,7 +1315,8 @@
                     <select id="combined-game-mode" class="form-control" required>
                       <option value="Hardpoint">Hardpoint</option>
                       <option value="Search &amp; Destroy">Search &amp; Destroy</option>
-                      <option value="Control">Control</option>
+                      <option value="Hijack">Hijack</option>
+                      <option value="Control">Control (Legacy)</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -9740,7 +9743,7 @@
             host_rules: getVal("rb-host-rules"),
             disconnect_rules: getVal("rb-disconnect-rules"),
             dispute_rules: getVal("rb-dispute-rules"),
-            series_format: cachedAdminRulebook?.series_format || "Best of 5 (Hardpoint, SnD, Control, Hardpoint, SnD)",
+            series_format: cachedAdminRulebook?.series_format || "Best of 5 (Hardpoint, SnD, Hijack, Hardpoint, SnD)",
             conduct_policy: cachedAdminRulebook?.conduct_policy || "Zero tolerance for hardware cheats (Cronus/XIM), macros, wallhacks, or toxic abuse. Violations trigger immediate forfeit and expulsion."
           };
 
