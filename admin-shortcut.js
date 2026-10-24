@@ -40,7 +40,7 @@
       } catch (_) {}
 
       if (loc.protocol === "file:") {
-        if (href.includes("/arena/profile/") || href.includes("/arena/tournaments/") || href.includes("/arena/free-agents/") || href.includes("/tournaments/bracket/") || href.includes("/tournaments/brackets/")) {
+        if (href.includes("/arena/8s/") || href.includes("/arena/profile/") || href.includes("/arena/tournaments/") || href.includes("/arena/free-agents/") || href.includes("/tournaments/bracket/") || href.includes("/tournaments/brackets/")) {
           loc.href = "../../admin/index.html";
         } else if (href.includes("/home/") || href.includes("/profile/") || href.includes("/players/") || href.includes("/teams/") || href.includes("/schedule/") || href.includes("/rules/") || href.includes("/livestreams/") || href.includes("/vods/") || href.includes("/brackets/") || href.includes("/draft/") || href.includes("/signup/") || href.includes("/arena/") || href.includes("/ladders/") || href.includes("/match/") || href.includes("/tournaments/")) {
           loc.href = "../admin/index.html";

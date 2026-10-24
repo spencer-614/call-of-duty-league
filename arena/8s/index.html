@@ -1,0 +1,1900 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+    <link rel="icon" type="image/png" href="/images/arenalogo_1.png" />
+    <link rel="apple-touch-icon" href="/images/arenalogo_1.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Frontline Arena — Arena 8's Queue Lobby &amp; Matchmaking</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase.js?v=4"></script>
+    <script src="/bullet-sparks.js" defer></script>
+    <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../../admin-shortcut.js';"></script>
+    <style>
+      /* ==========================================================================
+         ARENA 8'S QUEUE & NEATQUEUE BOT STYLES
+         ========================================================================== */
+      :root {
+        --neat-green: #22c55e;
+        --neat-red: #ef4444;
+        --neat-blue: #38bdf8;
+        --neat-purple: #a855f7;
+        --neat-gold: #eab308;
+        --neat-dark: #0a0d14;
+        --neat-card: #0e131d;
+        --neat-border: #1e283a;
+        --neat-crimson: #ff1e44;
+      }
+
+      /* Segmented Queue Fill Bar */
+      .queue-progress-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+        margin: 16px 0;
+      }
+      .queue-segment {
+        height: 10px;
+        border-radius: 2px;
+        background: #141c2b;
+        border: 1px solid #1f2b3e;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      .queue-segment.active {
+        background: #22c55e;
+        border-color: #4ade80;
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+      }
+      .queue-segment.active::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: pulseLight 1.8s infinite;
+      }
+      @keyframes pulseLight {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+
+      /* NeatQueue 8-Slot Lobby Cards Grid */
+      .queue-slots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+      .queue-slot-card {
+        background: #0b0f17;
+        border: 1px solid #1b2434;
+        border-radius: 4px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 130px;
+        position: relative;
+        transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      }
+      .queue-slot-card:hover {
+        border-color: #2b3952;
+      }
+      .queue-slot-card.filled {
+        background: linear-gradient(180deg, #0f1624 0%, #0a0e17 100%);
+        border: 1px solid #233147;
+      }
+      .queue-slot-card.filled.current-user {
+        border-color: #ff1e44;
+        box-shadow: 0 0 14px rgba(255, 30, 68, 0.25);
+      }
+      .queue-slot-card.empty {
+        background: #080b11;
+        border: 1px dashed #1c2637;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+      }
+      .queue-slot-card.empty:hover {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.04);
+      }
+      .slot-number-tag {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        font: 800 10px var(--body);
+        color: #64748b;
+        letter-spacing: 0.6px;
+      }
+
+      /* Draft Board Layout */
+      .draft-board-container {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1fr;
+        gap: 16px;
+        align-items: start;
+        margin-top: 20px;
+      }
+      @media (max-width: 900px) {
+        .draft-board-container {
+          grid-template-columns: 1fr;
+        }
+      }
+      .draft-team-col {
+        background: #0d121c;
+        border: 1px solid #1e283a;
+        border-radius: 4px;
+        padding: 16px;
+      }
+      .draft-team-col.team-alpha {
+        border-top: 3px solid #ff1e44;
+      }
+      .draft-team-col.team-bravo {
+        border-top: 3px solid #38bdf8;
+      }
+      .draft-pool-col {
+        background: #0a0e17;
+        border: 1px solid #1a2333;
+        border-radius: 4px;
+        padding: 16px;
+      }
+
+      /* Player draft chip */
+      .draft-player-card {
+        background: #111827;
+        border: 1px solid #243048;
+        border-radius: 4px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        transition: all 0.15s;
+      }
+      .draft-player-card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-1px);
+      }
+      .draft-player-card.is-captain {
+        border-left: 3px solid #eab308;
+      }
+
+      /* Match Series Game Row */
+      .series-game-row {
+        background: #0c1018;
+        border: 1px solid #1c2637;
+        border-radius: 4px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .series-game-row.completed {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.04);
+      }
+
+      /* Sound Toggle Pill */
+      .audio-toggle-btn {
+        background: #141c2b;
+        border: 1px solid #243048;
+        color: #94a3b8;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s;
+      }
+      .audio-toggle-btn:hover {
+        color: #ffffff;
+        border-color: #ff1e44;
+      }
+      .audio-toggle-btn.active {
+        color: #22c55e;
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+      }
+
+      /* Match Chat Window */
+      .queue-chat-box {
+        height: 220px;
+        overflow-y: auto;
+        padding: 12px;
+        background: #07090e;
+        border: 1px solid #182130;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .queue-chat-item {
+        background: #0f1522;
+        border: 1px solid #1a2436;
+        padding: 6px 10px;
+        border-radius: 3px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .queue-chat-item.system {
+        background: rgba(255, 30, 68, 0.08);
+        border-color: rgba(255, 30, 68, 0.3);
+        color: #fca5a5;
+      }
+
+      /* Modal Styling */
+      .arena-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(4, 6, 10, 0.85);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+      }
+      .arena-modal-backdrop.open {
+        display: flex;
+      }
+      .arena-modal-card {
+        background: #0e131d;
+        border: 1px solid #243048;
+        border-radius: 6px;
+        width: 100%;
+        max-width: 520px;
+        padding: 24px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      }
+    </style>
+  </head>
+  <body class="gb-body">
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER
+         ========================================================================= -->
+    <header class="fl-topbar">
+      <div class="fl-topbar-left">
+        <!-- Brand Lockup with Large Arena Logo -->
+        <a href="/arena/" class="fl-brand-lockup" title="Frontline Arena">
+          <div class="fl-brand-logo-wrapper">
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+          </div>
+          <div class="fl-brand-info">
+            <div class="fl-brand-text">
+              <span class="brand-frontline">FRONTLINE</span>
+              <span class="brand-arena">ARENA</span>
+            </div>
+            <div class="fl-circuit-tag-row">
+              <span class="fl-circuit-badge">COMPETITIVE ARENA</span>
+              <div class="fl-live-beacon">
+                <span class="fl-live-dot"></span>
+                <span>8'S QUEUE LIVE</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Header Center Hub with Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="/home/" class="mode-switch-btn" data-mode="league" title="Go to Frontline Franchised League">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="/arena/" class="mode-switch-btn active-arena" data-mode="arena" title="Frontline Arena Circuit">
+            <span>⚔</span> <span>Arena</span>
+          </a>
+          <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <span>🏆</span> <span>Tournaments</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links with Arena 8's Tab Active -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="/ladders/">Ladders</a>
+          <a href="/arena/tournaments/">Tournaments</a>
+          <a href="/arena/8s/" class="active">Arena 8's</a>
+          <a href="/arena/profile/#my-teams">My Teams</a>
+          <a href="/arena/profile/" id="nav-arena-profile-link" class="nav-arena-profile-link"><span id="nav-arena-profile-icon">👤</span> <span id="nav-arena-profile-text">Profile</span></a>
+        </nav>
+
+        <div id="arena-header-squad-container">
+          <a href="/arena/profile/" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <span>🛡</span> <span>My Dossier ↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Frontline Arena Breadcrumb Bar -->
+    <div class="gb-breadcrumb-bar">
+      <div class="gb-breadcrumb-inner" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <a href="/arena/">Arena Home</a>
+          <span class="gb-breadcrumb-sep">/</span>
+          <strong style="color:#ffffff;">Arena 8's Matchmaking &amp; Captains Queue</strong>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button type="button" class="audio-toggle-btn active" id="audio-toggle-btn" onclick="toggleAudioNotifications()">
+            <span id="audio-icon">🔊</span>
+            <span id="audio-label">Sound Alerts: ON</span>
+          </button>
+          <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">
+            NEATQUEUE BOT ENGINE V4.2
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main class="gb-content-wrap" style="padding-top:24px; padding-bottom:70px; max-width:1240px; margin:0 auto; padding-left:20px; padding-right:20px;">
+      <!-- Hero Showcase Section -->
+      <section style="position:relative; padding:36px 32px 30px; background:radial-gradient(ellipse 80% 60% at 50% -20%, rgba(255, 30, 68, 0.25), transparent 70%), #0e131d; border:1px solid #1e283a; border-radius:6px; margin-bottom:28px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:20px;">
+          <div style="max-width:820px;">
+            <div class="gb-meta-tag accent" style="margin-bottom:10px; display:inline-flex;">
+              ⚡ INSTANT 4v4 MW4 SCATTER &amp; CAPTAINS DRAFT LOBBY
+            </div>
+            <h1 style="font-family:var(--display); font-size:clamp(30px, 4vw, 48px); line-height:1; text-transform:uppercase; color:#fff; margin:0 0 10px; letter-spacing:0.5px;">
+              ARENA <span style="color:#ff1e44; text-shadow:0 2px 10px rgba(0,0,0,0.7);">8'S QUEUE</span> LOBBY
+            </h1>
+            <p style="font-size:14px; color:#cbd5e1; line-height:1.6; margin:0;">
+              Inspired by the competitive <strong>NeatQueue</strong> Discord scrim bot. Queue solo, watch the 8-slot lobby populate live, experience coin-flip Captains Draft picking, get assigned a designated 60Hz MW4 host, roll official MW4 6v6 Best-of-5 map sets (Hardpoint, Search &amp; Destroy, Hijack), and compete for individual 8's MMR ELO ratings.
+            </p>
+          </div>
+
+          <!-- Live Telemetry Badges -->
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="background:#090d14; border:1px solid #1f2a3c; padding:10px 16px; border-radius:4px; text-align:center; min-width:110px;">
+              <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Queue Status</span>
+              <div style="font:900 18px var(--body); color:#22c55e; margin-top:2px;" id="hero-queue-status">0 / 8 PLAYERS</div>
+            </div>
+            <div style="background:#090d14; border:1px solid #1f2a3c; padding:10px 16px; border-radius:4px; text-align:center; min-width:110px;">
+              <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
+              <div style="font:900 18px var(--body); color:#ff1e44; margin-top:2px;">4v4 MW4 BO5</div>
+            </div>
+            <div style="background:#090d14; border:1px solid #1f2a3c; padding:10px 16px; border-radius:4px; text-align:center; min-width:110px;">
+              <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Host Server</span>
+              <div style="font:900 18px var(--body); color:#38bdf8; margin-top:2px;">Dallas 60Hz</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sub-Navigation Navigation Filter Bar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:24px; border-bottom:1px solid #1a2333; padding-bottom:14px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="arena-8s-tabs">
+          <button type="button" class="btn-crimson" style="padding:8px 18px; font-size:12px;" onclick="switch8sTab('queue', this)">
+            <span>⚔</span> <span>Live Queue Lobby</span>
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 18px; font-size:12px;" onclick="switch8sTab('leaderboard', this)">
+            <span>🏆</span> <span>8's Leaderboard</span>
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 18px; font-size:12px;" onclick="switch8sTab('history', this)">
+            <span>📜</span> <span>Match History</span>
+          </button>
+          <button type="button" class="btn-crimson-outline" style="padding:8px 18px; font-size:12px;" onclick="switch8sTab('rules', this)">
+            <span>📋</span> <span>MW4 8's Ruleset</span>
+          </button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#94a3b8;">
+          <span class="fl-live-dot" style="background:#22c55e;"></span>
+          <span id="sync-status-indicator">Connected to Real-time Queue</span>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           TAB 1: LIVE QUEUE LOBBY (PRIMARY NEATQUEUE VIEW)
+           ======================================================================= -->
+      <div id="tab-content-queue" class="arena-8s-tab-pane">
+        
+        <!-- Queue Inactive / Populating Box -->
+        <div id="queue-lobby-panel" style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:24px; margin-bottom:24px;">
+          <!-- Queue Header & Controls -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">🟢</span>
+                <h2 style="font:800 18px var(--body); color:#ffffff; margin:0; text-transform:uppercase; letter-spacing:0.6px;">
+                  Frontline 8's Competitive Queue
+                </h2>
+                <span class="gb-meta-tag accent" style="font-size:10px; padding:2px 6px;">MW4 4V4</span>
+              </div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:4px;" id="queue-countdown-text">
+                Waiting for 8 players to populate. Once full, Captains Draft triggers automatically.
+              </div>
+            </div>
+
+            <!-- Action Buttons Row -->
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="btn-crimson" id="btn-join-queue" onclick="handleJoinQueue()" style="background:#16a34a; border-color:#22c55e; padding:10px 20px; font-size:13px; font-weight:800;">
+                <span>➕</span> <span>Join Queue</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" id="btn-leave-queue" onclick="handleLeaveQueue()" style="display:none; border-color:#ef4444; color:#ef4444; padding:10px 18px; font-size:13px;">
+                <span>✖</span> <span>Leave Queue</span>
+              </button>
+              
+              <!-- NeatQueue Simulator Tools for instant testing -->
+              <div style="display:inline-flex; gap:6px;">
+                <button type="button" class="btn-crimson-outline" onclick="addBotCombatant()" title="Add 1 simulated player into the queue for testing" style="padding:9px 12px; font-size:11px;">
+                  <span>🤖</span> <span>+1 Bot</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="fillQueueInstant()" title="Instantly fill queue to 8/8 to pop match" style="padding:9px 12px; font-size:11px; border-color:#eab308; color:#fde047;">
+                  <span>⚡</span> <span>Fill 8/8</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="clearQueueConfirm()" title="Clear queue" style="padding:9px 12px; font-size:11px; opacity:0.75;">
+                  <span>🔄</span> <span>Reset</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- NeatQueue 8-Segment Fill Indicator -->
+          <div class="queue-progress-grid" id="queue-progress-bar">
+            <div class="queue-segment" id="seg-1"></div>
+            <div class="queue-segment" id="seg-2"></div>
+            <div class="queue-segment" id="seg-3"></div>
+            <div class="queue-segment" id="seg-4"></div>
+            <div class="queue-segment" id="seg-5"></div>
+            <div class="queue-segment" id="seg-6"></div>
+            <div class="queue-segment" id="seg-7"></div>
+            <div class="queue-segment" id="seg-8"></div>
+          </div>
+
+          <!-- 8-Slot Queue Roster Grid -->
+          <div class="queue-slots-grid" id="queue-slots-container">
+            <!-- Dynamically populated 8 slots -->
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             MATCH SESSION VIEW (APPEARS WHEN QUEUE REACHES 8/8)
+             ===================================================================== -->
+        <div id="active-match-session-panel" style="display:none;">
+          
+          <!-- Match Header Card -->
+          <div style="background:radial-gradient(circle at 50% 0%, rgba(255,30,68,0.18), transparent 70%), #0e131d; border:1px solid #1e283a; border-radius:6px; padding:20px 24px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="gb-meta-tag accent" style="background:#22c55e; border-color:#4ade80; color:#ffffff;" id="match-status-badge">
+                    ⚡ DRAFTING PHASE
+                  </span>
+                  <span style="font:800 16px var(--body); color:#ffffff;" id="match-code-display">
+                    MATCH #8S-4019
+                  </span>
+                </div>
+                <div style="font-size:12px; color:#cbd5e1; margin-top:4px;">
+                  Best of 5 Series · Dallas/Central 60Hz Host · MW4 6v6 Ruleset (Hardpoint / SnD / Hijack)
+                </div>
+              </div>
+
+              <!-- Host & Comms Quick Actions -->
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div style="background:#090d14; border:1px solid #1f2a3c; padding:6px 12px; border-radius:4px; font-size:11.5px; display:flex; align-items:center; gap:8px;">
+                  <span style="color:#eab308; font-weight:800;">👑 HOST:</span>
+                  <strong style="color:#ffffff;" id="match-host-name">Assigning...</strong>
+                  <button type="button" class="btn-crimson-outline" onclick="copyHostActivisionId()" style="padding:2px 6px; font-size:10px;" id="btn-copy-host-id">
+                    Copy ID
+                  </button>
+                </div>
+                <button type="button" class="btn-crimson-outline" onclick="autoBalanceTeamsQuick()" style="padding:8px 14px; font-size:12px; border-color:#38bdf8; color:#38bdf8;" id="btn-autobalance">
+                  <span>⚖</span> <span>Auto-Balance 4v4</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="cancelActiveMatch()" style="padding:8px 14px; font-size:12px; border-color:#ef4444; color:#ef4444;">
+                  <span>✖</span> <span>Cancel Match</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Draft Turn Callout Banner -->
+            <div id="draft-turn-banner" style="margin-top:14px; background:#111827; border:1px solid #283548; padding:10px 16px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="fl-live-dot" style="background:#ff1e44;" id="turn-beacon-dot"></span>
+                <span style="font:800 13px var(--body); text-transform:uppercase; color:#ffffff;" id="draft-turn-text">
+                  Team Alpha Captain's Turn to Draft (Pick 1 of 6)
+                </span>
+              </div>
+              <div style="font-size:12px; color:#eab308; font-weight:700;" id="coin-flip-banner">
+                🪙 Coin Flip: Team Alpha won 1st pick!
+              </div>
+            </div>
+          </div>
+
+          <!-- Captains Draft Board Layout -->
+          <div class="draft-board-container" id="draft-board-layout">
+            <!-- Team Alpha (Red) -->
+            <div class="draft-team-col team-alpha">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <span style="font-size:10px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">TEAM 1 (RED)</span>
+                  <h3 style="font:800 16px var(--body); color:#ffffff; margin:2px 0 0;">TEAM ALPHA</h3>
+                </div>
+                <div style="font:900 16px var(--body); color:#ff1e44;" id="team-alpha-count">1 / 4</div>
+              </div>
+              <div id="team-alpha-roster-list">
+                <!-- Team Alpha Cards -->
+              </div>
+            </div>
+
+            <!-- Center Available Draft Pool -->
+            <div class="draft-pool-col">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <span style="font-size:10px; color:#22c55e; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">AVAILABLE DRAFT POOL</span>
+                  <h3 style="font:800 15px var(--body); color:#ffffff; margin:2px 0 0;" id="draft-pool-title">Remaining Combatants</h3>
+                </div>
+                <span class="gb-meta-tag accent" style="font-size:10px;" id="draft-pool-remaining-count">6 Available</span>
+              </div>
+              <div id="draft-pool-list">
+                <!-- Available Player Cards -->
+              </div>
+            </div>
+
+            <!-- Team Bravo (Blue) -->
+            <div class="draft-team-col team-bravo">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <span style="font-size:10px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">TEAM 2 (BLUE)</span>
+                  <h3 style="font:800 16px var(--body); color:#ffffff; margin:2px 0 0;">TEAM BRAVO</h3>
+                </div>
+                <div style="font:900 16px var(--body); color:#38bdf8;" id="team-bravo-count">1 / 4</div>
+              </div>
+              <div id="team-bravo-roster-list">
+                <!-- Team Bravo Cards -->
+              </div>
+            </div>
+          </div>
+
+          <!-- CDL Best of 5 Series & Reporting Panel (Appears after draft completes) -->
+          <div id="match-live-series-panel" style="display:none; margin-top:24px;">
+            <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:20px;">
+              <!-- Map Rotation & Scoreboard Column -->
+              <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                  <div>
+                    <h3 style="font:800 16px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
+                      MW4 6v6 Map &amp; Mode Rotation
+                    </h3>
+                    <div style="font-size:12px; color:#94a3b8; margin-top:2px;">
+                      Play maps in designated order. Click game winner to tally series score.
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="font:900 22px var(--body); color:#ff1e44;" id="series-alpha-score">0</div>
+                    <span style="color:#64748b; font-weight:800;">—</span>
+                    <div style="font:900 22px var(--body); color:#38bdf8;" id="series-bravo-score">0</div>
+                  </div>
+                </div>
+
+                <!-- Series Maps List -->
+                <div id="series-games-list">
+                  <!-- Games 1 to 5 dynamically inserted -->
+                </div>
+
+                <!-- Match Reporting Buttons (NeatQueue Finalize) -->
+                <div style="margin-top:20px; padding-top:16px; border-top:1px solid #1a2333; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                  <div style="font-size:12px; color:#cbd5e1;">
+                    <strong>Report Winner:</strong> Updates 8's Leaderboard ELO (+25 / -25).
+                  </div>
+                  <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn-crimson" onclick="reportMatchWinner('team_a')" style="padding:10px 18px; font-size:12px; background:#b91c1c; border-color:#ef4444;">
+                      🏆 Team Alpha Won
+                    </button>
+                    <button type="button" class="btn-crimson" onclick="reportMatchWinner('team_b')" style="padding:10px 18px; font-size:12px; background:#0284c7; border-color:#38bdf8;">
+                      🏆 Team Bravo Won
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lobby Chat & Tactical Comms Column -->
+              <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:20px; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="font:800 14px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
+                      💬 Lobby Comms
+                    </h3>
+                    <span style="font-size:11px; color:#64748b;">All 8 Players Connected</span>
+                  </div>
+
+                  <div class="queue-chat-box" id="queue-chat-container">
+                    <div class="queue-chat-item system">
+                      <strong>SYSTEM:</strong> Match lobby initialized. Host invites players via Activision ID.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chat Input Row -->
+                <div style="margin-top:12px;">
+                  <form onsubmit="handleSendLobbyChat(event)" style="display:flex; gap:8px;">
+                    <input type="text" id="input-lobby-chat" placeholder="Send message to 8s lobby..." style="flex:1; background:#090d14; border:1px solid #1f2a3c; border-radius:3px; padding:8px 12px; color:#fff; font-size:12px;" />
+                    <button type="submit" class="btn-crimson" style="padding:8px 14px; font-size:12px;">
+                      Send
+                    </button>
+                  </form>
+                  <!-- Quick Chat Pills -->
+                  <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn-crimson-outline" onclick="quickSendChat('Invites sent, join up!')" style="padding:3px 8px; font-size:10px;">"Invites sent"</button>
+                    <button type="button" class="btn-crimson-outline" onclick="quickSendChat('Joining lobby now.')" style="padding:3px 8px; font-size:10px;">"Joining now"</button>
+                    <button type="button" class="btn-crimson-outline" onclick="quickSendChat('Need 1 invite please.')" style="padding:3px 8px; font-size:10px;">"Need invite"</button>
+                    <button type="button" class="btn-crimson-outline" onclick="quickSendChat('GGs, good series.')" style="padding:3px 8px; font-size:10px;">"GGs"</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           TAB 2: 8'S LEADERBOARD
+           ======================================================================= -->
+      <div id="tab-content-leaderboard" class="arena-8s-tab-pane" style="display:none;">
+        <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:20px;">
+            <div>
+              <h2 style="font:800 20px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
+                Arena 8's Player Leaderboard
+              </h2>
+              <div style="font-size:12px; color:#94a3b8; margin-top:4px;">
+                Ratings calculate based on 4v4 8's series wins (+25) and losses (-25).
+              </div>
+            </div>
+            <div style="font-size:12px; color:#cbd5e1; background:#141c2b; border:1px solid #243048; padding:6px 12px; border-radius:4px;">
+              Season 1 Active Circuit
+            </div>
+          </div>
+
+          <!-- Leaderboard Table -->
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+              <thead>
+                <tr style="border-bottom:1px solid #1f2b3e; color:#64748b; font-size:11px; text-transform:uppercase; letter-spacing:0.8px;">
+                  <th style="padding:10px 12px; width:60px;">Rank</th>
+                  <th style="padding:10px 12px;">Combatant</th>
+                  <th style="padding:10px 12px;">Role</th>
+                  <th style="padding:10px 12px; text-align:right;">8's ELO</th>
+                  <th style="padding:10px 12px; text-align:right;">W - L</th>
+                  <th style="padding:10px 12px; text-align:right;">Win %</th>
+                  <th style="padding:10px 12px; text-align:center;">Streak</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-table-body">
+                <!-- Leaderboard rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           TAB 3: MATCH HISTORY
+           ======================================================================= -->
+      <div id="tab-content-history" class="arena-8s-tab-pane" style="display:none;">
+        <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:24px;">
+          <div style="margin-bottom:20px;">
+            <h2 style="font:800 20px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
+              Completed 8's Match History
+            </h2>
+            <div style="font-size:12px; color:#94a3b8; margin-top:4px;">
+              Archive of all verified 4v4 8s sessions with rosters and map scorelines.
+            </div>
+          </div>
+
+          <div id="match-history-list" style="display:flex; flex-direction:column; gap:14px;">
+            <!-- Match History cards -->
+          </div>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           TAB 4: CDL 8'S RULESET & GUIDELINES
+           ======================================================================= -->
+      <div id="tab-content-rules" class="arena-8s-tab-pane" style="display:none;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
+          <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:22px;">
+            <div class="gb-meta-tag accent" style="margin-bottom:10px; display:inline-flex;">RULESET OVERVIEW</div>
+            <h3 style="font:800 16px var(--body); color:#fff; margin:0 0 10px;">MW4 6v6 Best-of-5 Order</h3>
+            <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:14px;">
+              All 8s series are contested to first-to-3 map victories following the official MW4 6v6 rotation:
+            </p>
+            <ul style="font-size:13px; color:#cbd5e1; line-height:1.8; padding-left:18px; margin:0 0 16px;">
+              <li><strong>Map 1:</strong> Hardpoint (250 Score Limit, 5 Min Limit)</li>
+              <li><strong>Map 2:</strong> Search &amp; Destroy (Round Limit 6, Round Timer 1:30)</li>
+              <li><strong>Map 3:</strong> Hijack (300 Score Limit, Data Spike Objective &amp; Comm Station Upload)</li>
+              <li><strong>Map 4:</strong> Hardpoint (If needed)</li>
+              <li><strong>Map 5:</strong> Search &amp; Destroy (Final decider)</li>
+            </ul>
+            <div style="border-top:1px solid #1f2b3e; padding-top:12px; margin-top:10px;">
+              <strong style="color:#ffffff; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Official MW4 6v6 Map Pool:</strong>
+              <div style="font-size:12px; color:#94a3b8; margin-top:4px; line-height:1.6;">
+                Cachette, Coal, Lithium, Lotus, Mumbai, Munition, Nautical, Reactor U92, Rooftops, Sentry, Silkworm, Transit 213, Shipment.
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:22px;">
+            <div class="gb-meta-tag accent" style="margin-bottom:10px; display:inline-flex;">HOSTING &amp; DISCORD</div>
+            <h3 style="font:800 16px var(--body); color:#fff; margin:0 0 10px;">Dedicated Host Standard</h3>
+            <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:14px;">
+              The designated host is chosen by optimal geographical location (Central / Dallas 60Hz preferred).
+            </p>
+            <ul style="font-size:13px; color:#cbd5e1; line-height:1.8; padding-left:18px; margin:0;">
+              <li>Friendly Fire must be set to <strong>ENABLED</strong>.</li>
+              <li>Mini-map radar must be set to <strong>SWEEP ON FIRING (COMPETITIVE)</strong>.</li>
+              <li>All Shotguns, LMGs, Riot Shields, and Launchers are <strong>PROHIBITED</strong>.</li>
+              <li>Mid-game crash before 30s: Immediate remake.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         JOIN QUEUE / PROFILE IDENTIFIER MODAL
+         ========================================================================= -->
+    <div class="arena-modal-backdrop" id="join-profile-modal">
+      <div class="arena-modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="font:800 18px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
+            ⚡ Combatant Identifier
+          </h3>
+          <button type="button" onclick="closeJoinModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;">✖</button>
+        </div>
+
+        <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin:0 0 16px;">
+          Set your gamertag and Activision ID so fellow 8s combatants and captains can invite you in Call of Duty.
+        </p>
+
+        <form onsubmit="handleSaveProfileAndJoin(event)" style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; display:block; margin-bottom:4px;">
+              Gamertag / Username <span style="color:#ff1e44;">*</span>
+            </label>
+            <input type="text" id="modal-input-gamertag" required placeholder="e.g. Scump" style="width:100%; box-sizing:border-box; background:#070a10; border:1px solid #1f2b3e; border-radius:3px; padding:9px 12px; color:#fff; font-size:13px;" />
+          </div>
+
+          <div>
+            <label style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; display:block; margin-bottom:4px;">
+              Activision ID <span style="color:#ff1e44;">*</span>
+            </label>
+            <input type="text" id="modal-input-activision" required placeholder="e.g. Scump#1234567" style="width:100%; box-sizing:border-box; background:#070a10; border:1px solid #1f2b3e; border-radius:3px; padding:9px 12px; color:#fff; font-size:13px;" />
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div>
+              <label style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; display:block; margin-bottom:4px;">Primary Role</label>
+              <select id="modal-input-role" style="width:100%; box-sizing:border-box; background:#070a10; border:1px solid #1f2b3e; border-radius:3px; padding:8px 10px; color:#fff; font-size:12px;">
+                <option value="Flex">Flex</option>
+                <option value="Main AR">Main AR</option>
+                <option value="Entry SMG">Entry SMG</option>
+                <option value="Sniper">Sniper</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; display:block; margin-bottom:4px;">Platform</label>
+              <select id="modal-input-platform" style="width:100%; box-sizing:border-box; background:#070a10; border:1px solid #1f2b3e; border-radius:3px; padding:8px 10px; color:#fff; font-size:12px;">
+                <option value="PC">PC (Battle.net/Steam)</option>
+                <option value="PS5">PlayStation 5</option>
+                <option value="Xbox">Xbox Series X|S</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+            <button type="button" class="btn-crimson-outline" onclick="closeJoinModal()" style="padding:9px 16px; font-size:12px;">
+              Cancel
+            </button>
+            <button type="submit" class="btn-crimson" style="padding:9px 20px; font-size:12px; background:#16a34a; border-color:#22c55e;">
+              Save &amp; Enter Queue
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" style="background:#06080d; border-top:1px solid #161e2c; padding:32px 0; margin-top:40px;">
+      <div class="wrap" style="max-width:1240px; margin:0 auto; padding:0 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="/images/arenalogo_1.png" style="width:36px; height:36px; filter:drop-shadow(0 0 6px rgba(255,30,68,0.4));" alt="Frontline Arena" />
+          <div style="font-size:12px; color:#94a3b8;">
+            <strong style="color:#ffffff;">FRONTLINE ARENA 8'S</strong> · NeatQueue Scrim &amp; Captains Matchmaking.<br />
+            Grassroots Call of Duty competitive platform adhering to official CDL standards.
+          </div>
+        </div>
+        <div style="font-size:12px; color:#64748b;">
+          &copy; 2026 Frontline Arena. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <!-- =========================================================================
+         ARENA 8'S CORE JAVASCRIPT ENGINE (NEATQUEUE BEHAVIOR)
+         ========================================================================= -->
+    <script>
+      (function() {
+        // Audio synthesis engine for alerts
+        let soundAlertsEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        }
+
+        function playSynthesizedSound(type) {
+          if (!soundAlertsEnabled) return;
+          try {
+            const ctx = getAudioContext();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'join') {
+              // Upward dual blip
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(440, now);
+              osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+              gain.gain.setValueAtTime(0.2, now);
+              gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+              osc.start(now);
+              osc.stop(now + 0.12);
+            } else if (type === 'pop') {
+              // Triumphant match fanfare chord
+              [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(freq, now + (i * 0.06));
+                g.gain.setValueAtTime(0.25, now + (i * 0.06));
+                g.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.06) + 0.4);
+                o.start(now + (i * 0.06));
+                o.stop(now + (i * 0.06) + 0.4);
+              });
+            } else if (type === 'draft') {
+              // Click pick tone
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(600, now);
+              osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+              gain.gain.setValueAtTime(0.15, now);
+              gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+              osc.start(now);
+              osc.stop(now + 0.08);
+            } else if (type === 'victory') {
+              // Victory chime
+              [440, 554.37, 659.25, 880].forEach((f, idx) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.type = 'sine';
+                o.frequency.setValueAtTime(f, now + idx * 0.09);
+                g.gain.setValueAtTime(0.2, now + idx * 0.09);
+                g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.09 + 0.35);
+                o.start(now + idx * 0.09);
+                o.stop(now + idx * 0.09 + 0.35);
+              });
+            }
+          } catch(e) {}
+        }
+
+        window.toggleAudioNotifications = function() {
+          soundAlertsEnabled = !soundAlertsEnabled;
+          const btn = document.getElementById('audio-toggle-btn');
+          const icon = document.getElementById('audio-icon');
+          const label = document.getElementById('audio-label');
+          if (btn) btn.className = soundAlertsEnabled ? 'audio-toggle-btn active' : 'audio-toggle-btn';
+          if (icon) icon.textContent = soundAlertsEnabled ? '🔊' : '🔇';
+          if (label) label.textContent = soundAlertsEnabled ? 'Sound Alerts: ON' : 'Sound Alerts: OFF';
+        };
+
+        // Competitive MW4 6v6 Map Pool & Modes
+        const MAP_POOL = {
+          Hardpoint: ["Cachette", "Coal", "Lithium", "Lotus", "Mumbai", "Munition", "Nautical", "Reactor U92", "Rooftops", "Sentry", "Silkworm", "Transit 213"],
+          SearchAndDestroy: ["Cachette", "Coal", "Lithium", "Lotus", "Mumbai", "Munition", "Nautical", "Reactor U92", "Rooftops", "Sentry", "Silkworm", "Transit 213"],
+          Hijack: ["Cachette", "Coal", "Lithium", "Lotus", "Mumbai", "Munition", "Nautical", "Reactor U92", "Rooftops", "Sentry", "Silkworm", "Transit 213"]
+        };
+
+        // Competitive Bot Roster for Testing
+        const BOT_COMBATANTS = [
+          { gamertag: "Shotzzy", activision_id: "Shotzzy#4021", role: "Entry SMG", platform: "PC", elo: 1350, avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Dashy", activision_id: "Dashy#1999", role: "Main AR", platform: "PC", elo: 1340, avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Simp", activision_id: "Simp#7712", role: "Entry SMG", platform: "PC", elo: 1360, avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Cellium", activision_id: "Cellium#3312", role: "Flex", platform: "PC", elo: 1330, avatar_url: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Pred", activision_id: "Pred#9941", role: "Entry SMG", platform: "PC", elo: 1320, avatar_url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Kenny", activision_id: "Kenny#8812", role: "Flex", platform: "PC", elo: 1310, avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "HyDra", activision_id: "HyDra#5512", role: "Entry SMG", platform: "PC", elo: 1370, avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Scrap", activision_id: "Scrap#2144", role: "Main AR", platform: "PC", elo: 1345, avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" }
+        ];
+
+        // Seed Leaderboard Initial Data if empty
+        const INITIAL_LEADERBOARD = [
+          { gamertag: "HyDra", activision_id: "HyDra#5512", role: "Entry SMG", elo: 1370, tier: "Apex Elite", wins: 28, losses: 7, matches_played: 35, streak: "5W", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Simp", activision_id: "Simp#7712", role: "Entry SMG", elo: 1360, tier: "Apex Elite", wins: 25, losses: 8, matches_played: 33, streak: "3W", avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Shotzzy", activision_id: "Shotzzy#4021", role: "Entry SMG", elo: 1350, tier: "Apex Elite", wins: 22, losses: 9, matches_played: 31, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Scrap", activision_id: "Scrap#2144", role: "Main AR", elo: 1345, tier: "Apex Elite", wins: 21, losses: 10, matches_played: 31, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Dashy", activision_id: "Dashy#1999", role: "Main AR", elo: 1340, tier: "Apex Elite", wins: 20, losses: 10, matches_played: 30, streak: "4W", avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Cellium", activision_id: "Cellium#3312", role: "Flex", elo: 1330, tier: "Apex Elite", wins: 19, losses: 11, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80" }
+        ];
+
+        // State Machine
+        let queuePlayers = [];
+        let activeMatch = null;
+        let localPlayer = null;
+        let broadcastChannel = null;
+
+        // Initialize Cross-Tab Broadcast Channel
+        try {
+          broadcastChannel = new BroadcastChannel("frontline_arena_8s_channel");
+          broadcastChannel.onmessage = function(event) {
+            const data = event.data;
+            if (!data) return;
+            if (data.type === "QUEUE_UPDATE") {
+              queuePlayers = data.players || [];
+              renderQueueUI();
+            } else if (data.type === "MATCH_STARTED") {
+              activeMatch = data.match;
+              queuePlayers = [];
+              renderQueueUI();
+              renderMatchUI();
+              playSynthesizedSound('pop');
+            } else if (data.type === "MATCH_UPDATE") {
+              activeMatch = data.match;
+              renderMatchUI();
+            } else if (data.type === "MATCH_ENDED") {
+              activeMatch = null;
+              renderQueueUI();
+              loadLeaderboard();
+              loadMatchHistory();
+            }
+          };
+        } catch(e) {}
+
+        // Identify Current User
+        function resolveCurrentPlayer() {
+          if (window.LadderDB && typeof window.LadderDB.getCurrentPlayer === 'function') {
+            const p = window.LadderDB.getCurrentPlayer();
+            if (p && p.gamertag) {
+              localPlayer = {
+                id: p.id || "user_" + Date.now(),
+                gamertag: p.gamertag,
+                activision_id: p.activision_id || `${p.gamertag}#1234567`,
+                elo: p.elo || 1200,
+                role: p.role || "Flex",
+                platform: p.platform || "PC",
+                avatar_url: p.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                is_user: true
+              };
+              return localPlayer;
+            }
+          }
+          // Check local stored 8s profile
+          try {
+            const saved = localStorage.getItem("frontline_arena_8s_profile");
+            if (saved) {
+              localPlayer = JSON.parse(saved);
+              return localPlayer;
+            }
+          } catch(e) {}
+
+          return null;
+        }
+
+        // Persistence Helpers
+        function saveQueueState() {
+          try {
+            localStorage.setItem("frontline_arena_8s_queue", JSON.stringify(queuePlayers));
+            if (activeMatch) {
+              localStorage.setItem("frontline_arena_8s_active_match", JSON.stringify(activeMatch));
+            } else {
+              localStorage.removeItem("frontline_arena_8s_active_match");
+            }
+            if (broadcastChannel) {
+              broadcastChannel.postMessage({
+                type: activeMatch ? "MATCH_UPDATE" : "QUEUE_UPDATE",
+                players: queuePlayers,
+                match: activeMatch
+              });
+            }
+          } catch(e) {}
+        }
+
+        function loadQueueState() {
+          try {
+            const rawQ = localStorage.getItem("frontline_arena_8s_queue");
+            if (rawQ) queuePlayers = JSON.parse(rawQ) || [];
+            const rawM = localStorage.getItem("frontline_arena_8s_active_match");
+            if (rawM) activeMatch = JSON.parse(rawM);
+          } catch(e) {}
+        }
+
+        // =====================================================================
+        // QUEUE ACTIONS
+        // =====================================================================
+        window.handleJoinQueue = function() {
+          const user = resolveCurrentPlayer();
+          if (!user) {
+            // Open modal to set gamertag / Activision ID
+            openJoinModal();
+            return;
+          }
+
+          // Check if already in queue
+          const alreadyIn = queuePlayers.some(p => p.gamertag.toLowerCase() === user.gamertag.toLowerCase());
+          if (alreadyIn) {
+            return;
+          }
+
+          if (queuePlayers.length >= 8) {
+            alert("Queue is currently full for an active match.");
+            return;
+          }
+
+          queuePlayers.push({
+            ...user,
+            joined_at: new Date().toISOString()
+          });
+
+          playSynthesizedSound('join');
+          saveQueueState();
+          renderQueueUI();
+
+          // Check if queue full
+          checkQueueFull();
+        };
+
+        window.handleLeaveQueue = function() {
+          const user = resolveCurrentPlayer();
+          if (!user) return;
+          queuePlayers = queuePlayers.filter(p => p.gamertag.toLowerCase() !== user.gamertag.toLowerCase());
+          saveQueueState();
+          renderQueueUI();
+        };
+
+        window.addBotCombatant = function() {
+          if (queuePlayers.length >= 8) return;
+          const availableBots = BOT_COMBATANTS.filter(b => 
+            !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase())
+          );
+          if (availableBots.length === 0) return;
+          const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+          queuePlayers.push({
+            id: "bot_" + Date.now() + "_" + Math.floor(Math.random()*1000),
+            gamertag: bot.gamertag,
+            activision_id: bot.activision_id,
+            role: bot.role,
+            platform: bot.platform,
+            elo: bot.elo,
+            avatar_url: bot.avatar_url,
+            is_bot: true,
+            joined_at: new Date().toISOString()
+          });
+          playSynthesizedSound('join');
+          saveQueueState();
+          renderQueueUI();
+          checkQueueFull();
+        };
+
+        window.fillQueueInstant = function() {
+          const user = resolveCurrentPlayer();
+          if (user && !queuePlayers.some(p => p.gamertag.toLowerCase() === user.gamertag.toLowerCase())) {
+            queuePlayers.push({ ...user, joined_at: new Date().toISOString() });
+          }
+
+          let botIdx = 0;
+          while (queuePlayers.length < 8 && botIdx < BOT_COMBATANTS.length) {
+            const candidate = BOT_COMBATANTS[botIdx];
+            if (!queuePlayers.some(p => p.gamertag.toLowerCase() === candidate.gamertag.toLowerCase())) {
+              queuePlayers.push({
+                id: "bot_" + Date.now() + "_" + botIdx,
+                gamertag: candidate.gamertag,
+                activision_id: candidate.activision_id,
+                role: candidate.role,
+                platform: candidate.platform,
+                elo: candidate.elo,
+                avatar_url: candidate.avatar_url,
+                is_bot: true,
+                joined_at: new Date().toISOString()
+              });
+            }
+            botIdx++;
+          }
+
+          playSynthesizedSound('join');
+          saveQueueState();
+          renderQueueUI();
+          checkQueueFull();
+        };
+
+        window.clearQueueConfirm = function() {
+          if (confirm("Reset current queue lobby?")) {
+            queuePlayers = [];
+            activeMatch = null;
+            saveQueueState();
+            renderQueueUI();
+            const panel = document.getElementById('active-match-session-panel');
+            if (panel) panel.style.display = 'none';
+          }
+        };
+
+        function checkQueueFull() {
+          if (queuePlayers.length >= 8) {
+            playSynthesizedSound('pop');
+            // Pop Match Session
+            launchMatchSession([...queuePlayers]);
+          }
+        }
+
+        // =====================================================================
+        // MATCH SESSION & CAPTAINS DRAFT (NEATQUEUE ENGINE)
+        // =====================================================================
+        function launchMatchSession(players) {
+          const matchCode = "8S-" + Math.floor(1000 + Math.random() * 9000);
+          
+          // Select 2 Captains based on highest ELO or top seeds
+          const sorted = [...players].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+          const captainA = sorted[0];
+          const captainB = sorted[1];
+          const draftPool = sorted.slice(2); // Remaining 6 players
+
+          // Roll random MW4 6v6 series maps
+          const rollMap = (mode) => {
+            const list = MAP_POOL[mode];
+            return list[Math.floor(Math.random() * list.length)];
+          };
+
+          const maps = [
+            { game: 1, mode: "Hardpoint", map: rollMap("Hardpoint"), winner: null, score: null },
+            { game: 2, mode: "Search & Destroy", map: rollMap("SearchAndDestroy"), winner: null, score: null },
+            { game: 3, mode: "Hijack", map: rollMap("Hijack"), winner: null, score: null },
+            { game: 4, mode: "Hardpoint", map: rollMap("Hardpoint"), winner: null, score: null },
+            { game: 5, mode: "Search & Destroy", map: rollMap("SearchAndDestroy"), winner: null, score: null }
+          ];
+
+          activeMatch = {
+            id: "match_" + Date.now(),
+            match_code: matchCode,
+            status: "drafting",
+            format: "4v4 MW4 Variant",
+            captain_a: captainA,
+            captain_b: captainB,
+            team_a: [captainA],
+            team_b: [captainB],
+            draft_pool: draftPool,
+            current_pick_team: "team_a", // Team A gets 1st pick
+            pick_turn: 1,
+            coin_flip_winner: "Team Alpha",
+            host_player: captainA, // Designated host
+            maps: maps,
+            series_score: { team_a: 0, team_b: 0 },
+            winning_team: null,
+            created_at: new Date().toISOString()
+          };
+
+          queuePlayers = []; // Queue reset for next squad
+          saveQueueState();
+          renderQueueUI();
+          renderMatchUI();
+
+          if (broadcastChannel) {
+            broadcastChannel.postMessage({
+              type: "MATCH_STARTED",
+              match: activeMatch
+            });
+          }
+        }
+
+        window.handleDraftPick = function(playerId) {
+          if (!activeMatch || activeMatch.status !== "drafting") return;
+          const idx = activeMatch.draft_pool.findIndex(p => p.id === playerId || p.gamertag === playerId);
+          if (idx < 0) return;
+
+          const pickedPlayer = activeMatch.draft_pool.splice(idx, 1)[0];
+          playSynthesizedSound('draft');
+
+          if (activeMatch.current_pick_team === "team_a") {
+            activeMatch.team_a.push(pickedPlayer);
+            addLobbyChatMessage("SYSTEM", `Team Alpha drafted ${pickedPlayer.gamertag}.`);
+          } else {
+            activeMatch.team_b.push(pickedPlayer);
+            addLobbyChatMessage("SYSTEM", `Team Bravo drafted ${pickedPlayer.gamertag}.`);
+          }
+
+          // Advance draft sequence:
+          // Pick 1: Alpha (Pool: 6 -> 5) -> Turn to Bravo
+          // Pick 2: Bravo (Pool: 5 -> 4) -> Turn to Alpha
+          // Pick 3: Alpha (Pool: 4 -> 3) -> Turn to Bravo
+          // Pick 4: Bravo (Pool: 3 -> 2) -> Turn to Alpha
+          // Pick 5: Alpha (Pool: 2 -> 1) -> Last remaining player automatically goes to Bravo!
+          if (activeMatch.draft_pool.length === 1) {
+            // Auto assign last remaining player to Team Bravo
+            const lastPlayer = activeMatch.draft_pool.pop();
+            activeMatch.team_b.push(lastPlayer);
+            addLobbyChatMessage("SYSTEM", `Final pick: ${lastPlayer.gamertag} assigned to Team Bravo.`);
+          }
+
+          if (activeMatch.team_a.length === 4 && activeMatch.team_b.length === 4) {
+            // Draft complete! Transition to live series
+            activeMatch.status = "in_progress";
+            addLobbyChatMessage("SYSTEM", "Draft complete! Rosters finalized. Series is now LIVE.");
+          } else {
+            activeMatch.current_pick_team = (activeMatch.current_pick_team === "team_a") ? "team_b" : "team_a";
+            activeMatch.pick_turn += 1;
+          }
+
+          saveQueueState();
+          renderMatchUI();
+        };
+
+        window.autoBalanceTeamsQuick = function() {
+          if (!activeMatch || activeMatch.status !== "drafting") return;
+          // Combine all 8 players and balance by ELO
+          const all = [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
+          all.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+
+          // 1, 4, 5, 8 vs 2, 3, 6, 7 snake balance
+          activeMatch.team_a = [all[0], all[3], all[4], all[7]];
+          activeMatch.team_b = [all[1], all[2], all[5], all[6]];
+          activeMatch.draft_pool = [];
+          activeMatch.status = "in_progress";
+
+          addLobbyChatMessage("SYSTEM", "Teams auto-balanced by competitive MMR ratings. Series LIVE.");
+          playSynthesizedSound('draft');
+          saveQueueState();
+          renderMatchUI();
+        };
+
+        window.recordGameWinner = function(gameNum, winnerTeam) {
+          if (!activeMatch || activeMatch.status !== "in_progress") return;
+          const game = activeMatch.maps.find(g => g.game === gameNum);
+          if (!game) return;
+
+          game.winner = winnerTeam;
+          let aScore = 0;
+          let bScore = 0;
+          activeMatch.maps.forEach(g => {
+            if (g.winner === "team_a") aScore++;
+            if (g.winner === "team_b") bScore++;
+          });
+          activeMatch.series_score = { team_a: aScore, team_b: bScore };
+
+          // First to 3 wins series
+          if (aScore >= 3) {
+            reportMatchWinner("team_a");
+            return;
+          } else if (bScore >= 3) {
+            reportMatchWinner("team_b");
+            return;
+          }
+
+          saveQueueState();
+          renderMatchUI();
+        };
+
+        window.reportMatchWinner = function(winner) {
+          if (!activeMatch) return;
+          activeMatch.winning_team = winner;
+          activeMatch.status = "completed";
+          playSynthesizedSound('victory');
+
+          const winnerName = (winner === "team_a") ? "Team Alpha" : "Team Bravo";
+          const winningRoster = (winner === "team_a") ? activeMatch.team_a : activeMatch.team_b;
+          const losingRoster = (winner === "team_a") ? activeMatch.team_b : activeMatch.team_a;
+
+          // Update Leaderboard ELO (+25 / -25)
+          updateLeaderboardAfterMatch(winningRoster, losingRoster);
+
+          // Archive into Match History
+          archiveCompletedMatch(activeMatch);
+
+          alert(`🎉 8'S MATCH CONCLUDED!\n${winnerName} is Victorious (+25 MMR awarded).\nMatch archived into 8's Match History.`);
+
+          activeMatch = null;
+          saveQueueState();
+          renderQueueUI();
+          loadLeaderboard();
+          loadMatchHistory();
+
+          if (broadcastChannel) {
+            broadcastChannel.postMessage({ type: "MATCH_ENDED" });
+          }
+        };
+
+        window.cancelActiveMatch = function() {
+          if (!confirm("Are you sure you want to cancel this 8's match?")) return;
+          activeMatch = null;
+          saveQueueState();
+          renderQueueUI();
+          const panel = document.getElementById('active-match-session-panel');
+          if (panel) panel.style.display = 'none';
+        };
+
+        window.copyHostActivisionId = function() {
+          if (!activeMatch || !activeMatch.host_player) return;
+          const id = activeMatch.host_player.activision_id || activeMatch.host_player.gamertag;
+          navigator.clipboard.writeText(id).then(() => {
+            const btn = document.getElementById('btn-copy-host-id');
+            if (btn) {
+              const old = btn.textContent;
+              btn.textContent = "COPIED!";
+              setTimeout(() => btn.textContent = old, 1500);
+            }
+          });
+        };
+
+        // =====================================================================
+        // CHAT ENGINE
+        // =====================================================================
+        window.handleSendLobbyChat = function(e) {
+          e.preventDefault();
+          const input = document.getElementById('input-lobby-chat');
+          if (!input || !input.value.trim()) return;
+          const user = resolveCurrentPlayer();
+          const sender = user ? user.gamertag : "Operative";
+          addLobbyChatMessage(sender, input.value.trim());
+          input.value = "";
+        };
+
+        window.quickSendChat = function(msg) {
+          const user = resolveCurrentPlayer();
+          const sender = user ? user.gamertag : "Operative";
+          addLobbyChatMessage(sender, msg);
+        };
+
+        function addLobbyChatMessage(sender, text) {
+          const box = document.getElementById('queue-chat-container');
+          if (!box) return;
+          const item = document.createElement('div');
+          const isSys = sender === "SYSTEM";
+          item.className = isSys ? "queue-chat-item system" : "queue-chat-item";
+          item.innerHTML = `<strong>${escapeHtml(sender)}:</strong> ${escapeHtml(text)}`;
+          box.appendChild(item);
+          box.scrollTop = box.scrollHeight;
+        }
+
+        // =====================================================================
+        // UI RENDERING
+        // =====================================================================
+        function renderQueueUI() {
+          const curUser = resolveCurrentPlayer();
+          const queueCount = queuePlayers.length;
+
+          // Hero telemetry
+          const heroCount = document.getElementById('hero-queue-status');
+          if (heroCount) heroCount.textContent = `${queueCount} / 8 PLAYERS`;
+
+          // Progress Segment Bar
+          for (let i = 1; i <= 8; i++) {
+            const seg = document.getElementById(`seg-${i}`);
+            if (seg) {
+              if (i <= queueCount) {
+                seg.className = "queue-segment active";
+              } else {
+                seg.className = "queue-segment";
+              }
+            }
+          }
+
+          // Countdown / Status Text
+          const countText = document.getElementById('queue-countdown-text');
+          if (countText) {
+            if (queueCount === 0) {
+              countText.textContent = "Queue is currently open. Click 'Join Queue' to enter the 8-player lobby.";
+            } else if (queueCount < 8) {
+              countText.textContent = `Waiting for ${8 - queueCount} more combatants to launch Captains Draft.`;
+            } else {
+              countText.textContent = "Lobby full! Match session active.";
+            }
+          }
+
+          // Buttons Toggle
+          const btnJoin = document.getElementById('btn-join-queue');
+          const btnLeave = document.getElementById('btn-leave-queue');
+          const isUserInQueue = curUser && queuePlayers.some(p => p.gamertag.toLowerCase() === curUser.gamertag.toLowerCase());
+
+          if (btnJoin && btnLeave) {
+            if (isUserInQueue) {
+              btnJoin.style.display = "none";
+              btnLeave.style.display = "inline-flex";
+            } else {
+              btnJoin.style.display = "inline-flex";
+              btnLeave.style.display = "none";
+            }
+          }
+
+          // Render 8 Slots Cards Grid
+          const slotsContainer = document.getElementById('queue-slots-container');
+          if (slotsContainer) {
+            slotsContainer.innerHTML = "";
+            for (let i = 0; i < 8; i++) {
+              const player = queuePlayers[i];
+              const slotCard = document.createElement('div');
+              if (player) {
+                const isCur = curUser && player.gamertag.toLowerCase() === curUser.gamertag.toLowerCase();
+                slotCard.className = isCur ? "queue-slot-card filled current-user" : "queue-slot-card filled";
+                slotCard.innerHTML = `
+                  <span class="slot-number-tag">SLOT #${i + 1}</span>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:42px; height:42px; border-radius:4px; object-fit:cover; border:1px solid #243048;" />
+                    <div>
+                      <div style="display:flex; align-items:center; gap:6px;">
+                        <strong style="color:#ffffff; font-size:14px;">${escapeHtml(player.gamertag)}</strong>
+                        ${isCur ? '<span class="gb-meta-tag accent" style="font-size:9px; padding:1px 4px;">YOU</span>' : ''}
+                      </div>
+                      <div style="font-size:11px; color:#94a3b8; font-family:monospace;">${escapeHtml(player.activision_id || '—')}</div>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top:1px solid #1a2333;">
+                    <div style="display:flex; gap:6px; align-items:center;">
+                      <span class="gb-meta-tag" style="font-size:9.5px; padding:2px 6px; background:#141c2b; border-color:#222f44;">${player.role || 'Flex'}</span>
+                      <span style="font-size:11px; color:#64748b;">${player.platform || 'PC'}</span>
+                    </div>
+                    <span style="font:800 11px var(--body); color:#22c55e;">${player.elo || 1200} ELO</span>
+                  </div>
+                `;
+              } else {
+                slotCard.className = "queue-slot-card empty";
+                slotCard.onclick = () => window.handleJoinQueue();
+                slotCard.innerHTML = `
+                  <span class="slot-number-tag">SLOT #${i + 1}</span>
+                  <div style="font-size:24px; color:#22c55e; margin-bottom:4px;">➕</div>
+                  <strong style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Available Slot</strong>
+                  <div style="font-size:11px; color:#64748b; margin-top:2px;">Click to Join Queue</div>
+                `;
+              }
+              slotsContainer.appendChild(slotCard);
+            }
+          }
+
+          // Toggle visibility of Active Match Panel
+          const matchPanel = document.getElementById('active-match-session-panel');
+          const queuePanel = document.getElementById('queue-lobby-panel');
+          if (activeMatch) {
+            if (matchPanel) matchPanel.style.display = "block";
+            renderMatchUI();
+          } else {
+            if (matchPanel) matchPanel.style.display = "none";
+          }
+        }
+
+        function renderMatchUI() {
+          if (!activeMatch) return;
+
+          // Header
+          const badge = document.getElementById('match-status-badge');
+          const codeEl = document.getElementById('match-code-display');
+          const hostName = document.getElementById('match-host-name');
+          if (badge) {
+            badge.textContent = activeMatch.status === "drafting" ? "⚡ CAPTAINS DRAFTING" : "⚔️ SERIES IN PROGRESS";
+            badge.style.background = activeMatch.status === "drafting" ? "#22c55e" : "#ff1e44";
+          }
+          if (codeEl) codeEl.textContent = `MATCH #${activeMatch.match_code}`;
+          if (hostName && activeMatch.host_player) {
+            hostName.textContent = `${activeMatch.host_player.gamertag} (${activeMatch.host_player.activision_id})`;
+          }
+
+          // Draft Turn Banner
+          const turnBanner = document.getElementById('draft-turn-banner');
+          const turnText = document.getElementById('draft-turn-text');
+          const turnDot = document.getElementById('turn-beacon-dot');
+          const draftBoard = document.getElementById('draft-board-layout');
+          const liveSeriesPanel = document.getElementById('match-live-series-panel');
+
+          if (activeMatch.status === "drafting") {
+            if (turnBanner) turnBanner.style.display = "flex";
+            if (draftBoard) draftBoard.style.display = "grid";
+            if (liveSeriesPanel) liveSeriesPanel.style.display = "none";
+
+            const isAlpha = activeMatch.current_pick_team === "team_a";
+            if (turnText) {
+              turnText.textContent = isAlpha 
+                ? `Team Alpha Captain's Turn to Draft (Pick #${activeMatch.pick_turn})` 
+                : `Team Bravo Captain's Turn to Draft (Pick #${activeMatch.pick_turn})`;
+              turnText.style.color = isAlpha ? "#ff1e44" : "#38bdf8";
+            }
+            if (turnDot) turnDot.style.background = isAlpha ? "#ff1e44" : "#38bdf8";
+          } else {
+            // Live series mode
+            if (turnBanner) turnBanner.style.display = "none";
+            if (draftBoard) draftBoard.style.display = "none";
+            if (liveSeriesPanel) liveSeriesPanel.style.display = "block";
+            renderSeriesScoreboard();
+          }
+
+          // Render Team Alpha Roster
+          const alphaList = document.getElementById('team-alpha-roster-list');
+          const alphaCount = document.getElementById('team-alpha-count');
+          if (alphaCount) alphaCount.textContent = `${activeMatch.team_a.length} / 4`;
+          if (alphaList) {
+            alphaList.innerHTML = activeMatch.team_a.map((p, idx) => `
+              <div class="draft-player-card ${idx === 0 ? 'is-captain' : ''}">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:30px; height:30px; border-radius:3px; object-fit:cover;" />
+                  <div>
+                    <div style="font:800 12.5px var(--body); color:#ffffff;">
+                      ${escapeHtml(p.gamertag)} ${idx === 0 ? '<span style="color:#eab308; font-size:10px;">(CAPTAIN)</span>' : ''}
+                    </div>
+                    <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
+                  </div>
+                </div>
+                <span style="font:800 11px var(--body); color:#ff1e44;">${p.elo || 1200} ELO</span>
+              </div>
+            `).join('');
+          }
+
+          // Render Team Bravo Roster
+          const bravoList = document.getElementById('team-bravo-roster-list');
+          const bravoCount = document.getElementById('team-bravo-count');
+          if (bravoCount) bravoCount.textContent = `${activeMatch.team_b.length} / 4`;
+          if (bravoList) {
+            bravoList.innerHTML = activeMatch.team_b.map((p, idx) => `
+              <div class="draft-player-card ${idx === 0 ? 'is-captain' : ''}">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:30px; height:30px; border-radius:3px; object-fit:cover;" />
+                  <div>
+                    <div style="font:800 12.5px var(--body); color:#ffffff;">
+                      ${escapeHtml(p.gamertag)} ${idx === 0 ? '<span style="color:#eab308; font-size:10px;">(CAPTAIN)</span>' : ''}
+                    </div>
+                    <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
+                  </div>
+                </div>
+                <span style="font:800 11px var(--body); color:#38bdf8;">${p.elo || 1200} ELO</span>
+              </div>
+            `).join('');
+          }
+
+          // Render Center Draft Pool
+          const poolList = document.getElementById('draft-pool-list');
+          const poolCount = document.getElementById('draft-pool-remaining-count');
+          if (poolCount) poolCount.textContent = `${activeMatch.draft_pool.length} Available`;
+          if (poolList) {
+            if (activeMatch.draft_pool.length === 0) {
+              poolList.innerHTML = `
+                <div style="text-align:center; padding:24px 10px; color:#64748b; font-size:12px;">
+                  All 6 players drafted into squads!
+                </div>
+              `;
+            } else {
+              poolList.innerHTML = activeMatch.draft_pool.map(p => `
+                <div class="draft-player-card" style="cursor:pointer;" onclick="handleDraftPick('${escapeHtml(p.gamertag)}')">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:3px; object-fit:cover;" />
+                    <div>
+                      <div style="font:800 13px var(--body); color:#ffffff;">${escapeHtml(p.gamertag)}</div>
+                      <div style="font-size:11px; color:#94a3b8;">${escapeHtml(p.role || 'Flex')} · ${escapeHtml(p.platform || 'PC')}</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font:800 11.5px var(--body); color:#22c55e;">${p.elo || 1200} ELO</span>
+                    <button type="button" class="btn-crimson" style="padding:4px 10px; font-size:11px;">
+                      Draft ↗
+                    </button>
+                  </div>
+                </div>
+              `).join('');
+            }
+          }
+        }
+
+        function renderSeriesScoreboard() {
+          if (!activeMatch) return;
+          const aScore = document.getElementById('series-alpha-score');
+          const bScore = document.getElementById('series-bravo-score');
+          if (aScore) aScore.textContent = activeMatch.series_score.team_a;
+          if (bScore) bScore.textContent = activeMatch.series_score.team_b;
+
+          const list = document.getElementById('series-games-list');
+          if (list) {
+            list.innerHTML = activeMatch.maps.map(g => {
+              const isComp = g.winner !== null;
+              const winTag = g.winner === "team_a" 
+                ? '<span style="color:#ff1e44; font-weight:800; font-size:12px;">Alpha Won</span>' 
+                : (g.winner === "team_b" ? '<span style="color:#38bdf8; font-weight:800; font-size:12px;">Bravo Won</span>' : '');
+
+              return `
+                <div class="series-game-row ${isComp ? 'completed' : ''}">
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="gb-meta-tag accent" style="font-size:10px; padding:2px 6px;">GAME ${g.game}</span>
+                    <div>
+                      <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(g.map)}</strong>
+                      <span style="color:#94a3b8; font-size:12px; margin-left:6px;">— ${escapeHtml(g.mode)}</span>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    ${isComp ? winTag : `
+                      <button type="button" class="btn-crimson-outline" onclick="recordGameWinner(${g.game}, 'team_a')" style="padding:4px 8px; font-size:10px; border-color:#ff1e44; color:#ff1e44;">
+                        Alpha +1
+                      </button>
+                      <button type="button" class="btn-crimson-outline" onclick="recordGameWinner(${g.game}, 'team_b')" style="padding:4px 8px; font-size:10px; border-color:#38bdf8; color:#38bdf8;">
+                        Bravo +1
+                      </button>
+                    `}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+
+        // =====================================================================
+        // LEADERBOARD & RATINGS STORAGE
+        // =====================================================================
+        function loadLeaderboard() {
+          let list = [];
+          try {
+            const raw = localStorage.getItem("frontline_arena_8s_leaderboard");
+            list = raw ? JSON.parse(raw) : INITIAL_LEADERBOARD;
+          } catch(e) {
+            list = INITIAL_LEADERBOARD;
+          }
+
+          // Sort by ELO desc
+          list.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+
+          const tbody = document.getElementById('leaderboard-table-body');
+          if (!tbody) return;
+
+          tbody.innerHTML = list.map((p, idx) => {
+            const medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `#${idx + 1}`));
+            const winRate = p.matches_played > 0 ? Math.round((p.wins / p.matches_played) * 100) : 0;
+            return `
+              <tr style="border-bottom:1px solid #162030; transition:background 0.15s;">
+                <td style="padding:12px; font-weight:800; color:#cbd5e1;">${medal}</td>
+                <td style="padding:12px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:4px; object-fit:cover;" />
+                    <div>
+                      <strong style="color:#ffffff;">${escapeHtml(p.gamertag)}</strong>
+                      <div style="font-size:10.5px; color:#64748b;">${escapeHtml(p.activision_id || '')}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding:12px; color:#94a3b8;">${escapeHtml(p.role || 'Flex')}</td>
+                <td style="padding:12px; text-align:right; font-weight:800; color:#22c55e;">${p.elo || 1200}</td>
+                <td style="padding:12px; text-align:right; color:#cbd5e1;">${p.wins || 0}W - ${p.losses || 0}L</td>
+                <td style="padding:12px; text-align:right; color:#eab308; font-weight:700;">${winRate}%</td>
+                <td style="padding:12px; text-align:center; font-weight:800; color:#38bdf8;">${escapeHtml(p.streak || '—')}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        function updateLeaderboardAfterMatch(winningRoster, losingRoster) {
+          let list = [];
+          try {
+            const raw = localStorage.getItem("frontline_arena_8s_leaderboard");
+            list = raw ? JSON.parse(raw) : [...INITIAL_LEADERBOARD];
+          } catch(e) {
+            list = [...INITIAL_LEADERBOARD];
+          }
+
+          const getOrAdd = (player) => {
+            let found = list.find(p => p.gamertag.toLowerCase() === player.gamertag.toLowerCase());
+            if (!found) {
+              found = {
+                gamertag: player.gamertag,
+                activision_id: player.activision_id,
+                role: player.role || "Flex",
+                elo: 1200,
+                wins: 0,
+                losses: 0,
+                matches_played: 0,
+                streak: "—",
+                avatar_url: player.avatar_url
+              };
+              list.push(found);
+            }
+            return found;
+          };
+
+          // +25 for Winners
+          winningRoster.forEach(p => {
+            const item = getOrAdd(p);
+            item.elo = (item.elo || 1200) + 25;
+            item.wins = (item.wins || 0) + 1;
+            item.matches_played = (item.matches_played || 0) + 1;
+            const streakNum = parseInt(item.streak) || 0;
+            item.streak = item.streak.includes("W") ? `${streakNum + 1}W` : "1W";
+          });
+
+          // -25 for Losers
+          losingRoster.forEach(p => {
+            const item = getOrAdd(p);
+            item.elo = Math.max(800, (item.elo || 1200) - 25);
+            item.losses = (item.losses || 0) + 1;
+            item.matches_played = (item.matches_played || 0) + 1;
+            item.streak = "1L";
+          });
+
+          try {
+            localStorage.setItem("frontline_arena_8s_leaderboard", JSON.stringify(list));
+          } catch(e) {}
+        }
+
+        // =====================================================================
+        // MATCH HISTORY STORAGE
+        // =====================================================================
+        function loadMatchHistory() {
+          let history = [];
+          try {
+            const raw = localStorage.getItem("frontline_arena_8s_history");
+            history = raw ? JSON.parse(raw) : [];
+          } catch(e) {}
+
+          const container = document.getElementById('match-history-list');
+          if (!container) return;
+
+          if (history.length === 0) {
+            container.innerHTML = `
+              <div style="text-align:center; padding:32px 16px; color:#64748b; font-size:13px;">
+                No 8's matches recorded yet. Enter the queue above to battle in the first competitive series!
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = history.map(m => `
+            <div style="background:#090d14; border:1px solid #1a2436; border-radius:4px; padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="gb-meta-tag accent" style="font-size:10px; padding:2px 6px;">MATCH #${m.match_code}</span>
+                  <span style="font-size:12px; color:#94a3b8;">${new Date(m.created_at).toLocaleDateString()} · ${escapeHtml(m.format || '4v4 MW4 Variant')}</span>
+                </div>
+                <div style="font:800 13px var(--body); color:#22c55e;">
+                  ${m.winning_team === "team_a" ? "Team Alpha Victorious" : "Team Bravo Victorious"} (${m.series_score.team_a} - ${m.series_score.team_b})
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:12px;">
+                <div style="background:#0e1420; padding:10px; border-radius:3px; border-left:3px solid #ff1e44;">
+                  <strong style="color:#ff1e44;">Team Alpha:</strong>
+                  <div style="color:#cbd5e1; margin-top:4px;">${m.team_a.map(p => escapeHtml(p.gamertag)).join(', ')}</div>
+                </div>
+                <div style="background:#0e1420; padding:10px; border-radius:3px; border-left:3px solid #38bdf8;">
+                  <strong style="color:#38bdf8;">Team Bravo:</strong>
+                  <div style="color:#cbd5e1; margin-top:4px;">${m.team_b.map(p => escapeHtml(p.gamertag)).join(', ')}</div>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        function archiveCompletedMatch(matchObj) {
+          let list = [];
+          try {
+            const raw = localStorage.getItem("frontline_arena_8s_history");
+            list = raw ? JSON.parse(raw) : [];
+          } catch(e) {}
+          list.unshift({ ...matchObj, archived_at: new Date().toISOString() });
+          if (list.length > 50) list.pop();
+          try {
+            localStorage.setItem("frontline_arena_8s_history", JSON.stringify(list));
+          } catch(e) {}
+        }
+
+        // =====================================================================
+        // TABS SWITCHER
+        // =====================================================================
+        window.switch8sTab = function(tabName, btn) {
+          document.querySelectorAll('#arena-8s-tabs button').forEach(b => {
+            b.className = "btn-crimson-outline";
+          });
+          btn.className = "btn-crimson";
+
+          document.querySelectorAll('.arena-8s-tab-pane').forEach(p => {
+            p.style.display = "none";
+          });
+
+          const target = document.getElementById(`tab-content-${tabName}`);
+          if (target) target.style.display = "block";
+
+          if (tabName === 'leaderboard') loadLeaderboard();
+          if (tabName === 'history') loadMatchHistory();
+        };
+
+        // =====================================================================
+        // MODAL HELPERS
+        // =====================================================================
+        function openJoinModal() {
+          const modal = document.getElementById('join-profile-modal');
+          if (modal) modal.classList.add('open');
+        }
+
+        window.closeJoinModal = function() {
+          const modal = document.getElementById('join-profile-modal');
+          if (modal) modal.classList.remove('open');
+        };
+
+        window.handleSaveProfileAndJoin = function(e) {
+          e.preventDefault();
+          const gamertag = document.getElementById('modal-input-gamertag').value.trim();
+          const activision = document.getElementById('modal-input-activision').value.trim();
+          const role = document.getElementById('modal-input-role').value;
+          const platform = document.getElementById('modal-input-platform').value;
+
+          if (!gamertag || !activision) return;
+
+          localPlayer = {
+            id: "user_" + Date.now(),
+            gamertag: gamertag,
+            activision_id: activision,
+            role: role,
+            platform: platform,
+            elo: 1200,
+            avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+            is_user: true
+          };
+
+          try {
+            localStorage.setItem("frontline_arena_8s_profile", JSON.stringify(localPlayer));
+          } catch(err) {}
+
+          closeJoinModal();
+          handleJoinQueue();
+        };
+
+        function escapeHtml(s) {
+          return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // =====================================================================
+        // INITIALIZATION
+        // =====================================================================
+        document.addEventListener("DOMContentLoaded", function() {
+          resolveCurrentPlayer();
+          loadQueueState();
+          renderQueueUI();
+          loadLeaderboard();
+          loadMatchHistory();
+
+          // Connect to Supabase Realtime if client is available
+          if (window.supabaseClient && typeof window.supabaseClient.channel === 'function') {
+            try {
+              const channel = window.supabaseClient.channel('arena_8s_realtime');
+              channel.on('broadcast', { event: 'queue_update' }, ({ payload }) => {
+                if (payload && Array.isArray(payload.players)) {
+                  queuePlayers = payload.players;
+                  renderQueueUI();
+                }
+              }).subscribe();
+            } catch(e) {}
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
+

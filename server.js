@@ -61,6 +61,7 @@ const HIERARCHY_ROUTES = [
   { path: "/home", file: "home/index.html" },
   { path: "/arena", file: "arena/index.html" },
   { path: "/arena/tournaments", file: "arena/tournaments/index.html" },
+  { path: "/arena/8s", file: "arena/8s/index.html" },
   { path: "/arena/free-agents", file: "arena/free-agents/index.html" },
   { path: "/arena/profile", file: "arena/profile/index.html" },
   { path: "/teams", file: "teams/index.html" },
