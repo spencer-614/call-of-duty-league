@@ -566,14 +566,16 @@
                     Copy ID
                   </button>
                 </div>
+                <!-- Captain Selection Directives (Accessible to all competitors) -->
+                <button type="button" class="btn-crimson-outline" onclick="startCaptainVotingPhase()" style="padding:8px 12px; font-size:11.5px; border-color:#a855f7; color:#c084fc;" title="Open voting for team captains">
+                  <span>🗳️</span> <span>Vote Captains</span>
+                </button>
+                <button type="button" class="btn-crimson-outline" onclick="randomizeCaptainsInstant()" style="padding:8px 12px; font-size:11.5px; border-color:#eab308; color:#fde047;" title="Randomly select 2 captains from the 8 players">
+                  <span>🎲</span> <span>Random Captains</span>
+                </button>
+
                 <!-- Commissioner Match Directives (Visible only to League Commissioners) -->
                 <div id="commissioner-match-controls" style="display:none; align-items:center; gap:8px;">
-                  <button type="button" class="btn-crimson-outline" onclick="randomizeCaptainsInstant()" style="padding:8px 12px; font-size:11.5px; border-color:#eab308; color:#fde047;" title="Commissioner Directive: Randomly pick 2 captains">
-                    <span>🎲</span> <span>Random Captains</span>
-                  </button>
-                  <button type="button" class="btn-crimson-outline" onclick="startCaptainVotingPhase()" style="padding:8px 12px; font-size:11.5px; border-color:#a855f7; color:#c084fc;" title="Commissioner Directive: Open captain voting">
-                    <span>🗳️</span> <span>Vote Captains</span>
-                  </button>
                   <button type="button" class="btn-crimson-outline" onclick="autoBalanceTeamsQuick()" style="padding:8px 14px; font-size:12px; border-color:#38bdf8; color:#38bdf8;" id="btn-autobalance" title="Commissioner Directive: Auto-balance teams by MMR">
                     <span>⚖</span> <span>Auto-Balance 4v4</span>
                   </button>
@@ -1724,10 +1726,6 @@
         // CAPTAIN VOTING ENGINE
         // =====================================================================
         window.startCaptainVotingPhase = function(candidatePlayers) {
-          if (!checkIsCommissioner()) {
-            alert("Unauthorized: Only League Commissioners can manually start captain voting.");
-            return;
-          }
           if (!activeMatch) return;
           const allPlayers = candidatePlayers || activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           if (!allPlayers || allPlayers.length < 2) return;
@@ -1779,10 +1777,6 @@
         };
 
         window.randomizeCaptainsInstant = function() {
-          if (!checkIsCommissioner()) {
-            alert("Unauthorized: Only League Commissioners can manually randomize captains.");
-            return;
-          }
           if (!activeMatch) return;
           const all = activeMatch.all_players || [...activeMatch.team_a, ...activeMatch.team_b, ...activeMatch.draft_pool];
           if (!all || all.length < 2) return;
