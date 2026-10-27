@@ -1393,7 +1393,7 @@
             const data = event.data;
             if (!data) return;
             if (data.type === "LOBBIES_UPDATE") {
-              queuePlayers = (data.players || []).map(p => syncPlayerElo(p));
+              fetchRemoteQueueState();
               activeMatches = data.matches || [];
               if (activeMatch) {
                 activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
@@ -1404,14 +1404,14 @@
               renderActiveLobbiesBar();
               if (activeMatch && currentViewMode === "match") renderMatchUI();
             } else if (data.type === "QUEUE_UPDATE") {
-              queuePlayers = (data.players || []).map(p => syncPlayerElo(p));
+              fetchRemoteQueueState();
               renderQueueUI();
             } else if (data.type === "MATCH_STARTED") {
               if (data.match && !activeMatches.some(m => m.id === data.match.id)) {
                 activeMatches.push(data.match);
               }
               activeMatch = data.match;
-              queuePlayers = (data.players || []).map(p => syncPlayerElo(p));
+              fetchRemoteQueueState();
               renderQueueUI();
               renderActiveLobbiesBar();
               renderMatchUI();
@@ -1534,12 +1534,14 @@
 
         // Persistence Helpers
         let realtimeChannel = null;
-        let isFetchingRemoteQueue = false;
+        let remoteQueueRequest = null;
+        let confirmedQueue = null;
 
         async function fetchRemoteQueueState() {
           const client = window.supabaseClient || window.dbClient;
-          if (!client || isFetchingRemoteQueue) return null;
-          isFetchingRemoteQueue = true;
+          if (!client) return null;
+          if (remoteQueueRequest) return remoteQueueRequest;
+          remoteQueueRequest = (async () => {
 
           try {
             let remotePlayers = null;
@@ -1556,31 +1558,17 @@
 
               if (!qErr && qData && Array.isArray(qData.players)) {
                 remotePlayers = qData.players;
+                confirmedQueue = JSON.stringify(qData.players);
                 remoteStatus = qData.status;
               }
             } catch(e) {}
 
-            // 2. Fallback / complement from league_settings row arena_8s_queue_state
-            if (!remotePlayers || remotePlayers.length === 0) {
-              try {
-                const { data: sData, error: sErr } = await client
-                  .from('league_settings')
-                  .select('status_text, status_state')
-                  .eq('id', 'arena_8s_queue_state')
-                  .maybeSingle();
-
-                if (!sErr && sData && sData.status_text) {
-                  const parsed = JSON.parse(sData.status_text);
-                  if (parsed && Array.isArray(parsed.players)) {
-                    remotePlayers = parsed.players;
-                    remoteStatus = sData.status_state;
-                    if (Array.isArray(parsed.matches) && parsed.matches.length > 0) {
-                      remoteMatches = parsed.matches;
-                    }
-                  }
-                }
-              } catch(e) {}
-            }
+            // Match metadata remains separate; never use the legacy roster as queue truth.
+            try {
+              const { data } = await client.from('league_settings').select('status_text')
+                .eq('id', 'arena_8s_queue_state').maybeSingle();
+              if (data && data.status_text) remoteMatches = JSON.parse(data.status_text).matches;
+            } catch(e) {}
 
             if (remotePlayers && Array.isArray(remotePlayers)) {
               const cleaned = remotePlayers
@@ -1610,13 +1598,31 @@
               return cleaned;
             }
           } catch(e) {
-          } finally {
-            isFetchingRemoteQueue = false;
           }
           return null;
+          })();
+          try { return await remoteQueueRequest; }
+          finally { remoteQueueRequest = null; }
         }
 
-        function saveQueueState() {
+        async function saveQueueState() {
+          // Only publish a roster after a conditional database write succeeds.
+          // Unrelated match/ELO saves must never replace a newer cloud roster.
+          const clientForQueue = window.supabaseClient || window.dbClient;
+          const desiredQueue = JSON.stringify(queuePlayers);
+          if (clientForQueue && desiredQueue !== confirmedQueue) {
+            if (confirmedQueue === null) { await fetchRemoteQueueState(); return false; }
+            const expectedQueue = confirmedQueue;
+            const { data, error } = await clientForQueue.from('arena_8s_queues')
+              .update({ players: queuePlayers, updated_at: new Date().toISOString() })
+              .eq('id', 'queue_default').eq('players', expectedQueue).select('players');
+            if (error || !data || data.length !== 1) {
+              await fetchRemoteQueueState();
+              return false;
+            }
+            confirmedQueue = desiredQueue;
+          }
+
           try {
             // Filter invalid entries & guarantee accurate ELO
             queuePlayers = (queuePlayers || [])
@@ -1670,7 +1676,7 @@
               };
 
               // 1. Dedicated arena_8s_queues table
-              client.from('arena_8s_queues').upsert(queuePayload).then(() => {}).catch(() => {});
+              // Queue roster already persisted with compare-and-swap above.
 
               // 2. Reliable cloud key-value row in league_settings that always exists
               client.from('league_settings').upsert({
@@ -1686,6 +1692,7 @@
               }, { onConflict: 'id' }).then(() => {}).catch(() => {});
             }
           } catch(e) {}
+          return true;
         }
 
         function loadQueueState() {
@@ -1768,47 +1775,41 @@
             return;
           }
 
-          // Fetch freshest cloud queue before pushing to avoid overwriting other combatants
-          await fetchRemoteQueueState();
-
-          // Check if already in queue
-          const userTag = user.gamertag.toLowerCase();
-          const alreadyIn = queuePlayers.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
-          if (alreadyIn) {
-            renderQueueUI();
-            return;
-          }
-
-          if (queuePlayers.length >= 8) {
-            alert("Queue is currently full for an active match.");
-            return;
-          }
-
-          const accurateElo = getPlayer8sElo(user.gamertag, user.elo || 1200);
-          queuePlayers.push({
-            ...user,
-            elo: accurateElo,
-            tier: getTierName(accurateElo),
-            joined_at: new Date().toISOString()
-          });
-
-          playSynthesizedSound('join');
-          saveQueueState();
-          renderQueueUI();
-
-          checkQueueFull();
+          await changeQueueMembership(user, true);
         };
+
+        let membershipBusy = false;
+        async function changeQueueMembership(user, joining) {
+          if (membershipBusy) return;
+          membershipBusy = true;
+          try {
+            for (let attempt = 0; attempt < 5; attempt++) {
+              const latest = await fetchRemoteQueueState();
+              if (!latest || confirmedQueue === null) throw new Error("Cannot load the live queue. Please try again.");
+              const tag = user.gamertag.toLowerCase();
+              const present = latest.some(p => p.gamertag.toLowerCase() === tag);
+              if (present === joining) { renderQueueUI(); return; }
+              if (joining && latest.length >= 8) throw new Error("Queue is currently full.");
+              const elo = getPlayer8sElo(user.gamertag, user.elo || 1200);
+              queuePlayers = joining
+                ? [...latest, { ...user, elo, tier: getTierName(elo), joined_at: new Date().toISOString() }]
+                : latest.filter(p => p.gamertag.toLowerCase() !== tag);
+              if (await saveQueueState()) {
+                renderQueueUI();
+                if (joining) { playSynthesizedSound('join'); checkQueueFull(); }
+                return;
+              }
+            }
+            throw new Error("The queue changed while saving. Please try again.");
+          } catch(error) {
+            await fetchRemoteQueueState();
+            alert(error.message || "Unable to update the queue. Please try again.");
+          } finally { membershipBusy = false; }
+        }
 
         window.handleLeaveQueue = async function() {
           const user = resolveCurrentPlayer();
-          if (!user || !user.gamertag) return;
-
-          await fetchRemoteQueueState();
-
-          const userTag = user.gamertag.toLowerCase();
-          queuePlayers = queuePlayers.filter(p => p && p.gamertag && p.gamertag.toLowerCase() !== userTag);
-          saveQueueState();
-          renderQueueUI();
+          if (user && user.gamertag) await changeQueueMembership(user, false);
         };
 
         window.addBotCombatant = async function() {
@@ -1942,7 +1943,7 @@
         // =====================================================================
         // NEATQUEUE MULTI-MATCH ENGINE & QUEUE POP
         // =====================================================================
-        function checkQueueFull() {
+        async function checkQueueFull() {
           if (queuePlayers.length >= 8) {
             playSynthesizedSound('pop');
             const players = queuePlayers.map(p => syncPlayerElo(p));
@@ -2045,7 +2046,14 @@
             activeMatch = newMatch;
             currentViewMode = "match";
 
-            saveQueueState();
+            if (!await saveQueueState()) {
+              activeMatches = activeMatches.filter(m => m.id !== newMatchId);
+              activeMatch = activeMatches[0] || null;
+              currentViewMode = "queue";
+              renderQueueUI();
+              renderActiveLobbiesBar();
+              return;
+            }
             renderQueueUI();
             renderActiveLobbiesBar();
             renderMatchUI();
@@ -3327,7 +3335,7 @@
               realtimeChannel
                 .on('broadcast', { event: 'queue_update' }, ({ payload }) => {
                   if (payload && Array.isArray(payload.players)) {
-                    queuePlayers = payload.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                    fetchRemoteQueueState();
                     if (Array.isArray(payload.matches)) {
                       activeMatches = payload.matches;
                     }
@@ -3337,7 +3345,7 @@
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_queues' }, (payload) => {
                   if (payload && payload.new && Array.isArray(payload.new.players)) {
-                    queuePlayers = payload.new.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                    fetchRemoteQueueState();
                     renderQueueUI();
                   }
                 })
@@ -3346,7 +3354,7 @@
                     try {
                       const parsed = JSON.parse(payload.new.status_text);
                       if (parsed && Array.isArray(parsed.players)) {
-                        queuePlayers = parsed.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                        fetchRemoteQueueState();
                         renderQueueUI();
                       }
                     } catch(e) {}
