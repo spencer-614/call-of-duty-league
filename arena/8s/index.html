@@ -1218,15 +1218,154 @@
           { gamertag: "Sib", activision_id: "Sib#7718", role: "Flex", platform: "PC", elo: 1310, avatar_url: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=150&auto=format&fit=crop&q=80" }
         ];
 
-        // Seed Leaderboard Initial Data if empty
+        // Seed Leaderboard Initial Data (Official 8's Combatants Roster with Exact MMR Ratings)
         const INITIAL_LEADERBOARD = [
-          { gamertag: "HyDra", activision_id: "HyDra#5512", role: "Entry SMG", elo: 1370, tier: "Apex Elite", wins: 28, losses: 7, matches_played: 35, streak: "5W", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
-          { gamertag: "Simp", activision_id: "Simp#7712", role: "Entry SMG", elo: 1360, tier: "Apex Elite", wins: 25, losses: 8, matches_played: 33, streak: "3W", avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80" },
-          { gamertag: "Shotzzy", activision_id: "Shotzzy#4021", role: "Entry SMG", elo: 1350, tier: "Apex Elite", wins: 22, losses: 9, matches_played: 31, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
-          { gamertag: "Scrap", activision_id: "Scrap#2144", role: "Main AR", elo: 1345, tier: "Apex Elite", wins: 21, losses: 10, matches_played: 31, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
-          { gamertag: "Dashy", activision_id: "Dashy#1999", role: "Main AR", elo: 1340, tier: "Apex Elite", wins: 20, losses: 10, matches_played: 30, streak: "4W", avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" },
-          { gamertag: "Cellium", activision_id: "Cellium#3312", role: "Flex", elo: 1330, tier: "Apex Elite", wins: 19, losses: 11, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80" }
+          { gamertag: "HyDra", activision_id: "HyDra#5512", role: "Entry SMG", platform: "PC", elo: 1370, tier: "Apex Elite", wins: 28, losses: 7, matches_played: 35, streak: "5W", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Simp", activision_id: "Simp#7712", role: "Entry SMG", platform: "PC", elo: 1360, tier: "Apex Elite", wins: 25, losses: 8, matches_played: 33, streak: "3W", avatar_url: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "aBeZy", activision_id: "aBeZy#1111", role: "Entry SMG", platform: "PC", elo: 1355, tier: "Apex Elite", wins: 24, losses: 9, matches_played: 33, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Shotzzy", activision_id: "Shotzzy#4021", role: "Entry SMG", platform: "PC", elo: 1350, tier: "Apex Elite", wins: 22, losses: 9, matches_played: 31, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Scrap", activision_id: "Scrap#2144", role: "Main AR", platform: "PC", elo: 1345, tier: "Apex Elite", wins: 21, losses: 10, matches_played: 31, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Dashy", activision_id: "Dashy#1999", role: "Main AR", platform: "PC", elo: 1340, tier: "Apex Elite", wins: 20, losses: 10, matches_played: 30, streak: "4W", avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "CleanX", activision_id: "CleanX#9102", role: "Entry SMG", platform: "PC", elo: 1335, tier: "Commander", wins: 19, losses: 11, matches_played: 30, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Cellium", activision_id: "Cellium#3312", role: "Flex", platform: "PC", elo: 1330, tier: "Commander", wins: 19, losses: 11, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Drazah", activision_id: "Drazah#8821", role: "Flex", platform: "PC", elo: 1330, tier: "Commander", wins: 18, losses: 12, matches_played: 30, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Envoy", activision_id: "Envoy#3141", role: "Entry SMG", platform: "PC", elo: 1325, tier: "Commander", wins: 18, losses: 12, matches_played: 30, streak: "3W", avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Pred", activision_id: "Pred#9941", role: "Entry SMG", platform: "PC", elo: 1320, tier: "Commander", wins: 17, losses: 13, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Ghosty", activision_id: "Ghosty#6621", role: "Flex", platform: "PC", elo: 1320, tier: "Commander", wins: 17, losses: 13, matches_played: 30, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Insight", activision_id: "Insight#4192", role: "Main AR", platform: "PC", elo: 1315, tier: "Commander", wins: 16, losses: 14, matches_played: 30, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Kenny", activision_id: "Kenny#8812", role: "Flex", platform: "PC", elo: 1310, tier: "Commander", wins: 16, losses: 14, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Gwinn", activision_id: "Gwinn#5514", role: "Entry SMG", platform: "PC", elo: 1310, tier: "Commander", wins: 15, losses: 15, matches_played: 30, streak: "2W", avatar_url: "https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Sib", activision_id: "Sib#7718", role: "Flex", platform: "PC", elo: 1310, tier: "Commander", wins: 15, losses: 15, matches_played: 30, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "KiSMET", activision_id: "KiSMET#4412", role: "Entry SMG", platform: "PC", elo: 1305, tier: "Commander", wins: 15, losses: 15, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Attach", activision_id: "Attach#7821", role: "Main AR", platform: "PC", elo: 1305, tier: "Commander", wins: 14, losses: 16, matches_played: 30, streak: "1W", avatar_url: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Skyz", activision_id: "Skyz#2214", role: "Main AR", platform: "PC", elo: 1300, tier: "Commander", wins: 14, losses: 16, matches_played: 30, streak: "2L", avatar_url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" },
+          { gamertag: "Standy", activision_id: "Standy#9912", role: "Entry SMG", platform: "PC", elo: 1285, tier: "Warlord", wins: 13, losses: 17, matches_played: 30, streak: "1L", avatar_url: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=150&auto=format&fit=crop&q=80" }
         ];
+
+        // Authoritative 8's Leaderboard Storage & ELO Resolution Engine
+        function getTierName(elo) {
+          const r = Number(elo) || 1200;
+          if (r >= 1350) return "Apex Elite";
+          if (r >= 1300) return "Commander";
+          if (r >= 1250) return "Warlord";
+          if (r >= 1200) return "Specialist";
+          if (r >= 1150) return "Operator";
+          return "Recruit";
+        }
+
+        function getLeaderboardList() {
+          let list = [];
+          try {
+            const raw = localStorage.getItem("frontline_arena_8s_leaderboard");
+            list = raw ? JSON.parse(raw) : [];
+          } catch(e) {
+            list = [];
+          }
+
+          if (!Array.isArray(list) || list.length === 0) {
+            list = INITIAL_LEADERBOARD.map(p => ({ ...p }));
+            try {
+              localStorage.setItem("frontline_arena_8s_leaderboard", JSON.stringify(list));
+            } catch(e) {}
+          } else {
+            let modified = false;
+            INITIAL_LEADERBOARD.forEach(initP => {
+              const existing = list.find(p => p.gamertag && p.gamertag.toLowerCase() === initP.gamertag.toLowerCase());
+              if (!existing) {
+                list.push({ ...initP });
+                modified = true;
+              } else {
+                if (typeof existing.elo !== 'number' || isNaN(existing.elo)) {
+                  existing.elo = initP.elo;
+                  existing.tier = initP.tier;
+                  modified = true;
+                }
+              }
+            });
+            if (modified) {
+              try {
+                localStorage.setItem("frontline_arena_8s_leaderboard", JSON.stringify(list));
+              } catch(e) {}
+            }
+          }
+
+          list.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+          return list;
+        }
+
+        function saveLeaderboardList(list) {
+          try {
+            localStorage.setItem("frontline_arena_8s_leaderboard", JSON.stringify(list));
+          } catch(e) {}
+
+          const client = window.supabaseClient || window.dbClient;
+          if (client) {
+            try {
+              const records = list.map(p => ({
+                id: p.id || ('lead_' + p.gamertag.toLowerCase().replace(/[^a-z0-9]/g, '_')),
+                gamertag: p.gamertag,
+                activision_id: p.activision_id || `${p.gamertag}#1234567`,
+                role: p.role || 'Flex',
+                elo: Number(p.elo) || 1200,
+                tier: p.tier || getTierName(p.elo),
+                wins: Number(p.wins) || 0,
+                losses: Number(p.losses) || 0,
+                matches_played: Number(p.matches_played) || 0,
+                streak: p.streak || '—',
+                avatar_url: p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80',
+                updated_at: new Date().toISOString()
+              }));
+              client.from('arena_8s_leaderboard').upsert(records, { onConflict: 'gamertag' }).then(() => {}).catch(() => {});
+            } catch(e) {}
+          }
+        }
+
+        function getPlayer8sElo(gamertag, fallbackElo = 1200) {
+          if (!gamertag) return Number(fallbackElo) || 1200;
+          const clean = String(gamertag).trim().toLowerCase();
+          const list = getLeaderboardList();
+          const found = list.find(p => p.gamertag && p.gamertag.trim().toLowerCase() === clean);
+          if (found && typeof found.elo === 'number' && !isNaN(found.elo)) {
+            return found.elo;
+          }
+          const bot = BOT_COMBATANTS.find(b => b.gamertag && b.gamertag.trim().toLowerCase() === clean);
+          if (bot && typeof bot.elo === 'number') {
+            return bot.elo;
+          }
+          return Number(fallbackElo) || 1200;
+        }
+
+        function syncPlayerElo(player) {
+          if (!player || !player.gamertag) return player;
+          const authoritativeElo = getPlayer8sElo(player.gamertag, player.elo);
+          player.elo = authoritativeElo;
+          player.tier = getTierName(authoritativeElo);
+          return player;
+        }
+
+        function registerPlayerOnLeaderboard(player) {
+          if (!player || !player.gamertag) return;
+          const clean = String(player.gamertag).trim().toLowerCase();
+          let list = getLeaderboardList();
+          let existing = list.find(p => p.gamertag && p.gamertag.trim().toLowerCase() === clean);
+          if (!existing) {
+            const startElo = Number(player.elo) || 1200;
+            existing = {
+              gamertag: player.gamertag,
+              activision_id: player.activision_id || `${player.gamertag}#1234567`,
+              role: player.role || "Flex",
+              elo: startElo,
+              tier: getTierName(startElo),
+              wins: 0,
+              losses: 0,
+              matches_played: 0,
+              streak: "—",
+              avatar_url: player.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80"
+            };
+            list.push(existing);
+            saveLeaderboardList(list);
+          }
+        }
 
         // State Machine
         let queuePlayers = [];
@@ -1254,7 +1393,7 @@
             const data = event.data;
             if (!data) return;
             if (data.type === "LOBBIES_UPDATE") {
-              queuePlayers = data.players || [];
+              queuePlayers = (data.players || []).map(p => syncPlayerElo(p));
               activeMatches = data.matches || [];
               if (activeMatch) {
                 activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
@@ -1265,14 +1404,14 @@
               renderActiveLobbiesBar();
               if (activeMatch && currentViewMode === "match") renderMatchUI();
             } else if (data.type === "QUEUE_UPDATE") {
-              queuePlayers = data.players || [];
+              queuePlayers = (data.players || []).map(p => syncPlayerElo(p));
               renderQueueUI();
             } else if (data.type === "MATCH_STARTED") {
               if (data.match && !activeMatches.some(m => m.id === data.match.id)) {
                 activeMatches.push(data.match);
               }
               activeMatch = data.match;
-              queuePlayers = data.players || [];
+              queuePlayers = (data.players || []).map(p => syncPlayerElo(p));
               renderQueueUI();
               renderActiveLobbiesBar();
               renderMatchUI();
@@ -1293,12 +1432,20 @@
           };
         } catch(e) {}
 
-        // Identify Current User
+        // Identify Current User & Authoritative ELO
         function resolveCurrentPlayer() {
+          if (localPlayer && localPlayer.gamertag) {
+            const trueElo = getPlayer8sElo(localPlayer.gamertag, localPlayer.elo || 1200);
+            localPlayer.elo = trueElo;
+            localPlayer.tier = getTierName(trueElo);
+            return localPlayer;
+          }
+
+          let resolved = null;
           if (window.LadderDB && typeof window.LadderDB.getCurrentPlayer === 'function') {
             const p = window.LadderDB.getCurrentPlayer();
             if (p && p.gamertag) {
-              localPlayer = {
+              resolved = {
                 id: p.id || "user_" + Date.now(),
                 gamertag: p.gamertag,
                 activision_id: p.activision_id || `${p.gamertag}#1234567`,
@@ -1308,14 +1455,13 @@
                 avatar_url: p.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
                 is_user: true
               };
-              return localPlayer;
             }
           }
-          if (window.LeagueDB && typeof window.LeagueDB.getCurrentPlayer === 'function') {
+          if (!resolved && window.LeagueDB && typeof window.LeagueDB.getCurrentPlayer === 'function') {
             const p = window.LeagueDB.getCurrentPlayer();
             if (p && (p.gamertag || p.username || p.name)) {
               const gName = p.gamertag || p.username || p.name;
-              localPlayer = {
+              resolved = {
                 id: p.id || "user_" + Date.now(),
                 gamertag: gName,
                 activision_id: p.activision_id || `${gName}#1234567`,
@@ -1325,57 +1471,158 @@
                 avatar_url: p.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
                 is_user: true
               };
-              return localPlayer;
             }
           }
           // Check local stored 8s profile
-          try {
-            const saved = localStorage.getItem("frontline_arena_8s_profile");
-            if (saved) {
-              localPlayer = JSON.parse(saved);
-              return localPlayer;
-            }
-          } catch(e) {}
+          if (!resolved) {
+            try {
+              const saved = localStorage.getItem("frontline_arena_8s_profile");
+              if (saved) {
+                resolved = JSON.parse(saved);
+              }
+            } catch(e) {}
+          }
 
           // Fallback to cross-platform session accounts
-          try {
-            const crossAuth = JSON.parse(localStorage.getItem('frontline_arena_user')) ||
-                              JSON.parse(localStorage.getItem('frontline_auth_user')) ||
-                              JSON.parse(localStorage.getItem('frontline_arena_auth_user')) ||
-                              JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
-                              JSON.parse(localStorage.getItem('frontline_league_player_card'));
-            if (crossAuth && (crossAuth.gamertag || crossAuth.username || crossAuth.name)) {
-              const gName = crossAuth.gamertag || crossAuth.username || crossAuth.name;
-              localPlayer = {
-                id: crossAuth.id || "user_" + Date.now(),
-                gamertag: gName,
-                activision_id: crossAuth.activision_id || `${gName}#1234567`,
-                elo: crossAuth.elo || crossAuth.mmr || 1200,
-                role: crossAuth.role || "Flex",
-                platform: crossAuth.platform || "PC",
-                avatar_url: crossAuth.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
-                is_user: true
-              };
-              return localPlayer;
-            }
-          } catch(e) {}
+          if (!resolved) {
+            try {
+              const crossAuth = JSON.parse(localStorage.getItem('frontline_arena_user')) ||
+                                JSON.parse(localStorage.getItem('frontline_auth_user')) ||
+                                JSON.parse(localStorage.getItem('frontline_arena_auth_user')) ||
+                                JSON.parse(localStorage.getItem('frontline_league_auth_user')) ||
+                                JSON.parse(localStorage.getItem('frontline_league_player_card'));
+              if (crossAuth && (crossAuth.gamertag || crossAuth.username || crossAuth.name)) {
+                const gName = crossAuth.gamertag || crossAuth.username || crossAuth.name;
+                resolved = {
+                  id: crossAuth.id || "user_" + Date.now(),
+                  gamertag: gName,
+                  activision_id: crossAuth.activision_id || `${gName}#1234567`,
+                  elo: crossAuth.elo || crossAuth.mmr || 1200,
+                  role: crossAuth.role || "Flex",
+                  platform: crossAuth.platform || "PC",
+                  avatar_url: crossAuth.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                  is_user: true
+                };
+              }
+            } catch(e) {}
+          }
 
+          if (resolved && resolved.gamertag) {
+            // Authoritative ELO sync with Leaderboard
+            const trueElo = getPlayer8sElo(resolved.gamertag, resolved.elo || 1200);
+            resolved.elo = trueElo;
+            resolved.tier = getTierName(trueElo);
+            localPlayer = resolved;
+            registerPlayerOnLeaderboard(localPlayer);
+            return localPlayer;
+          }
+
+          localPlayer = null;
           return null;
         }
 
         function isPlayerInMatch(gamertag, match) {
           if (!match || !gamertag) return false;
-          const gt = gamertag.toLowerCase();
-          const inAll = match.all_players && match.all_players.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
-          const inA = match.team_a && match.team_a.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
-          const inB = match.team_b && match.team_b.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
-          const inPool = match.draft_pool && match.draft_pool.some(p => p.gamertag && p.gamertag.toLowerCase() === gt);
+          if (match.status === "completed" || match.status === "cancelled") return false;
+          const gt = String(gamertag).trim().toLowerCase();
+          const inAll = match.all_players && match.all_players.some(p => p && p.gamertag && p.gamertag.toLowerCase() === gt);
+          const inA = match.team_a && match.team_a.some(p => p && p.gamertag && p.gamertag.toLowerCase() === gt);
+          const inB = match.team_b && match.team_b.some(p => p && p.gamertag && p.gamertag.toLowerCase() === gt);
+          const inPool = match.draft_pool && match.draft_pool.some(p => p && p.gamertag && p.gamertag.toLowerCase() === gt);
           return !!(inAll || inA || inB || inPool);
         }
 
         // Persistence Helpers
+        let realtimeChannel = null;
+        let isFetchingRemoteQueue = false;
+
+        async function fetchRemoteQueueState() {
+          const client = window.supabaseClient || window.dbClient;
+          if (!client || isFetchingRemoteQueue) return null;
+          isFetchingRemoteQueue = true;
+
+          try {
+            let remotePlayers = null;
+            let remoteMatches = null;
+            let remoteStatus = null;
+
+            // 1. Try dedicated arena_8s_queues table
+            try {
+              const { data: qData, error: qErr } = await client
+                .from('arena_8s_queues')
+                .select('*')
+                .eq('id', 'queue_default')
+                .maybeSingle();
+
+              if (!qErr && qData && Array.isArray(qData.players)) {
+                remotePlayers = qData.players;
+                remoteStatus = qData.status;
+              }
+            } catch(e) {}
+
+            // 2. Fallback / complement from league_settings row arena_8s_queue_state
+            if (!remotePlayers || remotePlayers.length === 0) {
+              try {
+                const { data: sData, error: sErr } = await client
+                  .from('league_settings')
+                  .select('status_text, status_state')
+                  .eq('id', 'arena_8s_queue_state')
+                  .maybeSingle();
+
+                if (!sErr && sData && sData.status_text) {
+                  const parsed = JSON.parse(sData.status_text);
+                  if (parsed && Array.isArray(parsed.players)) {
+                    remotePlayers = parsed.players;
+                    remoteStatus = sData.status_state;
+                    if (Array.isArray(parsed.matches) && parsed.matches.length > 0) {
+                      remoteMatches = parsed.matches;
+                    }
+                  }
+                }
+              } catch(e) {}
+            }
+
+            if (remotePlayers && Array.isArray(remotePlayers)) {
+              const cleaned = remotePlayers
+                .filter(p => p && p.gamertag)
+                .map(p => syncPlayerElo(p));
+
+              // Compare current queue tags vs remote queue tags
+              const localTags = (queuePlayers || []).map(p => (p && p.gamertag ? p.gamertag.toLowerCase() : '')).sort().join(',');
+              const remoteTags = cleaned.map(p => (p && p.gamertag ? p.gamertag.toLowerCase() : '')).sort().join(',');
+
+              if (localTags !== remoteTags) {
+                queuePlayers = cleaned;
+                try {
+                  localStorage.setItem("frontline_arena_8s_queue", JSON.stringify(queuePlayers));
+                } catch(e) {}
+                renderQueueUI();
+              }
+
+              if (remoteMatches && remoteMatches.length > 0 && activeMatches.length === 0) {
+                activeMatches = remoteMatches;
+                try {
+                  localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
+                } catch(e) {}
+                renderActiveLobbiesBar();
+              }
+
+              return cleaned;
+            }
+          } catch(e) {
+          } finally {
+            isFetchingRemoteQueue = false;
+          }
+          return null;
+        }
+
         function saveQueueState() {
           try {
+            // Filter invalid entries & guarantee accurate ELO
+            queuePlayers = (queuePlayers || [])
+              .filter(p => p && p.gamertag)
+              .map(p => syncPlayerElo(p));
+
             localStorage.setItem("frontline_arena_8s_queue", JSON.stringify(queuePlayers));
             localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
             if (activeMatch) {
@@ -1383,6 +1630,8 @@
             } else {
               localStorage.removeItem("frontline_arena_8s_active_match");
             }
+
+            // Cross-tab broadcast (same browser)
             if (broadcastChannel) {
               broadcastChannel.postMessage({
                 type: "LOBBIES_UPDATE",
@@ -1391,13 +1640,63 @@
                 activeMatchId: activeMatch ? activeMatch.id : null
               });
             }
+
+            // Cross-device Supabase Realtime broadcast
+            if (realtimeChannel && typeof realtimeChannel.send === 'function') {
+              try {
+                realtimeChannel.send({
+                  type: 'broadcast',
+                  event: 'queue_update',
+                  payload: {
+                    players: queuePlayers,
+                    matches: activeMatches,
+                    activeMatchId: activeMatch ? activeMatch.id : null
+                  }
+                });
+              } catch(e) {}
+            }
+
+            // Sync with Supabase: Dual persistence to arena_8s_queues AND league_settings
+            const client = window.supabaseClient || window.dbClient;
+            if (client) {
+              const queuePayload = {
+                id: 'queue_default',
+                queue_name: 'Frontline Arena 8s (MW4 4v4)',
+                status: activeMatch ? (activeMatch.status === 'drafting' ? 'drafting' : 'in_match') : 'open',
+                players: queuePlayers,
+                max_players: 8,
+                active_match_id: activeMatch ? activeMatch.id : null,
+                updated_at: new Date().toISOString()
+              };
+
+              // 1. Dedicated arena_8s_queues table
+              client.from('arena_8s_queues').upsert(queuePayload).then(() => {}).catch(() => {});
+
+              // 2. Reliable cloud key-value row in league_settings that always exists
+              client.from('league_settings').upsert({
+                id: 'arena_8s_queue_state',
+                status_state: queuePayload.status,
+                status_text: JSON.stringify({
+                  players: queuePlayers,
+                  matches: activeMatches,
+                  active_match_id: queuePayload.active_match_id,
+                  updated_at: queuePayload.updated_at
+                }),
+                updated_at: queuePayload.updated_at
+              }, { onConflict: 'id' }).then(() => {}).catch(() => {});
+            }
           } catch(e) {}
         }
 
         function loadQueueState() {
           try {
             const rawQ = localStorage.getItem("frontline_arena_8s_queue");
-            if (rawQ) queuePlayers = JSON.parse(rawQ) || [];
+            if (rawQ) {
+              const parsed = JSON.parse(rawQ) || [];
+              queuePlayers = parsed.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+            } else {
+              queuePlayers = [];
+            }
 
             const rawMatches = localStorage.getItem("frontline_arena_8s_active_matches");
             if (rawMatches) {
@@ -1413,8 +1712,13 @@
             if (activeMatches.length > 0) {
               const curUser = resolveCurrentPlayer();
               const userMatch = curUser ? activeMatches.find(m => isPlayerInMatch(curUser.gamertag, m)) : null;
-              activeMatch = userMatch || activeMatches[0];
-              currentViewMode = "match";
+              if (userMatch) {
+                activeMatch = userMatch;
+                currentViewMode = "match";
+              } else {
+                activeMatch = activeMatches[0];
+                currentViewMode = "queue";
+              }
             } else {
               activeMatch = null;
               currentViewMode = "queue";
@@ -1448,9 +1752,9 @@
         // =====================================================================
         // QUEUE ACTIONS
         // =====================================================================
-        window.handleJoinQueue = function() {
+        window.handleJoinQueue = async function() {
           const user = resolveCurrentPlayer();
-          if (!user) {
+          if (!user || !user.gamertag) {
             openJoinModal();
             return;
           }
@@ -1464,9 +1768,14 @@
             return;
           }
 
+          // Fetch freshest cloud queue before pushing to avoid overwriting other combatants
+          await fetchRemoteQueueState();
+
           // Check if already in queue
-          const alreadyIn = queuePlayers.some(p => p.gamertag.toLowerCase() === user.gamertag.toLowerCase());
+          const userTag = user.gamertag.toLowerCase();
+          const alreadyIn = queuePlayers.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
           if (alreadyIn) {
+            renderQueueUI();
             return;
           }
 
@@ -1475,8 +1784,11 @@
             return;
           }
 
+          const accurateElo = getPlayer8sElo(user.gamertag, user.elo || 1200);
           queuePlayers.push({
             ...user,
+            elo: accurateElo,
+            tier: getTierName(accurateElo),
             joined_at: new Date().toISOString()
           });
 
@@ -1487,23 +1799,29 @@
           checkQueueFull();
         };
 
-        window.handleLeaveQueue = function() {
+        window.handleLeaveQueue = async function() {
           const user = resolveCurrentPlayer();
-          if (!user) return;
-          queuePlayers = queuePlayers.filter(p => p.gamertag.toLowerCase() !== user.gamertag.toLowerCase());
+          if (!user || !user.gamertag) return;
+
+          await fetchRemoteQueueState();
+
+          const userTag = user.gamertag.toLowerCase();
+          queuePlayers = queuePlayers.filter(p => p && p.gamertag && p.gamertag.toLowerCase() !== userTag);
           saveQueueState();
           renderQueueUI();
         };
 
-        window.addBotCombatant = function() {
+        window.addBotCombatant = async function() {
           if (!checkIsCommissioner()) {
             alert("Unauthorized: Only League Commissioners can add simulated bots to the queue.");
             return;
           }
 
+          await fetchRemoteQueueState();
+
           if (queuePlayers.length >= 8) return;
           const availableBots = BOT_COMBATANTS.filter(b => 
-            !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
+            !queuePlayers.some(p => p && p.gamertag && p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
             !activeMatches.some(m => isPlayerInMatch(b.gamertag, m))
           );
 
@@ -1520,17 +1838,21 @@
             };
           }
 
-          queuePlayers.push({
+          const botElo = getPlayer8sElo(botToUse.gamertag, botToUse.elo);
+          const newBot = {
             id: "bot_" + Date.now() + "_" + Math.floor(Math.random()*1000),
             gamertag: botToUse.gamertag,
             activision_id: botToUse.activision_id,
             role: botToUse.role,
             platform: botToUse.platform,
-            elo: botToUse.elo,
+            elo: botElo,
+            tier: getTierName(botElo),
             avatar_url: botToUse.avatar_url,
             is_bot: true,
             joined_at: new Date().toISOString()
-          });
+          };
+          registerPlayerOnLeaderboard(newBot);
+          queuePlayers.push(newBot);
 
           playSynthesizedSound('join');
           saveQueueState();
@@ -1538,15 +1860,17 @@
           checkQueueFull();
         };
 
-        window.fillQueueWithBots = function() {
+        window.fillQueueWithBots = async function() {
           if (!checkIsCommissioner()) {
             alert("Unauthorized: Only League Commissioners can simulate filling the queue with bots.");
             return;
           }
 
+          await fetchRemoteQueueState();
+
           while (queuePlayers.length < 8) {
             const availableBots = BOT_COMBATANTS.filter(b => 
-              !queuePlayers.some(p => p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
+              !queuePlayers.some(p => p && p.gamertag && p.gamertag.toLowerCase() === b.gamertag.toLowerCase()) &&
               !activeMatches.some(m => isPlayerInMatch(b.gamertag, m))
             );
 
@@ -1563,17 +1887,21 @@
               };
             }
 
-            queuePlayers.push({
+            const candidateElo = getPlayer8sElo(candidate.gamertag, candidate.elo);
+            const botEntry = {
               id: "bot_" + Date.now() + "_" + queuePlayers.length,
               gamertag: candidate.gamertag,
               activision_id: candidate.activision_id,
               role: candidate.role,
               platform: candidate.platform,
-              elo: candidate.elo,
+              elo: candidateElo,
+              tier: getTierName(candidateElo),
               avatar_url: candidate.avatar_url,
               is_bot: true,
               joined_at: new Date().toISOString()
-            });
+            };
+            registerPlayerOnLeaderboard(botEntry);
+            queuePlayers.push(botEntry);
           }
 
           playSynthesizedSound('join');
@@ -1617,7 +1945,7 @@
         function checkQueueFull() {
           if (queuePlayers.length >= 8) {
             playSynthesizedSound('pop');
-            const players = [...queuePlayers];
+            const players = queuePlayers.map(p => syncPlayerElo(p));
             queuePlayers = []; // Queue resets immediately for the next lobby!
 
             const matchCode = "8S-" + Math.floor(1000 + Math.random() * 9000);
@@ -2305,19 +2633,23 @@
           // Countdown / Status Text
           const countText = document.getElementById('queue-countdown-text');
           if (countText) {
+            const activeElos = queuePlayers.filter(p => p && p.gamertag).map(p => getPlayer8sElo(p.gamertag, p.elo));
+            const avgElo = activeElos.length > 0 ? Math.round(activeElos.reduce((a, b) => a + b, 0) / activeElos.length) : null;
+            const avgBadge = avgElo ? ` · <span style="color:#22c55e; font-weight:700;">Lobby MMR: ${avgElo} ELO</span>` : '';
+
             if (queueCount === 0) {
-              countText.textContent = "Queue is currently open. Click 'Join Queue' to enter the 8-player lobby.";
+              countText.innerHTML = "Queue is currently open. Click 'Join Queue' to enter the 8-player lobby.";
             } else if (queueCount < 8) {
-              countText.textContent = `Waiting for ${8 - queueCount} more combatants to launch Captains Draft.`;
+              countText.innerHTML = `Waiting for ${8 - queueCount} more combatants to launch Captains Draft.${avgBadge}`;
             } else {
-              countText.textContent = "Lobby full! Match session active.";
+              countText.innerHTML = `Lobby full! Match session active.${avgBadge}`;
             }
           }
 
           // Buttons Toggle
           const btnJoin = document.getElementById('btn-join-queue');
           const btnLeave = document.getElementById('btn-leave-queue');
-          const isUserInQueue = curUser && queuePlayers.some(p => p.gamertag.toLowerCase() === curUser.gamertag.toLowerCase());
+          const isUserInQueue = curUser && curUser.gamertag && queuePlayers.some(p => p && p.gamertag && p.gamertag.toLowerCase() === curUser.gamertag.toLowerCase());
 
           if (btnJoin && btnLeave) {
             if (isUserInQueue) {
@@ -2340,10 +2672,13 @@
           if (slotsContainer) {
             slotsContainer.innerHTML = "";
             for (let i = 0; i < 8; i++) {
-              const player = queuePlayers[i];
+              const rawPlayer = queuePlayers[i];
               const slotCard = document.createElement('div');
-              if (player) {
-                const isCur = curUser && player.gamertag.toLowerCase() === curUser.gamertag.toLowerCase();
+              if (rawPlayer) {
+                const player = syncPlayerElo(rawPlayer);
+                const isCur = curUser && curUser.gamertag && player && player.gamertag && player.gamertag.toLowerCase() === curUser.gamertag.toLowerCase();
+                const playerElo = player.elo;
+                const playerTier = player.tier || getTierName(playerElo);
                 slotCard.className = isCur ? "queue-slot-card filled current-user" : "queue-slot-card filled";
                 slotCard.innerHTML = `
                   <span class="slot-number-tag">SLOT #${i + 1}</span>
@@ -2363,7 +2698,12 @@
                       <span class="gb-meta-tag" style="font-size:9.5px; padding:2px 6px; background:#141c2b; border-color:#222f44;">${player.role || 'Flex'}</span>
                       <span style="font-size:11px; color:#64748b;">${player.platform || 'PC'}</span>
                     </div>
-                    <span style="font:800 11px var(--body); color:#22c55e;">${player.elo || 1200} ELO</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span style="font-size:10px; color:#94a3b8; font-weight:700;">${escapeHtml(playerTier)}</span>
+                      <span class="gb-meta-tag" style="font:800 11.5px var(--body); color:#22c55e; background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.3); padding:2px 6px;">
+                        ${playerElo} ELO
+                      </span>
+                    </div>
                   </div>
                 `;
               } else {
@@ -2510,7 +2850,7 @@
                     <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
                   </div>
                 </div>
-                <span style="font:800 11px var(--body); color:#ff1e44;">${p.elo || 1200} ELO</span>
+                <span style="font:800 11px var(--body); color:#ff1e44;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
               </div>
             `).join('');
           }
@@ -2531,7 +2871,7 @@
                     <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
                   </div>
                 </div>
-                <span style="font:800 11px var(--body); color:#38bdf8;">${p.elo || 1200} ELO</span>
+                <span style="font:800 11px var(--body); color:#38bdf8;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
               </div>
             `).join('');
           }
@@ -2558,7 +2898,7 @@
                     </div>
                   </div>
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font:800 11.5px var(--body); color:#22c55e;">${p.elo || 1200} ELO</span>
+                    <span style="font:800 11.5px var(--body); color:#22c55e;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
                     <button type="button" class="btn-crimson" style="padding:4px 10px; font-size:11px;">
                       Draft ↗
                     </button>
@@ -2616,6 +2956,7 @@
           const candidates = activeMatch.candidates || activeMatch.all_players || [];
           grid.innerHTML = candidates.map((cand) => {
             const isVoted = userCaptainVote === cand.gamertag;
+            const trueElo = getPlayer8sElo(cand.gamertag, cand.elo);
             return `
               <div style="background:#111827; border:1px solid ${isVoted ? '#a855f7' : '#243048'}; border-radius:4px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px; ${isVoted ? 'box-shadow:0 0 12px rgba(168,85,247,0.3);' : ''}">
                 <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -2623,7 +2964,7 @@
                     <img src="${cand.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:36px; height:36px; border-radius:4px; object-fit:cover; border:1px solid #283548;" />
                     <div>
                       <strong style="color:#ffffff; font-size:13px;">${escapeHtml(cand.gamertag)}</strong>
-                      <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(cand.role || 'Flex')} · ${cand.elo || 1200} ELO</div>
+                      <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(cand.role || 'Flex')} · ${trueElo} ELO</div>
                     </div>
                   </div>
                   <span class="gb-meta-tag accent" style="font-size:10px; background:${cand.votes > 0 ? '#a855f7' : '#141c2b'}; border-color:${cand.votes > 0 ? '#c084fc' : '#243048'}; color:#fff;">
@@ -2643,23 +2984,14 @@
         // LEADERBOARD & RATINGS STORAGE
         // =====================================================================
         function loadLeaderboard() {
-          let list = [];
-          try {
-            const raw = localStorage.getItem("frontline_arena_8s_leaderboard");
-            list = raw ? JSON.parse(raw) : INITIAL_LEADERBOARD;
-          } catch(e) {
-            list = INITIAL_LEADERBOARD;
-          }
-
-          // Sort by ELO desc
-          list.sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
-
+          const list = getLeaderboardList();
           const tbody = document.getElementById('leaderboard-table-body');
           if (!tbody) return;
 
           tbody.innerHTML = list.map((p, idx) => {
             const medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `#${idx + 1}`));
             const winRate = p.matches_played > 0 ? Math.round((p.wins / p.matches_played) * 100) : 0;
+            const tier = p.tier || getTierName(p.elo);
             return `
               <tr style="border-bottom:1px solid #162030; transition:background 0.15s;">
                 <td style="padding:12px; font-weight:800; color:#cbd5e1;">${medal}</td>
@@ -2667,13 +2999,20 @@
                   <div style="display:flex; align-items:center; gap:10px;">
                     <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:4px; object-fit:cover;" />
                     <div>
-                      <strong style="color:#ffffff;">${escapeHtml(p.gamertag)}</strong>
+                      <div style="display:flex; align-items:center; gap:6px;">
+                        <strong style="color:#ffffff;">${escapeHtml(p.gamertag)}</strong>
+                        <span class="gb-meta-tag" style="font-size:9px; padding:1px 5px; background:#141c2b; border-color:#222f44;">${tier}</span>
+                      </div>
                       <div style="font-size:10.5px; color:#64748b;">${escapeHtml(p.activision_id || '')}</div>
                     </div>
                   </div>
                 </td>
                 <td style="padding:12px; color:#94a3b8;">${escapeHtml(p.role || 'Flex')}</td>
-                <td style="padding:12px; text-align:right; font-weight:800; color:#22c55e;">${p.elo || 1200}</td>
+                <td style="padding:12px; text-align:right; font-weight:800; color:#22c55e;">
+                  <span class="gb-meta-tag" style="font:800 12px var(--body); color:#22c55e; background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.3); padding:2px 7px;">
+                    ${p.elo || 1200}
+                  </span>
+                </td>
                 <td style="padding:12px; text-align:right; color:#cbd5e1;">${p.wins || 0}W - ${p.losses || 0}L</td>
                 <td style="padding:12px; text-align:right; color:#eab308; font-weight:700;">${winRate}%</td>
                 <td style="padding:12px; text-align:center; font-weight:800; color:#38bdf8;">${escapeHtml(p.streak || '—')}</td>
@@ -2683,27 +3022,23 @@
         }
 
         function updateLeaderboardAfterMatch(winningRoster, losingRoster) {
-          let list = [];
-          try {
-            const raw = localStorage.getItem("frontline_arena_8s_leaderboard");
-            list = raw ? JSON.parse(raw) : [...INITIAL_LEADERBOARD];
-          } catch(e) {
-            list = [...INITIAL_LEADERBOARD];
-          }
+          let list = getLeaderboardList();
 
           const getOrAdd = (player) => {
             let found = list.find(p => p.gamertag.toLowerCase() === player.gamertag.toLowerCase());
             if (!found) {
+              const startElo = Number(player.elo) || getPlayer8sElo(player.gamertag, 1200);
               found = {
                 gamertag: player.gamertag,
-                activision_id: player.activision_id,
+                activision_id: player.activision_id || `${player.gamertag}#1234567`,
                 role: player.role || "Flex",
-                elo: 1200,
+                elo: startElo,
+                tier: getTierName(startElo),
                 wins: 0,
                 losses: 0,
                 matches_played: 0,
                 streak: "—",
-                avatar_url: player.avatar_url
+                avatar_url: player.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80"
               };
               list.push(found);
             }
@@ -2714,6 +3049,7 @@
           winningRoster.forEach(p => {
             const item = getOrAdd(p);
             item.elo = (item.elo || 1200) + 25;
+            item.tier = getTierName(item.elo);
             item.wins = (item.wins || 0) + 1;
             item.matches_played = (item.matches_played || 0) + 1;
             const streakNum = parseInt(item.streak) || 0;
@@ -2724,14 +3060,49 @@
           losingRoster.forEach(p => {
             const item = getOrAdd(p);
             item.elo = Math.max(800, (item.elo || 1200) - 25);
+            item.tier = getTierName(item.elo);
             item.losses = (item.losses || 0) + 1;
             item.matches_played = (item.matches_played || 0) + 1;
             item.streak = "1L";
           });
 
-          try {
-            localStorage.setItem("frontline_arena_8s_leaderboard", JSON.stringify(list));
-          } catch(e) {}
+          saveLeaderboardList(list);
+
+          // In-memory bot ELO synchronization
+          BOT_COMBATANTS.forEach(bot => {
+            const updated = list.find(l => l.gamertag.toLowerCase() === bot.gamertag.toLowerCase());
+            if (updated) {
+              bot.elo = updated.elo;
+            }
+          });
+
+          // User profile synchronization
+          const cur = resolveCurrentPlayer();
+          if (cur) {
+            const curUpdated = list.find(l => l.gamertag.toLowerCase() === cur.gamertag.toLowerCase());
+            if (curUpdated) {
+              cur.elo = curUpdated.elo;
+              cur.tier = curUpdated.tier;
+              try {
+                localStorage.setItem("frontline_arena_8s_profile", JSON.stringify(cur));
+                const explicit = localStorage.getItem("frontline_arena_user");
+                if (explicit) {
+                  const parsed = JSON.parse(explicit);
+                  if (parsed && (parsed.gamertag || '').toLowerCase() === cur.gamertag.toLowerCase()) {
+                    parsed.elo = curUpdated.elo;
+                    parsed.tier = curUpdated.tier;
+                    localStorage.setItem("frontline_arena_user", JSON.stringify(parsed));
+                  }
+                }
+              } catch(e) {}
+            }
+          }
+
+          // Resync any players in queue
+          queuePlayers = queuePlayers.map(p => syncPlayerElo(p));
+          saveQueueState();
+          renderQueueUI();
+          loadLeaderboard();
         }
 
         // =====================================================================
@@ -2820,7 +3191,20 @@
         // =====================================================================
         function openJoinModal() {
           const modal = document.getElementById('join-profile-modal');
-          if (modal) modal.classList.add('open');
+          if (modal) {
+            const cur = resolveCurrentPlayer();
+            if (cur) {
+              const gtInput = document.getElementById('modal-input-gamertag');
+              const actInput = document.getElementById('modal-input-activision');
+              const roleInput = document.getElementById('modal-input-role');
+              const platInput = document.getElementById('modal-input-platform');
+              if (gtInput && !gtInput.value && cur.gamertag) gtInput.value = cur.gamertag;
+              if (actInput && !actInput.value && cur.activision_id) actInput.value = cur.activision_id;
+              if (roleInput && cur.role) roleInput.value = cur.role;
+              if (platInput && cur.platform) platInput.value = cur.platform;
+            }
+            modal.classList.add('open');
+          }
         }
 
         window.closeJoinModal = function() {
@@ -2837,24 +3221,83 @@
 
           if (!gamertag || !activision) return;
 
+          const accurateElo = getPlayer8sElo(gamertag, 1200);
           localPlayer = {
             id: "user_" + Date.now(),
             gamertag: gamertag,
             activision_id: activision,
             role: role,
             platform: platform,
-            elo: 1200,
+            elo: accurateElo,
+            tier: getTierName(accurateElo),
             avatar_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
             is_user: true
           };
 
+          registerPlayerOnLeaderboard(localPlayer);
+
           try {
             localStorage.setItem("frontline_arena_8s_profile", JSON.stringify(localPlayer));
+            localStorage.setItem("frontline_arena_user", JSON.stringify(localPlayer));
           } catch(err) {}
 
           closeJoinModal();
           handleJoinQueue();
         };
+
+        // Continuous Cloud Queue Heartbeat (polls every 3 seconds to keep all website visitors in sync)
+        let queueCloudHeartbeat = null;
+        function startQueueCloudHeartbeat() {
+          if (queueCloudHeartbeat) return;
+          queueCloudHeartbeat = setInterval(() => {
+            fetchRemoteQueueState();
+          }, 3000);
+        }
+
+        async function syncWithSupabase() {
+          const client = window.supabaseClient || window.dbClient;
+          if (!client) return;
+
+          try {
+            // 1. Fetch remote leaderboard
+            const { data: remoteLead, error: leadErr } = await client
+              .from('arena_8s_leaderboard')
+              .select('*')
+              .order('elo', { ascending: false });
+
+            if (!leadErr && Array.isArray(remoteLead) && remoteLead.length > 0) {
+              const localList = getLeaderboardList();
+              const map = new Map();
+              localList.forEach(p => {
+                if (p && p.gamertag) map.set(p.gamertag.toLowerCase(), p);
+              });
+              remoteLead.forEach(p => {
+                if (p && p.gamertag) {
+                  const key = p.gamertag.toLowerCase();
+                  const existing = map.get(key);
+                  map.set(key, {
+                    ...(existing || {}),
+                    ...p,
+                    elo: Number(p.elo) || (existing ? existing.elo : 1200),
+                    tier: p.tier || getTierName(p.elo)
+                  });
+                }
+              });
+              const merged = Array.from(map.values()).sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
+              try {
+                localStorage.setItem("frontline_arena_8s_leaderboard", JSON.stringify(merged));
+              } catch(e) {}
+
+              // Re-sync current queue players with updated authoritative ELO
+              queuePlayers = (queuePlayers || []).filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+              renderQueueUI();
+              loadLeaderboard();
+            }
+
+            // 2. Fetch authoritative live queue state from cloud
+            await fetchRemoteQueueState();
+          } catch(e) {}
+        }
 
         function escapeHtml(s) {
           return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2864,6 +3307,7 @@
         // INITIALIZATION
         // =====================================================================
         document.addEventListener("DOMContentLoaded", function() {
+          getLeaderboardList(); // Ensure initial 20 CDL combatants are initialized
           resolveCurrentPlayer();
           loadQueueState();
           const modeSel = document.getElementById('select-captain-mode');
@@ -2873,17 +3317,58 @@
           loadLeaderboard();
           loadMatchHistory();
           startGlobal8sTicker();
+          syncWithSupabase();
+          startQueueCloudHeartbeat();
 
           // Connect to Supabase Realtime if client is available
           if (window.supabaseClient && typeof window.supabaseClient.channel === 'function') {
             try {
-              const channel = window.supabaseClient.channel('arena_8s_realtime');
-              channel.on('broadcast', { event: 'queue_update' }, ({ payload }) => {
-                if (payload && Array.isArray(payload.players)) {
-                  queuePlayers = payload.players;
-                  renderQueueUI();
-                }
-              }).subscribe();
+              realtimeChannel = window.supabaseClient.channel('arena_8s_realtime');
+              realtimeChannel
+                .on('broadcast', { event: 'queue_update' }, ({ payload }) => {
+                  if (payload && Array.isArray(payload.players)) {
+                    queuePlayers = payload.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                    if (Array.isArray(payload.matches)) {
+                      activeMatches = payload.matches;
+                    }
+                    renderQueueUI();
+                    renderActiveLobbiesBar();
+                  }
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_queues' }, (payload) => {
+                  if (payload && payload.new && Array.isArray(payload.new.players)) {
+                    queuePlayers = payload.new.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                    renderQueueUI();
+                  }
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'league_settings' }, (payload) => {
+                  if (payload && payload.new && payload.new.id === 'arena_8s_queue_state' && payload.new.status_text) {
+                    try {
+                      const parsed = JSON.parse(payload.new.status_text);
+                      if (parsed && Array.isArray(parsed.players)) {
+                        queuePlayers = parsed.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                        renderQueueUI();
+                      }
+                    } catch(e) {}
+                  }
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_leaderboard' }, (payload) => {
+                  if (payload && payload.new && payload.new.gamertag) {
+                    const updatedPlayer = payload.new;
+                    const list = getLeaderboardList();
+                    const idx = list.findIndex(p => p.gamertag && p.gamertag.toLowerCase() === updatedPlayer.gamertag.toLowerCase());
+                    if (idx >= 0) {
+                      list[idx] = { ...list[idx], ...updatedPlayer, elo: Number(updatedPlayer.elo) || list[idx].elo };
+                    } else {
+                      list.push({ ...updatedPlayer, elo: Number(updatedPlayer.elo) || 1200 });
+                    }
+                    saveLeaderboardList(list);
+                    queuePlayers = (queuePlayers || []).filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                    renderQueueUI();
+                    loadLeaderboard();
+                  }
+                })
+                .subscribe();
             } catch(e) {}
           }
         });
