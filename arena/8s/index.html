@@ -366,6 +366,39 @@
       .draft-player-card.is-captain {
         border-left: 3px solid #eab308;
       }
+      .draft-player-card.is-current-user {
+        border-color: #22c55e !important;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.22);
+      }
+      .user-team-callout-banner {
+        border-radius: 6px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .user-team-callout-banner.alpha {
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(14, 19, 29, 0.95) 100%);
+        border: 1px solid #ef4444;
+        border-left: 5px solid #ef4444;
+      }
+      .user-team-callout-banner.bravo {
+        background: linear-gradient(90deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 19, 29, 0.95) 100%);
+        border: 1px solid #38bdf8;
+        border-left: 5px solid #38bdf8;
+      }
+      .user-team-callout-banner.neutral {
+        background: #0e131d;
+        border: 1px solid #233147;
+      }
+      @media (max-width: 820px) {
+        #live-teams-rosters-grid {
+          grid-template-columns: 1fr !important;
+        }
+      }
 
       /* Match Series Game Row */
       .series-game-row {
@@ -804,7 +837,7 @@
           
           <!-- Active Matches Ongoing Banner in Queue -->
           <div id="active-matches-notice-banner" style="display:none; margin-bottom:16px; background:rgba(30,58,138,0.22); border:1px solid #3b82f6; border-radius:4px; padding:10px 14px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:#e2e8f0;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:#e2e8f0;" id="active-matches-notice-text">
               <span style="font-size:16px;">🚀</span>
               <span><strong>A match lobby popped and is active!</strong> This matchmaking queue is open to form the next lobby.</span>
             </div>
@@ -1009,6 +1042,9 @@
             </div>
           </div>
 
+          <!-- User Team Assignment Hero Banner (Displays who is on what team immediately) -->
+          <div id="user-team-assignment-banner" style="display:none; margin-bottom:20px;"></div>
+
           <!-- Captain Voting Panel (NeatQueue Election Screen) -->
           <div id="captain-voting-panel" style="display:none; background:#0e131d; border:1px solid #a855f7; border-radius:6px; padding:22px; margin-bottom:20px; box-shadow:0 0 25px rgba(168,85,247,0.18);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
@@ -1090,6 +1126,75 @@
 
           <!-- CDL Best of 3 Series & Reporting Panel (Appears after draft completes) -->
           <div id="match-live-series-panel" style="display:none; margin-top:24px;">
+            <!-- 4v4 Final Teams Roster Board (Who is on what team in Live Match View) -->
+            <div id="live-series-rosters-card" style="margin-bottom:24px; background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #182232;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:22px;">⚔️</span>
+                  <div>
+                    <h3 style="font:800 16px var(--body); color:#ffffff; margin:0; text-transform:uppercase; letter-spacing:0.5px;">
+                      4v4 Match Rosters
+                    </h3>
+                    <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">
+                      Finalized rosters for Team Alpha vs Team Bravo
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <button type="button" class="btn-crimson-outline" onclick="copyTeamActivisionIds('team_a')" id="btn-copy-team-a" style="padding:6px 12px; font-size:11px; border-color:#ff1e44; color:#fca5a5;">
+                    📋 Copy Alpha IDs
+                  </button>
+                  <button type="button" class="btn-crimson-outline" onclick="copyTeamActivisionIds('team_b')" id="btn-copy-team-b" style="padding:6px 12px; font-size:11px; border-color:#38bdf8; color:#bae6fd;">
+                    📋 Copy Bravo IDs
+                  </button>
+                  <button type="button" class="btn-crimson-outline" onclick="copyAllMatchActivisionIds()" id="btn-copy-all-ids" style="padding:6px 12px; font-size:11px; border-color:#22c55e; color:#4ade80;">
+                    📋 Copy All 8 IDs
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2-Column Team Rosters Grid -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;" id="live-teams-rosters-grid">
+                <!-- Team Alpha Column -->
+                <div style="background:#090d15; border:1px solid #281a22; border-top:3px solid #ff1e44; border-radius:4px; padding:16px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #1f1a24;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:16px;">🔴</span>
+                      <div>
+                        <strong style="color:#ffffff; font:800 14px var(--body); text-transform:uppercase;">Team Alpha</strong>
+                        <div style="font-size:10.5px; color:#f87171;" id="live-team-alpha-subtext">4 Players</div>
+                      </div>
+                    </div>
+                    <span class="gb-meta-tag accent" style="background:rgba(239,68,68,0.15); border-color:#ef4444; color:#fca5a5; font-size:11px; padding:2px 8px;" id="live-team-alpha-avg-elo">
+                      — ELO
+                    </span>
+                  </div>
+                  <div id="live-team-alpha-roster-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Team Alpha Player Cards inserted here -->
+                  </div>
+                </div>
+
+                <!-- Team Bravo Column -->
+                <div style="background:#090d15; border:1px solid #152438; border-top:3px solid #38bdf8; border-radius:4px; padding:16px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #182536;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:16px;">🔵</span>
+                      <div>
+                        <strong style="color:#ffffff; font:800 14px var(--body); text-transform:uppercase;">Team Bravo</strong>
+                        <div style="font-size:10.5px; color:#38bdf8;" id="live-team-bravo-subtext">4 Players</div>
+                      </div>
+                    </div>
+                    <span class="gb-meta-tag accent" style="background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#bae6fd; font-size:11px; padding:2px 8px;" id="live-team-bravo-avg-elo">
+                      — ELO
+                    </span>
+                  </div>
+                  <div id="live-team-bravo-roster-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Team Bravo Player Cards inserted here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="match-live-series-grid" style="display:grid; gap:20px;">
               <!-- Map Rotation & Scoreboard Column -->
               <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:20px;">
@@ -2794,6 +2899,7 @@
           }
 
           const curUser = resolveCurrentPlayer();
+          const userTag = curUser && curUser.gamertag ? curUser.gamertag.toLowerCase() : null;
 
           if (pillsList) {
             const isQueueActive = (currentViewMode === "queue");
@@ -2806,7 +2912,10 @@
 
             activeMatches.forEach((m, idx) => {
               const isSelected = (currentViewMode === "match" && activeMatch && activeMatch.id === m.id);
-              const isUserIn = curUser && isPlayerInMatch(curUser.gamertag, m);
+              const inAlpha = userTag && m.team_a && m.team_a.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+              const inBravo = userTag && m.team_b && m.team_b.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+              const isUserIn = inAlpha || inBravo || (userTag && isPlayerInMatch(userTag, m));
+
               let statusIcon = "⚡";
               let statusText = "Drafting";
               if (m.status === "voting_captains") {
@@ -2817,12 +2926,21 @@
                 statusText = `Live (${m.series_score ? `${m.series_score.team_a}-${m.series_score.team_b}` : '0-0'})`;
               }
 
+              let teamTag = '';
+              if (inAlpha) {
+                teamTag = '<span class="gb-meta-tag accent" style="font-size:9px; padding:1px 5px; background:#b91c1c; border-color:#ef4444; color:#fff; font-weight:800;">🔴 Alpha (You)</span>';
+              } else if (inBravo) {
+                teamTag = '<span class="gb-meta-tag accent" style="font-size:9px; padding:1px 5px; background:#0284c7; border-color:#38bdf8; color:#fff; font-weight:800;">🔵 Bravo (You)</span>';
+              } else if (isUserIn) {
+                teamTag = '<span class="gb-meta-tag accent" style="font-size:9px; padding:1px 4px; background:#eab308; color:#000; font-weight:800;">YOU</span>';
+              }
+
               html += `
                 <button type="button" class="lobby-tab-pill ${isSelected ? 'active' : ''}" onclick="switchToMatchView('${m.id}')">
                   <span>${statusIcon}</span>
                   <span>Lobby #${idx + 1}: ${m.match_code}</span>
                   <span style="font-size:10px; opacity:0.8;">[${statusText}]</span>
-                  ${isUserIn ? '<span class="gb-meta-tag accent" style="font-size:9px; padding:1px 4px; background:#eab308; color:#000; font-weight:800;">YOU</span>' : ''}
+                  ${teamTag}
                 </button>
               `;
             });
@@ -2833,12 +2951,30 @@
           if (noticeBanner) {
             if (activeMatches.length > 0 && currentViewMode === "queue") {
               noticeBanner.style.display = "flex";
+              const userMatch = userTag ? activeMatches.find(m => isPlayerInMatch(userTag, m)) : null;
+              const bannerNoticeText = document.getElementById('active-matches-notice-text');
+              if (bannerNoticeText) {
+                if (userMatch) {
+                  const inAlpha = userMatch.team_a && userMatch.team_a.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+                  const inBravo = userMatch.team_b && userMatch.team_b.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+                  const squadName = inAlpha ? 'Team Alpha (Red)' : (inBravo ? 'Team Bravo (Blue)' : 'Squad');
+                  bannerNoticeText.innerHTML = `<span style="font-size:16px;">🔥</span><span><strong>You are playing in active Match #${userMatch.match_code} on ${squadName}!</strong> Click to view your team and lobby.</span>`;
+                } else {
+                  bannerNoticeText.innerHTML = `<span style="font-size:16px;">🚀</span><span><strong>A match lobby popped and is active!</strong> This matchmaking queue is open to form the next lobby.</span>`;
+                }
+              }
+
               if (quickLinks) {
-                quickLinks.innerHTML = activeMatches.map(m => `
-                  <button type="button" class="btn-dark" onclick="switchToMatchView('${m.id}')" style="padding:4px 10px; font-size:11px; border-color:#3b82f6; color:#93c5fd; cursor:pointer;">
-                    View Match #${m.match_code} ↗
-                  </button>
-                `).join('');
+                quickLinks.innerHTML = activeMatches.map(m => {
+                  const inAlpha = userTag && m.team_a && m.team_a.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+                  const inBravo = userTag && m.team_b && m.team_b.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+                  const squadBadge = inAlpha ? ' (Team Alpha)' : (inBravo ? ' (Team Bravo)' : '');
+                  return `
+                    <button type="button" class="btn-dark" onclick="switchToMatchView('${m.id}')" style="padding:4px 10px; font-size:11px; border-color:#3b82f6; color:#93c5fd; cursor:pointer;">
+                      View Match #${m.match_code}${squadBadge} ↗
+                    </button>
+                  `;
+                }).join('');
               }
             } else {
               noticeBanner.style.display = "none";
@@ -3251,6 +3387,27 @@
           renderActiveLobbiesBar();
         };
 
+        window.copyTeamActivisionIds = function(teamKey) {
+          if (!activeMatch) return;
+          const roster = (teamKey === 'team_a') ? activeMatch.team_a : activeMatch.team_b;
+          const teamLabel = (teamKey === 'team_a') ? 'Team Alpha' : 'Team Bravo';
+          if (!roster || roster.length === 0) return;
+          const ids = roster.map(p => p.activision_id || p.gamertag).join(', ');
+          navigator.clipboard.writeText(ids).then(() => {
+            alert(`Copied ${roster.length} ${teamLabel} Activision IDs to clipboard:\n\n${ids}`);
+          });
+        };
+
+        window.copyAllMatchActivisionIds = function() {
+          if (!activeMatch) return;
+          const all = [...(activeMatch.team_a || []), ...(activeMatch.team_b || [])];
+          if (all.length === 0) return;
+          const ids = all.map(p => p.activision_id || p.gamertag).join(', ');
+          navigator.clipboard.writeText(ids).then(() => {
+            alert(`Copied all ${all.length} Match Activision IDs to clipboard:\n\n${ids}`);
+          });
+        };
+
         window.copyHostActivisionId = function() {
           if (!activeMatch || !activeMatch.host_player) return;
           const id = activeMatch.host_player.activision_id || activeMatch.host_player.gamertag;
@@ -3432,8 +3589,48 @@
           renderActiveLobbiesBar();
         }
 
+        
+        function renderLiveRosterCard(p, isCaptain, isCurrentUser, teamColor) {
+          const elo = getPlayer8sElo(p.gamertag, p.elo);
+          const actId = p.activision_id || p.gamertag;
+          const isAlpha = teamColor === 'alpha';
+
+          return `
+            <div class="draft-player-card ${isCaptain ? 'is-captain' : ''} ${isCurrentUser ? 'is-current-user' : ''}" style="margin-bottom:0; background:${isCurrentUser ? (isAlpha ? 'rgba(239,68,68,0.15)' : 'rgba(56,189,248,0.15)') : '#111827'}; border-color:${isCurrentUser ? (isAlpha ? '#ef4444' : '#38bdf8') : '#243048'};">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:36px; height:36px; border-radius:4px; object-fit:cover; border:1px solid #1f2937;" />
+                <div>
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <strong style="color:#ffffff; font-size:13.5px;">${escapeHtml(p.gamertag)}</strong>
+                    ${isCaptain ? '<span class="gb-meta-tag accent" style="background:#eab308; border-color:#fde047; color:#000; font-weight:800; font-size:9px; padding:1px 5px;">★ CAPTAIN</span>' : ''}
+                    ${isCurrentUser ? '<span class="gb-meta-tag accent" style="background:#22c55e; border-color:#4ade80; color:#fff; font-weight:800; font-size:9px; padding:1px 5px;">YOU</span>' : ''}
+                  </div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span style="font-size:11px; color:#94a3b8; font-family:monospace;">${escapeHtml(actId)}</span>
+                    <button type="button" onclick="navigator.clipboard.writeText('${escapeHtml(actId)}'); alert('Copied ${escapeHtml(p.gamertag)}\'s Activision ID to clipboard!');" title="Copy Activision ID" style="background:transparent; border:none; color:#64748b; font-size:11px; cursor:pointer; padding:0 2px;">
+                      📋
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <span class="gb-meta-tag" style="font-size:9px; padding:1px 5px; background:#182234; border-color:#2a3a52;">${escapeHtml(p.role || 'Flex')}</span>
+                  <span style="font-size:10px; color:#64748b;">${escapeHtml(p.platform || 'PC')}</span>
+                </div>
+                <span style="font:800 11.5px var(--body); color:${isAlpha ? '#ff1e44' : '#38bdf8'};">
+                  ${elo} ELO
+                </span>
+              </div>
+            </div>
+          `;
+        }
+
         function renderMatchUI() {
           if (!activeMatch) return;
+
+          const curUser = resolveCurrentPlayer();
+          const userTag = (curUser && curUser.gamertag) ? curUser.gamertag.toLowerCase() : null;
 
           // Header
           const badge = document.getElementById('match-status-badge');
@@ -3453,7 +3650,90 @@
           }
           if (codeEl) codeEl.textContent = `MATCH #${activeMatch.match_code}`;
           if (hostName && activeMatch.host_player) {
-            hostName.textContent = `${activeMatch.host_player.gamertag} (${activeMatch.host_player.activision_id})`;
+            hostName.textContent = `${activeMatch.host_player.gamertag} (${activeMatch.host_player.activision_id || ''})`;
+          }
+
+          // User Team Assignment Hero Banner (Displays who is on what team immediately)
+          const userBanner = document.getElementById('user-team-assignment-banner');
+          if (userBanner) {
+            let inAlpha = false;
+            let inBravo = false;
+            let isCaptain = false;
+            let teammates = [];
+
+            if (userTag && activeMatch) {
+              if (activeMatch.team_a && activeMatch.team_a.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag)) {
+                inAlpha = true;
+                isCaptain = activeMatch.captain_a && activeMatch.captain_a.gamertag && activeMatch.captain_a.gamertag.toLowerCase() === userTag;
+                teammates = activeMatch.team_a.filter(p => p && p.gamertag && p.gamertag.toLowerCase() !== userTag);
+              } else if (activeMatch.team_b && activeMatch.team_b.some(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag)) {
+                inBravo = true;
+                isCaptain = activeMatch.captain_b && activeMatch.captain_b.gamertag && activeMatch.captain_b.gamertag.toLowerCase() === userTag;
+                teammates = activeMatch.team_b.filter(p => p && p.gamertag && p.gamertag.toLowerCase() !== userTag);
+              }
+            }
+
+            if (inAlpha) {
+              userBanner.style.display = 'flex';
+              userBanner.className = 'user-team-callout-banner alpha';
+              userBanner.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <span style="font-size:26px;">🔴</span>
+                  <div>
+                    <div style="font:800 11px var(--body); color:#fca5a5; text-transform:uppercase; letter-spacing:0.8px;">Your Match Assignment</div>
+                    <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">
+                      YOU ARE ON <span style="color:#ef4444;">TEAM ALPHA (RED)</span> ${isCaptain ? '<span style="color:#fde047; font-size:12px; margin-left:6px;">★ TEAM CAPTAIN</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:11.5px; color:#cbd5e1; font-weight:700;">Your Teammates (${teammates.length}/3):</span>
+                  ${teammates.map(t => `<span class="gb-meta-tag" style="background:#18131e; border-color:#ff1e44; color:#fff; font-size:11px; padding:3px 8px;">${escapeHtml(t.gamertag)}</span>`).join('')}
+                </div>
+              `;
+            } else if (inBravo) {
+              userBanner.style.display = 'flex';
+              userBanner.className = 'user-team-callout-banner bravo';
+              userBanner.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <span style="font-size:26px;">🔵</span>
+                  <div>
+                    <div style="font:800 11px var(--body); color:#bae6fd; text-transform:uppercase; letter-spacing:0.8px;">Your Match Assignment</div>
+                    <div style="font:900 16px var(--body); color:#ffffff; margin-top:2px;">
+                      YOU ARE ON <span style="color:#38bdf8;">TEAM BRAVO (BLUE)</span> ${isCaptain ? '<span style="color:#fde047; font-size:12px; margin-left:6px;">★ TEAM CAPTAIN</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:11.5px; color:#cbd5e1; font-weight:700;">Your Teammates (${teammates.length}/3):</span>
+                  ${teammates.map(t => `<span class="gb-meta-tag" style="background:#0e1e2e; border-color:#38bdf8; color:#fff; font-size:11px; padding:3px 8px;">${escapeHtml(t.gamertag)}</span>`).join('')}
+                </div>
+              `;
+            } else if (activeMatch.status === "voting_captains") {
+              userBanner.style.display = 'flex';
+              userBanner.className = 'user-team-callout-banner neutral';
+              userBanner.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:22px;">🗳️</span>
+                  <div>
+                    <strong style="color:#ffffff; font-size:14px;">CAPTAINS ELECTION IN PROGRESS</strong>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Teams will be drafted once Captains Alpha and Bravo are confirmed.</div>
+                  </div>
+                </div>
+              `;
+            } else {
+              userBanner.style.display = 'flex';
+              userBanner.className = 'user-team-callout-banner neutral';
+              userBanner.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:22px;">👁️</span>
+                  <div>
+                    <strong style="color:#ffffff; font-size:13.5px;">SPECTATOR / COMMISSIONER VIEW</strong>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Observing Match #${activeMatch.match_code}: Team Alpha vs Team Bravo.</div>
+                  </div>
+                </div>
+              `;
+            }
           }
 
           // Commissioner Match Directives (Visible only to authorized League Commissioners)
@@ -3531,49 +3811,59 @@
             renderSeriesScoreboard();
           }
 
-          // Render Team Alpha Roster
+          // Render Team Alpha Roster (Draft Board)
           const alphaList = document.getElementById('team-alpha-roster-list');
           const alphaCount = document.getElementById('team-alpha-count');
           if (alphaCount) alphaCount.textContent = `${activeMatch.team_a.length} / 4`;
           if (alphaList) {
-            alphaList.innerHTML = activeMatch.team_a.map((p, idx) => `
-              <div class="draft-player-card ${idx === 0 ? 'is-captain' : ''}">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:30px; height:30px; border-radius:3px; object-fit:cover;" />
-                  <div>
-                    <div style="font:800 12.5px var(--body); color:#ffffff;">
-                      ${escapeHtml(p.gamertag)} ${idx === 0 ? '<span style="color:#eab308; font-size:10px;">(CAPTAIN)</span>' : ''}
+            alphaList.innerHTML = activeMatch.team_a.map((p, idx) => {
+              const isCur = userTag && p && p.gamertag && p.gamertag.toLowerCase() === userTag;
+              return `
+                <div class="draft-player-card ${idx === 0 ? 'is-captain' : ''} ${isCur ? 'is-current-user' : ''}">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:30px; height:30px; border-radius:3px; object-fit:cover;" />
+                    <div>
+                      <div style="font:800 12.5px var(--body); color:#ffffff; display:flex; align-items:center; gap:4px;">
+                        ${escapeHtml(p.gamertag)} 
+                        ${idx === 0 ? '<span style="color:#eab308; font-size:10px;">(CAPTAIN)</span>' : ''}
+                        ${isCur ? '<span class="gb-meta-tag accent" style="background:#22c55e; color:#fff; font-size:8.5px; padding:0 4px;">YOU</span>' : ''}
+                      </div>
+                      <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
                     </div>
-                    <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
                   </div>
+                  <span style="font:800 11px var(--body); color:#ff1e44;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
                 </div>
-                <span style="font:800 11px var(--body); color:#ff1e44;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
-              </div>
-            `).join('');
+              `;
+            }).join('');
           }
 
-          // Render Team Bravo Roster
+          // Render Team Bravo Roster (Draft Board)
           const bravoList = document.getElementById('team-bravo-roster-list');
           const bravoCount = document.getElementById('team-bravo-count');
           if (bravoCount) bravoCount.textContent = `${activeMatch.team_b.length} / 4`;
           if (bravoList) {
-            bravoList.innerHTML = activeMatch.team_b.map((p, idx) => `
-              <div class="draft-player-card ${idx === 0 ? 'is-captain' : ''}">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:30px; height:30px; border-radius:3px; object-fit:cover;" />
-                  <div>
-                    <div style="font:800 12.5px var(--body); color:#ffffff;">
-                      ${escapeHtml(p.gamertag)} ${idx === 0 ? '<span style="color:#eab308; font-size:10px;">(CAPTAIN)</span>' : ''}
+            bravoList.innerHTML = activeMatch.team_b.map((p, idx) => {
+              const isCur = userTag && p && p.gamertag && p.gamertag.toLowerCase() === userTag;
+              return `
+                <div class="draft-player-card ${idx === 0 ? 'is-captain' : ''} ${isCur ? 'is-current-user' : ''}">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:30px; height:30px; border-radius:3px; object-fit:cover;" />
+                    <div>
+                      <div style="font:800 12.5px var(--body); color:#ffffff; display:flex; align-items:center; gap:4px;">
+                        ${escapeHtml(p.gamertag)} 
+                        ${idx === 0 ? '<span style="color:#eab308; font-size:10px;">(CAPTAIN)</span>' : ''}
+                        ${isCur ? '<span class="gb-meta-tag accent" style="background:#22c55e; color:#fff; font-size:8.5px; padding:0 4px;">YOU</span>' : ''}
+                      </div>
+                      <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
                     </div>
-                    <div style="font-size:10.5px; color:#94a3b8;">${escapeHtml(p.activision_id || '')}</div>
                   </div>
+                  <span style="font:800 11px var(--body); color:#38bdf8;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
                 </div>
-                <span style="font:800 11px var(--body); color:#38bdf8;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
-              </div>
-            `).join('');
+              `;
+            }).join('');
           }
 
-          // Render Center Draft Pool
+          // Render Center Draft Pool (Draft Board)
           const poolList = document.getElementById('draft-pool-list');
           const poolCount = document.getElementById('draft-pool-remaining-count');
           if (poolCount) poolCount.textContent = `${activeMatch.draft_pool.length} Available`;
@@ -3585,24 +3875,62 @@
                 </div>
               `;
             } else {
-              poolList.innerHTML = activeMatch.draft_pool.map(p => `
-                <div class="draft-player-card" style="cursor:pointer;" onclick="handleDraftPick('${escapeHtml(p.gamertag)}')">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:3px; object-fit:cover;" />
-                    <div>
-                      <div style="font:800 13px var(--body); color:#ffffff;">${escapeHtml(p.gamertag)}</div>
-                      <div style="font-size:11px; color:#94a3b8;">${escapeHtml(p.role || 'Flex')} · ${escapeHtml(p.platform || 'PC')}</div>
+              poolList.innerHTML = activeMatch.draft_pool.map(p => {
+                const isCur = userTag && p && p.gamertag && p.gamertag.toLowerCase() === userTag;
+                return `
+                  <div class="draft-player-card ${isCur ? 'is-current-user' : ''}" style="cursor:pointer;" onclick="handleDraftPick('${escapeHtml(p.gamertag)}')">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:3px; object-fit:cover;" />
+                      <div>
+                        <div style="font:800 13px var(--body); color:#ffffff; display:flex; align-items:center; gap:4px;">
+                          ${escapeHtml(p.gamertag)}
+                          ${isCur ? '<span class="gb-meta-tag accent" style="background:#22c55e; color:#fff; font-size:8.5px; padding:0 4px;">YOU</span>' : ''}
+                        </div>
+                        <div style="font-size:11px; color:#94a3b8;">${escapeHtml(p.role || 'Flex')} · ${escapeHtml(p.platform || 'PC')}</div>
+                      </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font:800 11.5px var(--body); color:#22c55e;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
+                      <button type="button" class="btn-crimson" style="padding:4px 10px; font-size:11px;">
+                        Draft ↗
+                      </button>
                     </div>
                   </div>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font:800 11.5px var(--body); color:#22c55e;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
-                    <button type="button" class="btn-crimson" style="padding:4px 10px; font-size:11px;">
-                      Draft ↗
-                    </button>
-                  </div>
-                </div>
-              `).join('');
+                `;
+              }).join('');
             }
+          }
+
+          // Render Live Series 4v4 Rosters (When match is in progress or completed)
+          const liveAlphaList = document.getElementById('live-team-alpha-roster-list');
+          const liveBravoList = document.getElementById('live-team-bravo-roster-list');
+          const liveAlphaAvg = document.getElementById('live-team-alpha-avg-elo');
+          const liveBravoAvg = document.getElementById('live-team-bravo-avg-elo');
+          const liveAlphaSub = document.getElementById('live-team-alpha-subtext');
+          const liveBravoSub = document.getElementById('live-team-bravo-subtext');
+
+          if (liveAlphaList && activeMatch.team_a) {
+            const elosA = activeMatch.team_a.map(p => getPlayer8sElo(p.gamertag, p.elo));
+            const avgA = elosA.length > 0 ? Math.round(elosA.reduce((a,b)=>a+b,0) / elosA.length) : 0;
+            if (liveAlphaAvg) liveAlphaAvg.textContent = `Avg: ${avgA} ELO`;
+            if (liveAlphaSub) liveAlphaSub.textContent = `${activeMatch.team_a.length} Players Finalized`;
+
+            liveAlphaList.innerHTML = activeMatch.team_a.map((p, idx) => {
+              const isCur = userTag && p && p.gamertag && p.gamertag.toLowerCase() === userTag;
+              return renderLiveRosterCard(p, idx === 0, isCur, 'alpha');
+            }).join('');
+          }
+
+          if (liveBravoList && activeMatch.team_b) {
+            const elosB = activeMatch.team_b.map(p => getPlayer8sElo(p.gamertag, p.elo));
+            const avgB = elosB.length > 0 ? Math.round(elosB.reduce((a,b)=>a+b,0) / elosB.length) : 0;
+            if (liveBravoAvg) liveBravoAvg.textContent = `Avg: ${avgB} ELO`;
+            if (liveBravoSub) liveBravoSub.textContent = `${activeMatch.team_b.length} Players Finalized`;
+
+            liveBravoList.innerHTML = activeMatch.team_b.map((p, idx) => {
+              const isCur = userTag && p && p.gamertag && p.gamertag.toLowerCase() === userTag;
+              return renderLiveRosterCard(p, idx === 0, isCur, 'bravo');
+            }).join('');
           }
         }
 
