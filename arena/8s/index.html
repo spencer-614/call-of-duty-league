@@ -1069,7 +1069,7 @@
                   Team Alpha Captain's Turn to Draft (Pick 1 of 6)
                 </span>
                 <span class="gb-meta-tag accent" style="background:#1e293b; border-color:#38bdf8; color:#38bdf8; font-size:11px; padding:2px 8px; margin-left:6px;" id="draft-pick-timer-badge">
-                  ⏳ 25s
+                  ⏳ 30s
                 </span>
                 <button type="button" id="btn-commissioner-autopick" onclick="forceDraftPickTimeout()" title="Commissioner Tool: Force pick timer timeout (auto-pick random player)" style="display:none; background:transparent; border:1px solid #334155; color:#94a3b8; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:3px; cursor:pointer; text-transform:uppercase; margin-left:4px;">
                   🎲 Auto-Pick
@@ -2824,6 +2824,8 @@
                 all_players: players,
                 candidates: players.map(p => ({ ...p, votes: 0 })),
                 voting_seconds_left: 15,
+                voting_started_at: Date.now(),
+                voting_expires_at: Date.now() + 15000,
                 maps: generateDefaultSeriesMaps(),
                 series_score: { team_a: 0, team_b: 0 },
                 winning_team: null,
@@ -2869,7 +2871,9 @@
                 pick_turn: 1,
                 coin_flip_winner: "Team Alpha",
                 host_player: capA,
-                draft_seconds_left: 25,
+                draft_seconds_left: 30,
+                turn_started_at: Date.now(),
+                turn_expires_at: Date.now() + 30000,
                 bot_think_ticks: 0,
                 maps: generateDefaultSeriesMaps(),
                 series_score: { team_a: 0, team_b: 0 },
@@ -2903,7 +2907,9 @@
                 pick_turn: 1,
                 coin_flip_winner: "Team Alpha",
                 host_player: capA,
-                draft_seconds_left: 25,
+                draft_seconds_left: 30,
+                turn_started_at: Date.now(),
+                turn_expires_at: Date.now() + 30000,
                 bot_think_ticks: 0,
                 maps: generateDefaultSeriesMaps(),
                 series_score: { team_a: 0, team_b: 0 },
@@ -3079,51 +3085,71 @@
 
             let stateChanged = false;
 
+            const now = Date.now();
+
             activeMatches.forEach(match => {
               if (match.status === "voting_captains") {
-                match.voting_seconds_left = (match.voting_seconds_left !== undefined ? match.voting_seconds_left : 15) - 1;
-                stateChanged = true;
-                if (match.voting_seconds_left <= 0) {
+                if (!match.voting_expires_at) {
+                  match.voting_started_at = now;
+                  match.voting_expires_at = now + 15000;
+                }
+                const secLeft = Math.max(0, Math.ceil((match.voting_expires_at - now) / 1000));
+                match.voting_seconds_left = secLeft;
+
+                if (secLeft <= 0 && isMatchTimerAuthority(match)) {
                   finalizeCaptainVotesForMatch(match);
                 }
               } else if (match.status === "voting_modes") {
-                match.mode_voting_seconds_left = (match.mode_voting_seconds_left !== undefined ? match.mode_voting_seconds_left : 20) - 1;
-                stateChanged = true;
-                if (match.mode_voting_seconds_left <= 0) {
+                if (!match.mode_voting_expires_at) {
+                  match.mode_voting_started_at = now;
+                  match.mode_voting_expires_at = now + 20000;
+                }
+                const secLeft = Math.max(0, Math.ceil((match.mode_voting_expires_at - now) / 1000));
+                match.mode_voting_seconds_left = secLeft;
+
+                if (secLeft <= 0 && isMatchTimerAuthority(match)) {
                   finalizeModeVotesForMatch(match);
                 }
               } else if (match.status === "drafting") {
-                match.draft_seconds_left = (match.draft_seconds_left !== undefined ? match.draft_seconds_left : 25) - 1;
+                if (!match.turn_expires_at) {
+                  match.turn_started_at = now;
+                  match.turn_expires_at = now + 30000;
+                }
+                const secondsLeft = Math.max(0, Math.ceil((match.turn_expires_at - now) / 1000));
+                match.draft_seconds_left = secondsLeft;
                 match.bot_think_ticks = (match.bot_think_ticks || 0) + 1;
-                stateChanged = true;
 
-                // Check if current turn captain is a simulated bot
-                const curCap = (match.current_pick_team === "team_a") ? match.captain_a : match.captain_b;
-                if (curCap && curCap.is_bot && match.bot_think_ticks >= 4 && match.draft_pool && match.draft_pool.length > 0) {
-                  const sortedPool = [...match.draft_pool].sort((a,b) => (b.elo || 1200) - (a.elo || 1200));
-                  const chosen = Math.random() < 0.75 ? sortedPool[0] : sortedPool[Math.floor(Math.random() * sortedPool.length)];
-                  handleDraftPickForMatch(match, chosen.gamertag, false);
-                } else if (match.draft_seconds_left <= 0) {
-                  // Turn expired! Auto pick randomly
-                  handleDraftPickForMatch(match, null, true);
+                if (isMatchTimerAuthority(match)) {
+                  const curCap = (match.current_pick_team === "team_a") ? match.captain_a : match.captain_b;
+                  const isBot = isCaptainBot(curCap);
+
+                  if (isBot && match.draft_pool && match.draft_pool.length > 0) {
+                    const elapsed = now - (match.turn_started_at || (now - 7000));
+                    if (elapsed >= 7000) {
+                      // Bot captain waited 7 seconds naturally, now makes pick
+                      const sortedPool = [...match.draft_pool].sort((a,b) => (getPlayer8sElo(b.gamertag, b.elo) || 1200) - (getPlayer8sElo(a.gamertag, a.elo) || 1200));
+                      const chosen = Math.random() < 0.75 ? sortedPool[0] : sortedPool[Math.floor(Math.random() * sortedPool.length)];
+                      handleDraftPickForMatch(match, chosen.gamertag, false);
+                    }
+                  } else if (!isBot && secondsLeft <= 0 && match.draft_pool && match.draft_pool.length > 0) {
+                    // Human captain turn expired after full 30 seconds! Auto-pick
+                    handleDraftPickForMatch(match, null, true);
+                  }
                 }
               }
             });
 
-            if (stateChanged) {
-              saveQueueState();
-              if (activeMatch && currentViewMode === "match") {
-                if (activeMatch.status === "drafting") {
-                  updateDraftPickTimerUI();
-                } else if (activeMatch.status === "voting_modes") {
-                  const modeBadge = document.getElementById('mode-voting-timer-badge');
-                  if (modeBadge) modeBadge.textContent = `⏳ ${Math.max(0, activeMatch.mode_voting_seconds_left || 0)}s Remaining`;
-                } else if (activeMatch.status === "voting_captains") {
-                  const badge = document.getElementById('voting-timer-badge');
-                  if (badge) badge.textContent = `⏳ ${Math.max(0, activeMatch.voting_seconds_left || 0)}s Remaining`;
-                }
+            // Smooth local timer badge updates without broadcasting / upserting on every tick
+            if (activeMatch && currentViewMode === "match") {
+              if (activeMatch.status === "drafting") {
+                updateDraftPickTimerUI();
+              } else if (activeMatch.status === "voting_modes") {
+                const modeBadge = document.getElementById('mode-voting-timer-badge');
+                if (modeBadge) modeBadge.textContent = `⏳ ${Math.max(0, activeMatch.mode_voting_seconds_left || 0)}s Remaining`;
+              } else if (activeMatch.status === "voting_captains") {
+                const badge = document.getElementById('voting-timer-badge');
+                if (badge) badge.textContent = `⏳ ${Math.max(0, activeMatch.voting_seconds_left || 0)}s Remaining`;
               }
-              renderActiveLobbiesBar();
             }
           }, 1000);
         }
@@ -3131,7 +3157,7 @@
         function updateDraftPickTimerUI() {
           const badge = document.getElementById('draft-pick-timer-badge');
           if (!badge || !activeMatch) return;
-          const seconds = (activeMatch.draft_seconds_left !== undefined) ? activeMatch.draft_seconds_left : 25;
+          const seconds = (activeMatch.draft_seconds_left !== undefined) ? activeMatch.draft_seconds_left : 30;
           badge.textContent = `⏳ ${Math.max(0, seconds)}s`;
           if (seconds <= 5) {
             badge.style.background = "#7f1d1d";
@@ -3168,6 +3194,8 @@
           activeMatch.all_players = allPlayers;
           activeMatch.candidates = allPlayers.map(p => ({ ...p, votes: 0 }));
           activeMatch.voting_seconds_left = 15;
+          activeMatch.voting_started_at = Date.now();
+          activeMatch.voting_expires_at = Date.now() + 15000;
 
           addLobbyChatMessage("SYSTEM", `🗳️ Captain Election started for Match #${activeMatch.match_code}! Cast your vote.`);
           saveQueueState();
@@ -3234,7 +3262,10 @@
           match.pick_turn = 1;
           match.coin_flip_winner = "Team Alpha";
           match.host_player = captainA;
-          match.draft_seconds_left = 25;
+          const nowLaunch = Date.now();
+          match.draft_seconds_left = 30;
+          match.turn_started_at = nowLaunch;
+          match.turn_expires_at = nowLaunch + 30000;
           match.bot_think_ticks = 0;
 
           const msg = `⚡ Captains locked for Match #${match.match_code}: ${captainA.gamertag} & ${captainB.gamertag}! 1-2-2-1 Snake Draft is LIVE (${captainA.gamertag} has 1st pick).`;
@@ -3250,6 +3281,44 @@
         // =====================================================================
         // DRAFTING ENGINE (PER MATCH - 1-2-2-1 SNAKE DRAFT)
         // =====================================================================
+                function isCaptainBot(captain) {
+          if (!captain || !captain.gamertag) return false;
+          const curUser = resolveCurrentPlayer();
+          if (curUser && curUser.gamertag && curUser.gamertag.toLowerCase() === captain.gamertag.toLowerCase()) {
+            return false;
+          }
+          return Boolean(captain.is_bot);
+        }
+
+        function isMatchTimerAuthority(match) {
+          if (!match) return false;
+          const curUser = resolveCurrentPlayer();
+          if (checkIsCommissioner()) return true;
+
+          const userTag = (curUser && curUser.gamertag) ? curUser.gamertag.toLowerCase() : null;
+
+          const allMatchPlayers = (match.all_players && match.all_players.length > 0)
+            ? match.all_players
+            : [...(match.team_a || []), ...(match.team_b || []), ...(match.draft_pool || [])];
+
+          const humanList = allMatchPlayers
+            .filter(p => p && !p.is_bot && p.gamertag)
+            .map(p => p.gamertag.toLowerCase());
+          const uniqueHumans = Array.from(new Set(humanList)).sort();
+
+          if (uniqueHumans.length > 0) {
+            if (!userTag) return false;
+            if (uniqueHumans[0] === userTag) return true;
+            const now = Date.now();
+            if (match.turn_expires_at && (now > match.turn_expires_at + 3000) && uniqueHumans.includes(userTag)) {
+              return true;
+            }
+            return false;
+          }
+
+          return true;
+        }
+
         function getDraftTeamForTurn(turn) {
           // 1-2-2-1 Snake Draft Format:
           // Turn 1: Team Alpha (Captain 1) picks 1 player
@@ -3268,7 +3337,10 @@
           if (!match || match.status !== "drafting") return;
           if (!match.draft_pool || match.draft_pool.length === 0) return;
 
-          match.draft_seconds_left = 25;
+          const nowPick = Date.now();
+          match.draft_seconds_left = 30;
+          match.turn_started_at = nowPick;
+          match.turn_expires_at = nowPick + 30000;
           match.bot_think_ticks = 0;
 
           const currentTurn = match.pick_turn || 1;
@@ -3284,8 +3356,10 @@
           }
 
           if (!pickedPlayer) {
-            const randomIdx = Math.floor(Math.random() * match.draft_pool.length);
-            pickedPlayer = match.draft_pool.splice(randomIdx, 1)[0];
+            const sorted = [...match.draft_pool].sort((a, b) => (getPlayer8sElo(b.gamertag, b.elo) || 1200) - (getPlayer8sElo(a.gamertag, a.elo) || 1200));
+            const bestPlayer = sorted[0];
+            const idx = match.draft_pool.findIndex(p => p.gamertag === bestPlayer.gamertag);
+            pickedPlayer = match.draft_pool.splice(idx >= 0 ? idx : 0, 1)[0];
             isAutoPick = true;
           }
 
@@ -3333,7 +3407,10 @@
           } else {
             match.pick_turn = currentTurn + 1;
             match.current_pick_team = getDraftTeamForTurn(match.pick_turn);
-            match.draft_seconds_left = 25;
+            const nowNext = Date.now();
+            match.draft_seconds_left = 30;
+            match.turn_started_at = nowNext;
+            match.turn_expires_at = nowNext + 30000;
             match.bot_think_ticks = 0;
           }
 
@@ -3353,13 +3430,13 @@
           const curTeam = getDraftTeamForTurn(curTurn);
           const curCap = (curTeam === "team_a") ? activeMatch.captain_a : activeMatch.captain_b;
 
-          if (curUser && !isCommish && !isAutoPick) {
-            const isCapA = activeMatch.captain_a && curUser.gamertag.toLowerCase() === activeMatch.captain_a.gamertag.toLowerCase();
-            const isCapB = activeMatch.captain_b && curUser.gamertag.toLowerCase() === activeMatch.captain_b.gamertag.toLowerCase();
+          if (!isCommish && !isAutoPick) {
+            const isCapA = activeMatch.captain_a && curUser && curUser.gamertag && curUser.gamertag.toLowerCase() === activeMatch.captain_a.gamertag.toLowerCase();
+            const isCapB = activeMatch.captain_b && curUser && curUser.gamertag && curUser.gamertag.toLowerCase() === activeMatch.captain_b.gamertag.toLowerCase();
             const isTurnCap = (curTeam === "team_a" && isCapA) || (curTeam === "team_b" && isCapB);
 
-            if ((isCapA || isCapB) && !isTurnCap) {
-              alert(`It's not your turn to draft! Currently waiting on ${curCap ? curCap.gamertag : 'the other captain'}.`);
+            if (!isTurnCap) {
+              alert(`Only the active Captain (${curCap ? curCap.gamertag : 'current captain'}) can pick during this turn!`);
               return;
             }
           }
@@ -3706,6 +3783,9 @@
         function startModeVotingForMatch(match) {
           if (!match) return;
           match.status = "voting_modes";
+          const nowMode = Date.now();
+          match.mode_voting_started_at = nowMode;
+          match.mode_voting_expires_at = nowMode + 20000;
           match.mode_voting_seconds_left = 20;
           match.draft_pool = [];
           match.user_mode_votes = match.user_mode_votes || {};
@@ -4250,8 +4330,16 @@
             } else {
               poolList.innerHTML = activeMatch.draft_pool.map(p => {
                 const isCur = userTag && p && p.gamertag && p.gamertag.toLowerCase() === userTag;
+                const curTurn = activeMatch.pick_turn || 1;
+                const curTeam = getDraftTeamForTurn(curTurn);
+                const curCap = (curTeam === "team_a") ? activeMatch.captain_a : activeMatch.captain_b;
+                const isCommish = checkIsCommissioner();
+                const isCapA = activeMatch.captain_a && userTag && userTag === activeMatch.captain_a.gamertag.toLowerCase();
+                const isCapB = activeMatch.captain_b && userTag && userTag === activeMatch.captain_b.gamertag.toLowerCase();
+                const canPick = isCommish || (curTeam === "team_a" && isCapA) || (curTeam === "team_b" && isCapB);
+
                 return `
-                  <div class="draft-player-card ${isCur ? 'is-current-user' : ''}" style="cursor:pointer;" onclick="handleDraftPick('${escapeHtml(p.gamertag)}')">
+                  <div class="draft-player-card ${isCur ? 'is-current-user' : ''}" style="${canPick ? 'cursor:pointer;' : 'opacity:0.85;'}" onclick="${canPick ? `handleDraftPick('${escapeHtml(p.gamertag)}')` : `alert('Waiting on ${curCap ? escapeHtml(curCap.gamertag) : 'active captain'} to make Pick #${curTurn}!')`}">
                     <div style="display:flex; align-items:center; gap:8px;">
                       <img src="${p.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:32px; height:32px; border-radius:3px; object-fit:cover;" />
                       <div>
@@ -4264,8 +4352,8 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                       <span style="font:800 11.5px var(--body); color:#22c55e;">${getPlayer8sElo(p.gamertag, p.elo)} ELO</span>
-                      <button type="button" class="btn-crimson" style="padding:4px 10px; font-size:11px;">
-                        Draft ↗
+                      <button type="button" class="btn-crimson" style="padding:4px 10px; font-size:11px; ${canPick ? '' : 'background:#1e293b; border-color:#334155; color:#94a3b8;'}">
+                        ${canPick ? 'Draft ↗' : 'Available'}
                       </button>
                     </div>
                   </div>
