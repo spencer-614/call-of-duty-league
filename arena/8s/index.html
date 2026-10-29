@@ -64,6 +64,205 @@
         100% { transform: translateX(100%); }
       }
 
+      /* ==========================================================================
+         NEATQUEUE CAPTAIN VOTING SYSTEM STYLES
+         ========================================================================== */
+      .neat-captain-vote-dropdown-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .neat-captain-dropdown-btn {
+        background: #090d15;
+        border: 1px solid #1f2a3c;
+        border-radius: 4px;
+        padding: 7px 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+      }
+      .neat-captain-dropdown-btn:hover {
+        border-color: #3b82f6;
+        background: #0d1320;
+      }
+      .neat-captain-vote-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 1000;
+        min-width: 330px;
+        background: #0b0f17;
+        border: 1px solid #233147;
+        border-radius: 6px;
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 15px rgba(34, 197, 94, 0.1);
+        padding: 14px;
+        display: none;
+        animation: neatFadeIn 0.15s ease-out;
+      }
+      @keyframes neatFadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .neat-menu-option {
+        background: #111827;
+        border: 1px solid #1f2a3c;
+        border-radius: 4px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .neat-menu-option:hover {
+        border-color: #38bdf8;
+        background: #152033;
+      }
+      .neat-menu-option.is-selected {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.08);
+      }
+      .neat-menu-option.is-leading {
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.18);
+      }
+      .neat-mini-progress {
+        height: 5px;
+        border-radius: 3px;
+        background: #1e293b;
+        overflow: hidden;
+        width: 100%;
+      }
+      .neat-mini-progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: #22c55e;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* NeatQueue Captain Voting Banner / Strip */
+      .neat-captain-voting-strip {
+        background: linear-gradient(180deg, #0d121c 0%, #070a10 100%);
+        border: 1px solid #202b3d;
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin: 14px 0 16px 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .neat-captain-voting-strip::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #22c55e, #38bdf8, #a855f7);
+      }
+      .neat-voting-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+      }
+      @media (max-width: 820px) {
+        .neat-voting-cards-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .neat-voting-card {
+        background: #0f1522;
+        border: 1px solid #1c2738;
+        border-radius: 5px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+      .neat-voting-card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-1px);
+        background: #141c2c;
+      }
+      .neat-voting-card.active-user-vote {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.08);
+        box-shadow: 0 0 14px rgba(34, 197, 94, 0.22);
+      }
+      .neat-voting-card.is-leader {
+        border-top: 2px solid #eab308;
+      }
+      .neat-vote-bar-track {
+        height: 6px;
+        border-radius: 3px;
+        background: #182232;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .neat-vote-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: #22c55e;
+        transition: width 0.3s ease;
+      }
+
+      /* Realtime Live Pulse Indicator */
+      .neat-realtime-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+        color: #4ade80;
+        font: 800 10px var(--body);
+        letter-spacing: 0.5px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+      .neat-pulse-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 8px #22c55e;
+        animation: neatPulseAnim 1.6s infinite;
+      }
+      @keyframes neatPulseAnim {
+        0% { transform: scale(0.9); opacity: 0.7; }
+        50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #22c55e; }
+        100% { transform: scale(0.9); opacity: 0.7; }
+      }
+
+      /* NeatQueue Join Vote Modal */
+      .neat-vote-modal-btn {
+        width: 100%;
+        background: #0f1522;
+        border: 1px solid #223048;
+        border-radius: 6px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+      }
+      .neat-vote-modal-btn:hover {
+        border-color: #38bdf8;
+        background: #141d2e;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      }
+
       /* NeatQueue 8-Slot Lobby Cards Grid */
       .queue-slots-grid {
         display: grid;
@@ -538,7 +737,7 @@
               ARENA <span style="color:#ff1e44; text-shadow:0 2px 10px rgba(0,0,0,0.7);">8'S QUEUE</span> LOBBY
             </h1>
             <p style="font-size:14px; color:#cbd5e1; line-height:1.6; margin:0;">
-              Queue solo, watch the 8-slot lobby populate live, experience 1-2-2-1 snake Captains Draft picking, get assigned a designated 60Hz MW4 host, roll official MW4 6v6 Best-of-5 map sets (Hardpoint, Search &amp; Destroy, Hijack), and compete for individual 8's MMR ELO ratings.
+              Queue solo, watch the 8-slot lobby populate live, experience 1-2-2-1 snake Captains Draft picking, get assigned a designated 60Hz MW4 host, roll official MW4 6v6 Best-of-3 map sets (Hardpoint, Search &amp; Destroy, Hijack), and compete for individual 8's MMR ELO ratings.
             </p>
           </div>
 
@@ -550,7 +749,7 @@
             </div>
             <div style="background:#090d14; border:1px solid #1f2a3c; padding:10px 16px; border-radius:4px; text-align:center; min-width:110px;">
               <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Format</span>
-              <div style="font:900 18px var(--body); color:#ff1e44; margin-top:2px;">4v4 MW4 BO5</div>
+              <div style="font:900 18px var(--body); color:#ff1e44; margin-top:2px;">4v4 MW4 BO3</div>
             </div>
             <div style="background:#090d14; border:1px solid #1f2a3c; padding:10px 16px; border-radius:4px; text-align:center; min-width:110px;">
               <span style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Host Server</span>
@@ -616,12 +815,16 @@
           <!-- Queue Header & Controls -->
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
             <div>
-              <div style="display:flex; align-items:center; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="font-size:18px;">🟢</span>
                 <h2 style="font:800 18px var(--body); color:#ffffff; margin:0; text-transform:uppercase; letter-spacing:0.6px;">
                   Frontline 8's Competitive Queue
                 </h2>
                 <span class="gb-meta-tag accent" style="font-size:10px; padding:2px 6px;">MW4 4V4</span>
+                <span class="neat-realtime-badge" id="neat-realtime-badge" title="Live bidirectional real-time queue synchronization">
+                  <span class="neat-pulse-dot"></span>
+                  <span id="neat-realtime-text">Live Realtime</span>
+                </span>
               </div>
               <div style="font-size:12px; color:#94a3b8; margin-top:4px;" id="queue-countdown-text">
                 Waiting for 8 players to populate. Once full, Captains Draft triggers automatically.
@@ -630,18 +833,47 @@
 
             <!-- Action Buttons Row -->
             <div class="queue-actions-row" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <!-- Captain Selection Mode Selector -->
-              <div class="captain-mode-wrap" style="display:inline-flex; align-items:center; gap:6px; background:#070a10; border:1px solid #1f2a3c; border-radius:4px; padding:6px 10px;">
-                <span style="font-size:10.5px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Captains:</span>
-                <select id="select-captain-mode" onchange="handleCaptainModeChange(this.value)" style="background:transparent; border:none; color:#22c55e; font-size:11.5px; font-weight:800; cursor:pointer; outline:none;">
-                  <option value="vote" style="background:#0e131d; color:#fff;" selected>🗳️ Vote on Captains</option>
-                  <option value="random" style="background:#0e131d; color:#fff;">🎲 Random Captains</option>
-                  <option value="top_mmr" style="background:#0e131d; color:#fff;">⭐ Top MMR Captains</option>
+              <!-- NeatQueue Captain Selection Voting Dropdown -->
+              <div class="neat-captain-vote-dropdown-wrap" id="neat-captain-dropdown-wrap">
+                <button type="button" id="neat-captain-dropdown-btn" onclick="toggleCaptainVoteMenu(event)" class="neat-captain-dropdown-btn" title="NeatQueue: Vote on how captains are chosen">
+                  <span id="neat-dropdown-icon" style="font-size:13px;">🗳️</span>
+                  <span style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Captains:</span>
+                  <strong id="neat-dropdown-label" style="font-size:12px; color:#22c55e;">Vote (0/0)</strong>
+                  <span style="font-size:8px; color:#64748b; margin-left:2px;">▼</span>
+                </button>
+
+                <!-- Hidden select for programmatic compatibility -->
+                <select id="select-captain-mode" onchange="handleCaptainModeChange(this.value)" style="display:none;">
+                  <option value="vote" selected>Vote on Captains</option>
+                  <option value="random">Random Captains</option>
+                  <option value="top_mmr">Top MMR Captains</option>
                 </select>
+
+                <!-- Custom Popover Menu for Voting -->
+                <div id="neat-captain-vote-menu" class="neat-captain-vote-menu">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #1e2a3c;">
+                    <div>
+                      <strong style="color:#ffffff; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Captain Selection Vote</strong>
+                      <div style="font-size:10px; color:#94a3b8; margin-top:1px;">NeatQueue voting by queued players</div>
+                    </div>
+                    <span class="gb-meta-tag accent" id="neat-menu-voted-count" style="font-size:9.5px; padding:2px 6px;">0/0 Voted</span>
+                  </div>
+
+                  <div id="neat-menu-options-container">
+                    <!-- Dynamically rendered 3 options -->
+                  </div>
+
+                  <div style="margin-top:8px; padding-top:8px; border-top:1px solid #162030; font-size:10px; color:#64748b; line-height:1.4;">
+                    💡 The method with the most votes triggers automatically when the queue fills to 8/8.
+                  </div>
+                </div>
               </div>
 
               <button type="button" class="btn-crimson" id="btn-join-queue" onclick="handleJoinQueue()" style="background:#16a34a; border-color:#22c55e; padding:10px 20px; font-size:13px; font-weight:800;">
                 <span>➕</span> <span>Join Queue</span>
+              </button>
+              <button type="button" class="btn-crimson-outline" id="btn-change-vote" onclick="openQueueVoteModal()" style="display:none; border-color:#a855f7; color:#d8b4fe; padding:10px 16px; font-size:13px;">
+                <span>🗳️</span> <span>Change Vote</span>
               </button>
               <button type="button" class="btn-crimson-outline" id="btn-leave-queue" onclick="handleLeaveQueue()" style="display:none; border-color:#ef4444; color:#ef4444; padding:10px 18px; font-size:13px;">
                 <span>✖</span> <span>Leave Queue</span>
@@ -660,6 +892,28 @@
                   <span>🔄</span> <span>Reset</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- NeatQueue Captain Selection Voting Strip -->
+          <div id="neat-captain-voting-strip" class="neat-captain-voting-strip">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:15px;">🗳️</span>
+                <strong style="font:800 12.5px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.5px;">
+                  Captain Selection Voting (NeatQueue)
+                </strong>
+                <span class="gb-meta-tag accent" style="font-size:9.5px; padding:2px 6px; background:#1e293b; color:#38bdf8; border-color:#38bdf8;" id="strip-votes-cast-badge">
+                  0 of 0 Players Voted
+                </span>
+              </div>
+              <div style="font-size:11.5px; color:#cbd5e1;" id="strip-leader-callout">
+                👑 Leading: <strong style="color:#22c55e;">🗳️ Vote on Captains</strong> · Method locks upon queue pop
+              </div>
+            </div>
+
+            <div class="neat-voting-cards-grid" id="neat-voting-cards-container">
+              <!-- Dynamically rendered 3 voting cards -->
             </div>
           </div>
 
@@ -699,7 +953,7 @@
                   </span>
                 </div>
                 <div style="font-size:12px; color:#cbd5e1; margin-top:4px;">
-                  Best of 5 Series · Dallas/Central 60Hz Host · MW4 6v6 Ruleset (Hardpoint / SnD / Hijack)
+                  Best of 3 Series · Dallas/Central 60Hz Host · MW4 6v6 Ruleset (Hardpoint / SnD / Hijack)
                 </div>
               </div>
 
@@ -834,7 +1088,7 @@
             </div>
           </div>
 
-          <!-- CDL Best of 5 Series & Reporting Panel (Appears after draft completes) -->
+          <!-- CDL Best of 3 Series & Reporting Panel (Appears after draft completes) -->
           <div id="match-live-series-panel" style="display:none; margin-top:24px;">
             <div class="match-live-series-grid" style="display:grid; gap:20px;">
               <!-- Map Rotation & Scoreboard Column -->
@@ -842,10 +1096,10 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                   <div>
                     <h3 style="font:800 16px var(--body); color:#ffffff; margin:0; text-transform:uppercase;">
-                      MW4 6v6 Map &amp; Mode Rotation
+                      MW4 6v6 Best of 3 Rotation
                     </h3>
                     <div style="font-size:12px; color:#94a3b8; margin-top:2px;">
-                      Play maps in designated order. Click game winner to tally series score.
+                      First to 2 map victories claims the series. Click game winner to tally score.
                     </div>
                   </div>
                   <div style="display:flex; align-items:center; gap:8px;">
@@ -983,16 +1237,14 @@
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
           <div style="background:#0e131d; border:1px solid #1e283a; border-radius:6px; padding:22px;">
             <div class="gb-meta-tag accent" style="margin-bottom:10px; display:inline-flex;">RULESET OVERVIEW</div>
-            <h3 style="font:800 16px var(--body); color:#fff; margin:0 0 10px;">MW4 6v6 Best-of-5 Order</h3>
+            <h3 style="font:800 16px var(--body); color:#fff; margin:0 0 10px;">MW4 6v6 Best-of-3 Order</h3>
             <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:14px;">
-              All 8s series are contested to first-to-3 map victories following the official MW4 6v6 rotation:
+              All 8s series are contested to first-to-2 map victories following the official MW4 6v6 rotation:
             </p>
             <ul style="font-size:13px; color:#cbd5e1; line-height:1.8; padding-left:18px; margin:0 0 16px;">
               <li><strong>Map 1:</strong> Hardpoint (250 Score Limit, 5 Min Limit)</li>
               <li><strong>Map 2:</strong> Search &amp; Destroy (Round Limit 6, Round Timer 1:30)</li>
-              <li><strong>Map 3:</strong> Hijack (300 Score Limit, Data Spike Objective &amp; Comm Station Upload)</li>
-              <li><strong>Map 4:</strong> Hardpoint (If needed)</li>
-              <li><strong>Map 5:</strong> Search &amp; Destroy (Final decider)</li>
+              <li><strong>Map 3:</strong> Hijack (300 Score Limit, Data Spike Objective &amp; Comm Station Upload — Final Decider)</li>
             </ul>
             <div style="border-top:1px solid #1f2b3e; padding-top:12px; margin-top:10px;">
               <strong style="color:#ffffff; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Official MW4 6v6 Map Pool:</strong>
@@ -1070,6 +1322,17 @@
             </div>
           </div>
 
+          <div>
+            <label style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; display:block; margin-bottom:4px;">
+              Captain Pick Vote <span style="color:#22c55e;">(NeatQueue)</span>
+            </label>
+            <select id="modal-input-captain-vote" style="width:100%; box-sizing:border-box; background:#070a10; border:1px solid #1f2b3e; border-radius:3px; padding:9px 12px; color:#22c55e; font-size:12px; font-weight:700;">
+              <option value="vote" selected>🗳️ Vote on Captains (Lobby Election)</option>
+              <option value="random">🎲 Random Captains (System Roll)</option>
+              <option value="top_mmr">⭐ Top MMR Captains (Highest ELO)</option>
+            </select>
+          </div>
+
           <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
             <button type="button" class="btn-crimson-outline" onclick="closeJoinModal()" style="padding:9px 16px; font-size:12px;">
               Cancel
@@ -1079,6 +1342,87 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- NeatQueue Interactive Join & Vote Modal (Actual Vote on Queue) -->
+    <div id="queue-vote-join-modal" class="arena-modal-backdrop">
+      <div class="arena-modal-card" style="max-width:500px; background:#0a0e17; border:1px solid #233147; border-radius:8px; padding:24px; box-shadow:0 24px 60px rgba(0,0,0,0.95);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid #1e2a3c;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:22px;">🗳️</span>
+            <div>
+              <h3 style="font:800 16px var(--body); color:#ffffff; margin:0; text-transform:uppercase; letter-spacing:0.5px;">
+                Cast Captain Vote to Queue
+              </h3>
+              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                NeatQueue Rules · Every combatant votes on how captains are chosen
+              </div>
+            </div>
+          </div>
+          <button type="button" onclick="closeQueueVoteModal()" style="background:transparent; border:none; color:#64748b; font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+
+        <div style="font-size:12.5px; color:#cbd5e1; margin-bottom:16px; line-height:1.5;">
+          Select how you want Team Captains chosen for this 8's lobby. Your choice is recorded as your <strong>official vote</strong> upon entering the queue:
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+          <!-- Option 1: Vote on Captains -->
+          <div class="neat-vote-modal-btn" onclick="confirmQueueWithVote('vote')">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:24px;">🗳️</span>
+              <div>
+                <strong style="color:#ffffff; font-size:13.5px;">Vote on Captains (Lobby Election)</strong>
+                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                  All 8 combatants vote to elect Captain Alpha &amp; Bravo when queue pops.
+                </div>
+              </div>
+            </div>
+            <span class="gb-meta-tag accent" style="background:#a855f7; border-color:#c084fc; color:#fff; font-size:10px; padding:4px 10px; white-space:nowrap;">
+              VOTE &amp; JOIN
+            </span>
+          </div>
+
+          <!-- Option 2: Random Captains -->
+          <div class="neat-vote-modal-btn" onclick="confirmQueueWithVote('random')">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:24px;">🎲</span>
+              <div>
+                <strong style="color:#ffffff; font-size:13.5px;">Random Captains (System Roll)</strong>
+                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                  System randomly assigns 2 captains. Instant 1-2-2-1 snake draft triggers upon pop.
+                </div>
+              </div>
+            </div>
+            <span class="gb-meta-tag accent" style="background:#eab308; border-color:#fde047; color:#000; font-weight:800; font-size:10px; padding:4px 10px; white-space:nowrap;">
+              VOTE &amp; JOIN
+            </span>
+          </div>
+
+          <!-- Option 3: Top MMR Captains -->
+          <div class="neat-vote-modal-btn" onclick="confirmQueueWithVote('top_mmr')">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:24px;">⭐</span>
+              <div>
+                <strong style="color:#ffffff; font-size:13.5px;">Top MMR Captains (Highest ELO)</strong>
+                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                  The 2 highest ranked ELO players lead Team Alpha and Team Bravo.
+                </div>
+              </div>
+            </div>
+            <span class="gb-meta-tag accent" style="background:#0284c7; border-color:#38bdf8; color:#fff; font-size:10px; padding:4px 10px; white-space:nowrap;">
+              VOTE &amp; JOIN
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#64748b; padding-top:12px; border-top:1px solid #162030;">
+          <span>💡 You can change your vote anytime while in queue.</span>
+          <button type="button" onclick="closeQueueVoteModal()" class="btn-crimson-outline" style="padding:5px 12px; font-size:11px;">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1378,13 +1722,250 @@
         let userCaptainVote = null;
         let captainCandidates = [];
         let global8sTicker = null;
+        let isRealtimeSubscribed = false;
+        let realtimeReconnectTimer = null;
 
-        window.handleCaptainModeChange = function(mode) {
+        // =====================================================================
+        // NEATQUEUE CAPTAIN PICKING VOTING SYSTEM
+        // =====================================================================
+        function getCaptainModeVotes(players = queuePlayers) {
+          const votes = {
+            vote: 0,
+            random: 0,
+            top_mmr: 0,
+            total: 0
+          };
+          (players || []).forEach(p => {
+            if (!p) return;
+            const v = p.captain_vote || "vote";
+            if (votes[v] !== undefined) {
+              votes[v]++;
+            } else {
+              votes.vote++;
+            }
+            votes.total++;
+          });
+          return votes;
+        }
+
+        function getWinningCaptainMode(players = queuePlayers) {
+          const votes = getCaptainModeVotes(players);
+          let winner = "vote";
+          let maxVotes = votes.vote;
+
+          // In NeatQueue: Majority rules; ties default to vote on captains
+          if (votes.random > maxVotes) {
+            winner = "random";
+            maxVotes = votes.random;
+          }
+          if (votes.top_mmr > maxVotes) {
+            winner = "top_mmr";
+            maxVotes = votes.top_mmr;
+          }
+          return { winner, votes, maxVotes };
+        }
+
+        function formatCaptainModeLabel(mode) {
+          if (mode === "random") return "Random Captains";
+          if (mode === "top_mmr") return "Top MMR Captains";
+          return "Vote on Captains";
+        }
+
+        function formatCaptainModeIcon(mode) {
+          if (mode === "random") return "🎲";
+          if (mode === "top_mmr") return "⭐";
+          return "🗳️";
+        }
+
+        window.castCaptainModeVote = function(mode) {
+          if (!['vote', 'random', 'top_mmr'].includes(mode)) return;
+          const user = resolveCurrentPlayer();
+          if (!user || !user.gamertag) {
+            openJoinModal();
+            return;
+          }
+
+          const userTag = user.gamertag.toLowerCase();
+          const playerInQueue = queuePlayers.find(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+          if (!playerInQueue) {
+            alert("You must be in the queue to cast a vote on how captains are chosen!\n\nClick 'Join Queue' to enter the lobby and vote.");
+            return;
+          }
+
+          playerInQueue.captain_vote = mode;
           captainSelectionMode = mode;
           try {
             localStorage.setItem("frontline_arena_8s_captain_mode", mode);
           } catch(e) {}
+
+          playSynthesizedSound('draft');
+          saveQueueState();
+          renderQueueUI();
+
+          // Close dropdown if open
+          window.closeCaptainVoteMenu();
         };
+
+        window.handleCaptainModeChange = function(mode) {
+          window.castCaptainModeVote(mode);
+        };
+
+        window.toggleCaptainVoteMenu = function(e) {
+          if (e) e.stopPropagation();
+          const menu = document.getElementById('neat-captain-vote-menu');
+          if (!menu) return;
+          const isShown = menu.style.display === 'block';
+          menu.style.display = isShown ? 'none' : 'block';
+        };
+
+        window.closeCaptainVoteMenu = function() {
+          const menu = document.getElementById('neat-captain-vote-menu');
+          if (menu) menu.style.display = 'none';
+        };
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+          const wrap = document.getElementById('neat-captain-dropdown-wrap');
+          if (wrap && !wrap.contains(e.target)) {
+            window.closeCaptainVoteMenu();
+          }
+        });
+
+        function renderCaptainVotingSystem() {
+          const curUser = resolveCurrentPlayer();
+          const userTag = curUser && curUser.gamertag ? curUser.gamertag.toLowerCase() : null;
+          const playerInQueue = userTag ? queuePlayers.find(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag) : null;
+          const userVote = playerInQueue ? (playerInQueue.captain_vote || "vote") : captainSelectionMode;
+
+          const { winner, votes, maxVotes } = getWinningCaptainMode(queuePlayers);
+          const totalVotes = votes.total;
+
+          // 1. Update dropdown trigger button
+          const dropLabel = document.getElementById('neat-dropdown-label');
+          const dropIcon = document.getElementById('neat-dropdown-icon');
+          const dropSelect = document.getElementById('select-captain-mode');
+          const menuVotedCount = document.getElementById('neat-menu-voted-count');
+
+          if (dropLabel) {
+            const winVotes = votes[winner] || 0;
+            dropLabel.textContent = `${formatCaptainModeLabel(winner)} (${winVotes}${totalVotes > 0 ? `/${totalVotes}` : ''})`;
+          }
+          if (dropIcon) {
+            dropIcon.textContent = formatCaptainModeIcon(winner);
+          }
+          if (dropSelect) {
+            dropSelect.value = winner;
+          }
+          if (menuVotedCount) {
+            menuVotedCount.textContent = `${totalVotes} of ${queuePlayers.length} Voted`;
+          }
+
+          // 2. Render options inside dropdown menu popover
+          const menuContainer = document.getElementById('neat-menu-options-container');
+          if (menuContainer) {
+            const options = [
+              { key: "vote", icon: "🗳️", title: "Vote on Captains", desc: "Elect 2 captains via lobby election" },
+              { key: "random", icon: "🎲", title: "Random Captains", desc: "System randomly picks 2 captains" },
+              { key: "top_mmr", icon: "⭐", title: "Top MMR Captains", desc: "Highest rated ELO players lead" }
+            ];
+
+            menuContainer.innerHTML = options.map(opt => {
+              const optVotes = votes[opt.key] || 0;
+              const pct = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : (opt.key === 'vote' ? 100 : 0);
+              const isSelected = (userVote === opt.key && playerInQueue);
+              const isLeading = (winner === opt.key && totalVotes > 0);
+
+              return `
+                <div class="neat-menu-option ${isSelected ? 'is-selected' : ''} ${isLeading ? 'is-leading' : ''}" onclick="castCaptainModeVote('${opt.key}')">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:16px;">${opt.icon}</span>
+                      <div>
+                        <strong style="color:#ffffff; font-size:12px;">${opt.title}</strong>
+                        <div style="font-size:10px; color:#94a3b8;">${opt.desc}</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;">
+                      <span class="gb-meta-tag accent" style="font-size:9.5px; background:${isLeading ? '#22c55e' : '#1e293b'}; color:#fff; border-color:${isLeading ? '#4ade80' : '#334155'};">
+                        ${optVotes} ${optVotes === 1 ? 'Vote' : 'Votes'} (${pct}%)
+                      </span>
+                    </div>
+                  </div>
+                  <div class="neat-mini-progress">
+                    <div class="neat-mini-progress-fill" style="width:${pct}%; background:${opt.key === 'vote' ? '#a855f7' : (opt.key === 'random' ? '#eab308' : '#38bdf8')};"></div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+                    <span style="font-size:10px; color:${isSelected ? '#22c55e' : '#64748b'}; font-weight:700;">
+                      ${isSelected ? '✓ YOUR ACTIVE VOTE' : (playerInQueue ? 'Click to vote' : 'Join queue to vote')}
+                    </span>
+                    ${isLeading ? '<span style="font-size:9px; color:#eab308; font-weight:800;">👑 CURRENT WINNER</span>' : ''}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+
+          // 3. Render NeatQueue Voting Strip
+          const stripVotesBadge = document.getElementById('strip-votes-cast-badge');
+          const stripLeaderCallout = document.getElementById('strip-leader-callout');
+          const cardsContainer = document.getElementById('neat-voting-cards-container');
+
+          if (stripVotesBadge) {
+            stripVotesBadge.textContent = `${totalVotes} of ${queuePlayers.length} Players Voted`;
+          }
+          if (stripLeaderCallout) {
+            const winVotes = votes[winner] || 0;
+            stripLeaderCallout.innerHTML = `👑 Leading: <strong style="color:#22c55e;">${formatCaptainModeIcon(winner)} ${formatCaptainModeLabel(winner)}</strong> (${winVotes} Vote${winVotes === 1 ? '' : 's'}) · Locks at 8/8`;
+          }
+
+          if (cardsContainer) {
+            const cards = [
+              { key: "vote", icon: "🗳️", title: "Vote on Captains", subtitle: "All 8 players vote for Captains", color: "#a855f7" },
+              { key: "random", icon: "🎲", title: "Random Captains", subtitle: "System rolls 2 random captains", color: "#eab308" },
+              { key: "top_mmr", icon: "⭐", title: "Top MMR Captains", subtitle: "Top 2 ELO combatants lead", color: "#38bdf8" }
+            ];
+
+            cardsContainer.innerHTML = cards.map(c => {
+              const optVotes = votes[c.key] || 0;
+              const pct = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : (c.key === 'vote' ? 100 : 0);
+              const isSelected = (userVote === c.key && playerInQueue);
+              const isLeading = (winner === c.key && totalVotes > 0);
+
+              return `
+                <div class="neat-voting-card ${isSelected ? 'active-user-vote' : ''} ${isLeading ? 'is-leader' : ''}" onclick="castCaptainModeVote('${c.key}')" title="Click to vote for ${c.title}">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:18px;">${c.icon}</span>
+                        <div>
+                          <strong style="color:#ffffff; font-size:13px; letter-spacing:0.3px;">${c.title}</strong>
+                          <div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">${c.subtitle}</div>
+                        </div>
+                      </div>
+                      <span class="gb-meta-tag" style="font-size:10px; font-weight:800; background:rgba(255,255,255,0.06); border-color:#2a364a; color:#fff;">
+                        ${optVotes} ${optVotes === 1 ? 'Vote' : 'Votes'}
+                      </span>
+                    </div>
+
+                    <div class="neat-vote-bar-track">
+                      <div class="neat-vote-bar-fill" style="width:${pct}%; background:${c.color};"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
+                      <span>${pct}% share</span>
+                      ${isLeading ? '<span style="color:#eab308; font-weight:800;">★ LEADER</span>' : ''}
+                    </div>
+                  </div>
+
+                  <div style="margin-top:4px;">
+                    <button type="button" class="btn-crimson" style="width:100%; justify-content:center; padding:6px; font-size:11px; background:${isSelected ? '#16a34a' : '#141c2b'}; border-color:${isSelected ? '#22c55e' : '#28364d'}; color:#ffffff; cursor:pointer;">
+                      ${isSelected ? '✓ YOUR VOTE' : (playerInQueue ? 'Vote For This' : 'Join Queue to Vote')}
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
 
         // Initialize Cross-Tab Broadcast Channel
         try {
@@ -1392,9 +1973,13 @@
           broadcastChannel.onmessage = function(event) {
             const data = event.data;
             if (!data) return;
-            if (data.type === "LOBBIES_UPDATE") {
-              fetchRemoteQueueState();
-              activeMatches = data.matches || [];
+            if (data.type === "LOBBIES_UPDATE" || data.type === "QUEUE_UPDATE") {
+              if (Array.isArray(data.players)) {
+                queuePlayers = data.players.map(p => syncPlayerElo(p));
+              }
+              if (Array.isArray(data.matches)) {
+                activeMatches = data.matches;
+              }
               if (activeMatch) {
                 activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
               } else if (activeMatches.length > 0) {
@@ -1403,15 +1988,14 @@
               renderQueueUI();
               renderActiveLobbiesBar();
               if (activeMatch && currentViewMode === "match") renderMatchUI();
-            } else if (data.type === "QUEUE_UPDATE") {
-              fetchRemoteQueueState();
-              renderQueueUI();
             } else if (data.type === "MATCH_STARTED") {
               if (data.match && !activeMatches.some(m => m.id === data.match.id)) {
                 activeMatches.push(data.match);
               }
               activeMatch = data.match;
-              fetchRemoteQueueState();
+              if (Array.isArray(data.players)) {
+                queuePlayers = data.players.map(p => syncPlayerElo(p));
+              }
               renderQueueUI();
               renderActiveLobbiesBar();
               renderMatchUI();
@@ -1534,19 +2118,18 @@
 
         // Persistence Helpers
         let realtimeChannel = null;
-        let remoteQueueRequest = null;
-        let confirmedQueue = null;
+        let isFetchingRemoteQueue = false;
 
         async function fetchRemoteQueueState() {
           const client = window.supabaseClient || window.dbClient;
-          if (!client) return null;
-          if (remoteQueueRequest) return remoteQueueRequest;
-          remoteQueueRequest = (async () => {
+          if (!client || isFetchingRemoteQueue) return null;
+          isFetchingRemoteQueue = true;
 
           try {
             let remotePlayers = null;
             let remoteMatches = null;
             let remoteStatus = null;
+            let remoteActiveMatchId = null;
 
             // 1. Try dedicated arena_8s_queues table
             try {
@@ -1556,73 +2139,93 @@
                 .eq('id', 'queue_default')
                 .maybeSingle();
 
-              if (!qErr && qData && Array.isArray(qData.players)) {
-                remotePlayers = qData.players;
-                confirmedQueue = JSON.stringify(qData.players);
+              if (!qErr && qData) {
+                remotePlayers = Array.isArray(qData.players) ? qData.players : [];
                 remoteStatus = qData.status;
+                remoteActiveMatchId = qData.active_match_id;
               }
             } catch(e) {}
 
-            // Match metadata remains separate; never use the legacy roster as queue truth.
-            try {
-              const { data } = await client.from('league_settings').select('status_text')
-                .eq('id', 'arena_8s_queue_state').maybeSingle();
-              if (data && data.status_text) remoteMatches = JSON.parse(data.status_text).matches;
-            } catch(e) {}
+            // 2. Fallback to league_settings ONLY if arena_8s_queues failed completely (null)
+            if (remotePlayers === null) {
+              try {
+                const { data: sData, error: sErr } = await client
+                  .from('league_settings')
+                  .select('status_text, status_state')
+                  .eq('id', 'arena_8s_queue_state')
+                  .maybeSingle();
+
+                if (!sErr && sData && sData.status_text) {
+                  const parsed = JSON.parse(sData.status_text);
+                  if (parsed && Array.isArray(parsed.players)) {
+                    remotePlayers = parsed.players;
+                    remoteStatus = sData.status_state;
+                    if (Array.isArray(parsed.matches)) {
+                      remoteMatches = parsed.matches;
+                    }
+                    if (parsed.active_match_id) {
+                      remoteActiveMatchId = parsed.active_match_id;
+                    }
+                  }
+                }
+              } catch(e) {}
+            }
 
             if (remotePlayers && Array.isArray(remotePlayers)) {
               const cleaned = remotePlayers
                 .filter(p => p && p.gamertag)
                 .map(p => syncPlayerElo(p));
 
-              // Compare current queue tags vs remote queue tags
-              const localTags = (queuePlayers || []).map(p => (p && p.gamertag ? p.gamertag.toLowerCase() : '')).sort().join(',');
-              const remoteTags = cleaned.map(p => (p && p.gamertag ? p.gamertag.toLowerCase() : '')).sort().join(',');
+              // Fingerprint includes gamertag, captain_vote, elo, and unique id to catch every vote or change
+              const localFP = JSON.stringify((queuePlayers || []).map(p => [p.gamertag, p.captain_vote || 'vote', p.elo, p.id]));
+              const remoteFP = JSON.stringify(cleaned.map(p => [p.gamertag, p.captain_vote || 'vote', p.elo, p.id]));
 
-              if (localTags !== remoteTags) {
+              let queueChanged = false;
+              if (localFP !== remoteFP) {
                 queuePlayers = cleaned;
                 try {
                   localStorage.setItem("frontline_arena_8s_queue", JSON.stringify(queuePlayers));
                 } catch(e) {}
-                renderQueueUI();
+                queueChanged = true;
               }
 
-              if (remoteMatches && remoteMatches.length > 0 && activeMatches.length === 0) {
-                activeMatches = remoteMatches;
-                try {
-                  localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
-                } catch(e) {}
+              // Check if remote matches updated
+              if (remoteMatches && Array.isArray(remoteMatches)) {
+                const localMFP = JSON.stringify((activeMatches || []).map(m => [m.id, m.status, m.pick_turn, m.current_pick_team, m.series_score, (m.team_a||[]).length, (m.team_b||[]).length]));
+                const remoteMFP = JSON.stringify(remoteMatches.map(m => [m.id, m.status, m.pick_turn, m.current_pick_team, m.series_score, (m.team_a||[]).length, (m.team_b||[]).length]));
+
+                if (localMFP !== remoteMFP) {
+                  activeMatches = remoteMatches;
+                  try {
+                    localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
+                  } catch(e) {}
+                  if (activeMatch) {
+                    activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
+                  } else if (remoteActiveMatchId) {
+                    activeMatch = activeMatches.find(m => m.id === remoteActiveMatchId) || activeMatches[0] || null;
+                  }
+                  renderActiveLobbiesBar();
+                  if (currentViewMode === "match" && activeMatch) {
+                    renderMatchUI();
+                  }
+                }
+              }
+
+              if (queueChanged) {
+                renderQueueUI();
                 renderActiveLobbiesBar();
               }
 
               return cleaned;
             }
           } catch(e) {
+          } finally {
+            isFetchingRemoteQueue = false;
           }
           return null;
-          })();
-          try { return await remoteQueueRequest; }
-          finally { remoteQueueRequest = null; }
         }
 
-        async function saveQueueState() {
-          // Only publish a roster after a conditional database write succeeds.
-          // Unrelated match/ELO saves must never replace a newer cloud roster.
-          const clientForQueue = window.supabaseClient || window.dbClient;
-          const desiredQueue = JSON.stringify(queuePlayers);
-          if (clientForQueue && desiredQueue !== confirmedQueue) {
-            if (confirmedQueue === null) { await fetchRemoteQueueState(); return false; }
-            const expectedQueue = confirmedQueue;
-            const { data, error } = await clientForQueue.from('arena_8s_queues')
-              .update({ players: queuePlayers, updated_at: new Date().toISOString() })
-              .eq('id', 'queue_default').eq('players', expectedQueue).select('players');
-            if (error || !data || data.length !== 1) {
-              await fetchRemoteQueueState();
-              return false;
-            }
-            confirmedQueue = desiredQueue;
-          }
-
+        function saveQueueState() {
           try {
             // Filter invalid entries & guarantee accurate ELO
             queuePlayers = (queuePlayers || [])
@@ -1637,27 +2240,34 @@
               localStorage.removeItem("frontline_arena_8s_active_match");
             }
 
+            const { winner, votes } = getWinningCaptainMode(queuePlayers);
+
+            const payloadData = {
+              players: queuePlayers,
+              matches: activeMatches,
+              activeMatchId: activeMatch ? activeMatch.id : null,
+              captainMode: winner,
+              captainVotes: votes,
+              timestamp: Date.now()
+            };
+
             // Cross-tab broadcast (same browser)
             if (broadcastChannel) {
-              broadcastChannel.postMessage({
-                type: "LOBBIES_UPDATE",
-                players: queuePlayers,
-                matches: activeMatches,
-                activeMatchId: activeMatch ? activeMatch.id : null
-              });
+              try {
+                broadcastChannel.postMessage({
+                  type: "LOBBIES_UPDATE",
+                  ...payloadData
+                });
+              } catch(e) {}
             }
 
-            // Cross-device Supabase Realtime broadcast
+            // Cross-device Supabase Realtime broadcast (all competitors & spectators)
             if (realtimeChannel && typeof realtimeChannel.send === 'function') {
               try {
                 realtimeChannel.send({
                   type: 'broadcast',
                   event: 'queue_update',
-                  payload: {
-                    players: queuePlayers,
-                    matches: activeMatches,
-                    activeMatchId: activeMatch ? activeMatch.id : null
-                  }
+                  payload: payloadData
                 });
               } catch(e) {}
             }
@@ -1676,9 +2286,9 @@
               };
 
               // 1. Dedicated arena_8s_queues table
-              // Queue roster already persisted with compare-and-swap above.
+              client.from('arena_8s_queues').upsert(queuePayload).then(() => {}).catch(() => {});
 
-              // 2. Reliable cloud key-value row in league_settings that always exists
+              // 2. Reliable cloud key-value row in league_settings
               client.from('league_settings').upsert({
                 id: 'arena_8s_queue_state',
                 status_state: queuePayload.status,
@@ -1686,13 +2296,14 @@
                   players: queuePlayers,
                   matches: activeMatches,
                   active_match_id: queuePayload.active_match_id,
+                  captain_mode: winner,
+                  captain_votes: votes,
                   updated_at: queuePayload.updated_at
                 }),
                 updated_at: queuePayload.updated_at
               }, { onConflict: 'id' }).then(() => {}).catch(() => {});
             }
           } catch(e) {}
-          return true;
         }
 
         function loadQueueState() {
@@ -1757,8 +2368,78 @@
         }
 
         // =====================================================================
-        // QUEUE ACTIONS
+        // QUEUE ACTIONS & NEATQUEUE VOTING MODAL
         // =====================================================================
+        window.openQueueVoteModal = function() {
+          const modal = document.getElementById('queue-vote-join-modal');
+          if (modal) modal.classList.add('open');
+        };
+
+        window.closeQueueVoteModal = function() {
+          const modal = document.getElementById('queue-vote-join-modal');
+          if (modal) modal.classList.remove('open');
+        };
+
+        window.confirmQueueWithVote = async function(mode) {
+          window.closeQueueVoteModal();
+          const validMode = (mode === "random" || mode === "top_mmr") ? mode : "vote";
+          try {
+            localStorage.setItem("frontline_arena_8s_captain_mode", validMode);
+          } catch(e) {}
+
+          const user = resolveCurrentPlayer();
+          if (!user || !user.gamertag) {
+            openJoinModal();
+            return;
+          }
+
+          // If user is currently playing in an active match, offer quick jump
+          const userMatch = activeMatches.find(m => isPlayerInMatch(user.gamertag, m));
+          if (userMatch) {
+            if (confirm(`You are currently playing in active Match #${userMatch.match_code}!\n\nWould you like to jump to your active match lobby?`)) {
+              switchToMatchView(userMatch.id);
+            }
+            return;
+          }
+
+          // Fetch freshest cloud queue before pushing to avoid overwriting other combatants
+          await fetchRemoteQueueState();
+
+          const userTag = user.gamertag.toLowerCase();
+          const existingPlayerIndex = queuePlayers.findIndex(p => p && p.gamertag && p.gamertag.toLowerCase() === userTag);
+
+          if (existingPlayerIndex >= 0) {
+            // Player is already in queue: switch their official captain vote!
+            queuePlayers[existingPlayerIndex].captain_vote = validMode;
+            playSynthesizedSound('join');
+            saveQueueState();
+            renderQueueUI();
+            addLobbyChatMessage("SYSTEM", `🗳️ ${user.gamertag} switched their Captain Vote to ${formatCaptainModeLabel(validMode)}.`);
+            return;
+          }
+
+          if (queuePlayers.length >= 8) {
+            alert("Queue is currently full for an active match.");
+            return;
+          }
+
+          const accurateElo = getPlayer8sElo(user.gamertag, user.elo || 1200);
+          queuePlayers.push({
+            ...user,
+            elo: accurateElo,
+            tier: getTierName(accurateElo),
+            captain_vote: validMode,
+            joined_at: new Date().toISOString()
+          });
+
+          playSynthesizedSound('join');
+          saveQueueState();
+          renderQueueUI();
+          addLobbyChatMessage("SYSTEM", `⚔️ ${user.gamertag} joined the queue (Voted: ${formatCaptainModeLabel(validMode)}). [${queuePlayers.length}/8]`);
+
+          checkQueueFull();
+        };
+
         window.handleJoinQueue = async function() {
           const user = resolveCurrentPlayer();
           if (!user || !user.gamertag) {
@@ -1775,41 +2456,20 @@
             return;
           }
 
-          await changeQueueMembership(user, true);
+          // Open the NeatQueue interactive vote modal so queuing is an actual vote
+          openQueueVoteModal();
         };
-
-        let membershipBusy = false;
-        async function changeQueueMembership(user, joining) {
-          if (membershipBusy) return;
-          membershipBusy = true;
-          try {
-            for (let attempt = 0; attempt < 5; attempt++) {
-              const latest = await fetchRemoteQueueState();
-              if (!latest || confirmedQueue === null) throw new Error("Cannot load the live queue. Please try again.");
-              const tag = user.gamertag.toLowerCase();
-              const present = latest.some(p => p.gamertag.toLowerCase() === tag);
-              if (present === joining) { renderQueueUI(); return; }
-              if (joining && latest.length >= 8) throw new Error("Queue is currently full.");
-              const elo = getPlayer8sElo(user.gamertag, user.elo || 1200);
-              queuePlayers = joining
-                ? [...latest, { ...user, elo, tier: getTierName(elo), joined_at: new Date().toISOString() }]
-                : latest.filter(p => p.gamertag.toLowerCase() !== tag);
-              if (await saveQueueState()) {
-                renderQueueUI();
-                if (joining) { playSynthesizedSound('join'); checkQueueFull(); }
-                return;
-              }
-            }
-            throw new Error("The queue changed while saving. Please try again.");
-          } catch(error) {
-            await fetchRemoteQueueState();
-            alert(error.message || "Unable to update the queue. Please try again.");
-          } finally { membershipBusy = false; }
-        }
 
         window.handleLeaveQueue = async function() {
           const user = resolveCurrentPlayer();
-          if (user && user.gamertag) await changeQueueMembership(user, false);
+          if (!user || !user.gamertag) return;
+
+          await fetchRemoteQueueState();
+
+          const userTag = user.gamertag.toLowerCase();
+          queuePlayers = queuePlayers.filter(p => p && p.gamertag && p.gamertag.toLowerCase() !== userTag);
+          saveQueueState();
+          renderQueueUI();
         };
 
         window.addBotCombatant = async function() {
@@ -1840,6 +2500,9 @@
           }
 
           const botElo = getPlayer8sElo(botToUse.gamertag, botToUse.elo);
+          const botVoteOptions = ['vote', 'vote', 'vote', 'random', 'top_mmr'];
+          const botVote = botVoteOptions[Math.floor(Math.random() * botVoteOptions.length)];
+
           const newBot = {
             id: "bot_" + Date.now() + "_" + Math.floor(Math.random()*1000),
             gamertag: botToUse.gamertag,
@@ -1849,6 +2512,7 @@
             elo: botElo,
             tier: getTierName(botElo),
             avatar_url: botToUse.avatar_url,
+            captain_vote: botVote,
             is_bot: true,
             joined_at: new Date().toISOString()
           };
@@ -1868,6 +2532,8 @@
           }
 
           await fetchRemoteQueueState();
+
+          const botVoteOptions = ['vote', 'vote', 'vote', 'random', 'top_mmr'];
 
           while (queuePlayers.length < 8) {
             const availableBots = BOT_COMBATANTS.filter(b => 
@@ -1889,6 +2555,7 @@
             }
 
             const candidateElo = getPlayer8sElo(candidate.gamertag, candidate.elo);
+            const botVote = botVoteOptions[Math.floor(Math.random() * botVoteOptions.length)];
             const botEntry = {
               id: "bot_" + Date.now() + "_" + queuePlayers.length,
               gamertag: candidate.gamertag,
@@ -1898,6 +2565,7 @@
               elo: candidateElo,
               tier: getTierName(candidateElo),
               avatar_url: candidate.avatar_url,
+              captain_vote: botVote,
               is_bot: true,
               joined_at: new Date().toISOString()
             };
@@ -1934,19 +2602,22 @@
           return [
             { game: 1, mode: "Hardpoint", map: rollMap("Hardpoint"), winner: null, score: null },
             { game: 2, mode: "Search & Destroy", map: rollMap("SearchAndDestroy"), winner: null, score: null },
-            { game: 3, mode: "Hijack", map: rollMap("Hijack"), winner: null, score: null },
-            { game: 4, mode: "Hardpoint", map: rollMap("Hardpoint"), winner: null, score: null },
-            { game: 5, mode: "Search & Destroy", map: rollMap("SearchAndDestroy"), winner: null, score: null }
+            { game: 3, mode: "Hijack", map: rollMap("Hijack"), winner: null, score: null }
           ];
         }
 
         // =====================================================================
         // NEATQUEUE MULTI-MATCH ENGINE & QUEUE POP
         // =====================================================================
-        async function checkQueueFull() {
+        function checkQueueFull() {
           if (queuePlayers.length >= 8) {
             playSynthesizedSound('pop');
             const players = queuePlayers.map(p => syncPlayerElo(p));
+
+            // Determine winning captain selection method voted by the 8 players
+            const { winner: chosenCaptainMode, votes: finalVotes } = getWinningCaptainMode(players);
+            captainSelectionMode = chosenCaptainMode;
+
             queuePlayers = []; // Queue resets immediately for the next lobby!
 
             const matchCode = "8S-" + Math.floor(1000 + Math.random() * 9000);
@@ -1954,11 +2625,12 @@
 
             let newMatch = null;
 
-            if (captainSelectionMode === "vote") {
+            if (chosenCaptainMode === "vote") {
               newMatch = {
                 id: newMatchId,
                 match_code: matchCode,
                 status: "voting_captains",
+                captain_mode: "vote",
                 format: "4v4 MW4 Variant",
                 all_players: players,
                 candidates: players.map(p => ({ ...p, votes: 0 })),
@@ -1966,7 +2638,11 @@
                 maps: generateDefaultSeriesMaps(),
                 series_score: { team_a: 0, team_b: 0 },
                 winning_team: null,
-                chat_messages: [{ sender: "SYSTEM", text: `🚀 Lobby #${matchCode} created! All 8 players cast votes to elect Team Alpha & Bravo captains.`, time: new Date().toLocaleTimeString() }],
+                chat_messages: [{
+                  sender: "SYSTEM",
+                  text: `🗳️ NeatQueue Vote Result: "Vote on Captains" won (${finalVotes.vote} votes vs ${finalVotes.random} Random, ${finalVotes.top_mmr} Top MMR)! All 8 players cast votes to elect Team Alpha & Bravo captains.`,
+                  time: new Date().toLocaleTimeString()
+                }],
                 created_at: new Date().toISOString()
               };
 
@@ -1983,7 +2659,7 @@
                   }
                 }
               }, 1500);
-            } else if (captainSelectionMode === "random") {
+            } else if (chosenCaptainMode === "random") {
               const shuffled = [...players].sort(() => Math.random() - 0.5);
               const capA = shuffled[0];
               const capB = shuffled[1];
@@ -1992,6 +2668,7 @@
                 id: newMatchId,
                 match_code: matchCode,
                 status: "drafting",
+                captain_mode: "random",
                 format: "4v4 MW4 Variant",
                 all_players: players,
                 captain_a: capA,
@@ -2008,7 +2685,11 @@
                 maps: generateDefaultSeriesMaps(),
                 series_score: { team_a: 0, team_b: 0 },
                 winning_team: null,
-                chat_messages: [{ sender: "SYSTEM", text: `🎲 Random Captains Selected: ${capA.gamertag} & ${capB.gamertag}! 1-2-2-1 Snake Draft is LIVE (${capA.gamertag} has 1st pick).`, time: new Date().toLocaleTimeString() }],
+                chat_messages: [{
+                  sender: "SYSTEM",
+                  text: `🎲 NeatQueue Vote Result: "Random Captains" won (${finalVotes.random} votes vs ${finalVotes.vote} Vote, ${finalVotes.top_mmr} Top MMR)! Captains: ${capA.gamertag} & ${capB.gamertag}! 1-2-2-1 Snake Draft is LIVE (${capA.gamertag} has 1st pick).`,
+                  time: new Date().toLocaleTimeString()
+                }],
                 created_at: new Date().toISOString()
               };
             } else {
@@ -2021,6 +2702,7 @@
                 id: newMatchId,
                 match_code: matchCode,
                 status: "drafting",
+                captain_mode: "top_mmr",
                 format: "4v4 MW4 Variant",
                 all_players: players,
                 captain_a: capA,
@@ -2037,7 +2719,11 @@
                 maps: generateDefaultSeriesMaps(),
                 series_score: { team_a: 0, team_b: 0 },
                 winning_team: null,
-                chat_messages: [{ sender: "SYSTEM", text: `⭐ Top MMR Captains Assigned: ${capA.gamertag} & ${capB.gamertag}! 1-2-2-1 Snake Draft is LIVE (${capA.gamertag} has 1st pick).`, time: new Date().toLocaleTimeString() }],
+                chat_messages: [{
+                  sender: "SYSTEM",
+                  text: `⭐ NeatQueue Vote Result: "Top MMR Captains" won (${finalVotes.top_mmr} votes vs ${finalVotes.vote} Vote, ${finalVotes.random} Random)! Captains: ${capA.gamertag} & ${capB.gamertag}! 1-2-2-1 Snake Draft is LIVE (${capA.gamertag} has 1st pick).`,
+                  time: new Date().toLocaleTimeString()
+                }],
                 created_at: new Date().toISOString()
               };
             }
@@ -2046,14 +2732,7 @@
             activeMatch = newMatch;
             currentViewMode = "match";
 
-            if (!await saveQueueState()) {
-              activeMatches = activeMatches.filter(m => m.id !== newMatchId);
-              activeMatch = activeMatches[0] || null;
-              currentViewMode = "queue";
-              renderQueueUI();
-              renderActiveLobbiesBar();
-              return;
-            }
+            saveQueueState();
             renderQueueUI();
             renderActiveLobbiesBar();
             renderMatchUI();
@@ -2420,7 +3099,7 @@
           if (match.team_a.length >= 4 && match.team_b.length >= 4) {
             match.status = "in_progress";
             match.draft_pool = [];
-            const liveMsg = `🎯 Draft complete for Match #${match.match_code}! 4v4 rosters finalized. Best-of-5 series is now LIVE.`;
+            const liveMsg = `🎯 Draft complete for Match #${match.match_code}! 4v4 rosters finalized. Best-of-3 series is now LIVE (First to 2 map wins).`;
             if (activeMatch && activeMatch.id === match.id) {
               addLobbyChatMessage("SYSTEM", liveMsg);
               playSynthesizedSound('victory');
@@ -2497,10 +3176,10 @@
           });
           activeMatch.series_score = { team_a: aScore, team_b: bScore };
 
-          if (aScore >= 3) {
+          if (aScore >= 2) {
             reportMatchWinner("team_a");
             return;
-          } else if (bScore >= 3) {
+          } else if (bScore >= 2) {
             reportMatchWinner("team_b");
             return;
           }
@@ -2622,6 +3301,9 @@
           const curUser = resolveCurrentPlayer();
           const queueCount = queuePlayers.length;
 
+          // Render NeatQueue Captain Voting Dropdown & Interactive Strip
+          renderCaptainVotingSystem();
+
           // Hero telemetry
           const heroCount = document.getElementById('hero-queue-status');
           if (heroCount) heroCount.textContent = `${queueCount} / 8 PLAYERS`;
@@ -2657,15 +3339,18 @@
           // Buttons Toggle
           const btnJoin = document.getElementById('btn-join-queue');
           const btnLeave = document.getElementById('btn-leave-queue');
+          const btnChangeVote = document.getElementById('btn-change-vote');
           const isUserInQueue = curUser && curUser.gamertag && queuePlayers.some(p => p && p.gamertag && p.gamertag.toLowerCase() === curUser.gamertag.toLowerCase());
 
           if (btnJoin && btnLeave) {
             if (isUserInQueue) {
               btnJoin.style.display = "none";
               btnLeave.style.display = "inline-flex";
+              if (btnChangeVote) btnChangeVote.style.display = "inline-flex";
             } else {
               btnJoin.style.display = "inline-flex";
               btnLeave.style.display = "none";
+              if (btnChangeVote) btnChangeVote.style.display = "none";
             }
           }
 
@@ -2687,6 +3372,7 @@
                 const isCur = curUser && curUser.gamertag && player && player.gamertag && player.gamertag.toLowerCase() === curUser.gamertag.toLowerCase();
                 const playerElo = player.elo;
                 const playerTier = player.tier || getTierName(playerElo);
+                const pVote = player.captain_vote || "vote";
                 slotCard.className = isCur ? "queue-slot-card filled current-user" : "queue-slot-card filled";
                 slotCard.innerHTML = `
                   <span class="slot-number-tag">SLOT #${i + 1}</span>
@@ -2702,8 +3388,11 @@
                   </div>
 
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top:1px solid #1a2333;">
-                    <div style="display:flex; gap:6px; align-items:center;">
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                       <span class="gb-meta-tag" style="font-size:9.5px; padding:2px 6px; background:#141c2b; border-color:#222f44;">${player.role || 'Flex'}</span>
+                      <span class="gb-meta-tag" style="font-size:9.5px; padding:2px 6px; background:rgba(168,85,247,0.12); border-color:#a855f7; color:#d8b4fe; ${isCur ? 'cursor:pointer; box-shadow:0 0 8px rgba(168,85,247,0.3);' : ''}" ${isCur ? 'onclick="event.stopPropagation(); openQueueVoteModal();"' : ''} title="${isCur ? 'Click to change your captain vote' : 'Voted for: ' + formatCaptainModeLabel(pVote)}">
+                        ${formatCaptainModeIcon(pVote)} ${formatCaptainModeLabel(pVote).replace(' Captains', '').replace(' on Captains', '')} ${isCur ? '▾' : ''}
+                      </span>
                       <span style="font-size:11px; color:#64748b;">${player.platform || 'PC'}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
@@ -3244,22 +3933,171 @@
 
           registerPlayerOnLeaderboard(localPlayer);
 
+          const captainVoteEl = document.getElementById('modal-input-captain-vote');
+          const captainVote = (captainVoteEl && captainVoteEl.value) ? captainVoteEl.value : 'vote';
+
           try {
             localStorage.setItem("frontline_arena_8s_profile", JSON.stringify(localPlayer));
             localStorage.setItem("frontline_arena_user", JSON.stringify(localPlayer));
+            localStorage.setItem("frontline_arena_8s_captain_mode", captainVote);
           } catch(err) {}
 
           closeJoinModal();
-          handleJoinQueue();
+          confirmQueueWithVote(captainVote);
         };
 
-        // Continuous Cloud Queue Heartbeat (polls every 3 seconds to keep all website visitors in sync)
+        // Continuous Cloud Queue Heartbeat (polls every 1.5 seconds for instant multi-user synchronization)
         let queueCloudHeartbeat = null;
         function startQueueCloudHeartbeat() {
           if (queueCloudHeartbeat) return;
           queueCloudHeartbeat = setInterval(() => {
             fetchRemoteQueueState();
-          }, 3000);
+          }, 1500);
+        }
+
+        // Realtime Connection State & UI Indicator
+        function updateRealtimeStatusIndicator(status) {
+          const badge = document.getElementById('neat-realtime-badge');
+          const text = document.getElementById('neat-realtime-text');
+          if (!badge || !text) return;
+
+          if (status === 'live') {
+            badge.style.background = 'rgba(34, 197, 94, 0.12)';
+            badge.style.borderColor = 'rgba(34, 197, 94, 0.35)';
+            badge.style.color = '#4ade80';
+            text.textContent = 'Live Realtime';
+          } else if (status === 'connecting') {
+            badge.style.background = 'rgba(234, 179, 8, 0.12)';
+            badge.style.borderColor = 'rgba(234, 179, 8, 0.35)';
+            badge.style.color = '#fde047';
+            text.textContent = 'Connecting...';
+          } else {
+            badge.style.background = 'rgba(148, 163, 184, 0.12)';
+            badge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+            badge.style.color = '#94a3b8';
+            text.textContent = 'Syncing Cloud';
+          }
+        }
+
+        function initArena8sRealtime() {
+          const client = window.supabaseClient || window.dbClient;
+          if (!client || typeof client.channel !== 'function') {
+            setTimeout(initArena8sRealtime, 600);
+            return;
+          }
+
+          if (realtimeChannel) {
+            try {
+              client.removeChannel(realtimeChannel);
+            } catch(e) {}
+          }
+
+          updateRealtimeStatusIndicator('connecting');
+
+          try {
+            realtimeChannel = client.channel('arena_8s_realtime', {
+              config: {
+                broadcast: { ack: false, self: false }
+              }
+            });
+
+            realtimeChannel
+              .on('broadcast', { event: 'queue_update' }, ({ payload }) => {
+                if (!payload) return;
+                let changed = false;
+
+                if (Array.isArray(payload.players)) {
+                  const cleaned = payload.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                  queuePlayers = cleaned;
+                  try {
+                    localStorage.setItem("frontline_arena_8s_queue", JSON.stringify(queuePlayers));
+                  } catch(e) {}
+                  changed = true;
+                }
+
+                if (Array.isArray(payload.matches)) {
+                  activeMatches = payload.matches;
+                  try {
+                    localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
+                  } catch(e) {}
+                  if (activeMatch) {
+                    activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
+                  } else if (payload.activeMatchId) {
+                    activeMatch = activeMatches.find(m => m.id === payload.activeMatchId) || activeMatches[0] || null;
+                  }
+                  renderActiveLobbiesBar();
+                  if (currentViewMode === "match" && activeMatch) {
+                    renderMatchUI();
+                  }
+                }
+
+                if (changed) {
+                  renderQueueUI();
+                  renderActiveLobbiesBar();
+                }
+              })
+              .on('broadcast', { event: 'match_action' }, ({ payload }) => {
+                if (!payload || !payload.match) return;
+                const incoming = payload.match;
+                const idx = activeMatches.findIndex(m => m.id === incoming.id);
+                if (idx >= 0) {
+                  activeMatches[idx] = incoming;
+                } else {
+                  activeMatches.push(incoming);
+                }
+                if (activeMatch && activeMatch.id === incoming.id) {
+                  activeMatch = incoming;
+                  renderMatchUI();
+                }
+                renderActiveLobbiesBar();
+              })
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_queues' }, (payload) => {
+                if (payload && payload.new && Array.isArray(payload.new.players)) {
+                  queuePlayers = payload.new.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                  renderQueueUI();
+                }
+              })
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'league_settings' }, (payload) => {
+                if (payload && payload.new && payload.new.id === 'arena_8s_queue_state' && payload.new.status_text) {
+                  try {
+                    const parsed = JSON.parse(payload.new.status_text);
+                    if (parsed && Array.isArray(parsed.players)) {
+                      queuePlayers = parsed.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                      renderQueueUI();
+                    }
+                  } catch(e) {}
+                }
+              })
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_leaderboard' }, (payload) => {
+                if (payload && payload.new && payload.new.gamertag) {
+                  const updatedPlayer = payload.new;
+                  const list = getLeaderboardList();
+                  const idx = list.findIndex(p => p.gamertag && p.gamertag.toLowerCase() === updatedPlayer.gamertag.toLowerCase());
+                  if (idx >= 0) {
+                    list[idx] = { ...list[idx], ...updatedPlayer, elo: Number(updatedPlayer.elo) || list[idx].elo };
+                  } else {
+                    list.push({ ...updatedPlayer, elo: Number(updatedPlayer.elo) || 1200 });
+                  }
+                  saveLeaderboardList(list);
+                  queuePlayers = (queuePlayers || []).filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                  renderQueueUI();
+                  loadLeaderboard();
+                }
+              })
+              .subscribe((status, err) => {
+                if (status === 'SUBSCRIBED') {
+                  isRealtimeSubscribed = true;
+                  updateRealtimeStatusIndicator('live');
+                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                  isRealtimeSubscribed = false;
+                  updateRealtimeStatusIndicator('syncing');
+                  clearTimeout(realtimeReconnectTimer);
+                  realtimeReconnectTimer = setTimeout(initArena8sRealtime, 2000);
+                }
+              });
+          } catch(e) {
+            updateRealtimeStatusIndicator('syncing');
+          }
         }
 
         async function syncWithSupabase() {
@@ -3327,58 +4165,7 @@
           startGlobal8sTicker();
           syncWithSupabase();
           startQueueCloudHeartbeat();
-
-          // Connect to Supabase Realtime if client is available
-          if (window.supabaseClient && typeof window.supabaseClient.channel === 'function') {
-            try {
-              realtimeChannel = window.supabaseClient.channel('arena_8s_realtime');
-              realtimeChannel
-                .on('broadcast', { event: 'queue_update' }, ({ payload }) => {
-                  if (payload && Array.isArray(payload.players)) {
-                    fetchRemoteQueueState();
-                    if (Array.isArray(payload.matches)) {
-                      activeMatches = payload.matches;
-                    }
-                    renderQueueUI();
-                    renderActiveLobbiesBar();
-                  }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_queues' }, (payload) => {
-                  if (payload && payload.new && Array.isArray(payload.new.players)) {
-                    fetchRemoteQueueState();
-                    renderQueueUI();
-                  }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'league_settings' }, (payload) => {
-                  if (payload && payload.new && payload.new.id === 'arena_8s_queue_state' && payload.new.status_text) {
-                    try {
-                      const parsed = JSON.parse(payload.new.status_text);
-                      if (parsed && Array.isArray(parsed.players)) {
-                        fetchRemoteQueueState();
-                        renderQueueUI();
-                      }
-                    } catch(e) {}
-                  }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_leaderboard' }, (payload) => {
-                  if (payload && payload.new && payload.new.gamertag) {
-                    const updatedPlayer = payload.new;
-                    const list = getLeaderboardList();
-                    const idx = list.findIndex(p => p.gamertag && p.gamertag.toLowerCase() === updatedPlayer.gamertag.toLowerCase());
-                    if (idx >= 0) {
-                      list[idx] = { ...list[idx], ...updatedPlayer, elo: Number(updatedPlayer.elo) || list[idx].elo };
-                    } else {
-                      list.push({ ...updatedPlayer, elo: Number(updatedPlayer.elo) || 1200 });
-                    }
-                    saveLeaderboardList(list);
-                    queuePlayers = (queuePlayers || []).filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
-                    renderQueueUI();
-                    loadLeaderboard();
-                  }
-                })
-                .subscribe();
-            } catch(e) {}
-          }
+          initArena8sRealtime();
         });
       })();
     </script>

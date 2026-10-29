@@ -13,8 +13,14 @@ CREATE TABLE IF NOT EXISTS public.arena_8s_queues (
     players JSONB NOT NULL DEFAULT '[]'::jsonb,
     max_players INT NOT NULL DEFAULT 8,
     active_match_id TEXT,
+    captain_mode TEXT NOT NULL DEFAULT 'vote', -- 'vote', 'random', 'top_mmr'
+    captain_votes JSONB NOT NULL DEFAULT '{"vote": 0, "random": 0, "top_mmr": 0}'::jsonb,
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Upgrade existing queue table if columns missing
+ALTER TABLE public.arena_8s_queues ADD COLUMN IF NOT EXISTS captain_mode TEXT DEFAULT 'vote';
+ALTER TABLE public.arena_8s_queues ADD COLUMN IF NOT EXISTS captain_votes JSONB DEFAULT '{"vote": 0, "random": 0, "top_mmr": 0}'::jsonb;
 
 -- Seed default queue record if missing
 INSERT INTO public.arena_8s_queues (id, queue_name, status, players, max_players)
@@ -107,4 +113,29 @@ CREATE POLICY "Allow public all arena_8s_matches" ON public.arena_8s_matches FOR
 ALTER TABLE public.arena_8s_leaderboard ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all arena_8s_leaderboard" ON public.arena_8s_leaderboard;
 CREATE POLICY "Allow public all arena_8s_leaderboard" ON public.arena_8s_leaderboard FOR ALL USING (true) WITH CHECK (true);
+
+-- ==============================================================================
+-- SUPABASE REALTIME REPLICATION & PUBLICATION SETUP
+-- ==============================================================================
+-- Ensures all clients receive instant websocket broadcasts when queue or matches change
+ALTER TABLE public.arena_8s_queues REPLICA IDENTITY FULL;
+ALTER TABLE public.arena_8s_matches REPLICA IDENTITY FULL;
+ALTER TABLE public.arena_8s_leaderboard REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.arena_8s_queues;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.arena_8s_matches;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.arena_8s_leaderboard;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+END $$;
+
 
