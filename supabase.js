@@ -13439,8 +13439,107 @@ window.LadderDB = {
   // ==============================================================================
   // ARENA PLAYER IDENTITY, PROFILE & MATCH HISTORY
   // ==============================================================================
+  getLeagueProfileInfo() {
+    let card = null;
+    let authUser = null;
+    let authUserFromStorage = null;
+
+    try {
+      card = JSON.parse(localStorage.getItem("frontline_league_player_card") || "null");
+    } catch (_) {}
+
+    try {
+      authUserFromStorage = JSON.parse(localStorage.getItem("frontline_league_auth_user") || "null");
+    } catch (_) {}
+
+    if (dbClient) {
+      try {
+        const sessionKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+        for (const k of sessionKeys) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.user) {
+              authUser = parsed.user;
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    const u = authUser || authUserFromStorage;
+    const meta = u?.user_metadata || {};
+    const discordInfo = (typeof window !== "undefined" && window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function" && u)
+      ? window.LeagueDB.getDiscordIdentity(u)
+      : null;
+
+    const gamertag = card?.gamertag || meta.gamertag || meta.username || meta.display_name || discordInfo?.globalName || discordInfo?.handle || "";
+    const activision_id = card?.activision || meta.activision_id || "";
+    const discord = card?.discord || meta.discord_name || meta.discord_username || discordInfo?.primaryName || "";
+    const avatar = card?.avatar || meta.avatar_url || discordInfo?.avatarUrl || "";
+
+    if (!gamertag && !activision_id && !discord && !avatar) {
+      return null;
+    }
+
+    return {
+      gamertag: gamertag || undefined,
+      activision_id: activision_id || undefined,
+      discord: discord || undefined,
+      avatar_url: avatar || undefined,
+      email: u?.email || card?._owner_email || undefined,
+      id: u?.id || card?._owner_id || undefined
+    };
+  },
+
+  syncPlayerWithLeague(player) {
+    if (!player) return player;
+    const league = this.getLeagueProfileInfo();
+    if (!league) return player;
+
+    let modified = false;
+
+    // Sync Gamertag with League
+    if (league.gamertag && league.gamertag !== player.gamertag) {
+      player.gamertag = league.gamertag;
+      player.username = league.gamertag;
+      modified = true;
+    }
+
+    // Sync Activision ID with League
+    if (league.activision_id && league.activision_id !== player.activision_id) {
+      player.activision_id = league.activision_id;
+      modified = true;
+    }
+
+    // Sync Discord with League
+    if (league.discord && league.discord !== player.discord) {
+      player.discord = league.discord;
+      modified = true;
+    }
+
+    // Sync Avatar Image with League (Arena profile uses League profile image)
+    if (league.avatar_url && league.avatar_url !== player.avatar_url) {
+      player.avatar_url = league.avatar_url;
+      modified = true;
+    }
+
+    // CRITICAL: DO NOT SYNC player.tag (Clan Tag) — Clan Tag remains specific to Arena!
+
+    if (modified) {
+      try {
+        localStorage.setItem("frontline_arena_user", JSON.stringify(player));
+      } catch (_) {}
+    }
+
+    return player;
+  },
+
   getCurrentPlayer() {
-    // 1. Check explicit Arena user storage first (Strict Arena Profile isolation)
+    let resolvedPlayer = null;
+
+    // 1. Check explicit Arena user storage first
     try {
       const explicit = localStorage.getItem("frontline_arena_user");
       if (explicit) {
@@ -13452,33 +13551,35 @@ window.LadderDB = {
             obj.username = "Invictus";
             obj.discord = obj.discord || "itzinvictus_";
           }
-          return obj;
+          resolvedPlayer = obj;
         }
       }
     } catch (e) {}
 
-    // 2. Check frontline_arena_auth_user
-    try {
-      const arenaAuth = localStorage.getItem("frontline_arena_auth_user");
-      if (arenaAuth) {
-        const obj = JSON.parse(arenaAuth);
-        if (obj && (obj.gamertag || obj.username || obj.user_metadata?.gamertag)) {
-          return {
-            id: obj.id || "arena_user",
-            gamertag: obj.gamertag || obj.username || obj.user_metadata?.gamertag || "Operative",
-            username: obj.gamertag || obj.username || obj.user_metadata?.gamertag || "Operative",
-            email: obj.email || "",
-            tag: obj.tag || "ARENA",
-            elo: obj.elo || 1200,
-            tier: obj.tier || "Specialist",
-            role: obj.role || "Flex",
-            region: obj.region || "NA East",
-            platform: obj.platform || "PC",
-            avatar_url: obj.avatar_url || obj.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80"
-          };
+    // 2. Check frontline_arena_auth_user if not resolved
+    if (!resolvedPlayer) {
+      try {
+        const arenaAuth = localStorage.getItem("frontline_arena_auth_user");
+        if (arenaAuth) {
+          const obj = JSON.parse(arenaAuth);
+          if (obj && (obj.gamertag || obj.username || obj.user_metadata?.gamertag)) {
+            resolvedPlayer = {
+              id: obj.id || "arena_user",
+              gamertag: obj.gamertag || obj.username || obj.user_metadata?.gamertag || "Operative",
+              username: obj.gamertag || obj.username || obj.user_metadata?.gamertag || "Operative",
+              email: obj.email || "",
+              tag: obj.tag || "ARENA",
+              elo: obj.elo || 1200,
+              tier: obj.tier || "Specialist",
+              role: obj.role || "Flex",
+              region: obj.region || "NA East",
+              platform: obj.platform || "PC",
+              avatar_url: obj.avatar_url || obj.user_metadata?.avatar_url || "/images/leaguelogo_1.png"
+            };
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
     // 3. Commissioner / Admin session check (only if explicitly authorized as commissioner)
     let authUser = null;
@@ -13509,50 +13610,30 @@ window.LadderDB = {
                     adminSessionEmail === "admin@frontlineleague.com" || 
                     (isAdminSession && !authUser?.app_metadata?.provider?.includes("discord"));
 
-    // If active session is Admin / Commissioner / Staff, build the official Dossier
-    if (isStaff) {
+    if (isStaff && (!resolvedPlayer || isStaff)) {
       const isSpencer = (cleanAuthEmail === "todd061496@gmail.com" || adminSessionEmail === "todd061496@gmail.com" || (!cleanAuthEmail && !adminSessionEmail));
       const isSavory = (authUser?.id === "00dd56dd-fbc4-4243-b733-ff0a7e4086a3" || cleanAuthEmail === "savory@frontlineleague.com" || adminSessionEmail === "savory@frontlineleague.com");
-      const staffGamertag = isSpencer ? "Commissioner Spencer" : (isSavory ? "Savory" : (authUser?.user_metadata?.gamertag || authUser?.user_metadata?.display_name || "League Staff"));
+      const staffGamertag = resolvedPlayer?.gamertag || (isSpencer ? "Commissioner Spencer" : (isSavory ? "Savory" : (authUser?.user_metadata?.gamertag || authUser?.user_metadata?.display_name || "League Staff")));
 
-      return {
-        id: authUser?.id || (isSpencer ? "admin_commissioner" : "admin_staff"),
+      resolvedPlayer = {
+        id: authUser?.id || resolvedPlayer?.id || (isSpencer ? "admin_commissioner" : "admin_staff"),
         gamertag: staffGamertag,
         username: staffGamertag,
-        email: cleanAuthEmail || adminSessionEmail || (isSpencer ? "todd061496@gmail.com" : "savory@frontlineleague.com"),
-        tag: isSpencer ? "COMM" : "STAFF",
+        email: cleanAuthEmail || adminSessionEmail || resolvedPlayer?.email || (isSpencer ? "todd061496@gmail.com" : "savory@frontlineleague.com"),
+        tag: resolvedPlayer?.tag || (isSpencer ? "COMM" : "STAFF"),
         team_name: isSpencer ? "Frontline League HQ" : "Frontline League Staff",
         elo: 1200,
         tier: isSpencer ? "Commissioner" : "Official",
         role: isSpencer ? "League Commissioner" : "League Staff",
-        avatar_url: "/images/leaguelogo_1.png",
-        discord: isSavory ? "Savory" : "—",
-        activision_id: isSpencer ? "Spencer#0001" : (isSavory ? "Savory#0001" : "Official#0001"),
+        avatar_url: resolvedPlayer?.avatar_url || "/images/leaguelogo_1.png",
+        discord: resolvedPlayer?.discord || (isSavory ? "Savory" : "—"),
+        activision_id: resolvedPlayer?.activision_id || (isSpencer ? "Spencer#0001" : (isSavory ? "Savory#0001" : "Official#0001")),
         is_staff: true,
         is_commissioner: isSpencer
       };
     }
 
-    // 2. Otherwise check explicit local storage for combatants
-    try {
-      const explicit = localStorage.getItem("frontline_arena_user");
-      if (explicit) {
-        const obj = JSON.parse(explicit);
-        // Only use explicit if no conflicting authUser or if it matches authUser
-        if (!authUser || (obj.id && obj.id === authUser.id) || (obj.email && cleanAuthEmail && obj.email.toLowerCase() === cleanAuthEmail)) {
-          const lower = String(obj.gamertag || "").toLowerCase().trim();
-          if (lower === "itzinvictus_" || lower === "itzinvictus" || lower === "invictus") {
-            obj.gamertag = "Invictus";
-            obj.username = "Invictus";
-            obj.discord = obj.discord || "itzinvictus_";
-          }
-          return obj;
-        }
-      }
-    } catch (e) {}
-
-    // 3. Fallback to Supabase player session
-    if (authUser) {
+    if (!resolvedPlayer && authUser) {
       const meta = authUser.user_metadata || {};
       const discordInfo = typeof window !== "undefined" && window.LeagueDB ? window.LeagueDB.getDiscordIdentity(authUser) : null;
       let card = null;
@@ -13566,7 +13647,7 @@ window.LadderDB = {
       } else if (lowerGamer === "itzinvictus_" || lowerGamer === "itzinvictus" || lowerGamer === "invictus") {
         gamertag = "Invictus";
       }
-      return {
+      resolvedPlayer = {
         id: authUser.id,
         gamertag: gamertag,
         username: gamertag,
@@ -13575,13 +13656,13 @@ window.LadderDB = {
         team_name: "Frontline Arena",
         elo: 1200,
         tier: "Specialist",
-        avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+        avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "/images/leaguelogo_1.png",
         discord: discordInfo?.primaryName || meta.discord_name || (gamertag === "Savory" ? "Savory" : (gamertag === "Invictus" ? "itzinvictus_" : `${gamertag.toLowerCase()}#0001`)),
         activision_id: meta.activision_id || `${gamertag}#1234567`
       };
     }
 
-    return null;
+    return this.syncPlayerWithLeague(resolvedPlayer);
   },
 
   getPlayerByGamertag(gamertag) {
@@ -13983,6 +14064,46 @@ window.LadderDB = {
       } catch (err) {
         console.warn("Supabase user metadata update notice:", err);
       }
+    }
+
+    // 6. Two-Way Sync to League Profile (Gamertag, Activision, Discord, and Avatar — keeping Clan Tag separate)
+    try {
+      let card = JSON.parse(localStorage.getItem("frontline_league_player_card") || "null");
+      if (card) {
+        card.gamertag = targetGamertag;
+        if (merged.activision_id) card.activision = merged.activision_id;
+        if (merged.discord) card.discord = merged.discord;
+        if (merged.avatar_url) card.avatar = merged.avatar_url;
+        localStorage.setItem("frontline_league_player_card", JSON.stringify(card));
+      }
+
+      let lAuth = JSON.parse(localStorage.getItem("frontline_league_auth_user") || "null");
+      if (lAuth) {
+        if (!lAuth.user_metadata) lAuth.user_metadata = {};
+        lAuth.user_metadata.gamertag = targetGamertag;
+        lAuth.user_metadata.username = targetGamertag;
+        lAuth.user_metadata.name = targetGamertag;
+        if (merged.activision_id) lAuth.user_metadata.activision_id = merged.activision_id;
+        if (merged.discord) lAuth.user_metadata.discord_name = merged.discord;
+        if (merged.avatar_url) lAuth.user_metadata.avatar_url = merged.avatar_url;
+        localStorage.setItem("frontline_league_auth_user", JSON.stringify(lAuth));
+      }
+
+      if (window.LeagueDB && typeof window.LeagueDB.completeCombatantDossier === "function") {
+        window.LeagueDB.completeCombatantDossier({
+          gamertag: targetGamertag,
+          activisionId: merged.activision_id,
+          discordName: merged.discord,
+          avatarUrl: merged.avatar_url
+        }).catch(() => {});
+      }
+
+      if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+        window.LeagueDB.updateLeagueNavProfile();
+      }
+      window.dispatchEvent(new CustomEvent("frontline_auth_changed"));
+    } catch (e) {
+      console.warn("League profile sync notice:", e);
     }
 
     this.updateArenaNavProfile();

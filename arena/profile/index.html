@@ -600,8 +600,51 @@
           </div>
 
           <div style="margin-bottom:20px;">
-            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Avatar Image URL</label>
-            <input type="url" id="edit-avatar-url" placeholder="https://..." style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;" />
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Combatant Profile Image</label>
+            <div style="display:flex; align-items:center; gap:14px; background:#080a0f; border:1px solid #232f42; padding:14px; border-radius:4px;">
+              <div style="position:relative; flex-shrink:0;">
+                <img
+                  id="edit-avatar-preview"
+                  src="/images/leaguelogo_1.png"
+                  alt="Avatar Preview"
+                  style="width:64px; height:64px; border-radius:6px; object-fit:cover; border:2px solid #ff1e44; box-shadow:0 0 14px rgba(255,30,68,0.35); background:#11120f; display:block;"
+                  onerror="this.src='/images/leaguelogo_1.png'"
+                />
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <label class="btn-crimson" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:12px; margin:0; border-radius:4px; font-weight:700;">
+                    <span>📷</span> <span>Choose Image File</span>
+                    <input
+                      type="file"
+                      id="edit-avatar-file-input"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      style="display:none;"
+                      onchange="handleArenaAvatarFileSelect(event)"
+                    />
+                  </label>
+                  <button type="button" onclick="setArenaAvatarPreset('/images/leaguelogo_1.png')" style="background:#151c28; border:1px solid #2d3c54; color:#cbd5e1; font-size:11px; padding:7px 10px; border-radius:4px; cursor:pointer;" title="Use official League Crest">
+                    🛡 League Logo
+                  </button>
+                  <button type="button" onclick="setArenaAvatarPreset('/images/arenalogo_1.png')" style="background:#151c28; border:1px solid #2d3c54; color:#cbd5e1; font-size:11px; padding:7px 10px; border-radius:4px; cursor:pointer;" title="Use official Arena Insignia">
+                    ⚔ Arena Logo
+                  </button>
+                </div>
+                <div id="edit-avatar-file-status" style="font-size:11px; color:#64748b;">
+                  Upload from your device (no URL needed)
+                </div>
+                <input
+                  type="text"
+                  id="edit-avatar-url"
+                  placeholder="Or paste image URL (optional)"
+                  oninput="handleArenaAvatarUrlInput(this.value)"
+                  style="width:100%; box-sizing:border-box; background:#0f141d; border:1px solid #1c2638; color:#94a3b8; padding:6px 10px; border-radius:4px; font-size:11px;"
+                />
+              </div>
+            </div>
+            <span style="font-size:11px; color:#64748b; margin-top:6px; display:block;">
+              Synced with your Frontline League profile. Changing your avatar updates both profiles automatically.
+            </span>
           </div>
 
           <div style="display:flex; justify-content:flex-end; gap:10px;">
@@ -873,7 +916,7 @@
             if (arenaLeagueBtn && isOwner) arenaLeagueBtn.style.display = "inline-flex";
             if (arenaAdminBtn) arenaAdminBtn.style.display = "inline-flex";
             if (isOwner) {
-              document.getElementById("user-clan-tag").textContent = "[COMM]";
+              document.getElementById("user-clan-tag").textContent = (player.tag ? `[${player.tag}]` : "[COMM]");
               document.getElementById("user-team-name").textContent = "Frontline League HQ";
               document.getElementById("user-tier-name").textContent = "★ COMMISSIONER";
               if (tierBadgeEl) {
@@ -1553,6 +1596,56 @@
         }
       }
 
+      function handleArenaAvatarFileSelect(event) {
+        const file = event.target?.files?.[0];
+        if (!file) return;
+
+        if (file.size > 8 * 1024 * 1024) {
+          alert("Selected image is too large. Please choose an image under 8 MB.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result;
+          const preview = document.getElementById("edit-avatar-preview");
+          const input = document.getElementById("edit-avatar-url");
+          const status = document.getElementById("edit-avatar-file-status");
+
+          if (preview) preview.src = dataUrl;
+          if (input) input.value = dataUrl;
+          if (status) {
+            status.textContent = "✓ Image selected: " + file.name;
+            status.style.color = "#4ade80";
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function setArenaAvatarPreset(presetUrl) {
+        const preview = document.getElementById("edit-avatar-preview");
+        const input = document.getElementById("edit-avatar-url");
+        const status = document.getElementById("edit-avatar-file-status");
+        if (preview) preview.src = presetUrl;
+        if (input) input.value = presetUrl;
+        if (status) {
+          status.textContent = "✓ Selected official preset";
+          status.style.color = "#4ade80";
+        }
+      }
+
+      function handleArenaAvatarUrlInput(val) {
+        const preview = document.getElementById("edit-avatar-preview");
+        const status = document.getElementById("edit-avatar-file-status");
+        if (preview && val.trim()) {
+          preview.src = val.trim();
+        }
+        if (status) {
+          status.textContent = val.trim() ? "Custom image URL specified" : "Upload from your device (no URL needed)";
+          status.style.color = "#64748b";
+        }
+      }
+
       // Edit Profile Modal Handlers
       function openEditProfileModal() {
         const player = window.LadderDB.getCurrentPlayer();
@@ -1564,7 +1657,17 @@
         document.getElementById("edit-clan-tag").value = player.tag || "";
         document.getElementById("edit-activision-id").value = player.activision_id || "";
         document.getElementById("edit-discord-tag").value = player.discord || "";
-        document.getElementById("edit-avatar-url").value = player.avatar_url || "";
+        
+        const avatarUrl = player.avatar_url || "/images/leaguelogo_1.png";
+        const avatarInput = document.getElementById("edit-avatar-url");
+        if (avatarInput) avatarInput.value = avatarUrl;
+        const avatarPreview = document.getElementById("edit-avatar-preview");
+        if (avatarPreview) avatarPreview.src = avatarUrl;
+        const fileStatus = document.getElementById("edit-avatar-file-status");
+        if (fileStatus) {
+          fileStatus.textContent = "Upload from your device (no URL needed)";
+          fileStatus.style.color = "#64748b";
+        }
 
         const modal = document.getElementById("modal-edit-profile");
         if (modal) modal.classList.add("active");
@@ -1581,7 +1684,7 @@
         const tag = document.getElementById("edit-clan-tag").value.trim().toUpperCase().slice(0, 5);
         const activision_id = document.getElementById("edit-activision-id").value.trim();
         const discord = document.getElementById("edit-discord-tag").value.trim();
-        const avatar_url = document.getElementById("edit-avatar-url").value.trim();
+        const avatar_url = document.getElementById("edit-avatar-url")?.value.trim() || document.getElementById("edit-avatar-preview")?.src || "/images/leaguelogo_1.png";
 
         if (!gamertag) {
           alert("Username / Gamertag is required.");

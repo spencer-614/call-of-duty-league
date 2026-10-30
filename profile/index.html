@@ -619,8 +619,57 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Avatar Image URL (Optional)</label>
-            <input type="url" id="edit-league-avatar" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="https://example.com/avatar.jpg" />
+            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:6px;">
+              Player Dossier Avatar / Emblem
+            </label>
+            <div style="display:flex; align-items:center; gap:16px; background:#0a0c08; border:1px solid #333d1c; padding:12px 14px; border-radius:4px;">
+              <div style="position:relative; flex-shrink:0;">
+                <img
+                  id="edit-league-avatar-preview"
+                  src="/images/leaguelogo_1.png"
+                  alt="Avatar Preview"
+                  style="width:68px; height:68px; border-radius:8px; object-fit:cover; border:2px solid var(--lime); box-shadow:0 0 16px rgba(213,244,91,0.3); background:#11120f; display:block;"
+                  onerror="this.src='/images/leaguelogo_1.png'"
+                />
+              </div>
+
+              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <label class="btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:12px; margin:0; border-radius:3px; font-weight:800;">
+                    <span>📷</span> <span>Choose Image File</span>
+                    <input
+                      type="file"
+                      id="edit-league-avatar-file-input"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      style="display:none;"
+                      onchange="handleLeagueAvatarFileSelect(event)"
+                    />
+                  </label>
+
+                  <button type="button" onclick="setLeagueAvatarPreset('/images/leaguelogo_1.png')" class="btn btn-outline" style="font-size:11px; padding:6px 10px; cursor:pointer;" title="Use official League Crest">
+                    🛡 League Logo
+                  </button>
+                  <button type="button" onclick="setLeagueAvatarPreset('/images/arenalogo_1.png')" class="btn btn-outline" style="font-size:11px; padding:6px 10px; cursor:pointer;" title="Use official Arena Insignia">
+                    ⚔ Arena Logo
+                  </button>
+                </div>
+
+                <div id="edit-league-avatar-file-status" style="font-size:11px; color:var(--muted);">
+                  Upload from your device (no URL needed)
+                </div>
+
+                <input
+                  type="text"
+                  id="edit-league-avatar"
+                  placeholder="Or paste an image URL (optional)"
+                  oninput="handleLeagueAvatarUrlInput(this.value)"
+                  style="width:100%; box-sizing:border-box; background:#050704; border:1px solid #283116; color:#cbd5e1; padding:6px 10px; border-radius:3px; font-size:11px;"
+                />
+              </div>
+            </div>
+            <span style="font-size:11px; color:var(--muted); margin-top:4px; display:block;">
+              Synced with your Frontline Arena profile. Changing your avatar updates both profiles automatically.
+            </span>
           </div>
 
           <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
@@ -1492,6 +1541,56 @@
         await loadLeagueProfile();
       };
 
+      function handleLeagueAvatarFileSelect(event) {
+        const file = event.target?.files?.[0];
+        if (!file) return;
+
+        if (file.size > 8 * 1024 * 1024) {
+          showProfileToast("Selected image exceeds 8 MB limit.", true);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result;
+          const preview = document.getElementById("edit-league-avatar-preview");
+          const input = document.getElementById("edit-league-avatar");
+          const status = document.getElementById("edit-league-avatar-file-status");
+
+          if (preview) preview.src = dataUrl;
+          if (input) input.value = dataUrl;
+          if (status) {
+            status.textContent = "✓ Image selected: " + file.name;
+            status.style.color = "var(--lime)";
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function setLeagueAvatarPreset(presetUrl) {
+        const preview = document.getElementById("edit-league-avatar-preview");
+        const input = document.getElementById("edit-league-avatar");
+        const status = document.getElementById("edit-league-avatar-file-status");
+        if (preview) preview.src = presetUrl;
+        if (input) input.value = presetUrl;
+        if (status) {
+          status.textContent = "✓ Selected official preset";
+          status.style.color = "var(--lime)";
+        }
+      }
+
+      function handleLeagueAvatarUrlInput(val) {
+        const preview = document.getElementById("edit-league-avatar-preview");
+        const status = document.getElementById("edit-league-avatar-file-status");
+        if (preview && val.trim()) {
+          preview.src = val.trim();
+        }
+        if (status) {
+          status.textContent = val.trim() ? "Custom image URL specified" : "Upload from your device (no URL needed)";
+          status.style.color = "var(--muted)";
+        }
+      }
+
       async function openLeagueEditModal() {
         const modal = document.getElementById('modal-league-edit');
         if (!modal) return;
@@ -1570,8 +1669,16 @@
         if (document.getElementById('edit-league-input')) {
           document.getElementById('edit-league-input').value = p.input || 'Controller';
         }
+        const avatarVal = p.avatar || '/images/leaguelogo_1.png';
         if (document.getElementById('edit-league-avatar')) {
           document.getElementById('edit-league-avatar').value = p.avatar || '';
+        }
+        if (document.getElementById('edit-league-avatar-preview')) {
+          document.getElementById('edit-league-avatar-preview').src = avatarVal;
+        }
+        if (document.getElementById('edit-league-avatar-file-status')) {
+          document.getElementById('edit-league-avatar-file-status').textContent = "Upload from your device (no URL needed)";
+          document.getElementById('edit-league-avatar-file-status').style.color = "var(--muted)";
         }
 
         modal.style.display = 'flex';
@@ -1602,7 +1709,7 @@
         const platform = document.getElementById('edit-league-platform')?.value || 'PC';
         const region = document.getElementById('edit-league-region')?.value || 'NA East';
         const inputDevice = document.getElementById('edit-league-input')?.value || 'Controller';
-        const avatarUrl = document.getElementById('edit-league-avatar')?.value.trim() || '';
+        const avatarUrl = document.getElementById('edit-league-avatar')?.value.trim() || document.getElementById('edit-league-avatar-preview')?.src || '';
 
         const currentCard = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {};
         const isStaff = checkIsStaffOrCommissioner(authUser, currentCard);
@@ -1678,6 +1785,69 @@
             }
           }
         } catch (err) {}
+
+        // Two-way synchronization with Arena Profile (gamertag, activision, discord, and avatar — keeping clan tag separate)
+        try {
+          let arenaUser = JSON.parse(localStorage.getItem('frontline_arena_user') || 'null');
+          if (!arenaUser) {
+            arenaUser = {
+              id: authUser?.id || ('usr_' + Date.now()),
+              elo: 1200,
+              tier: isStaff ? 'Commissioner' : 'Specialist',
+              tag: isStaff ? 'COMM' : 'ARENA',
+              team_name: isStaff ? 'Frontline League HQ' : 'Frontline Arena',
+              created_at: new Date().toISOString()
+            };
+          }
+          arenaUser.gamertag = gamertag;
+          arenaUser.username = gamertag;
+          arenaUser.activision_id = activision;
+          arenaUser.discord = discord;
+          if (p.avatar) arenaUser.avatar_url = p.avatar;
+          if (authUser?.email) arenaUser.email = authUser.email;
+          if (isStaff) {
+            arenaUser.is_staff = true;
+            arenaUser.is_commissioner = true;
+          }
+          // Do not touch arenaUser.tag if already set
+          if (!arenaUser.tag) arenaUser.tag = (isStaff ? 'COMM' : 'ARENA');
+
+          localStorage.setItem('frontline_arena_user', JSON.stringify(arenaUser));
+
+          let arenaAuth = JSON.parse(localStorage.getItem('frontline_arena_auth_user') || 'null');
+          if (arenaAuth) {
+            arenaAuth.gamertag = gamertag;
+            arenaAuth.username = gamertag;
+            arenaAuth.activision_id = activision;
+            arenaAuth.discord = discord;
+            if (p.avatar) arenaAuth.avatar_url = p.avatar;
+            localStorage.setItem('frontline_arena_auth_user', JSON.stringify(arenaAuth));
+          }
+
+          let accounts = JSON.parse(localStorage.getItem('frontline_arena_registered_accounts') || '[]');
+          const idx = accounts.findIndex(a => 
+            (arenaUser.id && a.id === arenaUser.id) || 
+            (a.gamertag && a.gamertag.toLowerCase() === gamertag.toLowerCase())
+          );
+          if (idx >= 0) {
+            accounts[idx] = { 
+              ...accounts[idx], 
+              gamertag, 
+              username: gamertag, 
+              activision_id: activision, 
+              discord, 
+              avatar_url: p.avatar || accounts[idx].avatar_url 
+            };
+            localStorage.setItem('frontline_arena_registered_accounts', JSON.stringify(accounts));
+          }
+
+          if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === 'function') {
+            window.LadderDB.updateArenaNavProfile();
+          }
+          window.dispatchEvent(new CustomEvent('frontline_arena_auth_changed', { detail: { player: arenaUser } }));
+        } catch (arenaSyncErr) {
+          console.warn('Arena profile sync notice:', arenaSyncErr);
+        }
 
         if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
           window.LeagueDB.updateLeagueNavProfile();
