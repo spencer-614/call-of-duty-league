@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#080a0f" />
         <link rel="icon" type="image/png" href="/images/arenalogo_1.png" />
     <link rel="apple-touch-icon" href="/images/arenalogo_1.png" />
-    <link rel="stylesheet" href="/styles.css?v=2" />
+    <link rel="stylesheet" href="/styles.css?v=3" />
     <style>
       .btn-profile-signout {
         display: inline-flex;
@@ -49,6 +49,62 @@
         color: #d5f45b !important;
         border: 1px solid #d5f45b !important;
         box-shadow: 0 0 10px rgba(213, 244, 91, 0.25) !important;
+      }
+
+      .profile-teams-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+        gap: 16px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .profile-team-card {
+        background: #0d121c;
+        border: 1px solid #1c2638;
+        border-radius: 6px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+        position: relative;
+        box-sizing: border-box;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .profile-team-card.has-team {
+        border-left: 4px solid #ff1e44;
+      }
+      .profile-team-card.empty-team {
+        border: 1px dashed #232f42;
+        background: #080b11;
+      }
+      .team-card-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        margin-top: 14px !important;
+        padding-top: 12px !important;
+        border-top: 1px solid #182232 !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+      }
+      .team-card-actions > * {
+        box-sizing: border-box !important;
+        min-width: 0 !important;
+        text-align: center !important;
+        justify-content: center !important;
+      }
+      .team-card-actions .btn-team-roster,
+      .team-card-actions > .btn-crimson:first-child:not(:only-child) {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+      }
+      .team-card-actions > :only-child {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
       }
     </style>
     <title>Frontline Arena — Combatant Profile &amp; Match History</title>
@@ -991,7 +1047,7 @@
 
         if (!tourneyTeams || tourneyTeams.length === 0) {
           container.innerHTML = `
-            <div class="profile-team-card empty-team" style="grid-column: 1 / -1; max-width: 100%;">
+            <div class="profile-team-card empty-team" style="grid-column: 1 / -1; max-width: 100%; overflow: hidden; box-sizing: border-box;">
               <div class="team-card-ladder-bar">
                 <span class="team-card-ladder-name" style="color:#94a3b8;">
                   <span>⚔</span> <span>Tournament Circuit</span>
@@ -1020,7 +1076,7 @@
           const dateStr = ts.registered_at ? new Date(ts.registered_at).toLocaleDateString() : "Recent";
 
           return `
-            <div class="profile-team-card has-team" style="border-left: 4px solid #38bdf8; background:#121824; border-color:#2a3d54;">
+            <div class="profile-team-card has-team" style="border-left: 4px solid #38bdf8; background:#121824; border-color:#2a3d54; overflow: hidden; box-sizing: border-box; margin-bottom: 12px;">
               <div class="team-card-ladder-bar" style="background:#172233; padding:10px 14px;">
                 <span class="team-card-ladder-name" style="color:#38bdf8; font-weight:800; font-size:12.5px; letter-spacing:0.5px;">
                   <span style="font-size:14px;">⚔</span> <span>${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</span>
@@ -1094,7 +1150,7 @@
             const tier = window.LadderDB.getTier ? window.LadderDB.getTier(team.elo || 1200) : { name: "Specialist", icon: "🎯" };
             const isPrimary = tIdx === 0;
             cardsHtml += `
-              <div class="profile-team-card has-team" style="margin-bottom:12px;">
+              <div class="profile-team-card has-team" style="margin-bottom:12px; overflow:hidden; box-sizing:border-box;">
                 <div class="team-card-ladder-bar">
                   <span class="team-card-ladder-name">
                     <span>${ladder.icon}</span> <span>${ladder.ladder_name} ${userTeams.length > 1 ? `(Team ${tIdx + 1})` : ''}</span>
@@ -1105,9 +1161,9 @@
                 </div>
                 <div class="team-card-content team-clickable" onclick="openTeamRosterModal('${team.id}')" title="Click to view squad roster &amp; player stats">
                   <img src="${team.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="team-card-avatar" />
-                  <div style="flex:1;">
+                  <div style="flex:1; min-width:0; overflow:hidden;">
                     <div class="team-card-role-badge">${team.role || 'Captain / Starter'}</div>
-                    <h4 class="team-card-title team-link-hover">[${team.tag || 'TAG'}] ${team.name}</h4>
+                    <h4 class="team-card-title team-link-hover" style="word-break:break-word; overflow-wrap:break-word;">[${team.tag || 'TAG'}] ${team.name}</h4>
                     <div style="font-size:12px; color:#ff1e44; font-weight:800;">
                       ${team.elo || 1200} ELO • ${tier.name}
                     </div>
@@ -1119,13 +1175,13 @@
                   <span><strong>Streak:</strong> ${team.streak || 0}W</span>
                 </div>
                 <div class="team-card-actions">
-                  <button type="button" class="btn-crimson" onclick="openTeamRosterModal('${team.id}')" style="padding:8px 10px; font-size:11px; flex:1; justify-content:center;">
+                  <button type="button" class="btn-crimson btn-team-roster" onclick="openTeamRosterModal('${team.id}')" style="padding:9px 12px; font-size:11px; justify-content:center; width:100%; white-space:nowrap; grid-column:1 / -1; box-sizing:border-box;">
                     <span>👥</span> <span>Roster &amp; Stats</span>
                   </button>
-                  <a href="/ladders/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 10px; font-size:11px; text-decoration:none; flex:1; justify-content:center;">
+                  <a href="/ladders/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 6px; font-size:11px; text-decoration:none; justify-content:center; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;">
                     <span>⚔</span> <span>Ladder</span>
                   </a>
-                  <a href="/match-finder/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 10px; font-size:11px; text-decoration:none; flex:1; justify-content:center;">
+                  <a href="/match-finder/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 6px; font-size:11px; text-decoration:none; justify-content:center; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;">
                     <span>🎯</span> <span>Matches</span>
                   </a>
                 </div>
@@ -1137,7 +1193,7 @@
           if (userTeams.length < 2) {
             const slotNum = userTeams.length + 1;
             cardsHtml += `
-              <div class="profile-team-card empty-team" style="margin-bottom:12px;">
+              <div class="profile-team-card empty-team" style="margin-bottom:12px; overflow:hidden; box-sizing:border-box;">
                 <div class="team-card-ladder-bar">
                   <span class="team-card-ladder-name" style="color:#94a3b8;">
                     <span>${ladder.icon}</span> <span>${ladder.ladder_name} (Slot ${slotNum}/2)</span>
