@@ -141,19 +141,32 @@ header .wrap {
   text-decoration: none;
   color: var(--text);
   flex-shrink: 0;
+  cursor: default;
+}
+
+.brand-logo-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   cursor: pointer;
-  transition: transform 0.22s ease;
+  flex-shrink: 0;
+  line-height: 0;
+  border-radius: 50%;
+  outline: none;
 }
 
-.brand:hover {
-  transform: translateY(-1px);
+.brand-logo-link:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 4px;
 }
 
-.brand::before {
+.brand-logo-link::before {
   content: "";
   position: absolute;
   top: 50%;
-  left: 34px;
+  left: 50%;
   transform: translate(-50%, -50%);
   width: 86px;
   height: 86px;
@@ -165,7 +178,7 @@ header .wrap {
   transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.brand:hover::before {
+.brand-logo-link:hover::before {
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1.25) !important;
 }
@@ -185,7 +198,7 @@ header .wrap {
   will-change: transform, filter;
 }
 
-.brand:hover .brand-logo,
+.brand-logo-link:hover .brand-logo,
 .brand-logo:hover {
   transform: scale(1.08) !important;
   filter: drop-shadow(0 0 10px rgba(213, 244, 91, 0.95))
@@ -1826,8 +1839,7 @@ textarea.form-control {
   .brand {
     gap: 10px;
   }
-  .brand::before {
-    left: 26px;
+  .brand-logo-link::before {
     width: 68px;
     height: 68px;
   }
@@ -1957,6 +1969,10 @@ textarea.form-control {
   .brand {
     gap: 8px;
   }
+  .brand-logo-link::before {
+    width: 58px;
+    height: 58px;
+  }
   .brand-logo {
     width: 42px;
     height: 42px;
@@ -2009,6 +2025,10 @@ textarea.form-control {
 }
 
 @media (max-width: 380px) {
+  .brand-logo-link::before {
+    width: 50px;
+    height: 50px;
+  }
   .brand-logo {
     width: 38px;
     height: 38px;
