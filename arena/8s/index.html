@@ -2477,6 +2477,30 @@
               // 1. Dedicated arena_8s_queues table
               client.from('arena_8s_queues').upsert(queuePayload).then(() => {}).catch(() => {});
 
+              // 1b. Dedicated arena_8s_matches table (persists active draft & match sessions)
+              if (activeMatch) {
+                client.from('arena_8s_matches').upsert({
+                  id: activeMatch.id,
+                  match_code: activeMatch.match_code,
+                  status: activeMatch.status || 'drafting',
+                  format: activeMatch.format || '4v4 MW4 Variant',
+                  draft_mode: activeMatch.draft_mode || 'captains',
+                  captain_a: activeMatch.captain_a,
+                  captain_b: activeMatch.captain_b,
+                  team_a: activeMatch.team_a || [],
+                  team_b: activeMatch.team_b || [],
+                  draft_pool: activeMatch.draft_pool || [],
+                  current_pick_team: activeMatch.current_pick_team,
+                  pick_turn: activeMatch.pick_turn,
+                  coin_flip_winner: activeMatch.coin_flip_winner,
+                  host_player: activeMatch.host_player,
+                  maps: activeMatch.maps || [],
+                  series_score: activeMatch.series_score || { team_a: 0, team_b: 0 },
+                  winning_team: activeMatch.winning_team,
+                  chat_messages: activeMatch.chat_messages || []
+                }).then(() => {}).catch(() => {});
+              }
+
               // 2. Reliable cloud key-value row in league_settings
               client.from('league_settings').upsert({
                 id: 'arena_8s_queue_state',
@@ -4809,7 +4833,16 @@
                   try {
                     localStorage.setItem("frontline_arena_8s_active_matches", JSON.stringify(activeMatches));
                   } catch(e) {}
-                  if (activeMatch) {
+
+                  const curUser = resolveCurrentPlayer();
+                  const userTag = curUser && curUser.gamertag ? curUser.gamertag.toLowerCase() : null;
+                  const myMatch = userTag ? activeMatches.find(m => isPlayerInMatch(userTag, m)) : null;
+
+                  if (myMatch && currentViewMode === "queue") {
+                    activeMatch = myMatch;
+                    currentViewMode = "match";
+                    try { playSynthesizedSound('pop'); } catch(_) {}
+                  } else if (activeMatch) {
                     activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
                   } else if (payload.activeMatchId) {
                     activeMatch = activeMatches.find(m => m.id === payload.activeMatchId) || activeMatches[0] || null;
@@ -4841,9 +4874,30 @@
                 renderActiveLobbiesBar();
               })
               .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_queues' }, (payload) => {
-                if (payload && payload.new && Array.isArray(payload.new.players)) {
-                  queuePlayers = payload.new.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
-                  renderQueueUI();
+                if (payload && payload.new) {
+                  if (Array.isArray(payload.new.players)) {
+                    queuePlayers = payload.new.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
+                    renderQueueUI();
+                  }
+                  if (payload.new.active_match_id) {
+                    fetchRemoteQueueState();
+                  }
+                }
+              })
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_8s_matches' }, (payload) => {
+                if (payload && payload.new && payload.new.id) {
+                  const incoming = payload.new;
+                  const idx = activeMatches.findIndex(m => m.id === incoming.id);
+                  if (idx >= 0) {
+                    activeMatches[idx] = incoming;
+                  } else {
+                    activeMatches.push(incoming);
+                  }
+                  if (activeMatch && activeMatch.id === incoming.id) {
+                    activeMatch = incoming;
+                    renderMatchUI();
+                  }
+                  renderActiveLobbiesBar();
                 }
               })
               .on('postgres_changes', { event: '*', schema: 'public', table: 'league_settings' }, (payload) => {
@@ -4853,6 +4907,18 @@
                     if (parsed && Array.isArray(parsed.players)) {
                       queuePlayers = parsed.players.filter(p => p && p.gamertag).map(p => syncPlayerElo(p));
                       renderQueueUI();
+                    }
+                    if (parsed && Array.isArray(parsed.matches)) {
+                      activeMatches = parsed.matches;
+                      if (activeMatch) {
+                        activeMatch = activeMatches.find(m => m.id === activeMatch.id) || activeMatches[0] || null;
+                      } else if (parsed.active_match_id) {
+                        activeMatch = activeMatches.find(m => m.id === parsed.active_match_id) || activeMatches[0] || null;
+                      }
+                      renderActiveLobbiesBar();
+                      if (currentViewMode === "match" && activeMatch) {
+                        renderMatchUI();
+                      }
                     }
                   } catch(e) {}
                 }
