@@ -626,7 +626,7 @@
 
         <!-- Week Buttons -->
         <div class="weeks-filter-bar" id="weeks-filter-bar">
-          <button type="button" class="btn-week-filter active" data-week="all">All (8 Weeks)</button>
+          <button type="button" class="btn-week-filter active" data-week="all">All Weeks</button>
           <button type="button" class="btn-week-filter pill-preseason" data-week="1">Preseason W1</button>
           <button type="button" class="btn-week-filter pill-preseason" data-week="2">Preseason W2</button>
           <button type="button" class="btn-week-filter" data-week="3">Regular W1</button>
@@ -776,7 +776,7 @@
             container.innerHTML = `
               <div class="empty-schedule">
                 <h4>No Matches Found</h4>
-                <p>No matches match the selected week or filters. Try selecting "All (8 Weeks)" or changing filter settings.</p>
+                <p>No matches match the selected week or filters. Try selecting "All Weeks" or changing filter settings.</p>
               </div>
             `;
             return;
@@ -799,8 +799,8 @@
           sortedWeeks.forEach(weekNum => {
             const matches = weeksMap.get(weekNum);
             const isPreseason = weekNum <= 2;
-            const weekLabel = isPreseason 
-              ? `Preseason Week ${weekNum}` 
+            const weekLabel = weekNum>8 ? `Playoffs Round ${weekNum-8}` : isPreseason
+              ? `Preseason Week ${weekNum}`
               : `Regular Season Week ${weekNum - 2}`;
             const headerClass = isPreseason ? "preseason-header" : "";
             const badgeClass = isPreseason ? "preseason" : "regular";

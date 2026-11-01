@@ -53,6 +53,16 @@ app.use((req, res, next) => {
   next();
 });
 
+const leagueApi=require("./league/api.cjs")(pool);
+app.use("/api/league",leagueApi);
+app.use("/api/data/:table",(req,res,next)=>{
+ const guarded=new Set(['teams','players','scheduled_matches','player_map_stats','staff_roles']);
+ if(req.method!=='GET' && guarded.has(req.params.table))return leagueApi.requireWebsiteStaff(req,res,next);
+ // Player registrations must use Supabase auth + its ownership checks, not this privileged bridge.
+ if(req.method!=='GET' && req.params.table==='league_signups')return res.status(403).json({error:'Use the authenticated website registration form'});
+ next();
+});
+
 // Root URL redirect -> Redirects to /home/ so URL says /home in the browser
 app.get(["/", "/index.html"], (req, res) => res.redirect(301, "/home/"));
 

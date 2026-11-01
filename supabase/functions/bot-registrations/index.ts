@@ -47,7 +47,7 @@ serve(async (req: Request) => {
       ? authHeader.replace(/^Bearer\s+/i, "").trim() 
       : (customKey ? customKey.trim() : null);
 
-    if (expectedSecret && providedSecret !== expectedSecret) {
+    if (!expectedSecret || providedSecret !== expectedSecret) {
       return new Response(
         JSON.stringify({ 
           error: "Unauthorized: Invalid or missing bot API key.",

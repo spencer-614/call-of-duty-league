@@ -542,6 +542,10 @@ window.LeagueDB = {
     if (!teams || teams.length === 0) {
       teams = (MOCK_DATA.teams || []).slice();
     }
+    if(dbClient){
+      const {data:records,error}=await dbClient.from('fcl_public_standings').select('*');
+      if(!error && records?.length){const byId=new Map(records.map(r=>[String(r.team_id),r]));teams=teams.map(t=>{const r=byId.get(String(t.id));return r?{...t,wins:r.wins,losses:r.losses,points:r.wins*10}: {...t,wins:0,losses:0,points:0};});}
+    }
     // Filter out any bogus 'FA' or 'Free Agent' dummy teams (Free Agents are individual players, not a franchise team)
     teams = teams.filter(t => {
       const name = (t.name || '').toLowerCase().trim();
@@ -562,7 +566,7 @@ window.LeagueDB = {
         return { ...t, division: div };
       });
     } catch(e) {}
-    return teams;
+    return teams.sort((a,b)=>(Number(b.points)||0)-(Number(a.points)||0)||(Number(b.wins)||0)-(Number(a.wins)||0));
   },
 
   // 1b. Fetch Teams with their Roster of Players
@@ -583,7 +587,8 @@ window.LeagueDB = {
           try {
             localStorage.setItem("frontline_teams_with_players_cache", JSON.stringify(result));
           } catch (_) {}
-          return result;
+          const standings=await this.getStandings();const byId=new Map(standings.map(t=>[String(t.id),t]));
+          return result.map(t=>({...t,...byId.get(String(t.id)),players:t.players}));
         }
         if (error) console.warn("Supabase fetch returned error, using fallback:", error);
       } catch (err) {
@@ -618,7 +623,7 @@ window.LeagueDB = {
 
         if (!error && Array.isArray(data) && data.length > 0) {
           list = data.map(p => {
-            const isFreeAgent = !p.teams || (p.team_name && (p.team_name.toLowerCase() === 'free agent' || p.team_name.toLowerCase() === 'unassigned' || p.team_name.toLowerCase() === 'fa')) || p.status === 'Free Agent' || p.teams?.name === 'FA' || p.teams?.name?.toLowerCase() === 'free agent';
+            const isFreeAgent = !p.team_id || Number(p.team_id)===0 || !p.teams || p.teams?.name === 'FA' || p.teams?.name?.toLowerCase() === 'free agent';
             const division = p.division || p.teams?.division || (isFreeAgent ? 'Free Agent' : (p.kdr >= 1.15 ? 'Division 1 (Pro)' : (p.kdr >= 1.0 ? 'Division 2 (Challengers)' : 'Open Division')));
             const calculatedRank = p.rank || p.skill_rank || (p.kdr && p.kdr >= 1.2 ? "1.5" : "1.0");
             const numId = parseInt(String(p.id || 1).replace(/\D/g, ''), 10) || 123;
@@ -633,7 +638,7 @@ window.LeagueDB = {
               activision_id: cleanAct,
               rank: calculatedRank,
               skill_rank: p.skill_rank || calculatedRank,
-              status: p.status || (isFreeAgent ? "Free Agent" : "Active"),
+              status: isFreeAgent ? "Free Agent" : "Active",
               team_name: isFreeAgent ? null : (p.teams?.name || p.team_name || "Squad"),
               division: division,
               is_free_agent: isFreeAgent
@@ -8350,7 +8355,7 @@ if (dbClient && cleanPayload.user_id) {
   // Fetch all scheduled matches with optional filters
   async getScheduledMatches(filters = {}) {
     let matches = [];
-
+    let authoritative=false;
     if (dbClient) {
       try {
         let query = dbClient
@@ -8359,6 +8364,9 @@ if (dbClient && cleanPayload.user_id) {
           .order("week_number", { ascending: true })
           .order("id", { ascending: true });
 
+        const {data:activeSeasons}=await dbClient.from('fcl_seasons').select('id').eq('status','active');
+        const seasonId=filters.fcl_season_id||activeSeasons?.[0]?.id;
+        if(seasonId)query=query.eq('fcl_season_id',seasonId);
         if (filters.week_number) {
           query = query.eq("week_number", Number(filters.week_number));
         }
@@ -8370,7 +8378,8 @@ if (dbClient && cleanPayload.user_id) {
         }
 
         const { data, error } = await query;
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
+          authoritative=true;
           matches = data;
           try {
             localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
@@ -8382,7 +8391,7 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     // Fallback to localStorage or MOCK_DATA
-    if (!matches || matches.length === 0) {
+    if (!authoritative && (!matches || matches.length === 0)) {
       try {
         const cached = localStorage.getItem("frontline_scheduled_matches");
         if (cached) {
@@ -8391,7 +8400,7 @@ if (dbClient && cleanPayload.user_id) {
       } catch (e) {}
     }
 
-    if (!matches || matches.length === 0) {
+    if (!authoritative && (!matches || matches.length === 0)) {
       matches = (MOCK_DATA.scheduled_matches || []).map(m => ({ ...m }));
       try {
         localStorage.setItem("frontline_scheduled_matches", JSON.stringify(matches));
@@ -8433,6 +8442,7 @@ if (dbClient && cleanPayload.user_id) {
 
   // Generate an 8-week randomized schedule: Weeks 1-2 Preseason, Weeks 3-8 Regular Season
   async generate8WeekSchedule(options = {}) {
+    if(dbClient){const {data}=await dbClient.from('fcl_seasons').select('id').eq('status','active');if(data?.length)return {success:false,error:'Use League Operations & Discord to generate this season’s fixtures safely.'};}
     let teams = options.teams;
     if (!teams || teams.length === 0) {
       teams = await this.getStandings();
@@ -8608,7 +8618,8 @@ if (dbClient && cleanPayload.user_id) {
     if (dbClient) {
       try {
         // Clear previous schedule
-        await dbClient.from("scheduled_matches").delete().gte("id", 0);
+        const {error:clearError}=await dbClient.from("scheduled_matches").delete().gte("id", 0);
+        if(clearError)return {success:false,error:clearError.message};
         
         // Strip client temporary IDs for Supabase autoincrement
         const dbPayload = generatedMatches.map(({ id, standings_recorded, ...m }) => m);
@@ -8727,7 +8738,7 @@ if (dbClient && cleanPayload.user_id) {
     if (resultData.stream_url !== undefined) updates.stream_url = resultData.stream_url;
 
     // Apply to standings if requested and not already recorded
-    const shouldUpdateStandings = resultData.update_standings && !match.standings_recorded && status === "Completed" && winnerId;
+    const shouldUpdateStandings = !match.fcl_season_id && resultData.update_standings && !match.standings_recorded && status === "Completed" && winnerId;
     if (shouldUpdateStandings) {
       try {
         await this.recordMatchResult(match.team1_id, match.team2_id, s1, s2, winnerId, resultData.pointsDelta || 10);
@@ -8741,7 +8752,8 @@ if (dbClient && cleanPayload.user_id) {
     if (dbClient) {
       try {
         const { standings_recorded, ...dbFields } = updates;
-        await dbClient.from("scheduled_matches").update(dbFields).eq("id", matchId);
+        const {error}=await dbClient.from("scheduled_matches").update(dbFields).eq("id", matchId);
+        if(error)return {success:false,error:error.message};
       } catch (e) {
         console.warn("Supabase scheduled_matches update failed, persisting locally:", e);
       }
@@ -8768,7 +8780,8 @@ if (dbClient && cleanPayload.user_id) {
 
     if (dbClient) {
       try {
-        await dbClient.from("scheduled_matches").update(updates).eq("id", matchId);
+        const {error}=await dbClient.from("scheduled_matches").update(updates).eq("id", matchId);
+        if(error)return {success:false,error:error.message};
       } catch (e) {
         console.warn("Supabase update error:", e);
       }
@@ -8786,7 +8799,8 @@ if (dbClient && cleanPayload.user_id) {
   async deleteScheduledMatch(matchId) {
     if (dbClient) {
       try {
-        await dbClient.from("scheduled_matches").delete().eq("id", matchId);
+        const {error}=await dbClient.from("scheduled_matches").delete().eq("id", matchId);
+        if(error)return {success:false,error:error.message};
       } catch (e) {
         console.warn("Supabase delete error:", e);
       }
@@ -8805,7 +8819,8 @@ if (dbClient && cleanPayload.user_id) {
   async clearScheduledMatches() {
     if (dbClient) {
       try {
-        await dbClient.from("scheduled_matches").delete().gte("id", 0);
+        const {error}=await dbClient.from("scheduled_matches").delete().gte("id", 0);
+        if(error)return {success:false,error:error.message};
       } catch (e) {
         console.warn("Supabase clear error:", e);
       }
