@@ -68,12 +68,22 @@ test("database migration and authenticated season/roster workflows", async (t) =
   process.env.GM_ROLE_ID = "gm";
   process.env.SUPABASE_URL = "https://test.invalid";
   process.env.SUPABASE_ANON_KEY = "anon";
-  const app = express();
-  app.use(express.json());
-  app.use("/api/league", apiFactory(pool));
+  let app;
+  if (process.env.LEAGUE_TEST_TRANSPORT === "edge") {
+    process.env.SUPABASE_DB_URL = "postgres://test-only";
+    const {
+      createEdgeHandler,
+    } = require("../../supabase/functions/_shared/edge-app.mjs");
+    const { asNodeApp } = require("./http-bridge.cjs");
+    app = asNodeApp(createEdgeHandler(pool, process.env));
+  } else {
+    app = express();
+    app.use(express.json());
+    app.use("/api/league", apiFactory(pool));
+  }
   const server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
-  const base = `http://127.0.0.1:${server.address().port}/api/league`;
+  const base = `http://127.0.0.1:${server.address().port}${process.env.LEAGUE_TEST_TRANSPORT === "edge" ? "/functions/v1/league" : "/api/league"}`;
   global.fetch = async (url, opts) => {
     if (String(url).startsWith("https://discord.com/")) {
       const id = String(url).split("/").pop();

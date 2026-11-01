@@ -6,15 +6,18 @@
   "scripts": {
     "start": "node server.js",
     "build": "echo 'No build step required'",
-    "test": "node --test league/test/*.test.cjs"
+    "test": "node --test league/test/*.test.cjs",
+    "test:edge-db": "node league/test/run-edge-db.cjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "pg": "^8.13.1"
+    "express": "4.21.2",
+    "pg": "8.13.1"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.14"
+    "@electric-sql/pglite": "^0.5.14",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1"
   }
 }

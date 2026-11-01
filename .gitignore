@@ -3,3 +3,8 @@ node_modules/
 .DS_Store
 *.log
 .backup_html/
+
+supabase/.temp/
+supabase/.branches/
+.env.*
+!**/.env.example

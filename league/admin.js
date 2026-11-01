@@ -1,23 +1,19 @@
+import { createLeagueClient } from "./client.mjs";
 const $ = (id) => document.getElementById(id);
 let state;
 const message = (s) => ($("message").textContent = s);
-async function call(path, body) {
-  const client = window.supabaseClient || window.dbClient;
-  const session = client && (await client.auth.getSession()).data.session;
-  if (!session)
-    throw Error("Sign in with Discord on the admin portal, then return here.");
-  const response = await fetch(`/api/league${path}`, {
-    method: body === undefined ? "GET" : "POST",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const r = await response.json();
-  if (!response.ok) throw Error(r.error || "Request failed");
-  return r;
-}
+const config = window.SUPABASE_CONFIG || {};
+const call = createLeagueClient({
+  baseUrl: config.url
+    ? `${config.url.replace(/\/+$/, "")}/functions/v1/league`
+    : "",
+  anonKey: config.key,
+  getSession: async () => {
+    const client = window.supabaseClient || window.dbClient;
+    return client ? (await client.auth.getSession()).data.session : null;
+  },
+});
+
 const option = (text, value) => {
   const o = document.createElement("option");
   o.textContent = text;

@@ -1,0 +1,5 @@
+project_id = "frontline-cod-league"
+
+[functions.league]
+verify_jwt = false
+entrypoint = "./functions/league/index.ts"
