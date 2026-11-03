@@ -919,3 +919,4 @@
   // Expose global instance
   window.DuoSwitchEngine = new DuoSwitchManager();
 })();
+
