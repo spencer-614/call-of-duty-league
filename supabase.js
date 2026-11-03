@@ -7199,6 +7199,27 @@ if (dbClient && cleanPayload.user_id) {
       stages: stages
     };
 
+    if (isDuoSwitch) {
+      const timerMins = Number(tourney.duo_switch_timer_minutes || 5);
+      const nowMs = Date.now();
+      bracketObj.switch_state = {
+        enabled: true,
+        status: 'active_window',
+        window_start_time: new Date(nowMs).toISOString(),
+        window_end_time: new Date(nowMs + timerMins * 60 * 1000).toISOString(),
+        countdown_seconds: timerMins * 60,
+        reroll_base_fee: Number(tourney.duo_switch_reroll_fee || 10),
+        reroll_escalation: 5,
+        lock_fee: Number(tourney.duo_switch_lock_fee || 15),
+        nuke_fee: Number(tourney.duo_switch_nuke_fee || 25),
+        max_rerolls_per_duo: 2,
+        duo_reroll_counts: {},
+        locked_teams: [],
+        pending_requests: []
+      };
+      tourney.switch_state = bracketObj.switch_state;
+    }
+
     this.advanceTournamentByes(bracketObj);
     tourney.bracket_data = bracketObj;
     tourney.bracket_url = `/tournaments/bracket/?tournament=${tourney.id}`;
@@ -7868,6 +7889,8 @@ if (dbClient && cleanPayload.user_id) {
     // 3. Fallback to default
     return MOCK_DATA.rulebook;
   },
+
+
 
   async updateRulebook(newRulebook) {
     const merged = { ...MOCK_DATA.rulebook, ...newRulebook, updated_at: new Date().toISOString() };
