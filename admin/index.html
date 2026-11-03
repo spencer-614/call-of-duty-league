@@ -11960,6 +11960,21 @@
         }
         window.adminManageBracket = adminManageBracket;
 
+        async function adminAcceptDuoSwitchRequest(tourneyId, requestId) {
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.acceptDuoSwitchRequest === 'function') {
+              const res = await window.LeagueDB.acceptDuoSwitchRequest(tourneyId, requestId);
+              if (res.success) {
+                showToast("✓ Request accepted! Payment directive displayed on duo's screen.");
+                await adminManageBracket(tourneyId);
+              }
+            }
+          } catch (e) {
+            console.error("Accept request error:", e);
+          }
+        }
+        window.adminAcceptDuoSwitchRequest = adminAcceptDuoSwitchRequest;
+
         async function adminApproveDuoSwitchRequest(tourneyId, requestId) {
           if (!confirm("Confirm payment received and execute this Duo Switch action with a live synchronized wheel spin?")) return;
           try {
@@ -12069,6 +12084,15 @@
                   ? "⚡ Bracket generated & live competitor notifications dispatched!" 
                   : "⚡ Bracket generated and seeded successfully (notifications were not sent).");
                 const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
+                
+                // Automatically launch initial pairing wheel reveal for Duo Switch tournaments!
+                const tourneyObjGen = cachedAdminTournaments.find(t => String(t.id) === String(tourneyId));
+                if (tourneyObjGen && String(tourneyObjGen.format || '').toLowerCase().includes('duo')) {
+                  setTimeout(() => {
+                    adminLaunchDuoSwitchWheelPreview(tourneyId);
+                  }, 800);
+                }
+
                 await adminManageBracket(tourneyId, resolvedTitle);
                 await loadAdminTournaments();
               } else {

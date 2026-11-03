@@ -3,6 +3,7 @@
  * Frontline Competitive Duo Switch Engine:
  * - Live synchronized HTML5 Canvas wheel spin with synthetic Web Audio API peg clicks and fanfare
  * - Supabase Realtime broadcast synchronization for all competitors & spectators
+ * - Request Reroll -> Pops up in Admin -> Commissioner Clicks Accept -> Shows Duo Payment Directive -> Commissioner Confirms & Wheel Spins Live!
  * - Reroll ($10 base + escalation), Lock Squad ($15 immunity), and "Blow It Up" (Nuke re-shuffle)
  * - Live countdown timer window & Commissioner payment verification desk
  */
@@ -34,7 +35,7 @@
       const gain = ctx.createGain();
       const now = ctx.currentTime;
 
-      // Realistic mechanical wheel peg click (crisp wood/plastic tick)
+      // Realistic mechanical wheel peg click
       const baseFreq = 950 + Math.random() * 200;
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(baseFreq, now);
@@ -298,9 +299,6 @@
       this.pointerKick *= 0.85;
     }
 
-    /**
-     * Spin wheel to land exactly on targetIndex
-     */
     spinTo(targetIndex, durationMs = 6500, totalRotations = 7, onDone) {
       if (this.isSpinning) return;
       this.isSpinning = true;
@@ -308,12 +306,9 @@
       const numSlices = Math.max(1, this.slices.length);
       const sliceAngle = (Math.PI * 2) / numSlices;
 
-      // Pointer is at -PI/2 (top).
-      // We want the center of target slice to stop at top (-PI/2).
       const sliceCenterA = targetIndex * sliceAngle + sliceAngle / 2;
       const targetBaseAngle = (Math.PI * 3 / 2) - sliceCenterA;
 
-      // Ensure positive clockwise spinning with totalRotations full turns
       const currentMod = this.currentAngle % (Math.PI * 2);
       let deltaAngle = (targetBaseAngle - currentMod);
       while (deltaAngle < 0) deltaAngle += Math.PI * 2;
@@ -323,7 +318,6 @@
       const endAngle = startAngle + deltaAngle;
       const startTime = performance.now();
 
-      // Smooth custom ease-out cubic
       const easeOut = t => 1 - Math.pow(1 - t, 3.6);
 
       const step = now => {
@@ -333,12 +327,11 @@
 
         this.currentAngle = startAngle + deltaAngle * eased;
 
-        // Check peg crossing for clicks
         const normalizedAngle = (this.currentAngle) % (Math.PI * 2);
         const currentPeg = Math.floor(normalizedAngle / sliceAngle);
         if (currentPeg !== this.lastPegCrossed) {
           this.lastPegCrossed = currentPeg;
-          this.pointerKick = 0.32; // needle bounce
+          this.pointerKick = 0.32;
           playPegTick(1 - progress * 0.5);
         }
 
@@ -489,6 +482,10 @@
           if (!payload) return;
           this.handleStateUpdate(payload);
         })
+        .on('broadcast', { event: 'duo_switch_request_accepted' }, ({ payload }) => {
+          if (!payload) return;
+          this.handleRequestAccepted(payload);
+        })
         .on('broadcast', { event: 'duo_switch_nuke' }, ({ payload }) => {
           if (!payload) return;
           this.handleNukeBroadcast(payload);
@@ -520,7 +517,6 @@
           }
           if (statusEl) statusEl.textContent = '✓ Spin Complete!';
 
-          // Trigger bracket refresh if on bracket page
           if (typeof window.refreshCurrentBracketData === 'function') {
             window.refreshCurrentBracketData();
           }
@@ -546,9 +542,24 @@
       }
     }
 
+    handleRequestAccepted(payload) {
+      const currentUser = this.getCurrentUser();
+      const myDuo = this.findUserDuo(currentUser, this.cachedRegs);
+      if (!myDuo) return;
+
+      // Check if accepted request belongs to this duo
+      if (payload.duo_id === myDuo.id) {
+        // Prompt duo with payment directive modal!
+        this.openPaymentDirectiveModal(payload);
+      }
+    }
+
     handleStateUpdate(state) {
       this.currentSwitchState = state;
-      this.renderTimerBanner();
+      const container = document.getElementById('duo-switch-bracket-mount');
+      if (container && this.currentTournament) {
+        this.renderBracketDuoSwitchBanner(container, this.currentTournament, null, this.cachedRegs);
+      }
       if (typeof window.refreshAdminDuoSwitchDesk === 'function') {
         window.refreshAdminDuoSwitchDesk();
       }
@@ -571,14 +582,12 @@
       this.currentTournament = tourney;
       this.connectRealtime(tourney.id);
 
-      // Fetch fresh state from bracket_data or Supabase
       let switchState = bracketData?.switch_state || tourney.switch_state || null;
       if (!switchState && window.LeagueDB && typeof window.LeagueDB.getDuoSwitchState === 'function') {
         switchState = await window.LeagueDB.getDuoSwitchState(tourney.id);
       }
       this.currentSwitchState = switchState;
 
-      // Fetch tournament registrations to know my squad
       let regs = [];
       try {
         if (window.LeagueDB && typeof window.LeagueDB.getTournamentRegistrations === 'function') {
@@ -599,7 +608,6 @@
       const endTime = state.window_end_time ? new Date(state.window_end_time).getTime() : null;
       const isWindowActive = endTime && (endTime > Date.now()) && state.status !== 'locked';
 
-      // Find if current user is in a duo in Round 1
       const currentUser = this.getCurrentUser();
       const myDuo = this.findUserDuo(currentUser, regs);
       const my4v4Team = myDuo ? this.findDuo4v4TeamInBracket(myDuo.id, bracketData) : null;
@@ -610,6 +618,9 @@
       const rerollCost = (state.reroll_base_fee || 10) + myRerollCount * (state.reroll_escalation || 5);
       const maxRerolls = state.max_rerolls_per_duo || 2;
       const canReroll = myDuo && isWindowActive && !isMyTeamLocked && (myRerollCount < maxRerolls);
+
+      // Check if this duo has a pending request waiting for commissioner approval or payment
+      const myPendingReq = (state.pending_requests || []).find(r => myDuo && r.duo_id === myDuo.id);
 
       container.innerHTML = `
         <div style="background:#0e120a; border:1px solid #283716; border-left:4px solid #fbbf24; border-radius:3px; padding:16px 20px; margin-bottom:24px; box-shadow:0 10px 30px rgba(0,0,0,0.6);">
@@ -652,37 +663,51 @@
                 </div>
               </div>
 
-              <!-- Power Up Action Buttons -->
+              <!-- Power Up Action Buttons or Pending Request Notice -->
               <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                <!-- Reroll Button -->
-                <button type="button" 
-                  class="btn-tourney-primary" 
-                  style="font-size:11.5px; padding:7px 12px; ${canReroll ? '' : 'opacity:0.4; cursor:not-allowed;'}"
-                  ${canReroll ? '' : 'disabled'}
-                  onclick="window.DuoSwitchEngine.openPowerUpModal('reroll', ${rerollCost})"
-                  title="Respin for a new random partner duo">
-                  🎲 Respin Partner ($${rerollCost})
-                </button>
+                ${myPendingReq ? `
+                  <div style="background:#090d05; border:1px solid #fbbf24; padding:6px 12px; border-radius:3px; display:flex; align-items:center; gap:8px;">
+                    <span style="color:#fbbf24; font-size:12px; font-weight:800;">
+                      ${myPendingReq.status === 'accepted_awaiting_payment' ? '💳 Payment Due for ' : '⏳ Request Pending: '}
+                      ${esc(myPendingReq.action_type.toUpperCase())} ($${myPendingReq.amount})
+                    </span>
+                    ${myPendingReq.status === 'accepted_awaiting_payment' ? `
+                      <button type="button" class="btn-tourney-primary" style="font-size:11px; padding:3px 8px;" onclick="window.DuoSwitchEngine.openPaymentDirectiveModal(${JSON.stringify(myPendingReq).replace(/"/g, '&quot;')})">
+                        Pay Fee Now ➔
+                      </button>
+                    ` : '<span style="font-size:10.5px; color:#9ca3af;">(Waiting for Commissioner...)</span>'}
+                  </div>
+                ` : `
+                  <!-- Reroll Button -->
+                  <button type="button" 
+                    class="btn-tourney-primary" 
+                    style="font-size:11.5px; padding:7px 12px; ${canReroll ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    ${canReroll ? '' : 'disabled'}
+                    onclick="window.DuoSwitchEngine.requestPowerUp('reroll', ${rerollCost})"
+                    title="Request a new random partner duo">
+                    🎲 Request Respin ($${rerollCost})
+                  </button>
 
-                <!-- Lock Button -->
-                <button type="button" 
-                  class="btn-tourney-outline" 
-                  style="font-size:11.5px; padding:7px 12px; border-color:#22c55e; color:#4ade80; background:rgba(34,197,94,0.08); ${isWindowActive && !isMyTeamLocked ? '' : 'opacity:0.4; cursor:not-allowed;'}"
-                  ${isWindowActive && !isMyTeamLocked ? '' : 'disabled'}
-                  onclick="window.DuoSwitchEngine.openPowerUpModal('lock', ${state.lock_fee || 15})"
-                  title="Lock your 4v4 squad ($15) so nobody can swap or take your partner!">
-                  🔒 Lock Squad ($${state.lock_fee || 15})
-                </button>
+                  <!-- Lock Button -->
+                  <button type="button" 
+                    class="btn-tourney-outline" 
+                    style="font-size:11.5px; padding:7px 12px; border-color:#22c55e; color:#4ade80; background:rgba(34,197,94,0.08); ${isWindowActive && !isMyTeamLocked ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    ${isWindowActive && !isMyTeamLocked ? '' : 'disabled'}
+                    onclick="window.DuoSwitchEngine.requestPowerUp('lock', ${state.lock_fee || 15})"
+                    title="Lock your 4v4 squad ($15) so nobody can swap or take your partner!">
+                    🔒 Lock Squad ($${state.lock_fee || 15})
+                  </button>
 
-                <!-- Blow It Up (Nuke) Button -->
-                <button type="button" 
-                  class="btn-tourney-outline" 
-                  style="font-size:11.5px; padding:7px 12px; border-color:#ef4444; color:#f87171; background:rgba(239,68,68,0.08); ${isWindowActive ? '' : 'opacity:0.4; cursor:not-allowed;'}"
-                  ${isWindowActive ? '' : 'disabled'}
-                  onclick="window.DuoSwitchEngine.openPowerUpModal('nuke', ${state.nuke_fee || 25})"
-                  title="Blow it up! Re-shuffle all unlocked duos across the tournament!">
-                  💥 Blow It Up ($${state.nuke_fee || 25})
-                </button>
+                  <!-- Blow It Up (Nuke) Button -->
+                  <button type="button" 
+                    class="btn-tourney-outline" 
+                    style="font-size:11.5px; padding:7px 12px; border-color:#ef4444; color:#f87171; background:rgba(239,68,68,0.08); ${isWindowActive ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    ${isWindowActive ? '' : 'disabled'}
+                    onclick="window.DuoSwitchEngine.requestPowerUp('nuke', ${state.nuke_fee || 25})"
+                    title="Blow it up! Re-shuffle all unlocked duos across the tournament!">
+                    💥 Blow It Up ($${state.nuke_fee || 25})
+                  </button>
+                `}
               </div>
             </div>
           ` : `
@@ -709,7 +734,6 @@
         </div>
       `;
 
-      // Start tick clock
       this.startCountdownTicker(endTime);
     }
 
@@ -740,29 +764,59 @@
     }
 
     // -------------------------------------------------------------------------
-    // 6. POWER-UP PAYMENT MODAL (Reroll, Lock, Nuke)
+    // 6. POWER-UP STEP 1: DUO CLICKS BUTTON -> POPS UP IN ADMIN PANEL
     // -------------------------------------------------------------------------
-    openPowerUpModal(actionType, amount) {
-      let modal = document.getElementById('modal-dsw-powerup');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modal-dsw-powerup';
-        modal.style.cssText = 'position:fixed; inset:0; z-index:999999; background:rgba(5,7,3,0.85); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:16px;';
-        document.body.appendChild(modal);
+    async requestPowerUp(actionType, amount) {
+      const currentUser = this.getCurrentUser();
+      const myDuo = this.findUserDuo(currentUser, this.cachedRegs);
+      if (!myDuo) {
+        alert('You must be a registered Duo Captain in this tournament to request this action.');
+        return;
       }
 
-      let title = '🎲 Duo Partner Reroll';
-      let desc = `Request a new randomly paired partner duo from available unlocked squads. Amount due: <strong>$${amount}.00 USD</strong>.`;
-      let badgeColor = '#fbbf24';
+      let label = 'Partner Respin';
+      if (actionType === 'lock') label = 'Lock Squad ($15)';
+      else if (actionType === 'nuke') label = 'Blow It Up ($25)';
 
-      if (actionType === 'lock') {
-        title = '🔒 Lock Squad ($15)';
-        desc = `Permanently lock your 4v4 squad roster. Gives 100% immunity so other duos cannot take or swap your partner! Amount due: <strong>$${amount}.00 USD</strong>.`;
-        badgeColor = '#22c55e';
-      } else if (actionType === 'nuke') {
-        title = '💥 Blow It Up ($25)';
-        desc = `Execute a full tournament re-shuffle! All unlocked duos across the bracket will be scrambled into new random pairings live! Amount due: <strong>$${amount}.00 USD</strong>.`;
-        badgeColor = '#ef4444';
+      const confirmMsg = `Submit request to Commissioner for ${label} ($${amount}.00 USD)?\n\nOnce accepted by the Commissioner, your payment directive will pop up on your screen to complete the action.`;
+      if (!confirm(confirmMsg)) return;
+
+      const requestPayload = {
+        id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        tournament_id: this.activeTournamentId,
+        duo_id: myDuo.id,
+        duo_name: myDuo.team_name,
+        captain_gamertag: myDuo.captain_gamertag,
+        action_type: actionType,
+        amount: amount,
+        created_at: new Date().toISOString(),
+        status: 'pending_commissioner_acceptance'
+      };
+
+      if (window.LeagueDB && typeof window.LeagueDB.submitDuoSwitchRequest === 'function') {
+        const res = await window.LeagueDB.submitDuoSwitchRequest(this.activeTournamentId, requestPayload);
+        if (res.success) {
+          alert(`✓ Request sent to Commissioner Desk!\n\nAction: ${label}\nWaiting for Commissioner acceptance... Your payment directive will pop up as soon as it is accepted.`);
+          if (this.currentTournament) {
+            const container = document.getElementById('duo-switch-bracket-mount');
+            if (container) this.renderBracketDuoSwitchBanner(container, this.currentTournament, null, this.cachedRegs);
+          }
+        } else {
+          alert('Could not submit request: ' + (res.error || 'Unknown error'));
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. POWER-UP STEP 2: COMMISSIONER ACCEPTED -> SHOW PAYMENT METHOD TO DUO
+    // -------------------------------------------------------------------------
+    openPaymentDirectiveModal(req) {
+      let modal = document.getElementById('modal-dsw-payment-directive');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-dsw-payment-directive';
+        modal.style.cssText = 'position:fixed; inset:0; z-index:999999; background:rgba(5,7,3,0.88); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:16px;';
+        document.body.appendChild(modal);
       }
 
       const tourney = this.currentTournament || {};
@@ -772,22 +826,19 @@
 
       modal.style.display = 'flex';
       modal.innerHTML = `
-        <div style="background:#0d1109; border:1px solid #283716; border-top:3px solid ${badgeColor}; border-radius:4px; max-width:480px; width:100%; padding:24px; box-shadow:0 25px 60px rgba(0,0,0,0.95); position:relative;">
-          <button type="button" onclick="document.getElementById('modal-dsw-powerup').style.display='none'" style="position:absolute; top:14px; right:14px; background:none; border:none; color:#9ca3af; font-size:22px; cursor:pointer;">&times;</button>
+        <div style="background:#0d1109; border:1px solid #283716; border-top:3px solid #22c55e; border-radius:4px; max-width:480px; width:100%; padding:24px; box-shadow:0 25px 60px rgba(0,0,0,0.95); position:relative;">
+          <button type="button" onclick="document.getElementById('modal-dsw-payment-directive').style.display='none'" style="position:absolute; top:14px; right:14px; background:none; border:none; color:#9ca3af; font-size:22px; cursor:pointer;">&times;</button>
 
-          <span style="font-size:10.5px; font-weight:800; color:${badgeColor}; text-transform:uppercase; letter-spacing:0.8px;">DUO SWITCH POWER-UP DIRECTIVE</span>
+          <span style="font-size:10.5px; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:0.8px;">✓ COMMISSIONER ACCEPTED YOUR REQUEST</span>
           <h3 style="margin:4px 0 8px; font:900 20px var(--display, sans-serif); color:#ffffff; text-transform:uppercase;">
-            ${title}
+            Pay $${req.amount}.00 for ${esc(req.action_type.toUpperCase())}
           </h3>
           <p style="font-size:12.5px; color:#cbd5e1; line-height:1.5; margin:0 0 16px;">
-            ${desc}
+            The Commissioner has approved your request! Please send <strong>$${req.amount}.00 USD</strong> using either payment method below. Include your duo name (<strong>${esc(req.duo_name)}</strong>) in the payment note.
           </p>
 
           <!-- Payment Directives -->
           <div style="background:#070a04; border:1px solid #1d2710; border-radius:3px; padding:14px; margin-bottom:16px;">
-            <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:8px;">
-              Pay Tournament Commissioner ($${amount}.00 USD)
-            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
               <div style="background:#0b0f06; border:1px solid #22c55e40; padding:10px; border-radius:3px;">
                 <div style="font-size:10px; color:#4ade80; font-weight:800;">CASH APP ($Cashtag)</div>
@@ -805,59 +856,41 @@
               <label style="display:block; font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; margin-bottom:4px;">
                 Your Payment Sender Name / $Cashtag *
               </label>
-              <input type="text" id="dsw-sender-handle" placeholder="e.g. $MyCashtag or PayPal Name" class="tourney-search-input" style="width:100%; box-sizing:border-box; font-size:12px;" />
+              <input type="text" id="dsw-directive-sender-handle" placeholder="e.g. $MyCashtag or PayPal Name" class="tourney-search-input" style="width:100%; box-sizing:border-box; font-size:12px;" />
             </div>
           </div>
 
           <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button type="button" onclick="document.getElementById('modal-dsw-powerup').style.display='none'" class="btn-tourney-outline" style="padding:8px 14px; font-size:12px;">
-              Cancel
+            <button type="button" onclick="document.getElementById('modal-dsw-payment-directive').style.display='none'" class="btn-tourney-outline" style="padding:8px 14px; font-size:12px;">
+              Close
             </button>
-            <button type="button" class="btn-tourney-primary" style="padding:8px 18px; font-size:12px;" onclick="window.DuoSwitchEngine.submitPowerUpRequest('${actionType}', ${amount})">
-              Confirm &amp; Submit Request ✓
+            <button type="button" class="btn-tourney-primary" style="padding:8px 18px; font-size:12px;" onclick="window.DuoSwitchEngine.confirmPaymentSent('${req.id}')">
+              I Have Sent Payment ($${req.amount}) ✓
             </button>
           </div>
         </div>
       `;
     }
 
-    async submitPowerUpRequest(actionType, amount) {
-      const handle = (document.getElementById('dsw-sender-handle')?.value || '').trim();
+    async confirmPaymentSent(requestId) {
+      const handle = (document.getElementById('dsw-directive-sender-handle')?.value || '').trim();
       if (!handle) {
-        alert('Please enter your Cash App $Cashtag or PayPal sender name used to pay the fee.');
+        alert('Please enter the $Cashtag or PayPal name you used to send payment.');
         return;
       }
 
-      const currentUser = this.getCurrentUser();
-      const myDuo = this.findUserDuo(currentUser, this.cachedRegs);
-      if (!myDuo) {
-        alert('You must be a registered Duo Captain in this tournament to submit a request.');
-        return;
-      }
-
-      const requestPayload = {
-        id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        tournament_id: this.activeTournamentId,
-        duo_id: myDuo.id,
-        duo_name: myDuo.team_name,
-        captain_gamertag: myDuo.captain_gamertag,
-        action_type: actionType,
-        amount: amount,
-        payment_sender_handle: handle,
-        created_at: new Date().toISOString(),
-        status: 'pending_approval'
-      };
-
-      if (window.LeagueDB && typeof window.LeagueDB.submitDuoSwitchRequest === 'function') {
-        const res = await window.LeagueDB.submitDuoSwitchRequest(this.activeTournamentId, requestPayload);
+      if (window.LeagueDB && typeof window.LeagueDB.confirmDuoSwitchPayment === 'function') {
+        const res = await window.LeagueDB.confirmDuoSwitchPayment(this.activeTournamentId, requestId, handle);
         if (res.success) {
-          alert(`✓ Request submitted to the Commissioner desk!\n\nAction: ${actionType.toUpperCase()} ($${amount})\nOnce your payment is verified, the synchronized action will execute live.`);
-          document.getElementById('modal-dsw-powerup').style.display = 'none';
+          alert('✓ Payment submitted! Once the Commissioner confirms receipt, the wheel will spin live for everyone.');
+          document.getElementById('modal-dsw-payment-directive').style.display = 'none';
+          if (this.currentTournament) {
+            const container = document.getElementById('duo-switch-bracket-mount');
+            if (container) this.renderBracketDuoSwitchBanner(container, this.currentTournament, null, this.cachedRegs);
+          }
         } else {
-          alert('Could not submit request: ' + (res.error || 'Unknown error'));
+          alert('Error: ' + (res.error || 'Failed to submit payment'));
         }
-      } else {
-        alert('Tournament database service unavailable. Please try again.');
       }
     }
 
@@ -873,9 +906,6 @@
       }
     }
 
-    // -------------------------------------------------------------------------
-    // 7. HELPER FUNCTIONS
-    // -------------------------------------------------------------------------
     getCurrentUser() {
       let u = null;
       try {
@@ -919,4 +949,3 @@
   // Expose global instance
   window.DuoSwitchEngine = new DuoSwitchManager();
 })();
-

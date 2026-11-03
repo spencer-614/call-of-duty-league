@@ -7890,7 +7890,366 @@ if (dbClient && cleanPayload.user_id) {
     return MOCK_DATA.rulebook;
   },
 
+  // ==============================================================================
+  // DUO SWITCH POWER-UP & SYNCHRONIZED WHEEL ENGINE
+  // ==============================================================================
+  async getDuoSwitchState(tournamentId) {
+    if (!tournamentId) return null;
+    const tourneys = await this.getTournaments();
+    const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
+    if (!tourney) return null;
 
+    let state = tourney.bracket_data?.switch_state || tourney.switch_state || null;
+    if (!state) {
+      try {
+        const local = localStorage.getItem(`frontline_duo_switch_${tournamentId}`);
+        if (local) state = JSON.parse(local);
+      } catch (_) {}
+    }
+    return state;
+  },
+
+  async saveDuoSwitchState(tournamentId, switchState) {
+    if (!tournamentId) return { success: false, error: 'Tournament ID required' };
+    const tourneys = await this.getTournaments();
+    const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
+    if (!tourney) return { success: false, error: 'Tournament not found' };
+
+    if (!tourney.bracket_data) tourney.bracket_data = {};
+    tourney.bracket_data.switch_state = switchState;
+    tourney.switch_state = switchState;
+
+    try {
+      localStorage.setItem(`frontline_duo_switch_${tournamentId}`, JSON.stringify(switchState));
+      if (tourney.bracket_data) {
+        localStorage.setItem(`frontline_tournament_bracket_${tournamentId}`, JSON.stringify(tourney.bracket_data));
+      }
+    } catch (_) {}
+
+    await this.saveTournament(tourney);
+    this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_state_update', switchState);
+    return { success: true, switchState };
+  },
+
+  broadcastDuoSwitchEvent(tournamentId, eventName, payload) {
+    try {
+      const c = window.supabaseClient || window.dbClient;
+      if (c && typeof c.channel === 'function') {
+        const chan = c.channel(`tournament_duo_switch_${tournamentId}`, {
+          config: { broadcast: { ack: false, self: true } }
+        });
+        chan.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            chan.send({
+              type: 'broadcast',
+              event: eventName,
+              payload: payload
+            }).catch(() => {});
+          }
+        });
+      }
+    } catch (_) {}
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('frontline_duo_switch_event', {
+        detail: { tournamentId, eventName, payload }
+      }));
+    }
+  },
+
+  async submitDuoSwitchRequest(tournamentId, requestPayload) {
+    let state = await this.getDuoSwitchState(tournamentId);
+    if (!state) {
+      state = {
+        enabled: true,
+        status: 'active_window',
+        pending_requests: [],
+        locked_teams: [],
+        duo_reroll_counts: {}
+      };
+    }
+    if (!Array.isArray(state.pending_requests)) state.pending_requests = [];
+    state.pending_requests.push(requestPayload);
+
+    await this.saveDuoSwitchState(tournamentId, state);
+    return { success: true, request: requestPayload };
+  },
+
+  async acceptDuoSwitchRequest(tournamentId, requestId) {
+    const state = await this.getDuoSwitchState(tournamentId);
+    if (!state || !Array.isArray(state.pending_requests)) {
+      return { success: false, error: 'Request not found' };
+    }
+    const req = state.pending_requests.find(r => r.id === requestId);
+    if (!req) return { success: false, error: 'Request not found' };
+
+    req.status = 'accepted_awaiting_payment';
+    req.accepted_at = new Date().toISOString();
+
+    await this.saveDuoSwitchState(tournamentId, state);
+
+    // Broadcast to the duo that their request was accepted so the payment directive modal pops up!
+    this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_request_accepted', req);
+
+    return { success: true, request: req };
+  },
+
+  async confirmDuoSwitchPayment(tournamentId, requestId, paymentHandle) {
+    const state = await this.getDuoSwitchState(tournamentId);
+    if (!state || !Array.isArray(state.pending_requests)) {
+      return { success: false, error: 'Request not found' };
+    }
+    const req = state.pending_requests.find(r => r.id === requestId);
+    if (!req) return { success: false, error: 'Request not found' };
+
+    req.status = 'payment_submitted';
+    req.payment_sender_handle = paymentHandle;
+    req.payment_submitted_at = new Date().toISOString();
+
+    await this.saveDuoSwitchState(tournamentId, state);
+    return { success: true, request: req };
+  },
+
+  async approveDuoSwitchRequest(tournamentId, requestId) {
+    const state = await this.getDuoSwitchState(tournamentId);
+    if (!state || !Array.isArray(state.pending_requests)) {
+      return { success: false, error: 'Request not found' };
+    }
+    const req = state.pending_requests.find(r => r.id === requestId);
+    if (!req) return { success: false, error: 'Request not found' };
+
+    req.status = 'approved';
+    req.approved_at = new Date().toISOString();
+
+    let executionResult = null;
+    if (req.action_type === 'reroll') {
+      executionResult = await this.executeDuoSwitchReroll(tournamentId, req.duo_id);
+    } else if (req.action_type === 'lock') {
+      executionResult = await this.executeDuoSwitchLock(tournamentId, req.duo_id);
+    } else if (req.action_type === 'nuke') {
+      executionResult = await this.executeDuoSwitchNuke(tournamentId, req.duo_id);
+    }
+
+    state.pending_requests = state.pending_requests.filter(r => r.id !== requestId);
+    await this.saveDuoSwitchState(tournamentId, state);
+
+    return { success: true, request: req, result: executionResult };
+  },
+
+  async rejectDuoSwitchRequest(tournamentId, requestId) {
+    const state = await this.getDuoSwitchState(tournamentId);
+    if (!state || !Array.isArray(state.pending_requests)) {
+      return { success: false, error: 'Request not found' };
+    }
+    state.pending_requests = state.pending_requests.filter(r => r.id !== requestId);
+    await this.saveDuoSwitchState(tournamentId, state);
+    return { success: true };
+  },
+
+  async executeDuoSwitchReroll(tournamentId, requestingDuoId) {
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (!bracket || !bracket.stages) return { success: false, error: 'Bracket not found' };
+
+    const state = await this.getDuoSwitchState(tournamentId) || {};
+    const lockedTeams = state.locked_teams || [];
+
+    let myMatch = null;
+    let mySide = null;
+    let myTeam = null;
+
+    for (const stage of bracket.stages) {
+      for (const round of (stage.rounds || [])) {
+        for (const m of (round.matches || [])) {
+          if (m.team1 && (m.team1.duo1_id === requestingDuoId || m.team1.duo2_id === requestingDuoId)) {
+            myMatch = m; mySide = 'team1'; myTeam = m.team1; break;
+          }
+          if (m.team2 && (m.team2.duo1_id === requestingDuoId || m.team2.duo2_id === requestingDuoId)) {
+            myMatch = m; mySide = 'team2'; myTeam = m.team2; break;
+          }
+        }
+        if (myTeam) break;
+      }
+      if (myTeam) break;
+    }
+
+    if (!myTeam) return { success: false, error: 'Requesting duo not found in active matches' };
+    if (myTeam.isLocked || lockedTeams.includes(myTeam.name)) {
+      return { success: false, error: 'Squad is locked and cannot be rerolled.' };
+    }
+
+    const candidateDuos = [];
+    for (const stage of bracket.stages) {
+      for (const round of (stage.rounds || [])) {
+        for (const m of (round.matches || [])) {
+          for (const side of ['team1', 'team2']) {
+            const t = m[side];
+            if (t && t !== myTeam && !t.isLocked && !lockedTeams.includes(t.name) && t.isDuoSwitch) {
+              if (t.duo1_id && t.duo1_id !== requestingDuoId) {
+                candidateDuos.push({ match: m, side, duoSlot: 1, id: t.duo1_id, name: t.duo1_name, team: t });
+              }
+              if (t.duo2_id && t.duo2_id !== requestingDuoId) {
+                candidateDuos.push({ match: m, side, duoSlot: 2, id: t.duo2_id, name: t.duo2_name, team: t });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!candidateDuos.length) {
+      return { success: false, error: 'No available unlocked duos to swap with.' };
+    }
+
+    const targetCandidate = candidateDuos[Math.floor(Math.random() * candidateDuos.length)];
+    const chosenTargetIndex = candidateDuos.indexOf(targetCandidate);
+
+    const isSlot1 = (myTeam.duo1_id === requestingDuoId);
+    const oldPartnerName = isSlot1 ? myTeam.duo2_name : myTeam.duo1_name;
+    const oldPartnerId = isSlot1 ? myTeam.duo2_id : myTeam.duo1_id;
+
+    if (isSlot1) {
+      myTeam.duo2_id = targetCandidate.id;
+      myTeam.duo2_name = targetCandidate.name;
+    } else {
+      myTeam.duo1_id = targetCandidate.id;
+      myTeam.duo1_name = targetCandidate.name;
+    }
+    myTeam.name = `${myTeam.duo1_name} & ${myTeam.duo2_name}`;
+
+    const otherTeam = targetCandidate.team;
+    if (targetCandidate.duoSlot === 1) {
+      otherTeam.duo1_id = oldPartnerId;
+      otherTeam.duo1_name = oldPartnerName;
+    } else {
+      otherTeam.duo2_id = oldPartnerId;
+      otherTeam.duo2_name = oldPartnerName;
+    }
+    otherTeam.name = `${otherTeam.duo1_name} & ${otherTeam.duo2_name}`;
+
+    if (!state.duo_reroll_counts) state.duo_reroll_counts = {};
+    state.duo_reroll_counts[requestingDuoId] = (state.duo_reroll_counts[requestingDuoId] || 0) + 1;
+
+    bracket.switch_state = state;
+    await this.saveTournamentBracket(tournamentId, bracket);
+
+    const slices = candidateDuos.map(c => ({
+      id: c.id,
+      team_name: c.name,
+      name: c.name
+    }));
+
+    this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_spin', {
+      spin_type: 'duo_reroll',
+      requesting_duo: { id: requestingDuoId, name: isSlot1 ? myTeam.duo1_name : myTeam.duo2_name },
+      target_duo: { id: targetCandidate.id, name: targetCandidate.name },
+      target_index: chosenTargetIndex,
+      slices: slices,
+      title: '🎲 Duo Partner Reroll',
+      subtext: `Spinning for ${isSlot1 ? myTeam.duo1_name : myTeam.duo2_name}'s new partner!`
+    });
+
+    return { success: true, targetDuo: targetCandidate.name, myTeam: myTeam.name };
+  },
+
+  async executeDuoSwitchLock(tournamentId, duoIdOrTeamName) {
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (!bracket) return { success: false, error: 'Bracket not found' };
+
+    const state = await this.getDuoSwitchState(tournamentId) || {};
+    if (!Array.isArray(state.locked_teams)) state.locked_teams = [];
+
+    for (const stage of (bracket.stages || [])) {
+      for (const round of (stage.rounds || [])) {
+        for (const m of (round.matches || [])) {
+          for (const side of ['team1', 'team2']) {
+            const t = m[side];
+            if (t && (t.name === duoIdOrTeamName || t.duo1_id === duoIdOrTeamName || t.duo2_id === duoIdOrTeamName)) {
+              t.isLocked = true;
+              if (!state.locked_teams.includes(t.name)) state.locked_teams.push(t.name);
+            }
+          }
+        }
+      }
+    }
+
+    bracket.switch_state = state;
+    await this.saveTournamentBracket(tournamentId, bracket);
+    this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_state_update', state);
+    return { success: true, locked_teams: state.locked_teams };
+  },
+
+  async executeDuoSwitchNuke(tournamentId, requestingDuoId) {
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (!bracket) return { success: false, error: 'Bracket not found' };
+
+    const state = await this.getDuoSwitchState(tournamentId) || {};
+    const lockedTeams = state.locked_teams || [];
+
+    const unlockedTeams = [];
+    const poolOfDuos = [];
+
+    for (const stage of (bracket.stages || [])) {
+      for (const round of (stage.rounds || [])) {
+        for (const m of (round.matches || [])) {
+          for (const side of ['team1', 'team2']) {
+            const t = m[side];
+            if (t && t.isDuoSwitch && !t.isLocked && !lockedTeams.includes(t.name)) {
+              unlockedTeams.push(t);
+              if (t.duo1_id) poolOfDuos.push({ id: t.duo1_id, name: t.duo1_name });
+              if (t.duo2_id) poolOfDuos.push({ id: t.duo2_id, name: t.duo2_name });
+            }
+          }
+        }
+      }
+    }
+
+    if (poolOfDuos.length < 4) {
+      return { success: false, error: 'Not enough unlocked duos to scramble' };
+    }
+
+    for (let i = poolOfDuos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [poolOfDuos[i], poolOfDuos[j]] = [poolOfDuos[j], poolOfDuos[i]];
+    }
+
+    let ptr = 0;
+    unlockedTeams.forEach(t => {
+      const d1 = poolOfDuos[ptr++];
+      const d2 = poolOfDuos[ptr++];
+      if (d1 && d2) {
+        t.duo1_id = d1.id;
+        t.duo1_name = d1.name;
+        t.duo2_id = d2.id;
+        t.duo2_name = d2.name;
+        t.name = `${d1.name} & ${d2.name}`;
+      }
+    });
+
+    bracket.switch_state = state;
+    await this.saveTournamentBracket(tournamentId, bracket);
+
+    this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_nuke', {
+      requesting_duo_id: requestingDuoId,
+      scrambled_count: unlockedTeams.length
+    });
+
+    return { success: true, scrambledCount: unlockedTeams.length };
+  },
+
+  async saveTournamentBracket(tournamentId, bracket) {
+    if (!tournamentId || !bracket) return false;
+    try {
+      localStorage.setItem(`frontline_tournament_bracket_${tournamentId}`, JSON.stringify(bracket));
+    } catch (_) {}
+
+    const tourneys = await this.getTournaments();
+    const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
+    if (tourney) {
+      tourney.bracket_data = bracket;
+      await this.saveTournament(tourney);
+    }
+    return true;
+  },
 
   async updateRulebook(newRulebook) {
     const merged = { ...MOCK_DATA.rulebook, ...newRulebook, updated_at: new Date().toISOString() };
