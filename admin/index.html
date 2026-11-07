@@ -3328,6 +3328,9 @@
                   <span id="btn-create-tourney-text">Publish Tournament to Hub</span>
                   <span id="btn-create-tourney-icon">🏆</span>
                 </button>
+                <button type="button" class="btn-action-sm" style="padding:10px 18px; font-size:13px; font-weight:800; background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24;" onclick="adminCreateDemoDuoSwitchTourney()" title="Instantly creates a Duo Switch tournament seeded with 8 duos for commissioner testing">
+                  ⚡ Create Test Duo Switch Tournament (8 Duos)
+                </button>
                 <button type="button" id="btn-delete-current-tourney" class="btn-action-sm btn-action-danger" style="display:none; padding:10px 20px; font-size:13px; color:#ef4444; border-color:#ef4444;" onclick="deleteCurrentEditingTourney()">
                   🗑 Delete This Tournament
                 </button>
@@ -3339,7 +3342,8 @@
           <div class="admin-panel-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; gap:12px;">
               <h3 class="admin-card-title" style="margin:0;">Dispatched Tournaments &amp; Archive</h3>
-              <div style="display:flex; gap:8px; align-items:center;">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800;" onclick="adminCreateDemoDuoSwitchTourney()">⚡ + Test Duo Switch Tourney</button>
                 <button type="button" class="btn-action-sm btn-action-danger" onclick="adminDeleteAllTourneys()" style="font-size:11px; padding:4px 10px;">🗑 Delete All</button>
                 <button type="button" class="btn-action-sm" onclick="loadAdminTournaments()">↻ Refresh Tournaments</button>
               </div>
@@ -11084,7 +11088,9 @@
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="openEditTournamentModal('${escapeHtml(t.id)}')">✏️ Edit Details</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
-                      <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#eab308; background:rgba(234,179,8,0.12); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">🤖 Test Teams</button>
+                      ${String(t.format || '').toLowerCase().includes('duo')
+  ? `<button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; background:rgba(251,191,36,0.18); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">⚡ Test Duos</button>`
+  : `<button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#eab308; background:rgba(234,179,8,0.12); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">🤖 Test Teams</button>`}
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
                       <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
                       ${(circuit === 'arena' || circuit === 'both') ? `<a href="/arena/tournaments/" target="_blank" class="btn-action-sm" style="font-size:11px; padding:4px 8px; text-decoration:none; color:#ff1e44; border-color:rgba(255,30,68,0.4);">Arena ↗</a>` : ''}
@@ -11443,6 +11449,12 @@
 
           if (titleEl) {
             titleEl.textContent = (tourneyTitle || "Tournament") + " – Enlisted Squads";
+          }
+          const tourneyObjView = (window.cachedAdminTournaments || []).find(t => String(t.id) === String(tourneyId));
+          const isDuoTourneyModal = tourneyObjView && String(tourneyObjView.format || '').toLowerCase().includes('duo');
+          const dummyBtnModal = document.getElementById("btn-modal-generate-dummy-squads");
+          if (dummyBtnModal) {
+            dummyBtnModal.innerHTML = isDuoTourneyModal ? "⚡ + Generate Dummy Duos" : "🤖 + Generate Dummy Teams";
           }
 
           // 1. Instant Cache Render to eliminate any lag or stutter
@@ -12244,15 +12256,20 @@
             showToast("No active tournament selected. Please close and re-open the tournament squads modal.", true);
             return;
           }
-          const promptCount = prompt("How many dummy test teams would you like to generate? (e.g. 4, 8, 11, or 16)", "8");
+          const tourneyObjPrompt = (window.cachedAdminTournaments || []).find(t => String(t.id) === String(tId));
+          const isDuoPrompt = tourneyObjPrompt && String(tourneyObjPrompt.format || '').toLowerCase().includes('duo');
+          const promptQuestion = isDuoPrompt 
+            ? "How many dummy test Duos would you like to generate? (e.g. 4, 8, or 16 Duos)"
+            : "How many dummy test teams would you like to generate? (e.g. 4, 8, 11, or 16)";
+          const promptCount = prompt(promptQuestion, "8");
           if (!promptCount) return;
           const count = parseInt(promptCount, 10);
           if (isNaN(count) || count < 2) {
-            showToast("Please enter a valid count of at least 2 teams.", true);
+            showToast("Please enter a valid count of at least 2 teams/duos.", true);
             return;
           }
 
-          showToast(`⏳ Generating ${count} dummy squads with complete rosters...`);
+          showToast(`⏳ Generating ${count} dummy ${isDuoPrompt ? 'Duos' : 'squads'} with complete rosters...`);
           try {
             let res = null;
             if (window.LeagueDB && typeof window.LeagueDB.generateDummyTournamentSquads === "function") {
@@ -12272,16 +12289,22 @@
               ];
               const created = [];
               for (let i = 0; i < count; i++) {
-                const baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
-                const teamName = `${baseName} (Dummy ${i + 1})`;
+                let baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
+                if (isDuoPrompt) {
+                  const cleanBase = baseName.replace(/\s+(Gaming|Esports|eSports)$/i, '').trim();
+                  baseName = cleanBase.endsWith("Duo") ? cleanBase : `${cleanBase} Duo`;
+                }
+                const teamName = isDuoPrompt ? `${baseName} (Duo ${i + 1})` : `${baseName} (Dummy ${i + 1})`;
                 const captain = `${SAMPLE_CAPTAINS[i % SAMPLE_CAPTAINS.length]}_Bot${i + 1}`;
+                const roster = isDuoPrompt ? [`DuoMate_${i + 1}`] : [`Bot_${i + 1}A`, `Bot_${i + 1}B`, `Bot_${i + 1}C`];
                 const r = await window.LeagueDB.adminRegisterTournamentSquad(tId, {
                   team_name: teamName,
                   captain_gamertag: captain,
                   captain_discord: `${captain.toLowerCase()}#0000`,
                   captain_activision_id: `${captain}#CDLTest`,
-                  roster: [`Bot_${i + 1}A`, `Bot_${i + 1}B`, `Bot_${i + 1}C`],
-                  is_dummy_team: true
+                  roster: roster,
+                  is_dummy_team: true,
+                  is_duo_switch: isDuoPrompt
                 });
                 if (r && r.success) created.push(teamName);
               }
@@ -12289,7 +12312,7 @@
             }
 
             if (res && res.success) {
-              showToast(`✓ Generated ${res.count} test dummy squads!`);
+              showToast(`✓ Generated ${res.count} test dummy ${isDuoPrompt ? 'Duos' : 'squads'}!`);
               const resolvedTitle = window.activeAdminTourneyTitle || activeAdminTourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tId))?.title) || "Tournament";
               if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
                 await adminViewTourneyRegistrations(tId, resolvedTitle);
@@ -12298,7 +12321,10 @@
               if (bracketModal && (bracketModal.open || bracketModal.hasAttribute("open"))) {
                 await adminManageBracket(tId, resolvedTitle);
               } else {
-                if (confirm(`✓ Generated ${res.count} test dummy squads!\n\nWould you like to generate the live tournament bracket now to start simulating games?`)) {
+                const confirmMsg = isDuoPrompt
+                  ? `✓ Generated ${res.count} test dummy Duos!\n\nWould you like to generate the live Duo Switch bracket now?\n\n• Randomly pairs the Duos into 4v4 squads via synchronized wheel spin reveal\n• Starts live respin/lock countdown window`
+                  : `✓ Generated ${res.count} test dummy squads!\n\nWould you like to generate the live tournament bracket now to start simulating games?`;
+                if (confirm(confirmMsg)) {
                   if (regsModal && (regsModal.open || regsModal.hasAttribute("open"))) {
                     regsModal.close();
                   }
@@ -12316,6 +12342,44 @@
           }
         }
         window.adminPromptGenerateDummySquads = adminPromptGenerateDummySquads;
+
+        async function adminCreateDemoDuoSwitchTourney() {
+          if (!confirm("⚡ Create a Demo Duo Switch Tournament now?\n\nThis will:\n1. Create '⚡ Duo Switch Test Championship (Demo)'\n2. Enlist 8 authentic 2-player Duos\n3. Allow you to generate the bracket and test the live synchronized wheel spin reveal, respin desk, squad locks ($15), and timer.")) {
+            return;
+          }
+
+          showToast("⏳ Creating test Duo Switch tournament & generating 8 demo Duos...");
+          try {
+            let res = null;
+            if (window.LeagueDB && typeof window.LeagueDB.createTestDuoSwitchTournament === "function") {
+              res = await window.LeagueDB.createTestDuoSwitchTournament(8);
+            } else {
+              showToast("League database service unavailable.", true);
+              return;
+            }
+
+            if (res && res.success && res.tournament) {
+              showToast(`✓ Demo Duo Switch tournament created with ${res.count || 8} Duos!`);
+              await loadAdminTournaments();
+
+              const tId = res.tournament.id;
+              const tTitle = res.tournament.title;
+
+              if (confirm(`✓ Test Duo Switch Tournament created with 8 registered Duos!\n\nWould you like to generate the live Duo Switch bracket now?\n\n• Pairs the 8 Duos into 4 full 4v4 squads\n• Triggers synchronized live wheel spin reveal\n• Starts live respin/lock countdown window`)) {
+                await adminGenerateBracketAction(tId, tTitle, true);
+                await adminManageBracket(tId, tTitle);
+              } else {
+                await adminViewTourneyRegistrations(tId, tTitle);
+              }
+            } else {
+              showToast(res?.error || "Failed to create demo tournament.", true);
+            }
+          } catch (err) {
+            console.error("adminCreateDemoDuoSwitchTourney error:", err);
+            showToast("Error creating demo tournament: " + err.message, true);
+          }
+        }
+        window.adminCreateDemoDuoSwitchTourney = adminCreateDemoDuoSwitchTourney;
 
         async function adminPromptClearDummySquads(tourneyId) {
           const regsModal = document.getElementById("modal-view-tourney-registrations");

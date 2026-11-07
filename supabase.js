@@ -3762,6 +3762,7 @@ if (dbClient && cleanPayload.user_id) {
         });
       });
 
+      const isDuoSwitch = String(tourney.format || '').toLowerCase().includes('duo');
       const newSquadRecords = [];
       const createdSquadNames = [];
       const batchTimestamp = Date.now();
@@ -3769,11 +3770,15 @@ if (dbClient && cleanPayload.user_id) {
       for (let i = 0; i < numToGen; i++) {
         // Unique Team Name derivation
         let baseName = CDL_SAMPLE_NAMES[i % CDL_SAMPLE_NAMES.length];
+        if (isDuoSwitch) {
+          const cleanBase = baseName.replace(/\s+(Gaming|Esports|eSports)$/i, '').trim();
+          baseName = cleanBase.endsWith("Duo") ? cleanBase : `${cleanBase} Duo`;
+        }
         let teamName = baseName;
         let suffix = 1;
         while (usedTeamNames.has(norm(teamName))) {
           suffix++;
-          teamName = `${baseName} (Dummy ${suffix})`;
+          teamName = isDuoSwitch ? `${baseName} (Duo ${suffix})` : `${baseName} (Dummy ${suffix})`;
         }
         usedTeamNames.add(norm(teamName));
 
@@ -3787,11 +3792,17 @@ if (dbClient && cleanPayload.user_id) {
         }
         usedPlayerTags.add(norm(captain));
 
-        // Teammates with guaranteed unique tags
-        const teammate1 = `Bot_${batchTimestamp % 10000}_${i + 1}A`;
-        const teammate2 = `Bot_${batchTimestamp % 10000}_${i + 1}B`;
-        const teammate3 = `Bot_${batchTimestamp % 10000}_${i + 1}C`;
-        const confirmedRoster = [captain, teammate1, teammate2, teammate3];
+        // Roster derivation: Exactly 2 players for Duo Switch (1 Captain + 1 Teammate) vs 4 players for standard 4v4
+        let confirmedRoster;
+        if (isDuoSwitch) {
+          const teammate1 = `DuoMate_${batchTimestamp % 10000}_${i + 1}`;
+          confirmedRoster = [captain, teammate1];
+        } else {
+          const teammate1 = `Bot_${batchTimestamp % 10000}_${i + 1}A`;
+          const teammate2 = `Bot_${batchTimestamp % 10000}_${i + 1}B`;
+          const teammate3 = `Bot_${batchTimestamp % 10000}_${i + 1}C`;
+          confirmedRoster = [captain, teammate1, teammate2, teammate3];
+        }
         confirmedRoster.forEach(t => usedPlayerTags.add(norm(t)));
 
         const regId = `reg_dummy_${batchTimestamp}_${i + 1}_${Math.random().toString(36).substring(2, 6)}`;
@@ -3809,7 +3820,7 @@ if (dbClient && cleanPayload.user_id) {
           pending_roster: [],
           roster_status: confirmedRoster.map(tag => ({
             gamertag: tag,
-            role: tag === captain ? "Captain" : "Member",
+            role: tag === captain ? "Captain" : "Teammate",
             status: "accepted",
             accepted_at: new Date().toISOString(),
             registered_by_admin: true
@@ -3818,6 +3829,7 @@ if (dbClient && cleanPayload.user_id) {
           auto_accepted: true,
           registered_by_admin: true,
           is_dummy_team: true,
+          is_duo_switch: isDuoSwitch,
           accepted_at: new Date().toISOString(),
           registered_at: new Date().toISOString()
         };
@@ -3884,7 +3896,7 @@ if (dbClient && cleanPayload.user_id) {
         count: newSquadRecords.length,
         squads: createdSquadNames,
         totalEnlisted: totalTourneySquads,
-        message: `Successfully enlisted ${newSquadRecords.length} test squad${newSquadRecords.length === 1 ? '' : 's'} (${totalTourneySquads} total).`
+        message: `Successfully enlisted ${newSquadRecords.length} test ${isDuoSwitch ? 'duo' : 'squad'}${newSquadRecords.length === 1 ? '' : 's'} (${totalTourneySquads} total).`
       };
     } catch (err) {
       console.error("generateDummyTournamentSquads error:", err);
@@ -3948,6 +3960,63 @@ if (dbClient && cleanPayload.user_id) {
       };
     } catch (err) {
       console.error("clearDummyTournamentSquads error:", err);
+      return { success: false, error: err.message || err };
+    }
+  },
+
+  async createTestDuoSwitchTournament(duoCount = 8) {
+    try {
+      const tourneyId = "tourney_duo_switch_test_" + Date.now();
+      const count = Math.max(4, Math.min(parseInt(duoCount, 10) || 8, 32));
+      const today = new Date().toISOString().split("T")[0];
+      const demoTourney = {
+        id: tourneyId,
+        title: "⚡ Duo Switch Test Championship (Demo)",
+        game: "Call of Duty: Black Ops 6",
+        format: "Duo Switch (All Modes)",
+        bracket_type: "Double Elimination",
+        status: "open",
+        prize_pool: "$1,000 USD (Demo Prize)",
+        prize: "$1,000 USD (Demo Prize)",
+        entry_fee: "Free (Demo Sandbox)",
+        has_entry_fee: false,
+        entry_fee_amount: "FREE DEMO",
+        max_teams: count,
+        registered_teams: 0,
+        teams_registered_count: 0,
+        duo_switch_timer_minutes: 10,
+        duo_switch_reroll_fee: 10,
+        duo_switch_lock_fee: 15,
+        duo_switch_nuke_fee: 25,
+        description: "Commissioner Test Sandbox for Duo Switch Tournament mechanics: 2-player Duos, synchronized live wheel spin pairing, squad locks ($15), escalating respin desks ($10 base), and live countdown window.",
+        rules_notes: "• Format: Duo Switch (4v4). Sign up as a Duo (2 players).\n• Bracket generation randomly pairs 2 Duos into 4v4 squads with synchronized wheel spin reveal.\n• 10-minute respin/lock window for partners to reroll ($10+), lock squad ($15), or nuke all teams ($25).",
+        date: today,
+        start_date: today,
+        time: "8:00 PM EST",
+        start_time: "8:00 PM EST",
+        banner_fit: "contain",
+        created_at: new Date().toISOString(),
+        is_test_tourney: true,
+        is_active: true
+      };
+
+      await this.saveTournament(demoTourney);
+
+      // Seed authentic 2-player dummy duos
+      const dummyRes = await this.generateDummyTournamentSquads(tourneyId, count);
+
+      const refreshedList = await this.getTournaments();
+      const savedTourney = refreshedList.find(t => String(t.id) === String(tourneyId)) || demoTourney;
+
+      return {
+        success: true,
+        tournament: savedTourney,
+        squads: dummyRes.squads || [],
+        count: dummyRes.count || count,
+        message: `Created Demo Duo Switch Tournament with ${dummyRes.count || count} seeded 2-player Duos!`
+      };
+    } catch (err) {
+      console.error("createTestDuoSwitchTournament error:", err);
       return { success: false, error: err.message || err };
     }
   },
