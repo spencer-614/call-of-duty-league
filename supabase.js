@@ -3964,13 +3964,12 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
-  async createTestDuoSwitchTournament(duoCount = 8, timerMinutes = 2) {
+  async createTestDuoSwitchTournament(duoCount = 8) {
     try {
       const tourneyId = "tourney_duo_switch_test_" + Date.now();
       let count = parseInt(duoCount, 10) || 8;
       if (count % 2 !== 0) count += 1;
       count = Math.max(4, Math.min(count, 64));
-      const timerMins = Math.max(1, Math.min(parseInt(timerMinutes, 10) || 2, 60));
       const today = new Date().toISOString().split("T")[0];
       const demoTourney = {
         id: tourneyId,
@@ -3987,12 +3986,11 @@ if (dbClient && cleanPayload.user_id) {
         max_teams: count,
         registered_teams: 0,
         teams_registered_count: 0,
-        duo_switch_timer_minutes: timerMins,
         duo_switch_reroll_fee: 10,
         duo_switch_lock_fee: 15,
         duo_switch_nuke_fee: 25,
-        description: `Commissioner Test Sandbox for Duo Switch Tournament mechanics: ${count} 2-player Duos, 4v4 pairings, synchronized live wheel spin pairing, squad locks ($15), escalating respin desks ($10 base), and live ${timerMins}-minute countdown window before bracket generation.`,
-        rules_notes: `• Format: Duo Switch (4v4). Sign up as a Duo (2 players).\n• Duos are paired into 4v4 squads with synchronized wheel spin reveal.\n• ${timerMins}-minute respin/lock window for partners to reroll ($10+), lock squad ($15), or nuke all teams ($25).\n• Once the timer expires, the official bracket is generated using our bracket system.`,
+        description: `Commissioner Test Sandbox for Duo Switch Tournament mechanics: ${count} 2-player Duos, 4v4 pairings, synchronized live wheel spin pairing, squad locks ($15), unlock, escalating respin desks ($10 base, +$5 per blowup), and commissioner bracket generation.`,
+        rules_notes: `• Format: Duo Switch (4v4). Sign up as a Duo (2 players).\n• Duos are paired into 4v4 squads with synchronized wheel spin reveal.\n• Power-up arena for partners to reroll ($10+), lock squad ($15), unlock, or blow up all teams ($25).\n• Respins increment by +$5 whenever there is a blowup!\n• Once locked by the Commissioner, the official bracket is generated using our bracket system.`,
         date: today,
         start_date: today,
         time: "8:00 PM EST",
@@ -4008,8 +4006,8 @@ if (dbClient && cleanPayload.user_id) {
       // Seed authentic 2-player dummy duos
       const dummyRes = await this.generateDummyTournamentSquads(tourneyId, count);
 
-      // Form 4v4 teams from two duos and start the respin/lock countdown timer!
-      const formRes = await this.formDuoSwitchTeams(tourneyId, { timerMinutes: timerMins });
+      // Form 4v4 teams from two duos and open the power-up arena!
+      const formRes = await this.formDuoSwitchTeams(tourneyId);
 
       const refreshedList = await this.getTournaments();
       const savedTourney = refreshedList.find(t => String(t.id) === String(tourneyId)) || demoTourney;
@@ -8078,7 +8076,6 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
-    const timerMins = Number(options.timerMinutes !== undefined ? options.timerMinutes : (tourney.duo_switch_timer_minutes || 5));
     const nowMs = Date.now();
     const switchState = {
       enabled: true,
@@ -8086,14 +8083,13 @@ if (dbClient && cleanPayload.user_id) {
       bracket_generated: false,
       teams: pairedTeams,
       window_start_time: new Date(nowMs).toISOString(),
-      window_end_time: new Date(nowMs + timerMins * 60 * 1000).toISOString(),
-      countdown_seconds: timerMins * 60,
       reroll_base_fee: Number(tourney.duo_switch_reroll_fee || 10),
       reroll_escalation: 5,
       lock_fee: Number(tourney.duo_switch_lock_fee || 15),
       nuke_fee: Number(tourney.duo_switch_nuke_fee || 25),
       max_rerolls_per_duo: 2,
       duo_reroll_counts: {},
+      blowup_count: 0,
       locked_teams: [],
       pending_requests: []
     };
@@ -8124,14 +8120,13 @@ if (dbClient && cleanPayload.user_id) {
     
     // If teams not formed yet, form them now
     if (!Array.isArray(state.teams) || state.teams.length < 2) {
-      const formRes = await this.formDuoSwitchTeams(tournamentId, { timerMinutes: 0 });
+      const formRes = await this.formDuoSwitchTeams(tournamentId);
       if (!formRes.success) return formRes;
       state = formRes.switchState;
     }
 
     // Lock the reroll window
     state.status = 'locked';
-    state.window_end_time = new Date().toISOString();
     state.bracket_generated = true;
 
     await this.saveDuoSwitchState(tournamentId, state);
@@ -8573,6 +8568,10 @@ if (dbClient && cleanPayload.user_id) {
       }
     });
 
+    // Respins increment by $5 when there is a blowup!
+    state.blowup_count = (state.blowup_count || 0) + 1;
+    state.reroll_base_fee = (state.reroll_base_fee || 10) + 5;
+
     await this.saveDuoSwitchState(tournamentId, state);
     if (bracket && bracket.stages) {
       bracket.switch_state = state;
@@ -8588,10 +8587,16 @@ if (dbClient && cleanPayload.user_id) {
     this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_nuke', {
       requesting_duo_id: requestingDuoId,
       requesting_duo_name: requestingDuoName,
-      scrambled_count: unlockedTeams.length
+      scrambled_count: unlockedTeams.length,
+      new_reroll_fee: state.reroll_base_fee
     });
 
-    return { success: true, scrambledCount: unlockedTeams.length };
+    return { 
+      success: true, 
+      scrambledCount: unlockedTeams.length,
+      newRerollFee: state.reroll_base_fee,
+      blowupCount: state.blowup_count
+    };
   },
 
   async saveTournamentBracket(tournamentId, bracket) {

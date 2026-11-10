@@ -4426,42 +4426,14 @@
             </div>
           </div>
 
-          <!-- 2. Countdown Timer Selection -->
-          <div class="form-group" style="margin-bottom:18px;">
-            <label class="form-label" style="color:#38bdf8; font-weight:800; margin-bottom:6px; display:block;">
-              2. Respin &amp; Squad Lock Timer Window *
-            </label>
-            <p style="color:var(--muted); font-size:12px; margin:0 0 10px; line-height:1.4;">
-              Duos can request partner respins ($10+), lock squads ($15), or nuke all teams ($25) during this window. Once timer expires (or when you click Lock), our bracket system generates the official tournament bracket.
-            </p>
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
-              <button type="button" class="btn-action-sm duo-timer-preset-btn active" data-mins="1" onclick="selectDuoTestTimer(1, this)" style="padding:8px 4px; text-align:center; border-color:#38bdf8; background:rgba(56,189,248,0.15); color:#38bdf8;">
-                <div style="font-weight:800; font-size:12px;">1 Min</div>
-                <div style="font-size:9.5px; opacity:0.8;">Fast Test</div>
-              </button>
-              <button type="button" class="btn-action-sm duo-timer-preset-btn" data-mins="2" onclick="selectDuoTestTimer(2, this)" style="padding:8px 4px; text-align:center; border-color:#2a321e;">
-                <div style="font-weight:800; font-size:12px;">2 Mins</div>
-                <div style="font-size:9.5px; color:#9ca3af;">Quick Demo</div>
-              </button>
-              <button type="button" class="btn-action-sm duo-timer-preset-btn" data-mins="5" onclick="selectDuoTestTimer(5, this)" style="padding:8px 4px; text-align:center; border-color:#2a321e;">
-                <div style="font-weight:800; font-size:12px;">5 Mins</div>
-                <div style="font-size:9.5px; color:#9ca3af;">Standard</div>
-              </button>
-              <button type="button" class="btn-action-sm duo-timer-preset-btn" data-mins="10" onclick="selectDuoTestTimer(10, this)" style="padding:8px 4px; text-align:center; border-color:#2a321e;">
-                <div style="font-weight:800; font-size:12px;">10 Mins</div>
-                <div style="font-size:9.5px; color:#9ca3af;">Live Event</div>
-              </button>
-            </div>
-            <input type="hidden" id="duo-test-selected-timer" value="1" />
-          </div>
-
           <!-- Summary Box -->
           <div style="background:#090c06; border:1px solid #202b13; padding:12px 14px; border-radius:3px; font-size:12px; color:#cbd5e1; line-height:1.5;">
             <div style="font-weight:800; color:#fbbf24; margin-bottom:4px; font-size:11px; text-transform:uppercase;">⚡ Test Pipeline:</div>
             • Seeds <strong id="summary-duo-count" style="color:#ffffff;">8 authentic 2-player Duos</strong><br/>
-            • Pairs them into <strong id="summary-squad-count" style="color:#38bdf8;">4 4v4 squads</strong> and triggers synchronized live wheel reveal<br/>
-            • Starts live <strong id="summary-timer-mins" style="color:#fbbf24;">1-minute</strong> partner respin/lock countdown window<br/>
-            • When the timer expires, automatically generates the Double Elimination bracket using our bracket system!
+            • Pairs them into <strong id="summary-squad-count" style="color:#38bdf8;">4 4v4 squads</strong> with synchronized live wheel reveal<br/>
+            • Opens live partner respin ($10+), squad lock ($15), unlock, and blow up ($25) arena<br/>
+            • Respins increment by <strong style="color:#fef08a;">+$5 whenever there is a blowup</strong>!<br/>
+            • Commissioner locks pairings and generates the Double Elimination bracket whenever ready!
           </div>
         </div>
         <div class="admin-modal-footer" style="border-top:1px solid #2a311e; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
@@ -11873,12 +11845,9 @@
                       </div>
 
                       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <div style="background:#080a05; border:1px solid #202a14; padding:5px 12px; border-radius:3px; font:900 14px monospace; color:${isWindowActive ? '#fbbf24' : '#ef4444'};">
-                          ⏱ ${isWindowActive ? 'WINDOW ACTIVE' : 'PAIRINGS LOCKED'}
+                        <div style="background:#080a05; border:1px solid #202a14; padding:5px 12px; border-radius:3px; font:900 13px monospace; color:${isLocked ? '#ef4444' : '#22c55e'};">
+                          ${isLocked ? '🔒 PAIRINGS LOCKED' : '⚡ POWER-UP ARENA ACTIVE'}
                         </div>
-                        <button type="button" class="btn-action-sm" onclick="adminExtendDuoSwitchTimer('${escapeHtml(tourneyId)}', 2)" style="font-size:11px; padding:5px 10px;">
-                          +2 Mins
-                        </button>
                         <button type="button" class="btn-action-sm btn-action-danger" onclick="adminLockDuoSwitchPairings('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; font-weight:800;">
                           🔒 Lock &amp; Generate Bracket
                         </button>
@@ -12131,12 +12100,9 @@
                     </div>
 
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                      <div style="background:#080a05; border:1px solid #202a14; padding:5px 12px; border-radius:3px; font:900 14px monospace; color:${isWindowActive ? '#fbbf24' : '#ef4444'};">
-                        ⏱ ${isWindowActive ? 'WINDOW ACTIVE' : 'PAIRINGS LOCKED'}
+                      <div style="background:#080a05; border:1px solid #202a14; padding:5px 12px; border-radius:3px; font:900 13px monospace; color:${isLocked ? '#ef4444' : '#22c55e'};">
+                        ${isLocked ? '🔒 PAIRINGS LOCKED' : '⚡ POWER-UP ARENA ACTIVE'}
                       </div>
-                      <button type="button" class="btn-action-sm" onclick="adminExtendDuoSwitchTimer('${escapeHtml(tourneyId)}', 2)" style="font-size:11px; padding:5px 10px;">
-                        +2 Mins
-                      </button>
                       <button type="button" class="btn-action-sm btn-action-danger" onclick="adminLockDuoSwitchPairings('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; font-weight:800;">
                         🔒 Lock Pairings Now
                       </button>
@@ -12430,15 +12396,13 @@
 
         async function adminFormDuoSwitchTeamsAction(tourneyId) {
           try {
-            const timerStr = prompt("Enter countdown timer duration in minutes for the Duo Switch reroll & squad lock window (e.g. 1, 2, 5, 10):", "5");
-            if (timerStr === null) return;
-            const timerMins = parseInt(timerStr, 10) || 5;
+            if (!confirm("Pair duos into 4v4 squads and open the Duo Switch power-up arena?")) return;
 
-            showToast("⏳ Pairing Duos into 4v4 squads & opening reroll window...");
+            showToast("⏳ Pairing Duos into 4v4 squads & opening power-up arena...");
             if (window.LeagueDB && typeof window.LeagueDB.formDuoSwitchTeams === 'function') {
-              const res = await window.LeagueDB.formDuoSwitchTeams(tourneyId, { timerMinutes: timerMins });
+              const res = await window.LeagueDB.formDuoSwitchTeams(tourneyId);
               if (res && res.success) {
-                showToast(`✓ Paired into ${res.count} 4v4 squads! Reroll countdown timer started.`);
+                showToast(`✓ Paired into ${res.count} 4v4 squads! Power-up arena is open.`);
                 setTimeout(() => {
                   adminLaunchDuoSwitchWheelPreview(tourneyId);
                 }, 500);
@@ -13054,22 +13018,21 @@
           let count = parseInt(document.getElementById('duo-test-custom-count')?.value || '8', 10);
           if (isNaN(count) || count < 4) count = 4;
           if (count % 2 !== 0) count += 1;
-          const timerMins = parseInt(document.getElementById('duo-test-selected-timer')?.value || '1', 10) || 1;
-          adminExecuteDuoSwitchTest(count, timerMins);
+          adminExecuteDuoSwitchTest(count);
         }
         window.handleDuoSwitchTestSubmit = handleDuoSwitchTestSubmit;
 
-        async function adminExecuteDuoSwitchTest(duoCount = 8, timerMinutes = 1) {
+        async function adminExecuteDuoSwitchTest(duoCount = 8) {
           const modal = document.getElementById('modal-duo-switch-test-setup');
           if (modal && (modal.open || modal.hasAttribute('open'))) {
             modal.close();
           }
 
-          showToast(`⏳ Creating Duo Switch test with ${duoCount} Duos & starting ${timerMinutes}-min timer...`);
+          showToast(`⏳ Creating Duo Switch test with ${duoCount} Duos & opening power-up arena...`);
           try {
             let res = null;
             if (window.LeagueDB && typeof window.LeagueDB.createTestDuoSwitchTournament === "function") {
-              res = await window.LeagueDB.createTestDuoSwitchTournament(duoCount, timerMinutes);
+              res = await window.LeagueDB.createTestDuoSwitchTournament(duoCount);
             } else {
               showToast("League database service unavailable.", true);
               return;

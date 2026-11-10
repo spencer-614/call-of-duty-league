@@ -619,6 +619,9 @@
         <div style="font-size:12.5px; font-weight:700; color:#fca5a5;">
           ${esc(payload.requesting_duo_name || 'A competitor')} paid the Nuke fee! All unlocked squads re-shuffled!
         </div>
+        <div style="font-size:12px; font-weight:800; color:#fef08a; margin-top:6px;">
+          📈 Partner respin fee escalated by +$5! (Now $${payload.new_reroll_fee || '15'}+)
+        </div>
       `;
       document.body.appendChild(nukeBanner);
       setTimeout(() => nukeBanner.remove(), 7000);
@@ -694,8 +697,8 @@
 
     renderBracketDuoSwitchBanner(container, tourney, bracketData, regs) {
       const state = this.currentSwitchState || {};
-      const endTime = state.window_end_time ? new Date(state.window_end_time).getTime() : null;
-      const isWindowActive = endTime && (endTime > Date.now()) && state.status !== 'locked';
+      const isLocked = state.status === 'locked';
+      const isWindowOpen = !isLocked;
 
       const currentUser = this.getCurrentUser();
       const myDuo = this.findUserDuo(currentUser, regs);
@@ -706,7 +709,7 @@
       const myRerollCount = (myDuo && state.duo_reroll_counts && state.duo_reroll_counts[myDuo.id]) || 0;
       const rerollCost = (state.reroll_base_fee || 10) + myRerollCount * (state.reroll_escalation || 5);
       const maxRerolls = state.max_rerolls_per_duo || 2;
-      const canReroll = myDuo && isWindowActive && !isMyTeamLocked && (myRerollCount < maxRerolls);
+      const canReroll = myDuo && isWindowOpen && !isMyTeamLocked && (myRerollCount < maxRerolls);
 
       // Check if this duo has a pending request waiting for commissioner approval or payment
       const myPendingReq = (state.pending_requests || []).find(r => myDuo && r.duo_id === myDuo.id);
@@ -721,18 +724,18 @@
                   DUO SWITCH 4v4 // ROSTER POWER-UP ENGINE
                 </div>
                 <h4 style="margin:2px 0 0; font:900 16px var(--display, sans-serif); color:#ffffff; text-transform:uppercase;">
-                  Live Partner Pairing &amp; Reroll Window
+                  Live Partner Pairing &amp; Reroll Arena
                 </h4>
               </div>
             </div>
 
-            <!-- Countdown Timer Clock -->
+            <!-- Status Indicator Badge -->
             <div style="display:flex; align-items:center; gap:8px; background:#080a05; border:1px solid #202a14; padding:6px 14px; border-radius:3px;">
-              <span style="font-size:13px;">⏱</span>
+              <span style="font-size:13px;">${isWindowOpen ? '⚡' : '🔒'}</span>
               <div>
-                <div style="font-size:9.5px; color:#9ca3af; text-transform:uppercase; font-weight:700;">Window Remaining</div>
-                <div id="dsw-countdown-display" style="font:900 16px monospace; color:${isWindowActive ? '#fbbf24' : '#ef4444'};">
-                  ${isWindowActive ? 'Calculating...' : 'WINDOW CLOSED'}
+                <div style="font-size:9.5px; color:#9ca3af; text-transform:uppercase; font-weight:700;">Status</div>
+                <div id="dsw-status-display" style="font:900 13px var(--display, sans-serif); color:${isWindowOpen ? '#22c55e' : '#ef4444'}; text-transform:uppercase;">
+                  ${isWindowOpen ? 'RESPIN & LOCK ACTIVE' : 'PAIRINGS LOCKED'}
                 </div>
               </div>
             </div>
@@ -764,7 +767,7 @@
                       <button type="button" class="btn-tourney-primary" style="font-size:11px; padding:3px 8px;" onclick="window.DuoSwitchEngine.openPaymentDirectiveModal(${JSON.stringify(myPendingReq).replace(/"/g, '&quot;')})">
                         Pay Fee Now ➔
                       </button>
-                    ` : '<span style="font-size:10.5px; color:#9ca3af;">(Waiting for Commissioner...)</span>'}
+                    ` : '<span style="font-size:10.5px; color:#94a3af;">(Waiting for Commissioner...)</span>'}
                   </div>
                 ` : `
                   <!-- Reroll Button -->
@@ -780,8 +783,8 @@
                   <!-- Lock Button -->
                   <button type="button" 
                     class="btn-tourney-outline" 
-                    style="font-size:11.5px; padding:7px 12px; border-color:#22c55e; color:#4ade80; background:rgba(34,197,94,0.08); ${isWindowActive && !isMyTeamLocked ? '' : 'opacity:0.4; cursor:not-allowed;'}"
-                    ${isWindowActive && !isMyTeamLocked ? '' : 'disabled'}
+                    style="font-size:11.5px; padding:7px 12px; border-color:#22c55e; color:#4ade80; background:rgba(34,197,94,0.08); ${isWindowOpen && !isMyTeamLocked ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    ${isWindowOpen && !isMyTeamLocked ? '' : 'disabled'}
                     onclick="window.DuoSwitchEngine.requestPowerUp('lock', ${state.lock_fee || 15})"
                     title="Lock your 4v4 squad ($15) so nobody can swap or take your partner!">
                     🔒 Lock Squad ($${state.lock_fee || 15})
@@ -790,10 +793,10 @@
                   <!-- Blow It Up (Nuke) Button -->
                   <button type="button" 
                     class="btn-tourney-outline" 
-                    style="font-size:11.5px; padding:7px 12px; border-color:#ef4444; color:#f87171; background:rgba(239,68,68,0.08); ${isWindowActive ? '' : 'opacity:0.4; cursor:not-allowed;'}"
-                    ${isWindowActive ? '' : 'disabled'}
+                    style="font-size:11.5px; padding:7px 12px; border-color:#ef4444; color:#f87171; background:rgba(239,68,68,0.08); ${isWindowOpen ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    ${isWindowOpen ? '' : 'disabled'}
                     onclick="window.DuoSwitchEngine.requestPowerUp('nuke', ${state.nuke_fee || 25})"
-                    title="Blow it up! Re-shuffle all unlocked duos across the tournament!">
+                    title="Blow it up! Re-shuffle all unlocked duos across the tournament! (Escalates respin costs by +$5)">
                     💥 Blow It Up ($${state.nuke_fee || 25})
                   </button>
                 `}
@@ -801,7 +804,7 @@
             </div>
           ` : `
             <div style="background:#131a0e; border:1px solid #273718; padding:10px 14px; border-radius:3px; margin-bottom:12px; font-size:12px; color:#cbd5e1; display:flex; justify-content:space-between; align-items:center;">
-              <span>Enlisted duos can request partner respins, locks ($15), or bracket scrambles during this live countdown window.</span>
+              <span>Enlisted duos can request partner respins, locks ($15), or bracket scrambles. Blowups escalate respin fees by +$5!</span>
               <button type="button" onclick="window.DuoSwitchEngine.openLiveWheelPreview()" class="btn-tourney-outline" style="font-size:11px; padding:4px 10px; border-color:#fbbf24; color:#fbbf24;">
                 🎡 View Live Wheel Slices
               </button>
@@ -812,9 +815,9 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:11px; color:#9ca3af; border-top:1px solid #1f2a13; padding-top:10px;">
             <div>
               <strong style="color:#ffffff;">Duo Switch Rules:</strong> 
-              • 🎲 <strong>Reroll Partner:</strong> Starts at $10 (+$5 each roll, max 2).
+              • 🎲 <strong>Reroll Partner:</strong> Starts at $${state.reroll_base_fee || 10} (+$5 each roll, max 2).
               • 🔒 <strong>Lock Squad ($15):</strong> Permanent immunity from swaps.
-              • 💥 <strong>Blow It Up ($25):</strong> Scrambles all unlocked teams live!
+              • 💥 <strong>Blow It Up ($25):</strong> Scrambles all unlocked teams live &amp; escalates respin fee by +$5!
             </div>
             <button type="button" onclick="window.DuoSwitchEngine.openLiveWheelPreview()" style="background:none; border:none; color:#fbbf24; font-size:11px; cursor:pointer; text-decoration:underline;">
               🎡 Open Synchronized Wheel Modal ↗
@@ -822,53 +825,11 @@
           </div>
         </div>
       `;
-
-      this.startCountdownTicker(endTime);
     }
 
     startCountdownTicker(endTime) {
       if (this.countdownInterval) clearInterval(this.countdownInterval);
-      if (!endTime) return;
-
-      const updateClock = () => {
-        const el = document.getElementById('dsw-countdown-display');
-        if (!el) return;
-        const now = Date.now();
-        const diff = endTime - now;
-
-        if (diff <= 0) {
-          el.textContent = '00:00 (PAIRINGS LOCKED)';
-          el.style.color = '#ef4444';
-          clearInterval(this.countdownInterval);
-          this.countdownInterval = null;
-
-          // Timer expired! If bracket has not been generated yet, automatically generate it using our bracket system!
-          const state = this.currentSwitchState;
-          if (state && !state.bracket_generated && this.activeTournamentId) {
-            state.bracket_generated = true;
-            if (window.LeagueDB && typeof window.LeagueDB.finalizeDuoSwitchAndGenerateBracket === 'function') {
-              window.LeagueDB.finalizeDuoSwitchAndGenerateBracket(this.activeTournamentId).then(res => {
-                if (res && res.success) {
-                  if (typeof window.refreshCurrentBracketData === 'function') {
-                    window.refreshCurrentBracketData();
-                  }
-                  if (typeof window.refreshAdminDuoSwitchDesk === 'function') {
-                    window.refreshAdminDuoSwitchDesk();
-                  }
-                }
-              }).catch(e => console.error("Auto bracket generation error:", e));
-            }
-          }
-          return;
-        }
-
-        const mins = Math.floor(diff / 60000);
-        const secs = Math.floor((diff % 60000) / 1000);
-        el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      };
-
-      updateClock();
-      this.countdownInterval = setInterval(updateClock, 1000);
+      this.countdownInterval = null;
     }
 
     // -------------------------------------------------------------------------
