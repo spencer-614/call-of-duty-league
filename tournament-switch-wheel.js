@@ -27,28 +27,32 @@
     return audioCtx;
   }
 
+  let lastTickTime = 0;
   function playPegTick(speedFactor = 1.0) {
+    const now = performance.now();
+    if (now - lastTickTime < 28) return; // rate-limit ticks to prevent Web Audio queue thrashing
+    lastTickTime = now;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      const now = ctx.currentTime;
+      const t = ctx.currentTime;
 
       // Realistic mechanical wheel peg click
-      const baseFreq = 950 + Math.random() * 200;
+      const baseFreq = 950 + Math.random() * 150;
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(180, now + 0.025);
+      osc.frequency.setValueAtTime(baseFreq, t);
+      osc.frequency.exponentialRampToValueAtTime(180, t + 0.02);
 
-      gain.gain.setValueAtTime(0.28, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+      gain.gain.setValueAtTime(0.24, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start(now);
-      osc.stop(now + 0.026);
+      osc.start(t);
+      osc.stop(t + 0.022);
     } catch (_) {}
   }
 
@@ -128,168 +132,227 @@
       this.onSpinEnd = options.onSpinEnd || null;
       this.lastPegCrossed = -1;
       this.pointerKick = 0;
+      this.animFrameId = null;
+
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.discCanvas = document.createElement('canvas');
+      this.bezelCanvas = document.createElement('canvas');
+
+      this.setupCanvasDPI();
+      this.renderBezel();
+      this.renderDisc();
+    }
+
+    setupCanvasDPI() {
+      if (!this.canvas) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const logicalW = (rect && rect.width > 50) ? rect.width : 340;
+      const logicalH = (rect && rect.height > 50) ? rect.height : 340;
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const targetW = Math.round(logicalW * this.dpr);
+      const targetH = Math.round(logicalH * this.dpr);
+
+      if (this.canvas.width !== targetW || this.canvas.height !== targetH) {
+        this.canvas.width = targetW;
+        this.canvas.height = targetH;
+        this.renderBezel();
+        this.renderDisc();
+      }
     }
 
     setSlices(slices) {
       this.slices = Array.isArray(slices) ? slices : [];
+      this.renderDisc();
       this.draw();
     }
 
+    renderBezel() {
+      if (!this.canvas) return;
+      const width = this.canvas.width || Math.round(340 * this.dpr);
+      const height = this.canvas.height || Math.round(340 * this.dpr);
+
+      this.bezelCanvas.width = width;
+      this.bezelCanvas.height = height;
+      const bCtx = this.bezelCanvas.getContext('2d');
+      if (!bCtx) return;
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(centerX, centerY) - (24 * this.dpr);
+
+      bCtx.clearRect(0, 0, width, height);
+
+      // Outer rim backing ring
+      bCtx.beginPath();
+      bCtx.arc(centerX, centerY, radius + (14 * this.dpr), 0, Math.PI * 2);
+      bCtx.fillStyle = '#080a07';
+      bCtx.fill();
+
+      // Outer bezel ring
+      bCtx.beginPath();
+      bCtx.arc(centerX, centerY, radius + (10 * this.dpr), 0, Math.PI * 2);
+      bCtx.strokeStyle = '#27311c';
+      bCtx.lineWidth = 8 * this.dpr;
+      bCtx.stroke();
+
+      // Gold accent ring
+      bCtx.beginPath();
+      bCtx.arc(centerX, centerY, radius + (4 * this.dpr), 0, Math.PI * 2);
+      bCtx.strokeStyle = '#fbbf24';
+      bCtx.lineWidth = 3 * this.dpr;
+      bCtx.stroke();
+    }
+
+    renderDisc() {
+      if (!this.canvas) return;
+      const width = this.canvas.width || Math.round(340 * this.dpr);
+      const height = this.canvas.height || Math.round(340 * this.dpr);
+
+      this.discCanvas.width = width;
+      this.discCanvas.height = height;
+      const dCtx = this.discCanvas.getContext('2d');
+      if (!dCtx) return;
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(centerX, centerY) - (24 * this.dpr);
+
+      dCtx.clearRect(0, 0, width, height);
+
+      const numSlices = Math.max(1, this.slices.length);
+      const sliceAngle = (Math.PI * 2) / numSlices;
+
+      // Draw all slices onto offscreen canvas (pre-rendered once!)
+      for (let i = 0; i < numSlices; i++) {
+        const startA = i * sliceAngle;
+        const endA = startA + sliceAngle;
+        const sliceData = this.slices[i] || { name: `Duo ${i + 1}` };
+        const color = sliceData.color || SLICE_COLORS[i % SLICE_COLORS.length];
+
+        dCtx.beginPath();
+        dCtx.moveTo(centerX, centerY);
+        dCtx.arc(centerX, centerY, radius, startA, endA);
+        dCtx.closePath();
+
+        const grad = dCtx.createRadialGradient(centerX, centerY, radius * 0.15, centerX, centerY, radius);
+        grad.addColorStop(0, '#10140c');
+        grad.addColorStop(0.7, color);
+        grad.addColorStop(1, '#080a06');
+        dCtx.fillStyle = grad;
+        dCtx.fill();
+
+        dCtx.strokeStyle = '#050704';
+        dCtx.lineWidth = 2 * this.dpr;
+        dCtx.stroke();
+
+        // Slice text label
+        dCtx.save();
+        dCtx.translate(centerX, centerY);
+        const midA = startA + sliceAngle / 2;
+        dCtx.rotate(midA);
+        dCtx.textAlign = 'right';
+        dCtx.textBaseline = 'middle';
+
+        const label = String(sliceData.team_name || sliceData.name || `Duo ${i + 1}`).trim();
+        const shortLabel = label.length > 18 ? label.substring(0, 16) + '..' : label;
+
+        dCtx.font = `900 ${13 * this.dpr}px "Industry", "Inter", sans-serif`;
+        dCtx.fillStyle = '#ffffff';
+        dCtx.fillText(shortLabel, radius - (20 * this.dpr), 0);
+
+        if (sliceData.captain_gamertag || sliceData.captain) {
+          const cap = String(sliceData.captain_gamertag || sliceData.captain).trim();
+          dCtx.font = `700 ${9.5 * this.dpr}px "Industry", "Inter", sans-serif`;
+          dCtx.fillStyle = '#fbbf24';
+          dCtx.fillText(`👑 ${cap.length > 14 ? cap.substring(0, 12) + '..' : cap}`, radius - (20 * this.dpr), 14 * this.dpr);
+        }
+
+        dCtx.restore();
+      }
+
+      // Outer rim pegs pre-rendered on the disc
+      for (let i = 0; i < numSlices; i++) {
+        const pegA = i * sliceAngle;
+        const pegX = centerX + Math.cos(pegA) * (radius - 2 * this.dpr);
+        const pegY = centerY + Math.sin(pegA) * (radius - 2 * this.dpr);
+
+        dCtx.beginPath();
+        dCtx.arc(pegX, pegY, 4 * this.dpr, 0, Math.PI * 2);
+        dCtx.fillStyle = '#fbbf24';
+        dCtx.fill();
+
+        dCtx.beginPath();
+        dCtx.arc(pegX, pegY, 2 * this.dpr, 0, Math.PI * 2);
+        dCtx.fillStyle = '#ffffff';
+        dCtx.fill();
+      }
+    }
+
     draw() {
-      const { ctx, canvas, slices } = this;
+      const { ctx, canvas } = this;
       if (!ctx || !canvas) return;
 
       const width = canvas.width;
       const height = canvas.height;
       const centerX = width / 2;
       const centerY = height / 2;
-      const radius = Math.min(centerX, centerY) - 24;
+      const radius = Math.min(centerX, centerY) - (24 * this.dpr);
 
       ctx.clearRect(0, 0, width, height);
 
-      const numSlices = Math.max(1, slices.length);
-      const sliceAngle = (Math.PI * 2) / numSlices;
+      // 1. Static Bezel (single GPU blit)
+      if (this.bezelCanvas) {
+        ctx.drawImage(this.bezelCanvas, 0, 0);
+      }
 
-      // 1. Outer rim shadow and bezel
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius + 14, 0, Math.PI * 2);
-      ctx.fillStyle = '#080a07';
-      ctx.shadowColor = 'rgba(251, 191, 36, 0.4)';
-      ctx.shadowBlur = 24;
-      ctx.fill();
-      ctx.restore();
-
-      // Outer bezel ring
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius + 10, 0, Math.PI * 2);
-      ctx.strokeStyle = '#27311c';
-      ctx.lineWidth = 8;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      // 2. Draw Wheel Slices
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(this.currentAngle);
-
-      for (let i = 0; i < numSlices; i++) {
-        const startA = i * sliceAngle;
-        const endA = startA + sliceAngle;
-        const sliceData = slices[i] || { name: `Duo ${i + 1}` };
-        const color = sliceData.color || SLICE_COLORS[i % SLICE_COLORS.length];
-
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, startA, endA);
-        ctx.closePath();
-
-        // Radial slice gradient for high-end look
-        const midA = startA + sliceAngle / 2;
-        const grad = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius);
-        grad.addColorStop(0, '#10140c');
-        grad.addColorStop(0.7, color);
-        grad.addColorStop(1, '#080a06');
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        ctx.strokeStyle = '#050704';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Text & label
+      // 2. Rotating Wheel Disc (single rotated GPU blit)
+      if (this.discCanvas) {
         ctx.save();
-        ctx.rotate(midA);
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-
-        const label = String(sliceData.team_name || sliceData.name || `Duo ${i + 1}`).trim();
-        const shortLabel = label.length > 18 ? label.substring(0, 16) + '..' : label;
-
-        ctx.font = '900 13px "Industry", "Inter", sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 4;
-        ctx.fillText(shortLabel, radius - 20, 0);
-
-        if (sliceData.captain_gamertag || sliceData.captain) {
-          const cap = String(sliceData.captain_gamertag || sliceData.captain).trim();
-          ctx.font = '700 9.5px "Industry", "Inter", sans-serif';
-          ctx.fillStyle = '#fbbf24';
-          ctx.fillText(`👑 ${cap.length > 14 ? cap.substring(0, 12) + '..' : cap}`, radius - 20, 14);
-        }
-
+        ctx.translate(centerX, centerY);
+        ctx.rotate(this.currentAngle);
+        ctx.drawImage(this.discCanvas, -centerX, -centerY);
         ctx.restore();
       }
 
-      // 3. Pegs around the outer rim
-      for (let i = 0; i < numSlices; i++) {
-        const pegA = i * sliceAngle;
-        const pegX = Math.cos(pegA) * (radius - 2);
-        const pegY = Math.sin(pegA) * (radius - 2);
-
-        ctx.beginPath();
-        ctx.arc(pegX, pegY, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#fbbf24';
-        ctx.shadowColor = '#f59e0b';
-        ctx.shadowBlur = 6;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(pegX, pegY, 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-      }
-
-      ctx.restore(); // Restore wheel rotation
-
-      // 4. Center CDL Hub
+      // 3. Center CDL Hub (crisp vector, zero blur)
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, 38 * this.dpr, 0, Math.PI * 2);
       ctx.fillStyle = '#0a0d07';
-      ctx.shadowColor = '#000';
-      ctx.shadowBlur = 12;
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 34, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, 34 * this.dpr, 0, Math.PI * 2);
       ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3 * this.dpr;
       ctx.stroke();
 
-      ctx.font = '900 18px "Inter", sans-serif';
+      ctx.font = `900 ${18 * this.dpr}px "Inter", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fbbf24';
       ctx.fillText('⚔️', centerX, centerY);
 
-      // 5. Needle / Pointer at 12 o'clock (pointing DOWN into wheel)
+      // 4. Pointer at 12 o'clock with responsive spring kick
       ctx.save();
-      ctx.translate(centerX, centerY - radius + 4);
+      ctx.translate(centerX, centerY - radius + (4 * this.dpr));
       ctx.rotate(this.pointerKick);
 
       ctx.beginPath();
-      ctx.moveTo(-12, -22);
-      ctx.lineTo(12, -22);
-      ctx.lineTo(0, 14);
+      ctx.moveTo(-12 * this.dpr, -22 * this.dpr);
+      ctx.lineTo(12 * this.dpr, -22 * this.dpr);
+      ctx.lineTo(0, 14 * this.dpr);
       ctx.closePath();
 
       ctx.fillStyle = '#ef4444';
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 10;
       ctx.fill();
 
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * this.dpr;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(0, -14, 5, 0, Math.PI * 2);
+      ctx.arc(0, -14 * this.dpr, 5 * this.dpr, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
 
@@ -299,8 +362,16 @@
       this.pointerKick *= 0.85;
     }
 
-    spinTo(targetIndex, durationMs = 6500, totalRotations = 7, onDone) {
-      if (this.isSpinning) return;
+    stopSpin() {
+      if (this.animFrameId) {
+        cancelAnimationFrame(this.animFrameId);
+        this.animFrameId = null;
+      }
+      this.isSpinning = false;
+    }
+
+    spinTo(targetIndex, durationMs = 5200, totalRotations = 6, onDone) {
+      this.stopSpin();
       this.isSpinning = true;
 
       const numSlices = Math.max(1, this.slices.length);
@@ -331,15 +402,16 @@
         const currentPeg = Math.floor(normalizedAngle / sliceAngle);
         if (currentPeg !== this.lastPegCrossed) {
           this.lastPegCrossed = currentPeg;
-          this.pointerKick = 0.32;
+          this.pointerKick = 0.30;
           playPegTick(1 - progress * 0.5);
         }
 
         this.draw();
 
         if (progress < 1) {
-          requestAnimationFrame(step);
+          this.animFrameId = requestAnimationFrame(step);
         } else {
+          this.animFrameId = null;
           this.currentAngle = endAngle;
           this.draw();
           this.isSpinning = false;
@@ -348,7 +420,7 @@
         }
       };
 
-      requestAnimationFrame(step);
+      this.animFrameId = requestAnimationFrame(step);
     }
   }
 
@@ -372,7 +444,7 @@
 
       const wrap = document.createElement('div');
       wrap.id = 'modal-duo-switch-wheel-wrap';
-      wrap.style.cssText = 'display:none; position:fixed; inset:0; z-index:99999; background:rgba(4,6,3,0.88); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;';
+      wrap.style.cssText = 'display:none; position:fixed; inset:0; z-index:99999; background:rgba(4,6,3,0.94); align-items:center; justify-content:center; padding:16px; will-change:transform; transform:translateZ(0);';
 
       wrap.innerHTML = `
         <div style="background:#0c0f0a; border:1px solid #283416; border-top:3px solid #fbbf24; border-radius:4px; max-width:540px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,0.95); position:relative; overflow:hidden; display:flex; flex-direction:column; max-height:92vh;">
@@ -393,7 +465,7 @@
           <!-- Wheel Stage -->
           <div style="padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;">
             <div style="position:relative; width:340px; height:340px; max-width:100%;">
-              <canvas id="dsw-canvas" width="340" height="340" style="width:100%; height:100%; display:block;"></canvas>
+              <canvas id="dsw-canvas" width="340" height="340" style="width:100%; height:100%; display:block; border-radius:50%; box-shadow:0 0 35px rgba(251,191,36,0.22); will-change:transform;"></canvas>
             </div>
 
             <!-- Spin Status / Subtitle Banner -->
@@ -445,11 +517,17 @@
       if (res) res.style.display = 'none';
 
       if (this.wheelInstance) {
+        this.wheelInstance.setupCanvasDPI();
+        this.wheelInstance.renderBezel();
+        this.wheelInstance.renderDisc();
         this.wheelInstance.draw();
       }
     }
 
     closeWheelModal() {
+      if (this.wheelInstance) {
+        this.wheelInstance.stopSpin();
+      }
       const wrap = document.getElementById('modal-duo-switch-wheel-wrap');
       if (wrap) wrap.style.display = 'none';
     }
@@ -507,7 +585,7 @@
         const statusEl = document.getElementById('dsw-status-text');
         if (statusEl) statusEl.textContent = '🎲 Wheel spinning in real-time...';
 
-        this.wheelInstance.spinTo(target_index, 6200, 7, (winner) => {
+        this.wheelInstance.spinTo(target_index, 5200, 6, (winner) => {
           const resBox = document.getElementById('dsw-result-box');
           const resText = document.getElementById('dsw-result-text');
           const resDesc = document.getElementById('dsw-result-desc');
@@ -524,6 +602,9 @@
 
           if (typeof window.refreshCurrentBracketData === 'function') {
             window.refreshCurrentBracketData();
+          }
+          if (typeof window.refreshAdminDuoSwitchDesk === 'function') {
+            window.refreshAdminDuoSwitchDesk();
           }
         });
       }
@@ -544,6 +625,9 @@
 
       if (typeof window.refreshCurrentBracketData === 'function') {
         window.refreshCurrentBracketData();
+      }
+      if (typeof window.refreshAdminDuoSwitchDesk === 'function') {
+        window.refreshAdminDuoSwitchDesk();
       }
     }
 
@@ -937,6 +1021,44 @@
       this.openWheelModal('Synchronized Duo Switch Wheel', 'Live view of all registered duos');
       if (this.wheelInstance && slices.length > 0) {
         this.wheelInstance.setSlices(slices);
+      }
+    }
+
+    simulateWheelSpin(slices, targetIndex, options = {}, onDone) {
+      const title = options.title || '🎡 Live Duo Switch Wheel';
+      const subtext = options.subtext || 'Simulating live wheel spin...';
+      this.openWheelModal(title, subtext);
+
+      if (!Array.isArray(slices) || slices.length === 0) {
+        slices = [
+          { team_name: 'Alpha Duo', name: 'Alpha Duo', captain_gamertag: 'Ghost' },
+          { team_name: 'Bravo Duo', name: 'Bravo Duo', captain_gamertag: 'Soap' },
+          { team_name: 'Charlie Duo', name: 'Charlie Duo', captain_gamertag: 'Price' },
+          { team_name: 'Delta Duo', name: 'Delta Duo', captain_gamertag: 'Gaz' }
+        ];
+      }
+
+      if (targetIndex === undefined || targetIndex < 0 || targetIndex >= slices.length) {
+        targetIndex = Math.floor(Math.random() * slices.length);
+      }
+
+      if (this.wheelInstance) {
+        this.wheelInstance.setSlices(slices);
+        const statusEl = document.getElementById('dsw-status-text');
+        if (statusEl) statusEl.textContent = '🎲 Wheel spinning in real-time...';
+
+        this.wheelInstance.spinTo(targetIndex, 5200, 6, (winner) => {
+          const resBox = document.getElementById('dsw-result-box');
+          const resText = document.getElementById('dsw-result-text');
+          const resDesc = document.getElementById('dsw-result-desc');
+          if (resBox && resText) {
+            resBox.style.display = 'block';
+            resText.textContent = `${winner.team_name || winner.name}`;
+            resDesc.textContent = options.resultDesc || '🎉 Selection Confirmed!';
+          }
+          if (statusEl) statusEl.textContent = '✓ Spin Complete!';
+          if (typeof onDone === 'function') onDone(winner, targetIndex);
+        });
       }
     }
 

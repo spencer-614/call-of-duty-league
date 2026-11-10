@@ -11524,6 +11524,7 @@
           const countEl = document.getElementById("tourney-reg-count-display");
 
           if (!modal || !container) return;
+          window._adminActiveBracketTourneyId = tourneyId;
 
           activeAdminTourneyId = tourneyId;
           activeAdminTourneyTitle = tourneyTitle || "Tournament";
@@ -11780,6 +11781,7 @@
           const statusEl = document.getElementById("admin-bracket-status-display");
 
           if (!modal || !container) return;
+          window._adminActiveBracketTourneyId = tourneyId;
 
           if (titleEl) {
             titleEl.textContent = `${tourneyTitle || 'Tournament'} – Live Bracket & Match Manager`;
@@ -11877,17 +11879,29 @@
                         <button type="button" class="btn-action-sm" onclick="adminExtendDuoSwitchTimer('${escapeHtml(tourneyId)}', 2)" style="font-size:11px; padding:5px 10px;">
                           +2 Mins
                         </button>
-                        <button type="button" class="btn-action-sm btn-action-danger" onclick="adminLockDuoSwitchPairings('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px;">
+                        <button type="button" class="btn-action-sm btn-action-danger" onclick="adminLockDuoSwitchPairings('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; font-weight:800;">
                           🔒 Lock &amp; Generate Bracket
                         </button>
-                        <button type="button" class="btn-action-sm" onclick="adminLaunchDuoSwitchWheelPreview('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#fbbf24; color:#fbbf24;">
-                          🎡 Wheel Reveal
+                        <button type="button" class="btn-action-sm" onclick="adminSimulateWheelSpin('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#fbbf24; color:#fbbf24; font-weight:800;" title="Simulate a live wheel spin with real duos">
+                          🎡 Sim Wheel Spin
                         </button>
-                        <button type="button" class="btn-action-sm" onclick="adminSimulateTestDuoRequest('${escapeHtml(tourneyId)}', 'reroll')" style="font-size:11px; padding:5px 10px; border-color:#38bdf8; color:#38bdf8;" title="Simulate a duo submitting a respin request">
-                          🧪 Test Respin
+                        <button type="button" class="btn-action-sm" onclick="adminSimulateInstantRespin('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#38bdf8; color:#38bdf8; font-weight:800;" title="Instantly simulate partner respin & spin wheel">
+                          🎲 Sim Respin
                         </button>
-                        <button type="button" class="btn-action-sm" onclick="adminSimulateTestDuoRequest('${escapeHtml(tourneyId)}', 'lock')" style="font-size:11px; padding:5px 10px; border-color:#4ade80; color:#4ade80;" title="Simulate a duo submitting a squad lock request">
-                          🧪 Test Lock
+                        <button type="button" class="btn-action-sm" onclick="adminSimulateLock('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#4ade80; color:#4ade80; font-weight:800;" title="Simulate locking an unlocked 4v4 squad">
+                          🔒 Sim Lock
+                        </button>
+                        <button type="button" class="btn-action-sm" onclick="adminSimulateUnlock('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#f59e0b; color:#f59e0b; font-weight:800;" title="Simulate unlocking a locked 4v4 squad">
+                          🔓 Sim Unlock
+                        </button>
+                        <button type="button" class="btn-action-sm btn-action-danger" onclick="adminSimulateBlowUp('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; font-weight:800;" title="Simulate BLOW IT UP (Nuke) scramble of all unlocked teams">
+                          💥 Sim Blow Up
+                        </button>
+                        <button type="button" class="btn-action-sm" onclick="adminSimulateTestDuoRequest('${escapeHtml(tourneyId)}', 'reroll')" style="font-size:10px; padding:5px 8px; opacity:0.85;" title="Submit a mock pending respin request into the queue">
+                          🧪 +Queue Respin
+                        </button>
+                        <button type="button" class="btn-action-sm" onclick="adminSimulateTestDuoRequest('${escapeHtml(tourneyId)}', 'lock')" style="font-size:10px; padding:5px 8px; opacity:0.85;" title="Submit a mock pending lock request into the queue">
+                          🧪 +Queue Lock
                         </button>
                       </div>
                     </div>
@@ -11938,7 +11952,7 @@
                       <div>
                         <strong style="color:var(--lime); font-size:13px; text-transform:uppercase;">Formed 4v4 Squads (${switchState.teams.length})</strong>
                         <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">
-                          These 4v4 teams will be seeded into our bracket system once timer reaches 00:00 or when locked.
+                          These 4v4 teams will be seeded into our bracket system once timer reaches 00:00 or when locked. Use buttons to lock or unlock individual teams.
                         </div>
                       </div>
                     </div>
@@ -11949,9 +11963,14 @@
                           <div style="background:#12160e; border:1px solid ${isLocked ? '#22c55e' : '#232a19'}; border-radius:3px; padding:12px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                               <span style="font-size:10px; font-weight:800; color:#fbbf24;">SQUAD #${idx + 1}</span>
-                              <span style="font-size:10px; font-weight:800; padding:1px 6px; border-radius:2px; ${isLocked ? 'background:rgba(34,197,94,0.2); color:#4ade80; border:1px solid #22c55e;' : 'background:#1a2012; color:#9ca3af; border:1px solid #263017;'}">
-                                ${isLocked ? '🔒 LOCKED' : '🔓 UNLOCKED'}
-                              </span>
+                              <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:10px; font-weight:800; padding:1px 6px; border-radius:2px; ${isLocked ? 'background:rgba(34,197,94,0.2); color:#4ade80; border:1px solid #22c55e;' : 'background:#1a2012; color:#9ca3af; border:1px solid #263017;'}">
+                                  ${isLocked ? '🔒 LOCKED' : '🔓 UNLOCKED'}
+                                </span>
+                                <button type="button" class="btn-action-sm" style="font-size:9.5px; padding:2px 7px; ${isLocked ? 'border-color:#fbbf24; color:#fbbf24;' : 'border-color:#22c55e; color:#4ade80;'}" onclick="adminToggleSquadLock('${escapeHtml(tourneyId)}', '${escapeHtml(t.name)}', ${!isLocked})" title="${isLocked ? 'Click to unlock this squad' : 'Click to lock this squad from rerolls/nukes'}">
+                                  ${isLocked ? '🔓 Unlock' : '🔒 Lock'}
+                                </button>
+                              </div>
                             </div>
                             <strong style="color:#ffffff; font-size:13px; display:block; margin-bottom:8px;">${escapeHtml(t.name)}</strong>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
@@ -12111,24 +12130,42 @@
                       </h4>
                     </div>
 
-                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                       <div style="background:#080a05; border:1px solid #202a14; padding:5px 12px; border-radius:3px; font:900 14px monospace; color:${isWindowActive ? '#fbbf24' : '#ef4444'};">
                         ⏱ ${isWindowActive ? 'WINDOW ACTIVE' : 'PAIRINGS LOCKED'}
                       </div>
                       <button type="button" class="btn-action-sm" onclick="adminExtendDuoSwitchTimer('${escapeHtml(tourneyId)}', 2)" style="font-size:11px; padding:5px 10px;">
                         +2 Mins
                       </button>
-                      <button type="button" class="btn-action-sm btn-action-danger" onclick="adminLockDuoSwitchPairings('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px;">
+                      <button type="button" class="btn-action-sm btn-action-danger" onclick="adminLockDuoSwitchPairings('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; font-weight:800;">
                         🔒 Lock Pairings Now
                       </button>
-                      <button type="button" class="btn-action-sm" onclick="adminLaunchDuoSwitchWheelPreview('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#fbbf24; color:#fbbf24;">
-                        🎡 Launch Wheel Reveal
+                      <button type="button" class="btn-action-sm" onclick="adminSimulateWheelSpin('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#fbbf24; color:#fbbf24; font-weight:800;" title="Simulate a live wheel spin with real duos">
+                        🎡 Sim Wheel Spin
+                      </button>
+                      <button type="button" class="btn-action-sm" onclick="adminSimulateInstantRespin('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#38bdf8; color:#38bdf8; font-weight:800;" title="Instantly simulate partner respin & spin wheel">
+                        🎲 Sim Respin
+                      </button>
+                      <button type="button" class="btn-action-sm" onclick="adminSimulateLock('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#4ade80; color:#4ade80; font-weight:800;" title="Simulate locking an unlocked 4v4 squad">
+                        🔒 Sim Lock
+                      </button>
+                      <button type="button" class="btn-action-sm" onclick="adminSimulateUnlock('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; border-color:#f59e0b; color:#f59e0b; font-weight:800;" title="Simulate unlocking a locked 4v4 squad">
+                        🔓 Sim Unlock
+                      </button>
+                      <button type="button" class="btn-action-sm btn-action-danger" onclick="adminSimulateBlowUp('${escapeHtml(tourneyId)}')" style="font-size:11px; padding:5px 10px; font-weight:800;" title="Simulate BLOW IT UP (Nuke) scramble of all unlocked teams">
+                        💥 Sim Blow Up
+                      </button>
+                      <button type="button" class="btn-action-sm" onclick="adminSimulateTestDuoRequest('${escapeHtml(tourneyId)}', 'reroll')" style="font-size:10px; padding:5px 8px; opacity:0.85;" title="Submit a mock pending respin request into the queue">
+                        🧪 +Queue Respin
+                      </button>
+                      <button type="button" class="btn-action-sm" onclick="adminSimulateTestDuoRequest('${escapeHtml(tourneyId)}', 'lock')" style="font-size:10px; padding:5px 8px; opacity:0.85;" title="Submit a mock pending lock request into the queue">
+                        🧪 +Queue Lock
                       </button>
                     </div>
                   </div>
 
                   <!-- Pending Requests Queue -->
-                  <div style="background:#060804; border:1px solid #1a230e; padding:12px; border-radius:3px;">
+                  <div style="background:#060804; border:1px solid #1a230e; padding:12px; border-radius:3px; margin-bottom:${(Array.isArray(switchState.teams) && switchState.teams.length > 0) ? '12px' : '0'};">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                       <span style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase;">
                         Pending Power-Up Requests (${pendingReqs.length})
@@ -12161,10 +12198,51 @@
                       </div>
                     ` : `
                       <div style="font-size:12px; color:#64748b; text-align:center; padding:12px;">
-                        No pending Duo Switch requests. Waiting for competitor submissions.
+                        No pending Duo Switch requests. Use simulation buttons above to test live respins, locks, and nukes!
                       </div>
                     `}
                   </div>
+
+                  ${(Array.isArray(switchState.teams) && switchState.teams.length > 0) ? `
+                    <!-- Formed 4v4 Squads Showcase -->
+                    <div style="background:#060804; border:1px solid #1f2713; border-radius:3px; padding:12px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase;">
+                          Formed 4v4 Squads (${switchState.teams.length}) · Duo Switch Status
+                        </span>
+                        <span style="font-size:10.5px; color:#94a3af;">Lock or unlock individual squads live</span>
+                      </div>
+                      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px;">
+                        ${switchState.teams.map((t, idx) => {
+                          const isLocked = t.isLocked || (switchState.locked_teams || []).includes(t.name);
+                          return `
+                            <div style="background:#0e120a; border:1px solid ${isLocked ? '#22c55e' : '#232a19'}; border-radius:3px; padding:10px;">
+                              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <span style="font-size:10px; font-weight:800; color:#fbbf24;">SQUAD #${idx + 1}</span>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                  <span style="font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:2px; ${isLocked ? 'background:rgba(34,197,94,0.2); color:#4ade80; border:1px solid #22c55e;' : 'background:#1a2012; color:#9ca3af; border:1px solid #263017;'}">
+                                    ${isLocked ? '🔒 LOCKED' : '🔓 UNLOCKED'}
+                                  </span>
+                                  <button type="button" class="btn-action-sm" style="font-size:9.5px; padding:2px 7px; ${isLocked ? 'border-color:#fbbf24; color:#fbbf24;' : 'border-color:#22c55e; color:#4ade80;'}" onclick="adminToggleSquadLock('${escapeHtml(tourneyId)}', '${escapeHtml(t.name)}', ${!isLocked})">
+                                    ${isLocked ? '🔓 Unlock' : '🔒 Lock'}
+                                  </button>
+                                </div>
+                              </div>
+                              <strong style="color:#ffffff; font-size:12.5px; display:block; margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.name)}</strong>
+                              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:10.5px;">
+                                <div style="background:#080a05; padding:4px 6px; border:1px solid #192010; border-radius:2px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                  <span style="font-size:9px; color:#fbbf24; font-weight:700;">D1:</span> ${escapeHtml(t.duo1_name || 'Duo 1')}
+                                </div>
+                                <div style="background:#080a05; padding:4px 6px; border:1px solid #192010; border-radius:2px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                  <span style="font-size:9px; color:#38bdf8; font-weight:700;">D2:</span> ${escapeHtml(t.duo2_name || 'Duo 2')}
+                                </div>
+                              </div>
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
+                    </div>
+                  ` : ''}
                 </div>
               `;
             }
@@ -12453,6 +12531,180 @@
           }
         }
         window.adminLaunchDuoSwitchWheelPreview = adminLaunchDuoSwitchWheelPreview;
+
+        async function adminSimulateWheelSpin(tourneyId) {
+          try {
+            let slices = [];
+            const state = await window.LeagueDB.getDuoSwitchState(tourneyId) || {};
+            if (Array.isArray(state.teams) && state.teams.length > 0) {
+              state.teams.forEach(t => {
+                if (t.duo1_name) slices.push({ id: t.duo1_id, team_name: t.duo1_name, name: t.duo1_name });
+                if (t.duo2_name) slices.push({ id: t.duo2_id, team_name: t.duo2_name, name: t.duo2_name });
+              });
+            }
+            if (!slices.length) {
+              const regs = await window.LeagueDB.getTournamentRegistrations(tourneyId);
+              if (regs && regs.length) {
+                slices = regs.map(r => ({ id: r.id, team_name: r.team_name, captain_gamertag: r.captain_gamertag, name: r.team_name }));
+              }
+            }
+            if (!slices.length) {
+              showToast("No duos registered or formed yet to spin.", true);
+              return;
+            }
+
+            const randIdx = Math.floor(Math.random() * slices.length);
+            const winner = slices[randIdx];
+
+            if (window.DuoSwitchEngine) {
+              window.DuoSwitchEngine.simulateWheelSpin(slices, randIdx, {
+                title: '🎡 Live Duo Switch Wheel Spin',
+                subtext: 'Demonstration live spin for Duo Switch test tournament',
+                resultDesc: '🎉 Simulated Wheel Selection Complete!'
+              }, (selected) => {
+                showToast(`🎡 Wheel landed on: ${selected.team_name || selected.name}!`);
+              });
+            }
+
+            window.LeagueDB.broadcastDuoSwitchEvent(tourneyId, 'duo_switch_spin', {
+              spin_type: 'admin_sim_spin',
+              slices: slices,
+              target_index: randIdx,
+              target_duo: winner,
+              title: '🎡 Live Duo Switch Wheel Spin',
+              subtext: 'Simulated wheel spin broadcast live across all screens!'
+            });
+          } catch(e) {
+            console.error("adminSimulateWheelSpin error:", e);
+            showToast("Error: " + e.message, true);
+          }
+        }
+        window.adminSimulateWheelSpin = adminSimulateWheelSpin;
+
+        async function adminSimulateInstantRespin(tourneyId) {
+          try {
+            const state = await window.LeagueDB.getDuoSwitchState(tourneyId) || {};
+            const locked = state.locked_teams || [];
+
+            let unlockedDuos = [];
+            if (Array.isArray(state.teams)) {
+              state.teams.forEach(t => {
+                if (!t.isLocked && !locked.includes(t.name)) {
+                  if (t.duo1_id) unlockedDuos.push({ id: t.duo1_id, name: t.duo1_name, team: t });
+                  if (t.duo2_id) unlockedDuos.push({ id: t.duo2_id, name: t.duo2_name, team: t });
+                }
+              });
+            }
+
+            if (unlockedDuos.length < 4) {
+              showToast("Need at least 2 unlocked 4v4 squads to swap partners. Unlock squads or use Blow Up!", true);
+              return;
+            }
+
+            const requesting = unlockedDuos[Math.floor(Math.random() * unlockedDuos.length)];
+            showToast(`🎲 Simulating partner respin for ${requesting.name}...`);
+
+            const result = await window.LeagueDB.executeDuoSwitchReroll(tourneyId, requesting.id);
+            if (result && result.success) {
+              if (window.DuoSwitchEngine && result.slices && result.target_index !== undefined) {
+                window.DuoSwitchEngine.simulateWheelSpin(result.slices, result.target_index, {
+                  title: '🎲 Duo Partner Reroll',
+                  subtext: `Spinning for ${requesting.name}'s new 4v4 partner!`,
+                  resultDesc: `New partner for ${requesting.name}: ${result.targetDuo}!`
+                }, async () => {
+                  showToast(`✓ Partner respin complete! ${requesting.name} paired with ${result.targetDuo}!`);
+                  await adminManageBracket(tourneyId);
+                });
+              } else {
+                showToast(`✓ Partner respin complete! ${requesting.name} paired with ${result.targetDuo}!`);
+                await adminManageBracket(tourneyId);
+              }
+            } else {
+              showToast(result?.error || "Respin could not be executed.", true);
+            }
+          } catch(e) {
+            console.error("adminSimulateInstantRespin error:", e);
+            showToast("Error: " + e.message, true);
+          }
+        }
+        window.adminSimulateInstantRespin = adminSimulateInstantRespin;
+
+        async function adminToggleSquadLock(tourneyId, squadName, shouldLock) {
+          try {
+            if (shouldLock) {
+              await window.LeagueDB.executeDuoSwitchLock(tourneyId, squadName);
+              showToast(`🔒 Squad "${squadName}" locked! Immunity granted from partner swaps & nukes.`);
+            } else {
+              await window.LeagueDB.executeDuoSwitchUnlock(tourneyId, squadName);
+              showToast(`🔓 Squad "${squadName}" unlocked! Eligible for partner respin & nukes.`);
+            }
+            await adminManageBracket(tourneyId);
+          } catch(e) {
+            console.error("adminToggleSquadLock error:", e);
+            showToast("Error: " + e.message, true);
+          }
+        }
+        window.adminToggleSquadLock = adminToggleSquadLock;
+
+        async function adminSimulateLock(tourneyId) {
+          try {
+            const state = await window.LeagueDB.getDuoSwitchState(tourneyId) || {};
+            const locked = state.locked_teams || [];
+            const unlockedTeams = (state.teams || []).filter(t => !t.isLocked && !locked.includes(t.name));
+            if (!unlockedTeams.length) {
+              showToast("All squads are already locked! Unlock a team first.", true);
+              return;
+            }
+            const target = unlockedTeams[Math.floor(Math.random() * unlockedTeams.length)];
+            await window.LeagueDB.executeDuoSwitchLock(tourneyId, target.name);
+            showToast(`🔒 Squad "${target.name}" locked with immunity!`);
+            await adminManageBracket(tourneyId);
+          } catch(e) {
+            console.error("adminSimulateLock error:", e);
+            showToast("Error: " + e.message, true);
+          }
+        }
+        window.adminSimulateLock = adminSimulateLock;
+
+        async function adminSimulateUnlock(tourneyId) {
+          try {
+            const state = await window.LeagueDB.getDuoSwitchState(tourneyId) || {};
+            const lockedTeams = (state.teams || []).filter(t => t.isLocked || (state.locked_teams || []).includes(t.name));
+            if (!lockedTeams.length) {
+              showToast("No squads are currently locked.", true);
+              return;
+            }
+            const target = lockedTeams[Math.floor(Math.random() * lockedTeams.length)];
+            await window.LeagueDB.executeDuoSwitchUnlock(tourneyId, target.name);
+            showToast(`🔓 Squad "${target.name}" unlocked!`);
+            await adminManageBracket(tourneyId);
+          } catch(e) {
+            console.error("adminSimulateUnlock error:", e);
+            showToast("Error: " + e.message, true);
+          }
+        }
+        window.adminSimulateUnlock = adminSimulateUnlock;
+
+        async function adminSimulateBlowUp(tourneyId) {
+          if (!confirm("💥 Trigger BLOW IT UP (Nuke)?\n\nThis will re-shuffle all unlocked duos across the tournament and trigger the siren alarm! Any locked squads will remain protected.")) return;
+          try {
+            showToast("💥 Initiating BLOW IT UP scramble...");
+            const res = await window.LeagueDB.executeDuoSwitchNuke(tourneyId);
+            if (res && res.success) {
+              showToast(`💥 BLOW IT UP executed! Scrambled ${res.scrambledCount} unlocked squads!`);
+              if (window.DuoSwitchEngine && typeof window.DuoSwitchEngine.handleNukeBroadcast === 'function') {
+                window.DuoSwitchEngine.handleNukeBroadcast({ requesting_duo_name: 'Commissioner (Admin Sim)' });
+              }
+              await adminManageBracket(tourneyId);
+            } else {
+              showToast(res?.error || "Failed to execute nuke.", true);
+            }
+          } catch(e) {
+            console.error("adminSimulateBlowUp error:", e);
+            showToast("Error: " + e.message, true);
+          }
+        }
+        window.adminSimulateBlowUp = adminSimulateBlowUp;
 
         async function adminGenerateBracketAction(tourneyId, tourneyTitle, skipConfirm = false) {
           if (!skipConfirm) {

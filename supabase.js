@@ -8401,21 +8401,43 @@ if (dbClient && cleanPayload.user_id) {
       subtext: `Spinning for ${isSlot1 ? myTeam.duo1_name : myTeam.duo2_name}'s new partner!`
     });
 
-    return { success: true, targetDuo: targetCandidate.name, myTeam: myTeam.name };
+    return { 
+      success: true, 
+      targetDuo: targetCandidate.name, 
+      myTeam: myTeam.name,
+      target_index: chosenTargetIndex,
+      slices: slices,
+      requesting_duo: { id: requestingDuoId, name: isSlot1 ? myTeam.duo1_name : myTeam.duo2_name }
+    };
   },
 
   async executeDuoSwitchLock(tournamentId, duoIdOrTeamName) {
     const state = await this.getDuoSwitchState(tournamentId) || {};
     if (!Array.isArray(state.locked_teams)) state.locked_teams = [];
 
+    const norm = s => String(s || '').trim().toLowerCase();
+    const targetNorm = norm(duoIdOrTeamName);
+
     // Update in state.teams
     if (Array.isArray(state.teams)) {
       state.teams.forEach(t => {
-        if (t && (t.name === duoIdOrTeamName || t.duo1_id === duoIdOrTeamName || t.duo2_id === duoIdOrTeamName || t.id === duoIdOrTeamName)) {
+        if (!t) return;
+        const matches = norm(t.name) === targetNorm || 
+                        norm(t.duo1_id) === targetNorm || 
+                        norm(t.duo2_id) === targetNorm || 
+                        norm(t.id) === targetNorm ||
+                        norm(t.duo1_name) === targetNorm ||
+                        norm(t.duo2_name) === targetNorm;
+        if (matches) {
           t.isLocked = true;
           if (!state.locked_teams.includes(t.name)) state.locked_teams.push(t.name);
         }
       });
+    }
+
+    // Direct fallback if duoIdOrTeamName was the exact name
+    if (typeof duoIdOrTeamName === 'string' && duoIdOrTeamName.trim() && !state.locked_teams.includes(duoIdOrTeamName)) {
+      state.locked_teams.push(duoIdOrTeamName);
     }
 
     // Update in bracket matches if already generated
@@ -8426,9 +8448,62 @@ if (dbClient && cleanPayload.user_id) {
           for (const m of (round.matches || [])) {
             for (const side of ['team1', 'team2']) {
               const t = m[side];
-              if (t && (t.name === duoIdOrTeamName || t.duo1_id === duoIdOrTeamName || t.duo2_id === duoIdOrTeamName)) {
+              if (t && (norm(t.name) === targetNorm || norm(t.duo1_id) === targetNorm || norm(t.duo2_id) === targetNorm)) {
                 t.isLocked = true;
                 if (!state.locked_teams.includes(t.name)) state.locked_teams.push(t.name);
+              }
+            }
+          }
+        }
+      }
+      bracket.switch_state = state;
+      await this.saveTournamentBracket(tournamentId, bracket);
+    }
+
+    await this.saveDuoSwitchState(tournamentId, state);
+    this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_state_update', state);
+    return { success: true, locked_teams: state.locked_teams };
+  },
+
+  async executeDuoSwitchUnlock(tournamentId, duoIdOrTeamName) {
+    const state = await this.getDuoSwitchState(tournamentId) || {};
+    if (!Array.isArray(state.locked_teams)) state.locked_teams = [];
+
+    const norm = s => String(s || '').trim().toLowerCase();
+    const targetNorm = norm(duoIdOrTeamName);
+
+    // Update in state.teams
+    if (Array.isArray(state.teams)) {
+      state.teams.forEach(t => {
+        if (!t) return;
+        const matches = norm(t.name) === targetNorm || 
+                        norm(t.duo1_id) === targetNorm || 
+                        norm(t.duo2_id) === targetNorm || 
+                        norm(t.id) === targetNorm ||
+                        norm(t.duo1_name) === targetNorm ||
+                        norm(t.duo2_name) === targetNorm;
+        if (matches) {
+          t.isLocked = false;
+        }
+      });
+    }
+
+    // Filter out from locked_teams list
+    state.locked_teams = state.locked_teams.filter(name => {
+      const match = norm(name) === targetNorm || (Array.isArray(state.teams) && state.teams.some(t => norm(t.name) === norm(name) && !t.isLocked));
+      return !match;
+    });
+
+    // Update in bracket matches if already generated
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (bracket?.stages) {
+      for (const stage of (bracket.stages || [])) {
+        for (const round of (stage.rounds || [])) {
+          for (const m of (round.matches || [])) {
+            for (const side of ['team1', 'team2']) {
+              const t = m[side];
+              if (t && (norm(t.name) === targetNorm || norm(t.duo1_id) === targetNorm || norm(t.duo2_id) === targetNorm)) {
+                t.isLocked = false;
               }
             }
           }
@@ -8504,8 +8579,15 @@ if (dbClient && cleanPayload.user_id) {
       await this.saveTournamentBracket(tournamentId, bracket);
     }
 
+    let requestingDuoName = 'Commissioner (Admin Sim)';
+    if (requestingDuoId) {
+      const reqDuo = (state.teams || []).find(t => t.duo1_id === requestingDuoId || t.duo2_id === requestingDuoId);
+      if (reqDuo) requestingDuoName = (reqDuo.duo1_id === requestingDuoId ? reqDuo.duo1_name : reqDuo.duo2_name);
+    }
+
     this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_nuke', {
       requesting_duo_id: requestingDuoId,
+      requesting_duo_name: requestingDuoName,
       scrambled_count: unlockedTeams.length
     });
 
