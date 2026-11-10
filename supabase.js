@@ -3964,14 +3964,17 @@ if (dbClient && cleanPayload.user_id) {
     }
   },
 
-  async createTestDuoSwitchTournament(duoCount = 8) {
+  async createTestDuoSwitchTournament(duoCount = 8, timerMinutes = 2) {
     try {
       const tourneyId = "tourney_duo_switch_test_" + Date.now();
-      const count = Math.max(4, Math.min(parseInt(duoCount, 10) || 8, 32));
+      let count = parseInt(duoCount, 10) || 8;
+      if (count % 2 !== 0) count += 1;
+      count = Math.max(4, Math.min(count, 64));
+      const timerMins = Math.max(1, Math.min(parseInt(timerMinutes, 10) || 2, 60));
       const today = new Date().toISOString().split("T")[0];
       const demoTourney = {
         id: tourneyId,
-        title: "⚡ Duo Switch Test Championship (Demo)",
+        title: `⚡ Duo Switch Test Championship (${count} Duos)`,
         game: "Call of Duty: Black Ops 6",
         format: "Duo Switch (All Modes)",
         bracket_type: "Double Elimination",
@@ -3984,12 +3987,12 @@ if (dbClient && cleanPayload.user_id) {
         max_teams: count,
         registered_teams: 0,
         teams_registered_count: 0,
-        duo_switch_timer_minutes: 10,
+        duo_switch_timer_minutes: timerMins,
         duo_switch_reroll_fee: 10,
         duo_switch_lock_fee: 15,
         duo_switch_nuke_fee: 25,
-        description: "Commissioner Test Sandbox for Duo Switch Tournament mechanics: 2-player Duos, synchronized live wheel spin pairing, squad locks ($15), escalating respin desks ($10 base), and live countdown window.",
-        rules_notes: "• Format: Duo Switch (4v4). Sign up as a Duo (2 players).\n• Bracket generation randomly pairs 2 Duos into 4v4 squads with synchronized wheel spin reveal.\n• 10-minute respin/lock window for partners to reroll ($10+), lock squad ($15), or nuke all teams ($25).",
+        description: `Commissioner Test Sandbox for Duo Switch Tournament mechanics: ${count} 2-player Duos, 4v4 pairings, synchronized live wheel spin pairing, squad locks ($15), escalating respin desks ($10 base), and live ${timerMins}-minute countdown window before bracket generation.`,
+        rules_notes: `• Format: Duo Switch (4v4). Sign up as a Duo (2 players).\n• Duos are paired into 4v4 squads with synchronized wheel spin reveal.\n• ${timerMins}-minute respin/lock window for partners to reroll ($10+), lock squad ($15), or nuke all teams ($25).\n• Once the timer expires, the official bracket is generated using our bracket system.`,
         date: today,
         start_date: today,
         time: "8:00 PM EST",
@@ -4005,6 +4008,9 @@ if (dbClient && cleanPayload.user_id) {
       // Seed authentic 2-player dummy duos
       const dummyRes = await this.generateDummyTournamentSquads(tourneyId, count);
 
+      // Form 4v4 teams from two duos and start the respin/lock countdown timer!
+      const formRes = await this.formDuoSwitchTeams(tourneyId, { timerMinutes: timerMins });
+
       const refreshedList = await this.getTournaments();
       const savedTourney = refreshedList.find(t => String(t.id) === String(tourneyId)) || demoTourney;
 
@@ -4013,7 +4019,8 @@ if (dbClient && cleanPayload.user_id) {
         tournament: savedTourney,
         squads: dummyRes.squads || [],
         count: dummyRes.count || count,
-        message: `Created Demo Duo Switch Tournament with ${dummyRes.count || count} seeded 2-player Duos!`
+        switchState: formRes.switchState || null,
+        message: `Created Demo Duo Switch Tournament with ${dummyRes.count || count} seeded 2-player Duos and formed ${formRes.count || (count / 2)} 4v4 squads!`
       };
     } catch (err) {
       console.error("createTestDuoSwitchTournament error:", err);
@@ -6884,13 +6891,13 @@ if (dbClient && cleanPayload.user_id) {
       return { success: false, error: 'This bracket has scores or completed matches. It was not changed.' };
     }
     const c = window.supabaseClient || window.dbClient;
-    if (!c) return { success: false, error: 'Database unavailable; bracket was not changed.' };
-
-    for (const table of ['tournament_report_matches', 'tournament_veto_states']) {
-      const { data, error } = await c.from(table).select('match_id')
-        .eq('tournament_id', String(tournamentId)).limit(1);
-      if (error) return { success: false, error: 'Could not verify existing match data: ' + error.message };
-      if (data?.length) return { success: false, error: 'Reporting or veto data already exists. Bracket was not changed. Do not regenerate this tournament.' };
+    if (c && typeof c.from === 'function') {
+      for (const table of ['tournament_report_matches', 'tournament_veto_states']) {
+        const { data, error } = await c.from(table).select('match_id')
+          .eq('tournament_id', String(tournamentId)).limit(1);
+        if (error) return { success: false, error: 'Could not verify existing match data: ' + error.message };
+        if (data?.length) return { success: false, error: 'Reporting or veto data already exists. Bracket was not changed. Do not regenerate this tournament.' };
+      }
     }
 
     const isDuoSwitch = String(tourney.format || '').toLowerCase().includes('duo');
@@ -6903,7 +6910,20 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     let seededTeams = [];
-    if (isDuoSwitch) {
+    if (Array.isArray(options.finalizedTeams) && options.finalizedTeams.length >= 2) {
+      // Use finalized 4v4 squads from the Duo Switch reroll window!
+      seededTeams = options.finalizedTeams.map(t => ({
+        name: t.name,
+        tag: t.tag || (t.name || 'TBD').slice(0, 4).toUpperCase(),
+        duo1_id: t.duo1_id || null,
+        duo2_id: t.duo2_id || null,
+        duo1_name: t.duo1_name || null,
+        duo2_name: t.duo2_name || null,
+        roster: t.roster || [],
+        isDuoSwitch: true,
+        isLocked: Boolean(t.isLocked)
+      }));
+    } else if (isDuoSwitch) {
       // Duo Switch: Shuffle registered duos so pairing into 4v4 squads is completely random
       const shuffledDuos = [...regs];
       for (let i = shuffledDuos.length - 1; i > 0; i--) {
@@ -7269,22 +7289,25 @@ if (dbClient && cleanPayload.user_id) {
     };
 
     if (isDuoSwitch) {
+      const existingSwitch = tourney.switch_state || bracketObj.switch_state || {};
       const timerMins = Number(tourney.duo_switch_timer_minutes || 5);
       const nowMs = Date.now();
       bracketObj.switch_state = {
         enabled: true,
-        status: 'active_window',
-        window_start_time: new Date(nowMs).toISOString(),
-        window_end_time: new Date(nowMs + timerMins * 60 * 1000).toISOString(),
-        countdown_seconds: timerMins * 60,
+        status: options.finalizedTeams ? 'locked' : (existingSwitch.status || 'active_window'),
+        bracket_generated: true,
+        window_start_time: existingSwitch.window_start_time || new Date(nowMs).toISOString(),
+        window_end_time: options.finalizedTeams ? new Date().toISOString() : (existingSwitch.window_end_time || new Date(nowMs + timerMins * 60 * 1000).toISOString()),
+        countdown_seconds: existingSwitch.countdown_seconds || (timerMins * 60),
         reroll_base_fee: Number(tourney.duo_switch_reroll_fee || 10),
         reroll_escalation: 5,
         lock_fee: Number(tourney.duo_switch_lock_fee || 15),
         nuke_fee: Number(tourney.duo_switch_nuke_fee || 25),
         max_rerolls_per_duo: 2,
-        duo_reroll_counts: {},
-        locked_teams: [],
-        pending_requests: []
+        duo_reroll_counts: existingSwitch.duo_reroll_counts || {},
+        locked_teams: existingSwitch.locked_teams || [],
+        pending_requests: existingSwitch.pending_requests || [],
+        teams: Array.isArray(options.finalizedTeams) ? options.finalizedTeams : (existingSwitch.teams || seededTeams)
       };
       tourney.switch_state = bracketObj.switch_state;
     }
@@ -8000,6 +8023,143 @@ if (dbClient && cleanPayload.user_id) {
     return { success: true, switchState };
   },
 
+  async formDuoSwitchTeams(tournamentId, options = {}) {
+    const list = await this.getTournaments();
+    const tourney = list.find(t => String(t.id) === String(tournamentId));
+    if (!tourney) return { success: false, error: "Tournament not found." };
+
+    const regs = await this.getTournamentRegistrations(tournamentId);
+    if (!regs || regs.length < 4) {
+      return {
+        success: false,
+        error: `Duo Switch requires at least 4 registered duos to form 4v4 squads (currently ${regs ? regs.length : 0} registered).`
+      };
+    }
+
+    // Shuffle registered duos so pairing into 4v4 squads is completely random
+    const shuffledDuos = [...regs];
+    for (let i = shuffledDuos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledDuos[i], shuffledDuos[j]] = [shuffledDuos[j], shuffledDuos[i]];
+    }
+
+    const pairedTeams = [];
+    for (let i = 0; i < shuffledDuos.length; i += 2) {
+      const d1 = shuffledDuos[i];
+      const d2 = shuffledDuos[i + 1];
+      if (d2) {
+        const r1 = Array.isArray(d1.roster) ? d1.roster : [d1.captain_gamertag];
+        const r2 = Array.isArray(d2.roster) ? d2.roster : [d2.captain_gamertag];
+        pairedTeams.push({
+          id: `team_4v4_${d1.id}_${d2.id}`,
+          name: `${d1.team_name} & ${d2.team_name}`,
+          tag: `${(d1.team_name || 'D1').slice(0, 2)}/${(d2.team_name || 'D2').slice(0, 2)}`.toUpperCase(),
+          duo1_id: d1.id,
+          duo2_id: d2.id,
+          duo1_name: d1.team_name,
+          duo2_name: d2.team_name,
+          roster: [...r1, ...r2],
+          isDuoSwitch: true,
+          isLocked: false
+        });
+      } else {
+        pairedTeams.push({
+          id: `team_4v4_${d1.id}_solo`,
+          name: `${d1.team_name} (Solo Duo)`,
+          tag: (d1.team_name || 'DUO').slice(0, 4).toUpperCase(),
+          duo1_id: d1.id,
+          duo2_id: null,
+          duo1_name: d1.team_name,
+          duo2_name: null,
+          roster: Array.isArray(d1.roster) ? d1.roster : [d1.captain_gamertag],
+          isDuoSwitch: true,
+          isLocked: false
+        });
+      }
+    }
+
+    const timerMins = Number(options.timerMinutes !== undefined ? options.timerMinutes : (tourney.duo_switch_timer_minutes || 5));
+    const nowMs = Date.now();
+    const switchState = {
+      enabled: true,
+      status: 'active_window',
+      bracket_generated: false,
+      teams: pairedTeams,
+      window_start_time: new Date(nowMs).toISOString(),
+      window_end_time: new Date(nowMs + timerMins * 60 * 1000).toISOString(),
+      countdown_seconds: timerMins * 60,
+      reroll_base_fee: Number(tourney.duo_switch_reroll_fee || 10),
+      reroll_escalation: 5,
+      lock_fee: Number(tourney.duo_switch_lock_fee || 15),
+      nuke_fee: Number(tourney.duo_switch_nuke_fee || 25),
+      max_rerolls_per_duo: 2,
+      duo_reroll_counts: {},
+      locked_teams: [],
+      pending_requests: []
+    };
+
+    tourney.switch_state = switchState;
+    if (!tourney.bracket_data) tourney.bracket_data = {};
+    tourney.bracket_data.switch_state = switchState;
+    tourney.teams_registered_count = pairedTeams.length;
+
+    await this.saveTournament(tourney);
+    await this.saveDuoSwitchState(tournamentId, switchState);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("frontline_duo_switch_teams_formed", {
+        detail: { tournamentId: tourney.id, switchState }
+      }));
+    }
+
+    return { success: true, switchState, pairedTeams, count: pairedTeams.length };
+  },
+
+  async finalizeDuoSwitchAndGenerateBracket(tournamentId, options = {}) {
+    const list = await this.getTournaments();
+    const tourney = list.find(t => String(t.id) === String(tournamentId));
+    if (!tourney) return { success: false, error: "Tournament not found." };
+
+    let state = await this.getDuoSwitchState(tournamentId) || tourney.switch_state || {};
+    
+    // If teams not formed yet, form them now
+    if (!Array.isArray(state.teams) || state.teams.length < 2) {
+      const formRes = await this.formDuoSwitchTeams(tournamentId, { timerMinutes: 0 });
+      if (!formRes.success) return formRes;
+      state = formRes.switchState;
+    }
+
+    // Lock the reroll window
+    state.status = 'locked';
+    state.window_end_time = new Date().toISOString();
+    state.bracket_generated = true;
+
+    await this.saveDuoSwitchState(tournamentId, state);
+
+    // Generate the official tournament bracket using our bracket system with finalizedTeams!
+    const bracketRes = await this.generateTournamentBracket(tournamentId, {
+      replaceUnstartedBracket: true,
+      finalizedTeams: state.teams,
+      notifyCompetitors: options.notifyCompetitors !== false
+    });
+
+    if (bracketRes && bracketRes.success) {
+      bracketRes.bracket.switch_state = state;
+      await this.saveTournamentBracket(tournamentId, bracketRes.bracket);
+      this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_bracket_generated', {
+        tournamentId,
+        teams_count: state.teams.length
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("frontline_duo_switch_bracket_generated", {
+          detail: { tournamentId, bracket: bracketRes.bracket }
+        }));
+      }
+    }
+
+    return bracketRes;
+  },
+
   broadcastDuoSwitchEvent(tournamentId, eventName, payload) {
     try {
       const c = window.supabaseClient || window.dbClient;
@@ -8116,48 +8276,68 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   async executeDuoSwitchReroll(tournamentId, requestingDuoId) {
-    const bracket = await this.getTournamentBracket(tournamentId);
-    if (!bracket || !bracket.stages) return { success: false, error: 'Bracket not found' };
-
     const state = await this.getDuoSwitchState(tournamentId) || {};
+    const bracket = await this.getTournamentBracket(tournamentId);
     const lockedTeams = state.locked_teams || [];
 
-    let myMatch = null;
-    let mySide = null;
     let myTeam = null;
+    let candidateDuos = [];
 
-    for (const stage of bracket.stages) {
-      for (const round of (stage.rounds || [])) {
-        for (const m of (round.matches || [])) {
-          if (m.team1 && (m.team1.duo1_id === requestingDuoId || m.team1.duo2_id === requestingDuoId)) {
-            myMatch = m; mySide = 'team1'; myTeam = m.team1; break;
+    // 1. Try finding team in state.teams (during the active pairing window before/after bracket generation)
+    if (Array.isArray(state.teams) && state.teams.length > 0) {
+      myTeam = state.teams.find(t => t && (t.duo1_id === requestingDuoId || t.duo2_id === requestingDuoId));
+      if (myTeam) {
+        if (myTeam.isLocked || lockedTeams.includes(myTeam.name)) {
+          return { success: false, error: 'Squad is locked and cannot be rerolled.' };
+        }
+        state.teams.forEach(t => {
+          if (t && t !== myTeam && !t.isLocked && !lockedTeams.includes(t.name)) {
+            if (t.duo1_id && t.duo1_id !== requestingDuoId) {
+              candidateDuos.push({ duoSlot: 1, id: t.duo1_id, name: t.duo1_name, team: t });
+            }
+            if (t.duo2_id && t.duo2_id !== requestingDuoId) {
+              candidateDuos.push({ duoSlot: 2, id: t.duo2_id, name: t.duo2_name, team: t });
+            }
           }
-          if (m.team2 && (m.team2.duo1_id === requestingDuoId || m.team2.duo2_id === requestingDuoId)) {
-            myMatch = m; mySide = 'team2'; myTeam = m.team2; break;
+        });
+      }
+    }
+
+    // 2. If not found in state.teams, fallback to searching bracket.stages (if bracket already generated)
+    if (!myTeam && bracket?.stages) {
+      for (const stage of bracket.stages) {
+        for (const round of (stage.rounds || [])) {
+          for (const m of (round.matches || [])) {
+            for (const side of ['team1', 'team2']) {
+              const t = m[side];
+              if (t && (t.duo1_id === requestingDuoId || t.duo2_id === requestingDuoId)) {
+                myTeam = t; break;
+              }
+            }
+            if (myTeam) break;
           }
+          if (myTeam) break;
         }
         if (myTeam) break;
       }
-      if (myTeam) break;
-    }
 
-    if (!myTeam) return { success: false, error: 'Requesting duo not found in active matches' };
-    if (myTeam.isLocked || lockedTeams.includes(myTeam.name)) {
-      return { success: false, error: 'Squad is locked and cannot be rerolled.' };
-    }
-
-    const candidateDuos = [];
-    for (const stage of bracket.stages) {
-      for (const round of (stage.rounds || [])) {
-        for (const m of (round.matches || [])) {
-          for (const side of ['team1', 'team2']) {
-            const t = m[side];
-            if (t && t !== myTeam && !t.isLocked && !lockedTeams.includes(t.name) && t.isDuoSwitch) {
-              if (t.duo1_id && t.duo1_id !== requestingDuoId) {
-                candidateDuos.push({ match: m, side, duoSlot: 1, id: t.duo1_id, name: t.duo1_name, team: t });
-              }
-              if (t.duo2_id && t.duo2_id !== requestingDuoId) {
-                candidateDuos.push({ match: m, side, duoSlot: 2, id: t.duo2_id, name: t.duo2_name, team: t });
+      if (myTeam) {
+        if (myTeam.isLocked || lockedTeams.includes(myTeam.name)) {
+          return { success: false, error: 'Squad is locked and cannot be rerolled.' };
+        }
+        for (const stage of bracket.stages) {
+          for (const round of (stage.rounds || [])) {
+            for (const m of (round.matches || [])) {
+              for (const side of ['team1', 'team2']) {
+                const t = m[side];
+                if (t && t !== myTeam && !t.isLocked && !lockedTeams.includes(t.name) && t.isDuoSwitch) {
+                  if (t.duo1_id && t.duo1_id !== requestingDuoId) {
+                    candidateDuos.push({ match: m, side, duoSlot: 1, id: t.duo1_id, name: t.duo1_name, team: t });
+                  }
+                  if (t.duo2_id && t.duo2_id !== requestingDuoId) {
+                    candidateDuos.push({ match: m, side, duoSlot: 2, id: t.duo2_id, name: t.duo2_name, team: t });
+                  }
+                }
               }
             }
           }
@@ -8165,6 +8345,7 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
+    if (!myTeam) return { success: false, error: 'Requesting duo not found in formed teams.' };
     if (!candidateDuos.length) {
       return { success: false, error: 'No available unlocked duos to swap with.' };
     }
@@ -8198,8 +8379,11 @@ if (dbClient && cleanPayload.user_id) {
     if (!state.duo_reroll_counts) state.duo_reroll_counts = {};
     state.duo_reroll_counts[requestingDuoId] = (state.duo_reroll_counts[requestingDuoId] || 0) + 1;
 
-    bracket.switch_state = state;
-    await this.saveTournamentBracket(tournamentId, bracket);
+    await this.saveDuoSwitchState(tournamentId, state);
+    if (bracket && bracket.stages) {
+      bracket.switch_state = state;
+      await this.saveTournamentBracket(tournamentId, bracket);
+    }
 
     const slices = candidateDuos.map(c => ({
       id: c.id,
@@ -8221,51 +8405,71 @@ if (dbClient && cleanPayload.user_id) {
   },
 
   async executeDuoSwitchLock(tournamentId, duoIdOrTeamName) {
-    const bracket = await this.getTournamentBracket(tournamentId);
-    if (!bracket) return { success: false, error: 'Bracket not found' };
-
     const state = await this.getDuoSwitchState(tournamentId) || {};
     if (!Array.isArray(state.locked_teams)) state.locked_teams = [];
 
-    for (const stage of (bracket.stages || [])) {
-      for (const round of (stage.rounds || [])) {
-        for (const m of (round.matches || [])) {
-          for (const side of ['team1', 'team2']) {
-            const t = m[side];
-            if (t && (t.name === duoIdOrTeamName || t.duo1_id === duoIdOrTeamName || t.duo2_id === duoIdOrTeamName)) {
-              t.isLocked = true;
-              if (!state.locked_teams.includes(t.name)) state.locked_teams.push(t.name);
+    // Update in state.teams
+    if (Array.isArray(state.teams)) {
+      state.teams.forEach(t => {
+        if (t && (t.name === duoIdOrTeamName || t.duo1_id === duoIdOrTeamName || t.duo2_id === duoIdOrTeamName || t.id === duoIdOrTeamName)) {
+          t.isLocked = true;
+          if (!state.locked_teams.includes(t.name)) state.locked_teams.push(t.name);
+        }
+      });
+    }
+
+    // Update in bracket matches if already generated
+    const bracket = await this.getTournamentBracket(tournamentId);
+    if (bracket?.stages) {
+      for (const stage of (bracket.stages || [])) {
+        for (const round of (stage.rounds || [])) {
+          for (const m of (round.matches || [])) {
+            for (const side of ['team1', 'team2']) {
+              const t = m[side];
+              if (t && (t.name === duoIdOrTeamName || t.duo1_id === duoIdOrTeamName || t.duo2_id === duoIdOrTeamName)) {
+                t.isLocked = true;
+                if (!state.locked_teams.includes(t.name)) state.locked_teams.push(t.name);
+              }
             }
           }
         }
       }
+      bracket.switch_state = state;
+      await this.saveTournamentBracket(tournamentId, bracket);
     }
 
-    bracket.switch_state = state;
-    await this.saveTournamentBracket(tournamentId, bracket);
+    await this.saveDuoSwitchState(tournamentId, state);
     this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_state_update', state);
     return { success: true, locked_teams: state.locked_teams };
   },
 
   async executeDuoSwitchNuke(tournamentId, requestingDuoId) {
-    const bracket = await this.getTournamentBracket(tournamentId);
-    if (!bracket) return { success: false, error: 'Bracket not found' };
-
     const state = await this.getDuoSwitchState(tournamentId) || {};
     const lockedTeams = state.locked_teams || [];
+    const bracket = await this.getTournamentBracket(tournamentId);
 
-    const unlockedTeams = [];
-    const poolOfDuos = [];
+    let unlockedTeams = [];
+    let poolOfDuos = [];
 
-    for (const stage of (bracket.stages || [])) {
-      for (const round of (stage.rounds || [])) {
-        for (const m of (round.matches || [])) {
-          for (const side of ['team1', 'team2']) {
-            const t = m[side];
-            if (t && t.isDuoSwitch && !t.isLocked && !lockedTeams.includes(t.name)) {
-              unlockedTeams.push(t);
-              if (t.duo1_id) poolOfDuos.push({ id: t.duo1_id, name: t.duo1_name });
-              if (t.duo2_id) poolOfDuos.push({ id: t.duo2_id, name: t.duo2_name });
+    if (Array.isArray(state.teams) && state.teams.length > 0) {
+      state.teams.forEach(t => {
+        if (t && !t.isLocked && !lockedTeams.includes(t.name)) {
+          unlockedTeams.push(t);
+          if (t.duo1_id) poolOfDuos.push({ id: t.duo1_id, name: t.duo1_name });
+          if (t.duo2_id) poolOfDuos.push({ id: t.duo2_id, name: t.duo2_name });
+        }
+      });
+    } else if (bracket?.stages) {
+      for (const stage of (bracket.stages || [])) {
+        for (const round of (stage.rounds || [])) {
+          for (const m of (round.matches || [])) {
+            for (const side of ['team1', 'team2']) {
+              const t = m[side];
+              if (t && t.isDuoSwitch && !t.isLocked && !lockedTeams.includes(t.name)) {
+                unlockedTeams.push(t);
+                if (t.duo1_id) poolOfDuos.push({ id: t.duo1_id, name: t.duo1_name });
+                if (t.duo2_id) poolOfDuos.push({ id: t.duo2_id, name: t.duo2_name });
+              }
             }
           }
         }
@@ -8273,7 +8477,7 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     if (poolOfDuos.length < 4) {
-      return { success: false, error: 'Not enough unlocked duos to scramble' };
+      return { success: false, error: 'Not enough unlocked duos to scramble (at least 2 squads must be unlocked).' };
     }
 
     for (let i = poolOfDuos.length - 1; i > 0; i--) {
@@ -8294,8 +8498,11 @@ if (dbClient && cleanPayload.user_id) {
       }
     });
 
-    bracket.switch_state = state;
-    await this.saveTournamentBracket(tournamentId, bracket);
+    await this.saveDuoSwitchState(tournamentId, state);
+    if (bracket && bracket.stages) {
+      bracket.switch_state = state;
+      await this.saveTournamentBracket(tournamentId, bracket);
+    }
 
     this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_nuke', {
       requesting_duo_id: requestingDuoId,

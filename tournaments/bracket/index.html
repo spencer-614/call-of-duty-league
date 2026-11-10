@@ -714,6 +714,39 @@
           }
         }
 
+        window.refreshCurrentBracketData = async function() {
+          if (!activeTournament?.id) return;
+          try {
+            if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
+              const list = await window.LeagueDB.getTournaments();
+              const refreshed = list.find(t => String(t.id) === String(activeTournament.id));
+              if (refreshed) {
+                await selectTournament(refreshed);
+              }
+            }
+          } catch(e) {
+            console.error('refreshCurrentBracketData error:', e);
+          }
+        };
+
+        window.addEventListener('frontline_bracket_updated', async (event) => {
+          if (String(event?.detail?.tournamentId) === String(activeTournament?.id)) {
+            await window.refreshCurrentBracketData();
+          }
+        });
+
+        window.addEventListener('frontline_duo_switch_bracket_generated', async (event) => {
+          if (String(event?.detail?.tournamentId) === String(activeTournament?.id)) {
+            await window.refreshCurrentBracketData();
+          }
+        });
+
+        window.addEventListener('frontline_duo_switch_teams_formed', async (event) => {
+          if (String(event?.detail?.tournamentId) === String(activeTournament?.id)) {
+            await window.refreshCurrentBracketData();
+          }
+        });
+
         window.addEventListener('frontline_map_results_updated',async event=>{
           if(String(event.detail.tournamentId)!==String(activeTournament?.id)||!activeBracketData)return;
           try{activeBracketData=await window.TournamentReports.overlay(activeTournament.id,activeBracketData);renderActiveBracket();}catch(e){console.error('Could not refresh series scores:',e);}
@@ -794,6 +827,84 @@
         function renderActiveBracket() {
           const rootEl = document.getElementById('bracket-display-root');
           if (!rootEl) return;
+
+          const isDuoTourney = String(activeTournament?.format || '').toLowerCase().includes('duo');
+          const switchState = activeBracketData?.switch_state || activeTournament?.switch_state || null;
+          const teamsFormed = switchState && Array.isArray(switchState.teams) && switchState.teams.length > 0;
+          const bracketNotGeneratedYet = !activeBracketData || !activeBracketData.stages || !activeBracketData.stages.length;
+
+          if (isDuoTourney && teamsFormed && bracketNotGeneratedYet) {
+            // Render the Formed 4v4 Squads & Active Reroll Window State!
+            const isLocked = switchState.status === 'locked';
+            const count = switchState.teams.length;
+            const duoCount = count * 2;
+
+            rootEl.innerHTML = `
+              <div style="background:#0e120a; border:1px solid #283716; border-radius:4px; padding:24px 20px; margin:20px 0 32px; box-shadow:0 12px 36px rgba(0,0,0,0.7);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid #1f2a13; padding-bottom:14px;">
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span class="badge-tourney-status live" style="font-size:10px; padding:2px 8px; background:rgba(251,191,36,0.18); border-color:#fbbf24; color:#fbbf24;">
+                        ${isLocked ? '🔒 PAIRINGS FINALIZED' : '⚡ 4v4 SQUADS FORMED'}
+                      </span>
+                      <strong style="color:#ffffff; font-size:15px; font-family:var(--display, sans-serif); text-transform:uppercase;">
+                        ${duoCount} Duos Formed Into ${count} 4v4 Squads
+                      </strong>
+                    </div>
+                    <p style="color:#9ca3af; font-size:12.5px; margin:4px 0 0; line-height:1.5;">
+                      ${isLocked 
+                        ? 'All Duo pairings are finalized. Generating the official tournament bracket now...' 
+                        : 'The Live Partner Reroll & Squad Lock window is currently active! Once the countdown timer reaches 00:00, the official tournament bracket will automatically generate below.'}
+                    </p>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-tourney-outline" style="font-size:11px; padding:6px 12px; border-color:#fbbf24; color:#fbbf24;" onclick="window.DuoSwitchEngine?.openLiveWheelPreview()">
+                      🎡 Live Wheel Slices
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Formed Squads Grid -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
+                  ${switchState.teams.map((team, idx) => {
+                    const isTeamLocked = team.isLocked || (switchState.locked_teams || []).includes(team.name);
+                    return `
+                      <div style="background:#13180f; border:1px solid ${isTeamLocked ? '#22c55e' : '#273419'}; border-radius:3px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                          <span style="font-size:10px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:0.8px;">
+                            SQUAD #${idx + 1}
+                          </span>
+                          ${isTeamLocked ? `
+                            <span style="font-size:10px; font-weight:800; background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid #22c55e; padding:1px 6px; border-radius:2px;">
+                              🔒 LOCKED
+                            </span>
+                          ` : `
+                            <span style="font-size:10px; font-weight:700; color:#9ca3af; border:1px solid #273419; padding:1px 6px; border-radius:2px;">
+                              🔓 UNLOCKED
+                            </span>
+                          `}
+                        </div>
+                        <h4 style="margin:0 0 10px; font:800 14px var(--display, sans-serif); color:#ffffff; line-height:1.3;">
+                          ${escapeHtml(team.name)}
+                        </h4>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11.5px;">
+                          <div style="background:#090d05; border:1px solid #1a2410; padding:6px 8px; border-radius:2px;">
+                            <div style="font-size:9.5px; color:#fbbf24; font-weight:800;">DUO 1</div>
+                            <strong style="color:#ffffff; display:block; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(team.duo1_name || 'Duo 1')}</strong>
+                          </div>
+                          <div style="background:#090d05; border:1px solid #1a2410; padding:6px 8px; border-radius:2px;">
+                            <div style="font-size:9.5px; color:#38bdf8; font-weight:800;">DUO 2</div>
+                            <strong style="color:#ffffff; display:block; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(team.duo2_name || 'Solo Duo')}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+            return;
+          }
 
           if (!activeBracketData || !activeBracketData.stages || !activeBracketData.stages.length) {
             // Bracket pending generation

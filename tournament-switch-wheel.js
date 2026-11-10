@@ -490,6 +490,11 @@
           if (!payload) return;
           this.handleNukeBroadcast(payload);
         })
+        .on('broadcast', { event: 'duo_switch_bracket_generated' }, () => {
+          if (typeof window.refreshCurrentBracketData === 'function') {
+            window.refreshCurrentBracketData();
+          }
+        })
         .subscribe();
     }
 
@@ -748,9 +753,28 @@
         const diff = endTime - now;
 
         if (diff <= 0) {
-          el.textContent = '00:00 (LOCKED)';
+          el.textContent = '00:00 (PAIRINGS LOCKED)';
           el.style.color = '#ef4444';
           clearInterval(this.countdownInterval);
+          this.countdownInterval = null;
+
+          // Timer expired! If bracket has not been generated yet, automatically generate it using our bracket system!
+          const state = this.currentSwitchState;
+          if (state && !state.bracket_generated && this.activeTournamentId) {
+            state.bracket_generated = true;
+            if (window.LeagueDB && typeof window.LeagueDB.finalizeDuoSwitchAndGenerateBracket === 'function') {
+              window.LeagueDB.finalizeDuoSwitchAndGenerateBracket(this.activeTournamentId).then(res => {
+                if (res && res.success) {
+                  if (typeof window.refreshCurrentBracketData === 'function') {
+                    window.refreshCurrentBracketData();
+                  }
+                  if (typeof window.refreshAdminDuoSwitchDesk === 'function') {
+                    window.refreshAdminDuoSwitchDesk();
+                  }
+                }
+              }).catch(e => console.error("Auto bracket generation error:", e));
+            }
+          }
           return;
         }
 
@@ -895,11 +919,21 @@
     }
 
     openLiveWheelPreview() {
-      const slices = this.cachedRegs.map(r => ({
-        id: r.id,
-        team_name: r.team_name,
-        captain_gamertag: r.captain_gamertag
-      }));
+      let slices = [];
+      const state = this.currentSwitchState;
+      if (state && Array.isArray(state.teams)) {
+        state.teams.forEach(t => {
+          if (t.duo1_name) slices.push({ id: t.duo1_id, team_name: t.duo1_name, name: t.duo1_name });
+          if (t.duo2_name) slices.push({ id: t.duo2_id, team_name: t.duo2_name, name: t.duo2_name });
+        });
+      }
+      if (!slices.length && Array.isArray(this.cachedRegs)) {
+        slices = this.cachedRegs.map(r => ({
+          id: r.id,
+          team_name: r.team_name,
+          captain_gamertag: r.captain_gamertag
+        }));
+      }
       this.openWheelModal('Synchronized Duo Switch Wheel', 'Live view of all registered duos');
       if (this.wheelInstance && slices.length > 0) {
         this.wheelInstance.setSlices(slices);
@@ -930,7 +964,13 @@
     }
 
     findDuo4v4TeamInBracket(duoId, bracketData) {
-      if (!duoId || !bracketData || !bracketData.stages) return null;
+      if (!duoId) return null;
+      const state = this.currentSwitchState;
+      if (state && Array.isArray(state.teams)) {
+        const found = state.teams.find(t => t && (t.duo1_id === duoId || t.duo2_id === duoId));
+        if (found) return found;
+      }
+      if (!bracketData || !bracketData.stages) return null;
       for (const s of bracketData.stages) {
         for (const r of (s.rounds || [])) {
           for (const m of (r.matches || [])) {
