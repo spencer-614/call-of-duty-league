@@ -380,13 +380,14 @@
       const sliceCenterA = targetIndex * sliceAngle + sliceAngle / 2;
       const targetBaseAngle = (Math.PI * 3 / 2) - sliceCenterA;
 
-      const currentMod = this.currentAngle % (Math.PI * 2);
-      let deltaAngle = (targetBaseAngle - currentMod);
-      while (deltaAngle < 0) deltaAngle += Math.PI * 2;
-      deltaAngle += (totalRotations * Math.PI * 2);
+      // To guarantee exact identical rotation degrees across all clients:
+      // Always normalize baseDelta to [0, 2pi), start at 0, and rotate identical radians
+      let baseDelta = targetBaseAngle % (Math.PI * 2);
+      while (baseDelta < 0) baseDelta += Math.PI * 2;
+      const deltaAngle = baseDelta + (totalRotations * Math.PI * 2);
 
-      const startAngle = this.currentAngle;
-      const endAngle = startAngle + deltaAngle;
+      this.currentAngle = 0;
+      this.lastPegCrossed = -1;
       const startTime = performance.now();
 
       const easeOut = t => 1 - Math.pow(1 - t, 3.6);
@@ -396,7 +397,7 @@
         const progress = Math.min(1, elapsed / durationMs);
         const eased = easeOut(progress);
 
-        this.currentAngle = startAngle + deltaAngle * eased;
+        this.currentAngle = deltaAngle * eased;
 
         const normalizedAngle = (this.currentAngle) % (Math.PI * 2);
         const currentPeg = Math.floor(normalizedAngle / sliceAngle);
@@ -412,7 +413,7 @@
           this.animFrameId = requestAnimationFrame(step);
         } else {
           this.animFrameId = null;
-          this.currentAngle = endAngle;
+          this.currentAngle = deltaAngle;
           this.draw();
           this.isSpinning = false;
           playFanfare();
@@ -537,55 +538,147 @@
     // -------------------------------------------------------------------------
     connectRealtime(tournamentId) {
       if (!tournamentId) return;
-      this.activeTournamentId = String(tournamentId);
+      const tidStr = String(tournamentId);
+
+      // Keep existing channel if already connected for this tournament
+      if (this.activeTournamentId === tidStr && this.realtimeChannel && this.realtimeChannel.state === 'joined') {
+        return;
+      }
+      this.activeTournamentId = tidStr;
 
       const c = client();
-      if (!c || typeof c.channel !== 'function') return;
+      if (c && typeof c.channel === 'function') {
+        const chanName = `tournament_duo_switch_${this.activeTournamentId}`;
 
-      if (this.realtimeChannel) {
-        try { c.removeChannel(this.realtimeChannel); } catch (_) {}
+        let chan = null;
+        if (typeof c.getChannels === 'function') {
+          const channels = c.getChannels() || [];
+          chan = channels.find(ch => ch.topic === `realtime:${chanName}` || ch.topic === chanName);
+        }
+
+        if (!chan) {
+          if (this.realtimeChannel) {
+            try { c.removeChannel(this.realtimeChannel); } catch (_) {}
+          }
+          chan = c.channel(chanName, {
+            config: { broadcast: { ack: false, self: true } }
+          });
+        }
+        this.realtimeChannel = chan;
+
+        this.realtimeChannel
+          .on('broadcast', { event: 'duo_switch_spin' }, ({ payload }) => {
+            if (!payload) return;
+            this.handleIncomingSpinBroadcast(payload);
+          })
+          .on('broadcast', { event: 'duo_switch_state_update' }, ({ payload }) => {
+            if (!payload) return;
+            this.handleStateUpdate(payload);
+          })
+          .on('broadcast', { event: 'duo_switch_request_accepted' }, ({ payload }) => {
+            if (!payload) return;
+            this.handleRequestAccepted(payload);
+          })
+          .on('broadcast', { event: 'duo_switch_nuke' }, ({ payload }) => {
+            if (!payload) return;
+            this.handleNukeBroadcast(payload);
+          })
+          .on('broadcast', { event: 'duo_switch_bracket_generated' }, () => {
+            if (typeof window.refreshCurrentBracketData === 'function') {
+              window.refreshCurrentBracketData();
+            }
+          });
+
+        if (this.realtimeChannel.state !== 'joined') {
+          this.realtimeChannel.subscribe();
+        }
       }
 
-      const chanName = `tournament_duo_switch_${this.activeTournamentId}`;
-      this.realtimeChannel = c.channel(chanName, {
-        config: { broadcast: { ack: false, self: true } }
-      });
-
-      this.realtimeChannel
-        .on('broadcast', { event: 'duo_switch_spin' }, ({ payload }) => {
-          if (!payload) return;
-          this.handleIncomingSpinBroadcast(payload);
-        })
-        .on('broadcast', { event: 'duo_switch_state_update' }, ({ payload }) => {
-          if (!payload) return;
-          this.handleStateUpdate(payload);
-        })
-        .on('broadcast', { event: 'duo_switch_request_accepted' }, ({ payload }) => {
-          if (!payload) return;
-          this.handleRequestAccepted(payload);
-        })
-        .on('broadcast', { event: 'duo_switch_nuke' }, ({ payload }) => {
-          if (!payload) return;
-          this.handleNukeBroadcast(payload);
-        })
-        .on('broadcast', { event: 'duo_switch_bracket_generated' }, () => {
-          if (typeof window.refreshCurrentBracketData === 'function') {
-            window.refreshCurrentBracketData();
+      // Cross-tab BroadcastChannel listener (instant sync across multiple browser tabs on same device)
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        try {
+          if (this.localBroadcastChannel) {
+            try { this.localBroadcastChannel.close(); } catch (_) {}
           }
-        })
-        .subscribe();
+          this.localBroadcastChannel = new BroadcastChannel(`frontline_duo_switch_${this.activeTournamentId}`);
+          this.localBroadcastChannel.onmessage = (e) => {
+            if (!e.data) return;
+            const { event, payload } = e.data;
+            if (event === 'duo_switch_spin') this.handleIncomingSpinBroadcast(payload);
+            else if (event === 'duo_switch_state_update') this.handleStateUpdate(payload);
+            else if (event === 'duo_switch_request_accepted') this.handleRequestAccepted(payload);
+            else if (event === 'duo_switch_nuke') this.handleNukeBroadcast(payload);
+            else if (event === 'duo_switch_bracket_generated') {
+              if (typeof window.refreshCurrentBracketData === 'function') window.refreshCurrentBracketData();
+            }
+          };
+        } catch (_) {}
+      }
+
+      // In-page CustomEvent listener
+      if (typeof window !== 'undefined' && !this._hasRegisteredWindowListener) {
+        this._hasRegisteredWindowListener = true;
+        window.addEventListener('frontline_duo_switch_event', (e) => {
+          const detail = e.detail;
+          if (!detail || String(detail.tournamentId) !== String(this.activeTournamentId)) return;
+          if (detail.eventName === 'duo_switch_spin') this.handleIncomingSpinBroadcast(detail.payload);
+          else if (detail.eventName === 'duo_switch_state_update') this.handleStateUpdate(detail.payload);
+          else if (detail.eventName === 'duo_switch_request_accepted') this.handleRequestAccepted(detail.payload);
+          else if (detail.eventName === 'duo_switch_nuke') this.handleNukeBroadcast(detail.payload);
+          else if (detail.eventName === 'duo_switch_bracket_generated') {
+            if (typeof window.refreshCurrentBracketData === 'function') window.refreshCurrentBracketData();
+          }
+        });
+      }
     }
 
     handleIncomingSpinBroadcast(payload) {
-      const { slices, target_index, target_duo, requesting_duo, spin_type, title, subtext } = payload;
-      this.openWheelModal(title || '4v4 Duo Switch Spin', subtext || 'Spinning to choose duo partner live...');
+      if (!payload) return;
+      const {
+        spin_id,
+        start_at,
+        duration_ms = 5500,
+        rotations = 6,
+        slices,
+        target_index,
+        target_duo,
+        requesting_duo,
+        spin_type,
+        title,
+        subtext
+      } = payload;
 
-      if (this.wheelInstance && Array.isArray(slices) && slices.length > 0) {
+      // Deduplication guard to avoid firing same spin event twice across multiple channels
+      if (spin_id && this.lastHandledSpinId === spin_id) return;
+      if (spin_id) this.lastHandledSpinId = spin_id;
+
+      // Open the wheel modal immediately across all screens
+      this.openWheelModal(
+        title || '4v4 Duo Switch Spin',
+        subtext || 'Live synchronized wheel spin across all screens...'
+      );
+
+      if (!this.wheelInstance) return;
+      if (Array.isArray(slices) && slices.length > 0) {
         this.wheelInstance.setSlices(slices);
-        const statusEl = document.getElementById('dsw-status-text');
+      }
+
+      const statusEl = document.getElementById('dsw-status-text');
+      const now = Date.now();
+      const targetStartTime = start_at || (now + 150);
+      const delay = Math.max(0, targetStartTime - now);
+
+      if (delay > 20) {
+        if (statusEl) statusEl.textContent = '⏱ Synchronizing live wheel spin...';
+      }
+
+      setTimeout(() => {
         if (statusEl) statusEl.textContent = '🎲 Wheel spinning in real-time...';
 
-        this.wheelInstance.spinTo(target_index, 5200, 6, (winner) => {
+        const elapsedSinceTarget = Math.max(0, Date.now() - targetStartTime);
+        const actualDuration = Math.max(1200, duration_ms - elapsedSinceTarget);
+
+        this.wheelInstance.spinTo(target_index, actualDuration, rotations, (winner) => {
           const resBox = document.getElementById('dsw-result-box');
           const resText = document.getElementById('dsw-result-text');
           const resDesc = document.getElementById('dsw-result-desc');
@@ -607,7 +700,7 @@
             window.refreshAdminDuoSwitchDesk();
           }
         });
-      }
+      }, delay);
     }
 
     handleNukeBroadcast(payload) {
@@ -986,10 +1079,6 @@
     }
 
     simulateWheelSpin(slices, targetIndex, options = {}, onDone) {
-      const title = options.title || '🎡 Live Duo Switch Wheel';
-      const subtext = options.subtext || 'Simulating live wheel spin...';
-      this.openWheelModal(title, subtext);
-
       if (!Array.isArray(slices) || slices.length === 0) {
         slices = [
           { team_name: 'Alpha Duo', name: 'Alpha Duo', captain_gamertag: 'Ghost' },
@@ -1003,23 +1092,24 @@
         targetIndex = Math.floor(Math.random() * slices.length);
       }
 
-      if (this.wheelInstance) {
-        this.wheelInstance.setSlices(slices);
-        const statusEl = document.getElementById('dsw-status-text');
-        if (statusEl) statusEl.textContent = '🎲 Wheel spinning in real-time...';
+      const spinId = `spin_sim_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      this.handleIncomingSpinBroadcast({
+        spin_id: spinId,
+        start_at: Date.now() + 100,
+        duration_ms: 5500,
+        rotations: 6,
+        slices: slices,
+        target_index: targetIndex,
+        title: options.title || '🎡 Live Duo Switch Wheel',
+        subtext: options.subtext || 'Simulating live wheel spin...'
+      });
 
-        this.wheelInstance.spinTo(targetIndex, 5200, 6, (winner) => {
-          const resBox = document.getElementById('dsw-result-box');
-          const resText = document.getElementById('dsw-result-text');
-          const resDesc = document.getElementById('dsw-result-desc');
-          if (resBox && resText) {
-            resBox.style.display = 'block';
-            resText.textContent = `${winner.team_name || winner.name}`;
-            resDesc.textContent = options.resultDesc || '🎉 Selection Confirmed!';
+      if (typeof onDone === 'function') {
+        setTimeout(() => {
+          if (slices && slices[targetIndex]) {
+            onDone(slices[targetIndex], targetIndex);
           }
-          if (statusEl) statusEl.textContent = '✓ Spin Complete!';
-          if (typeof onDone === 'function') onDone(winner, targetIndex);
-        });
+        }, 5800);
       }
     }
 

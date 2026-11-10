@@ -11755,6 +11755,10 @@
           if (!modal || !container) return;
           window._adminActiveBracketTourneyId = tourneyId;
 
+          if (window.DuoSwitchEngine && typeof window.DuoSwitchEngine.connectRealtime === 'function') {
+            window.DuoSwitchEngine.connectRealtime(tourneyId);
+          }
+
           if (titleEl) {
             titleEl.textContent = `${tourneyTitle || 'Tournament'} – Live Bracket & Match Manager`;
           }
@@ -12479,17 +12483,24 @@
               showToast("No registered duos found to spin.", true);
               return;
             }
-            const slices = regs.map(r => ({ id: r.id, team_name: r.team_name, captain_gamertag: r.captain_gamertag }));
+            const slices = regs.map(r => ({ id: r.id, team_name: r.team_name, captain_gamertag: r.captain_gamertag, name: r.team_name }));
             const randIdx = Math.floor(Math.random() * slices.length);
-            window.LeagueDB.broadcastDuoSwitchEvent(tourneyId, 'duo_switch_spin', {
+            const spinId = `spin_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const startAt = Date.now() + 450;
+
+            await window.LeagueDB.broadcastDuoSwitchEvent(tourneyId, 'duo_switch_spin', {
+              spin_id: spinId,
+              start_at: startAt,
+              duration_ms: 5500,
+              rotations: 6,
               spin_type: 'initial_pairing',
               slices: slices,
               target_index: randIdx,
               target_duo: slices[randIdx],
               title: '🎡 Live Duo Switch Wheel Reveal',
-              subtext: 'Demonstration spin broadcast live to all competitors!'
+              subtext: 'Synchronized live reveal broadcast to all competitors!'
             });
-            showToast("🎡 Synchronized wheel spin broadcast dispatched!");
+            showToast("🎡 Synchronized wheel spin broadcast dispatched to all screens!");
           } catch (e) {
             console.error("Wheel preview error:", e);
           }
@@ -12519,25 +12530,23 @@
 
             const randIdx = Math.floor(Math.random() * slices.length);
             const winner = slices[randIdx];
+            const spinId = `spin_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const startAt = Date.now() + 450;
 
-            if (window.DuoSwitchEngine) {
-              window.DuoSwitchEngine.simulateWheelSpin(slices, randIdx, {
-                title: '🎡 Live Duo Switch Wheel Spin',
-                subtext: 'Demonstration live spin for Duo Switch test tournament',
-                resultDesc: '🎉 Simulated Wheel Selection Complete!'
-              }, (selected) => {
-                showToast(`🎡 Wheel landed on: ${selected.team_name || selected.name}!`);
-              });
-            }
-
-            window.LeagueDB.broadcastDuoSwitchEvent(tourneyId, 'duo_switch_spin', {
+            // Broadcast synchronized spin to all players, spectators, and admin screens at the same millisecond!
+            await window.LeagueDB.broadcastDuoSwitchEvent(tourneyId, 'duo_switch_spin', {
+              spin_id: spinId,
+              start_at: startAt,
+              duration_ms: 5500,
+              rotations: 6,
               spin_type: 'admin_sim_spin',
               slices: slices,
               target_index: randIdx,
               target_duo: winner,
               title: '🎡 Live Duo Switch Wheel Spin',
-              subtext: 'Simulated wheel spin broadcast live across all screens!'
+              subtext: 'Demonstration spin broadcast live across all competitor screens!'
             });
+            showToast(`🎡 Wheel spin broadcast live for everyone! Target: ${winner.team_name || winner.name}`);
           } catch(e) {
             console.error("adminSimulateWheelSpin error:", e);
             showToast("Error: " + e.message, true);
@@ -12568,21 +12577,11 @@
             const requesting = unlockedDuos[Math.floor(Math.random() * unlockedDuos.length)];
             showToast(`🎲 Simulating partner respin for ${requesting.name}...`);
 
+            // executeDuoSwitchReroll handles team swap and broadcasts duo_switch_spin synchronously
             const result = await window.LeagueDB.executeDuoSwitchReroll(tourneyId, requesting.id);
             if (result && result.success) {
-              if (window.DuoSwitchEngine && result.slices && result.target_index !== undefined) {
-                window.DuoSwitchEngine.simulateWheelSpin(result.slices, result.target_index, {
-                  title: '🎲 Duo Partner Reroll',
-                  subtext: `Spinning for ${requesting.name}'s new 4v4 partner!`,
-                  resultDesc: `New partner for ${requesting.name}: ${result.targetDuo}!`
-                }, async () => {
-                  showToast(`✓ Partner respin complete! ${requesting.name} paired with ${result.targetDuo}!`);
-                  await adminManageBracket(tourneyId);
-                });
-              } else {
-                showToast(`✓ Partner respin complete! ${requesting.name} paired with ${result.targetDuo}!`);
-                await adminManageBracket(tourneyId);
-              }
+              showToast(`✓ Partner respin broadcast! ${requesting.name} paired with ${result.targetDuo}!`);
+              await adminManageBracket(tourneyId);
             } else {
               showToast(result?.error || "Respin could not be executed.", true);
             }
@@ -13050,7 +13049,7 @@
               await adminManageBracket(tId, tTitle);
 
               setTimeout(() => {
-                if (confirm(`⚡ Duo Switch Test Tournament is LIVE!\n\n• ${actualCount} Duos enlisted & paired into ${squadsCount} 4v4 squads\n• ${timerMinutes}-minute reroll/lock countdown timer is running\n• Once timer expires (or when you click 'Lock Pairings'), our bracket system will generate the official tournament bracket!\n\nWould you like to open the public Live Bracket page in a new tab now?`)) {
+                if (confirm(`⚡ Duo Switch Test Tournament is LIVE!\n\n• ${actualCount} Duos enlisted & paired into ${squadsCount} 4v4 squads\n• Power-up arena is active (partner respin, lock, unlock, and blow up)!\n• Respins increase by +$5 on every blow up!\n• Lock pairings and generate the bracket whenever ready!\n\nWould you like to open the public Live Bracket page in a new tab now to view the live synchronized wheel arena?`)) {
                   window.open(`/tournaments/bracket/?tournament=${encodeURIComponent(tId)}`, '_blank');
                 }
               }, 400);

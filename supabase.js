@@ -8155,25 +8155,57 @@ if (dbClient && cleanPayload.user_id) {
     return bracketRes;
   },
 
-  broadcastDuoSwitchEvent(tournamentId, eventName, payload) {
+  async broadcastDuoSwitchEvent(tournamentId, eventName, payload) {
+    if (!tournamentId) return;
+
+    // 1. Supabase Realtime WebSocket broadcast across internet & devices
     try {
       const c = window.supabaseClient || window.dbClient;
       if (c && typeof c.channel === 'function') {
-        const chan = c.channel(`tournament_duo_switch_${tournamentId}`, {
-          config: { broadcast: { ack: false, self: true } }
-        });
-        chan.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            chan.send({
-              type: 'broadcast',
-              event: eventName,
-              payload: payload
-            }).catch(() => {});
-          }
-        });
+        const chanName = `tournament_duo_switch_${tournamentId}`;
+        let chan = null;
+        if (typeof c.getChannels === 'function') {
+          const channels = c.getChannels() || [];
+          chan = channels.find(ch => ch.topic === `realtime:${chanName}` || ch.topic === chanName);
+        }
+        if (!chan) {
+          chan = c.channel(chanName, {
+            config: { broadcast: { ack: false, self: true } }
+          });
+        }
+
+        if (chan.state === 'joined') {
+          chan.send({
+            type: 'broadcast',
+            event: eventName,
+            payload: payload
+          }).catch(err => console.warn("Realtime send error:", err));
+        } else {
+          chan.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              chan.send({
+                type: 'broadcast',
+                event: eventName,
+                payload: payload
+              }).catch(err => console.warn("Realtime send error:", err));
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Supabase broadcast exception:", e);
+    }
+
+    // 2. Cross-tab BroadcastChannel API (zero-latency instant sync for multiple tabs/windows on same device)
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel(`frontline_duo_switch_${tournamentId}`);
+        bc.postMessage({ event: eventName, payload: payload });
+        setTimeout(() => { try { bc.close(); } catch(_) {} }, 1500);
       }
     } catch (_) {}
 
+    // 3. In-page CustomEvent
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('frontline_duo_switch_event', {
         detail: { tournamentId, eventName, payload }
@@ -8386,7 +8418,14 @@ if (dbClient && cleanPayload.user_id) {
       name: c.name
     }));
 
+    const spinId = `spin_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const startAt = Date.now() + 450;
+
     this.broadcastDuoSwitchEvent(tournamentId, 'duo_switch_spin', {
+      spin_id: spinId,
+      start_at: startAt,
+      duration_ms: 5500,
+      rotations: 6,
       spin_type: 'duo_reroll',
       requesting_duo: { id: requestingDuoId, name: isSlot1 ? myTeam.duo1_name : myTeam.duo2_name },
       target_duo: { id: targetCandidate.id, name: targetCandidate.name },
