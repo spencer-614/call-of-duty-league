@@ -3161,7 +3161,7 @@
                       </div>
                       <div>
                         <label style="display:block; font-size:10.5px; color:#94a3af; font-weight:700; margin-bottom:3px;">💥 Blow It Up Fee ($)</label>
-                        <input type="number" id="tourney-duo-nuke-fee-input" class="form-control" value="25" min="0" style="padding:6px; font-size:12px;" />
+                        <input type="number" id="tourney-duo-nuke-fee-input" class="form-control" value="20" min="0" style="padding:6px; font-size:12px;" />
                       </div>
                     </div>
                   </div>
@@ -3329,7 +3329,7 @@
                   <span id="btn-create-tourney-icon">🏆</span>
                 </button>
                 <button type="button" class="btn-action-sm" style="padding:10px 18px; font-size:13px; font-weight:800; background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24;" onclick="adminCreateDemoDuoSwitchTourney()" title="Create a test Duo Switch tournament and choose how many duos to enlist">
-                  ⚡ Create Test Duo Switch Tournament...
+                  ⚡ Open Switch Practice
                 </button>
                 <button type="button" id="btn-delete-current-tourney" class="btn-action-sm btn-action-danger" style="display:none; padding:10px 20px; font-size:13px; color:#ef4444; border-color:#ef4444;" onclick="deleteCurrentEditingTourney()">
                   🗑 Delete This Tournament
@@ -3343,7 +3343,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; gap:12px;">
               <h3 class="admin-card-title" style="margin:0;">Dispatched Tournaments &amp; Archive</h3>
               <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800;" onclick="adminCreateDemoDuoSwitchTourney()">⚡ + Test Duo Switch Tourney</button>
+                <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; background:rgba(251,191,36,0.15); border-color:#fbbf24; color:#fbbf24; font-weight:800;" onclick="adminCreateDemoDuoSwitchTourney()">⚡ Switch Practice</button>
                 <button type="button" class="btn-action-sm btn-action-danger" onclick="adminDeleteAllTourneys()" style="font-size:11px; padding:4px 10px;">🗑 Delete All</button>
                 <button type="button" class="btn-action-sm" onclick="loadAdminTournaments()">↻ Refresh Tournaments</button>
               </div>
@@ -4556,7 +4556,7 @@
                   </div>
                   <div>
                     <label style="display:block; font-size:10.5px; color:#94a3af; font-weight:700; margin-bottom:3px;">💥 Blow It Up Fee ($)</label>
-                    <input type="number" id="modal-edit-tourney-duo-nuke-fee" class="form-control" value="25" min="0" style="padding:6px; font-size:12px;" />
+                    <input type="number" id="modal-edit-tourney-duo-nuke-fee" class="form-control" value="20" min="0" style="padding:6px; font-size:12px;" />
                   </div>
                 </div>
               </div>
@@ -4770,7 +4770,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=20261018-staff-sync-v3"></script>
+    <script src="/supabase.js?v=switch-v2"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -11155,7 +11155,7 @@
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; color:var(--lime); border-color:rgba(213,244,91,0.4);" onclick="openEditTournamentModal('${escapeHtml(t.id)}')">✏️ Edit Details</button>
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24;" onclick="adminViewTourneyRegistrations('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">📋 Squads (${enlisted})</button>
                       ${String(t.format || '').toLowerCase().includes('duo')
-  ? `<button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; background:rgba(251,191,36,0.18); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">⚡ Test Duos</button>`
+  ? `<button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; background:rgba(251,191,36,0.18); color:#fde047; font-weight:800;" onclick="adminCreateDemoDuoSwitchTourney()">⚡ Practice</button>`
   : `<button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#eab308; background:rgba(234,179,8,0.12); color:#fde047; font-weight:800;" onclick="adminPromptGenerateDummySquads('${escapeHtml(t.id)}')">🤖 Test Teams</button>`}
                       <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#38bdf8; color:#38bdf8;" onclick="adminManageBracket('${escapeHtml(t.id)}', '${escapeHtml(t.title)}')">⚔️ Bracket</button>
                       <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" target="_blank" class="btn-action-sm" title="View Public Live Bracket" style="font-size:11px; padding:4px 8px; text-decoration:none;">Bracket ↗</a>
@@ -11796,6 +11796,12 @@
             }
 
             const tourney = tourneys.find(t => String(t.id) === String(tourneyId)) || { id: tourneyId, title: tourneyTitle };
+            if (String(tourney.format || '').toLowerCase().includes('duo') && window.SwitchTournamentUI && !window._switchShowMatches) {
+              if (statusEl) statusEl.textContent = 'Switch tournament control desk';
+              controlsEl.innerHTML = '';
+              await window.SwitchTournamentUI.admin(container, tourney);
+              return;
+            }
             const squadCount = regs ? regs.length : 0;
 
             if (!bracketData || !bracketData.stages || bracketData.stages.length === 0) {
@@ -12085,7 +12091,7 @@
 
             let duoSwitchDeskHtml = '';
             const isDuoFormat = String(tourney.format || '').toLowerCase().includes('duo');
-            if (isDuoFormat) {
+            if (isDuoFormat && !window.SwitchTournamentUI) {
               const switchState = bracketData.switch_state || tourney.switch_state || {};
               const endTime = switchState.window_end_time ? new Date(switchState.window_end_time).getTime() : null;
               const isWindowActive = endTime && (endTime > Date.now()) && switchState.status !== 'locked';
@@ -12302,6 +12308,11 @@
             });
 
             container.innerHTML = matchesHtml;
+            if (String(tourney.format || '').toLowerCase().includes('duo') && window.SwitchTournamentUI) {
+              const back = document.createElement('button'); back.type = 'button'; back.className = 'btn-action-sm'; back.textContent = '← Switch control desk';
+              back.onclick = () => window.adminManageBracket(tourneyId, tourney.title); controlsEl.prepend(back);
+            }
+
           } catch (err) {
             console.error("Error managing bracket:", err);
             container.innerHTML = `<div style="text-align:center; padding:24px; color:#ff4a4a;">Error loading bracket manager: ${escapeHtml(err.message)}</div>`;
@@ -13022,6 +13033,7 @@
         window.handleDuoSwitchTestSubmit = handleDuoSwitchTestSubmit;
 
         async function adminExecuteDuoSwitchTest(duoCount = 8) {
+          if (window.SwitchTournamentUI) return window.SwitchTournamentUI.practice();
           const modal = document.getElementById('modal-duo-switch-test-setup');
           if (modal && (modal.open || modal.hasAttribute('open'))) {
             modal.close();
@@ -13064,6 +13076,7 @@
         window.adminExecuteDuoSwitchTest = adminExecuteDuoSwitchTest;
 
         function adminCreateDemoDuoSwitchTourney(duoCount) {
+          if (window.SwitchTournamentUI) return window.SwitchTournamentUI.practice();
           if (duoCount && typeof duoCount === 'number') {
             return adminExecuteDuoSwitchTest(duoCount, 1);
           }
@@ -14898,7 +14911,8 @@
       });
     </script>
   <script src="/tournament-reports.js?v=late-byes-20261017"></script>
-  <script src="/tournament-switch-wheel.js?v=20261103"></script>
+  <script src="/tournament-switch-wheel.js?v=switch-v2"></script>
+  <script src="/switch-client.js?v=switch-v2"></script>
 <a href="/admin/league/" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#d5f45b;color:#182000;padding:12px 18px;border-radius:6px;font:700 14px system-ui;text-decoration:none">League Operations &amp; Discord</a>
 </body>
 </html>

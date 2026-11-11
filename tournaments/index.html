@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/styles.css?v=2" />
     <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=20261012d"></script>
+    <script src="/supabase.js?v=switch-v2"></script>
     <script src="/tournament-switch-wheel.js?v=20261103"></script>
     <script src="/bullet-sparks.js" defer></script>
     <style>
@@ -1395,6 +1395,8 @@
         if (duoBanner) {
           const isDuo = String(t.format || '').toLowerCase().includes('duo');
           duoBanner.style.display = isDuo ? 'block' : 'none';
+          if (isDuo) duoBanner.innerHTML = '<strong>Duo Switch:</strong> Entry $5 · Respin $10 · Lock $15 · Unlock $15 · Blow it up $20. Pay through the configured Cash App or PayPal with your duo name and action; include the target squad for an unlock. Staff verify payments and execute actions. <a href="/tournaments/switch/?tournament=' + encodeURIComponent(t.id) + '" style="color:#d5f45b">Watch the live Switch arena ↗</a>';
+
         }
         document.getElementById('modal-detail-date').textContent = `${t.date || t.start_date || 'TBD'} ${t.time || t.start_time ? '· ' + (t.time || t.start_time) : ''}`;
 

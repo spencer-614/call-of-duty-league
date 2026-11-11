@@ -370,7 +370,7 @@
       this.isSpinning = false;
     }
 
-    spinTo(targetIndex, durationMs = 5200, totalRotations = 6, onDone) {
+    spinTo(targetIndex, durationMs = 5200, totalRotations = 6, onDone, elapsedMs = 0) {
       this.stopSpin();
       this.isSpinning = true;
 
@@ -388,7 +388,7 @@
 
       this.currentAngle = 0;
       this.lastPegCrossed = -1;
-      const startTime = performance.now();
+      const startTime = performance.now() - Math.max(0, elapsedMs);
 
       const easeOut = t => 1 - Math.pow(1 - t, 3.6);
 
@@ -699,7 +699,7 @@
           if (typeof window.refreshAdminDuoSwitchDesk === 'function') {
             window.refreshAdminDuoSwitchDesk();
           }
-        });
+        }, payload.elapsed_ms || 0);
       }, delay);
     }
 
