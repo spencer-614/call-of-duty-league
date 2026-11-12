@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/styles.css?v=2" />
     <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=switch-v2"></script>
+    <script src="/supabase.js?v=duo-registration-20261112"></script>
     <script src="/tournament-switch-wheel.js?v=registration-fix-20261112" defer></script>
     <script src="/bullet-sparks.js" defer></script>
     <style>
@@ -1675,6 +1675,8 @@
 
       function getFormatSquadSize(formatStr) {
         const fmt = String(formatStr || '').toLowerCase();
+        // Switch entries are duos even though the eventual matches are 4v4.
+        if (fmt.includes('duo')) return 2;
         if (fmt.includes('1v1')) return 1;
         if (fmt.includes('2v2')) return 2;
         if (fmt.includes('3v3')) return 3;
@@ -1929,7 +1931,9 @@
 
         const neededTeammates = Math.max(0, maxSquadSize - 1);
         if (hint) {
-          if (maxSquadSize === 1) {
+          if (String(currentSelectedTourney?.format || '').toLowerCase().includes('duo')) {
+            hint.textContent = 'Register 2 players: you + 1 teammate. The live wheel will select your other duo.';
+          } else if (maxSquadSize === 1) {
             hint.textContent = 'Solo Duel format (1 Captain only)';
           } else {
             hint.textContent = `Format requires ${maxSquadSize} players (1 Captain + ${neededTeammates} Teammate${neededTeammates === 1 ? '' : 's'})`;
@@ -2526,6 +2530,11 @@
         if (fullRoster.length < maxSquadSize) {
           const needed = maxSquadSize - fullRoster.length;
           showToast(`Please enlist all ${maxSquadSize} players for this tournament format (${needed} more teammate${needed === 1 ? '' : 's'} needed).`, true);
+          return;
+        }
+
+        if (fullRoster.length > maxSquadSize) {
+          showToast(`This tournament accepts exactly ${maxSquadSize} players per registration. Remove the extra teammates.`, true);
           return;
         }
 
