@@ -14551,7 +14551,7 @@ window.LadderDB = {
     else if (typeof player === "string") player = { gamertag: player };
 
     const ladders = [
-      { id: "4v4_variant", name: "4v4 CDL Variant", circuit: "Variant (HP / SnD / CTL)", maxPlayers: 8, icon: "⚔" },
+      { id: "4v4_variant", name: "4v4 CDL Variant", circuit: "Variant (HP / SnD / Hijack)", maxPlayers: 8, icon: "⚔" },
       { id: "2v2_snd", name: "2v2 Search & Destroy", circuit: "Search & Destroy Only", maxPlayers: 8, icon: "🎯" },
       { id: "1v1_radar", name: "1v1 Radar Gunfight", circuit: "Radar Always-On Gunfight", maxPlayers: 8, icon: "💀" }
     ];
@@ -15301,11 +15301,11 @@ window.LadderDB = {
     const mapsPlayed = [];
 
     const MAP_POOL = [
-      { mode: "Hardpoint", name: "Sub Base", winScore: 250, loseMin: 140, loseMax: 245 },
-      { mode: "Search & Destroy", name: "Karachi", winScore: 6, loseMin: 1, loseMax: 5 },
-      { mode: "Control", name: "Invasion", winScore: 3, loseMin: 0, loseMax: 2 },
-      { mode: "Hardpoint", name: "Rio", winScore: 250, loseMin: 150, loseMax: 242 },
-      { mode: "Search & Destroy", name: "6 Star", winScore: 6, loseMin: 2, loseMax: 5 }
+      { mode: "Hardpoint", name: "Lotus", winScore: 250, loseMin: 140, loseMax: 245 },
+      { mode: "Search & Destroy", name: "Coal", winScore: 6, loseMin: 1, loseMax: 5 },
+      { mode: "Hijack", name: "Munition", winScore: 150, loseMin: 70, loseMax: 145 },
+      { mode: "Hardpoint", name: "Reactor U92", winScore: 250, loseMin: 150, loseMax: 242 },
+      { mode: "Search & Destroy", name: "Silkworm", winScore: 6, loseMin: 2, loseMax: 5 }
     ];
 
     let mapIndex = 0;

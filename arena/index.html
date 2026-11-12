@@ -10,6 +10,7 @@
     <title>Frontline Arena — Competitive Call of Duty Circuit & Ladders</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/supabase.js?v=4"></script>
+    <script src="/cdl-competitive-settings.js?v=1"></script>
     <script src="/bullet-sparks.js" defer></script>
       <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
     <style>
@@ -422,6 +423,11 @@
             </button>
           </div>
         </div>
+      </section>
+
+      <!-- Official CDL 2027 Competitive Maps, Modes & Settings -->
+      <section id="cdl-competitive-rules" style="margin-top:32px; background:rgba(14,19,29,0.75); border:1px solid #1e283a; border-radius:6px; padding:26px 24px;">
+        <div id="arena-hq-cdl-panel"></div>
       </section>
     </main>
 
@@ -1302,6 +1308,12 @@
 
       renderArenaAnnouncements();
       initArenaSeasonStatus();
+      if (typeof window.renderCdlCompetitivePanel === "function") {
+        window.renderCdlCompetitivePanel("arena-hq-cdl-panel", {
+          title: "CDL 2027 Competitive Maps, Modes & Settings",
+          seriesSummary: "4v4 Arena Best-of-5 Order: Hardpoint → Search & Destroy → Hijack → Hardpoint → Search & Destroy"
+        });
+      }
 
       // Realtime reactive listeners for Arena broadcasts
       if (typeof window !== "undefined") {
