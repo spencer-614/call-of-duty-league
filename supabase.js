@@ -272,7 +272,7 @@ const MOCK_DATA = {
     roster_size: "4 active starters + up to 2 reserves",
     forfeit_map1_min: 10,
     forfeit_series_min: 15,
-    series_format: "Best of 5 (Hardpoint, SnD, Control, Hardpoint, SnD)",
+    series_format: "Best of 5 (Hardpoint, Search and Destroy, Hijacked, Hardpoint, Search and Destroy)",
     conduct_policy: "Zero tolerance for hardware cheats (Cronus/XIM), macros, wallhacks, or toxic abuse. Violations trigger immediate forfeit and expulsion.",
     
     hardpoint_score_limit: 250,
@@ -351,7 +351,7 @@ const MOCK_DATA = {
         badge: "BO5 ROTATION",
         badge_type: "lime",
         description: "All regular season and playoff matches follow the standardized 5-map competitive rotation:",
-        callout: "<strong>Official Best-of-5 Order:</strong><br />• Map 1: <strong>Hardpoint</strong><br />• Map 2: <strong>Search & Destroy</strong><br />• Map 3: <strong>Control</strong><br />• Map 4: <strong>Hardpoint</strong> (if required)<br />• Map 5: <strong>Search & Destroy</strong> (decider)",
+        callout: "<strong>Official Best-of-5 Order:</strong><br />• Map 1: <strong>Hardpoint</strong><br />• Map 2: <strong>Search & Destroy</strong><br />• Map 3: <strong>Hijacked</strong><br />• Map 4: <strong>Hardpoint</strong> (if required)<br />• Map 5: <strong>Search & Destroy</strong> (decider)",
         callout_type: "info",
         bullets: [
           "Higher Seed Privilege: The higher-seeded team (or coin-flip winner in Week 1) selects whether to choose Map 1 host/side or initiate map vetos.",
@@ -7315,7 +7315,7 @@ if (dbClient && cleanPayload.user_id) {
         title: `${tourney.title} <span style="color:var(--lime);">Live Match Bracket</span>`,
         items: [
           { title: "1. Match Check-In", text: "Teams must check in 15 minutes before their scheduled match time in Discord." },
-          { title: "2. Best of 5 Series", text: "Standard CDL rotation: Hardpoint, SnD, Control, Hardpoint, SnD." },
+          { title: "2. Best of 5 Series", text: "MW4 rotation: Hardpoint, Search and Destroy, Hijacked, Hardpoint, Search and Destroy." },
           { title: "3. Live Telemetry & Bracket", text: isDoubleElim ? "Winners Bracket squad holds 1-series advantage in Grand Finals. Losers bracket champion must win two series (Bracket Reset) to claim the championship." : "Standard single elimination bracket progression: win and advance, loss results in tournament elimination." }
         ]
       },

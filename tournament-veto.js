@@ -1,42 +1,23 @@
 /* ==============================================================================
    Frontline Tournaments — Live Bracket Map Pick & Veto Engine
-   Supports CDL 2026 / MW4 6v6 Maps: Search & Destroy, Hijack, Hardpoint
+   Supports MW4 rulebook pools: Hardpoint, Search and Destroy, Hijacked
    Only available when tournament bracket is LIVE.
    ============================================================================== */
 (function() {
+  const MW4_RULESET = 'mw4-20261112';
   const CDL_TOURNAMENT_MAP_POOL = {
-    Hardpoint: [
-      { name: "Coal" },
-      { name: "Lithium" },
-      { name: "Lotus" },
-      { name: "Mumbai" },
-      { name: "Reactor U92" },
-      { name: "Transit 213" }
-    ],
-    SearchAndDestroy: [
-      { name: "Cachette" },
-      { name: "Munition" },
-      { name: "Nautical" },
-      { name: "Rooftops" },
-      { name: "Sentry" },
-      { name: "Silkworm" }
-    ],
-    Hijack: [
-      { name: "Lithium" },
-      { name: "Mumbai" },
-      { name: "Reactor U92" },
-      { name: "Silkworm" },
-      { name: "Transit 213" }
-    ]
+    Hardpoint: ['Lithium', 'Lotus', 'Munition', 'Reactor U92', 'Rooftops', 'Sentry'].map(name => ({ name })),
+    SearchAndDestroy: ['Coal', 'Lotus', 'Munition', 'Reactor U92', 'Rooftops', 'Silkworm'].map(name => ({ name })),
+    Hijacked: ['Lithium', 'Lotus', 'Munition'].map(name => ({ name }))
   };
 
   function createFreshVetoSeries() {
     return [
       { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hardpoint.map(m => ({ name: m.name })), struckBy: [] },
-      { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.SearchAndDestroy.map(m => ({ name: m.name })), struckBy: [] },
-      { game: 3, mode: "Hijack", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hijack.map(m => ({ name: m.name })), struckBy: [] },
+      { game: 2, mode: "Search and Destroy", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.SearchAndDestroy.map(m => ({ name: m.name })), struckBy: [] },
+      { game: 3, mode: "Hijacked", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hijacked.map(m => ({ name: m.name })), struckBy: [] },
       { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.Hardpoint.map(m => ({ name: m.name })), struckBy: [] },
-      { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.SearchAndDestroy.map(m => ({ name: m.name })), struckBy: [] }
+      { game: 5, mode: "Search and Destroy", map: null, status: "pending", pool: CDL_TOURNAMENT_MAP_POOL.SearchAndDestroy.map(m => ({ name: m.name })), struckBy: [] }
     ];
   }
 
@@ -46,6 +27,8 @@
 
   window.TournamentVeto = {
     pool: CDL_TOURNAMENT_MAP_POOL,
+    ruleset: MW4_RULESET,
+    createFreshSeries: createFreshVetoSeries,
 
     async mount(hostEl, tournament, match, userContext) {
       if (match.isBye) { hostEl.textContent = "Bye — no map veto required."; return; }
@@ -118,6 +101,7 @@
         </div>
 
         <!-- Turn Banner -->
+        <div id="veto-ruleset-warning" role="alert" style="display:none;padding:12px;margin-bottom:12px;border:1px solid #fbbf24;color:#fbbf24;"></div>
         <div id="veto-turn-hud" style="background:#171d10; border-left:3px solid #22c55e; border:1px solid #2f3b1c; padding:10px 14px; font:800 12.5px var(--body); color:#fff; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
           <span id="veto-turn-msg">Loading veto rotation...</span>
           <div id="veto-admin-actions" style="display:flex; gap:6px;"></div>
@@ -128,7 +112,7 @@
 
         <!-- Copy and Quick Share Strip -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px solid #212814; padding-top:12px;">
-          <div style="font-size:11px; color:#6b7280;">Best of 5 Rotation: HP ➔ SnD ➔ Hijack ➔ HP ➔ SnD</div>
+          <div style="font-size:11px; color:#6b7280;">Best of 5 Rotation: HP ➔ SnD ➔ Hijacked ➔ HP ➔ SnD</div>
           <div style="display:flex; gap:8px;">
             <button type="button" class="btn-tourney-outline" id="btn-veto-copy-rotation" style="font-size:11px; padding:5px 12px;">
               📋 Copy Match Rotation
@@ -141,6 +125,7 @@
 
       // State Management
       let vetoState = {
+        ruleset: MW4_RULESET,
         series: createFreshVetoSeries(),
         coinFlipped: false,
         coinWinner: 'team_a',
@@ -198,7 +183,7 @@
       }
 
       function isMyTurn() {
-        if (busy || allDecided() || !vetoState.coinFlipped || !isCombatant) return false;
+        if (busy || allDecided() || !vetoState.coinFlipped || !isCombatant || vetoState.ruleset !== MW4_RULESET) return false;
         const first = vetoState.coinWinner === 'team_a' ? 1 : 2;
         return ownTeam === (vetoState.vetoStep % 2 === 0 ? first : 3 - first);
       }
@@ -217,6 +202,11 @@
       }
 
       function renderVetoUI() {
+        const warning = wrapper.querySelector('#veto-ruleset-warning');
+        const oldRules = vetoState.ruleset !== MW4_RULESET;
+        warning.style.display = oldRules ? 'block' : 'none';
+        warning.textContent = oldRules ? 'This saved veto uses older map pools. Staff must use Reset All before this match can use the MW4 pools. Existing choices have not been changed.' : '';
+
         const coinText = wrapper.querySelector('#veto-coin-text');
         const coinActions = wrapper.querySelector('#veto-coin-actions');
         const coinDisc = wrapper.querySelector('#veto-coin-disc');

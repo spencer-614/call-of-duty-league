@@ -507,31 +507,11 @@
     </div>
 
     <script>
-      // Official CDL Maps & Modes Pool (MW4 6v6 Ruleset: HP, SnD, Hijack)
+      // MW4 pools from the Frontline rulebook, Appendix A (November 11, 2026).
       const CDL_MAP_POOL = {
-        Hardpoint: [
-          { name: "Coal", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
-          { name: "Lithium", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
-          { name: "Lotus", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
-          { name: "Mumbai", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" },
-          { name: "Reactor U92", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
-          { name: "Transit 213", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" }
-        ],
-        SearchAndDestroy: [
-          { name: "Cachette", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
-          { name: "Munition", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
-          { name: "Nautical", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" },
-          { name: "Rooftops", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" },
-          { name: "Sentry", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
-          { name: "Silkworm", image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80" }
-        ],
-        Hijack: [
-          { name: "Lithium", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop&q=80" },
-          { name: "Mumbai", image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&auto=format&fit=crop&q=80" },
-          { name: "Reactor U92", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=80" },
-          { name: "Silkworm", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80" },
-          { name: "Transit 213", image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80" }
-        ]
+        Hardpoint: ['Lithium', 'Lotus', 'Munition', 'Reactor U92', 'Rooftops', 'Sentry'].map(name => ({ name })),
+        SearchAndDestroy: ['Coal', 'Lotus', 'Munition', 'Reactor U92', 'Rooftops', 'Silkworm'].map(name => ({ name })),
+        Hijacked: ['Lithium', 'Lotus', 'Munition'].map(name => ({ name }))
       };
 
       let activeMatch = null;
@@ -543,10 +523,10 @@
       // 5-game CDL series state
       let vetoSeries = [
         { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
-        { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
-        { game: 3, mode: "Hijack", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hijack], struckBy: [] },
+        { game: 2, mode: "Search and Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
+        { game: 3, mode: "Hijacked", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hijacked], struckBy: [] },
         { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
-        { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
+        { game: 5, mode: "Search and Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
       ];
 
       // Parse match ID from URL
@@ -953,7 +933,7 @@
           return `
             <div class="cdl-map-card ${isDecided ? 'locked' : ''}">
               <div class="cdl-map-thumb">
-                <img src="${decidedMap.image}" alt="${decidedMap.name}" />
+                ${decidedMap.image ? `<img src="${decidedMap.image}" alt="${decidedMap.name}" />` : ''}
                 <span class="game-badge">GAME ${game.game} • ${game.mode.toUpperCase()}</span>
                 ${isDecided ? '<span class="status-overlay decided">LOCKED IN</span>' : '<span class="status-overlay striking">VETO PHASE</span>'}
               </div>
@@ -1040,10 +1020,10 @@
       function resetVetoTool() {
         vetoSeries = [
           { game: 1, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
-          { game: 2, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
-          { game: 3, mode: "Hijack", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hijack], struckBy: [] },
+          { game: 2, mode: "Search and Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] },
+          { game: 3, mode: "Hijacked", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hijacked], struckBy: [] },
           { game: 4, mode: "Hardpoint", map: null, status: "pending", pool: [...CDL_MAP_POOL.Hardpoint], struckBy: [] },
-          { game: 5, mode: "Search & Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
+          { game: 5, mode: "Search and Destroy", map: null, status: "pending", pool: [...CDL_MAP_POOL.SearchAndDestroy], struckBy: [] }
         ];
         coinFlipped = false;
         vetoStep = 0;

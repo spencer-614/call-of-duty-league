@@ -40,7 +40,7 @@
         },
         {
           "title": "2. Best of 5 Series Rotation",
-          "text": "Standard CDL match rotation: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Control (First to 3), Map 4 Hardpoint, and Map 5 Search & Destroy. All series are played to first to 3 map wins."
+          "text": "Standard CDL match rotation: Map 1 Hardpoint (250 pts), Map 2 Search & Destroy (First to 6), Map 3 Hijacked (150 pts), Map 4 Hardpoint, and Map 5 Search & Destroy. All series are played to first to 3 map wins."
         },
         {
           "title": "3. Grand Finals & Bracket Reset",

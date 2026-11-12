@@ -8,7 +8,8 @@
     "build": "echo 'No build step required'",
     "test": "node --test league/test/*.test.cjs",
     "test:edge-db": "node league/test/run-edge-db.cjs",
-    "test:switch": "node --test switch/test/*.test.cjs"
+    "test:switch": "node --test switch/test/*.test.cjs",
+    "test:veto": "node --test veto/test/*.test.cjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
