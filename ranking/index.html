@@ -1,15 +1,430 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Season Ranking · Frontline COD League</title><link rel="icon" href="/images/leaguelogo_1.png"><link rel="stylesheet" href="./ranking.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/supabase.js?v=4"></script></head><body>
-<header><img src="/images/leaguelogo_1.png" alt="Frontline league"><strong>FRONTLINE</strong><nav><a href="/">Home</a><a href="/profile/">My profile</a><a href="/account/discord/">Link Discord</a></nav></header>
-<main><div class="eyebrow">Season placement & review</div><h1>Find your place on the Frontline.</h1><p>Request your placement rank or ask the ranking team to take another look. Your answers and screenshots are private to league admins.</p>
-<div id="message" class="notice" role="status" aria-live="polite">Checking your account…</div>
-<section id="signed-out" hidden><h2>Sign in to get started</h2><p>Use the website account attached to your player registration.</p><a class="button" href="/profile/">Sign in</a></section>
-<div id="content" hidden><section><span id="season" class="eyebrow"></span><h2 id="state-title"></h2><p id="state-description"></p><button id="refresh" class="secondary">Refresh status</button></section>
-<section id="placement-section" hidden><h2>Request your placement rank</h2><small>Required screenshots: PNG, JPG, or WebP, up to 8 MB each. Make sure your Activision ID is readable.</small>
-<form id="placement"><label for="account-image">Submit a screenshot of your account with your Activision ID visible</label><input id="account-image" name="account_image" type="file" accept="image/png,image/jpeg,image/webp" required>
-<label for="peak-rank">Peak rank in the last/current COD</label><textarea id="peak-rank" name="peak_rank" maxlength="3000" required></textarea>
-<label for="rank-image">Screenshot of rank <small>(optional)</small></label><input id="rank-image" name="rank_image" type="file" accept="image/png,image/jpeg,image/webp">
-<label for="average-rank">Average rank in last/current COD</label><textarea id="average-rank" name="average_rank" maxlength="3000" required></textarea>
-<label for="other-leagues">Ranks in other leagues</label><textarea id="other-leagues" name="other_leagues" maxlength="3000" placeholder="Enter your ranks, or None if you have not played in another league." required></textarea>
-<label for="self-placement">Where do YOU think you should be placed?</label><textarea id="self-placement" name="self_placement" maxlength="3000" required></textarea><button type="submit">Submit placement request</button></form></section>
-<section id="rerank-section" hidden><h2>Request a re-rank</h2><form id="rerank"><label for="requested-rank">What rank do you think you should be?</label><textarea id="requested-rank" name="requested_rank" maxlength="3000" required></textarea><label for="reason">Why do you think you should be this rank?</label><textarea id="reason" name="reason" maxlength="3000" required></textarea><button type="submit">Submit re-rank request</button></form></section>
-<section><h2>Your requests</h2><div id="history"></div></section></div></main><script type="module" src="./player.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+    <title>Season Ranking — Frontline Call of Duty League</title>
+    <link rel="icon" type="image/png" href="/images/leaguelogo_1.png" />
+    <link rel="apple-touch-icon" href="/images/leaguelogo_1.png" />
+    <link rel="stylesheet" href="/styles.css?v=2" />
+    <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase.js?v=4"></script>
+    <script src="/bullet-sparks.js" defer></script>
+    <style>
+      .ranking-page {
+        padding-top: 34px;
+        padding-bottom: 72px;
+        max-width: 960px;
+      }
+      .ranking-page [hidden] {
+        display: none !important;
+      }
+      .ranking-hero {
+        margin-bottom: 24px;
+      }
+      .ranking-hero h1 {
+        font: 800 clamp(38px, 5.5vw, 54px)/0.92 var(--display);
+        text-transform: uppercase;
+        margin: 10px 0 12px;
+        letter-spacing: 0.5px;
+      }
+      .ranking-hero h1 em {
+        font-style: normal;
+        color: var(--lime);
+      }
+      .ranking-hero p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+        max-width: 680px;
+        margin: 0;
+      }
+      .ranking-page .notice {
+        padding: 14px 18px;
+        border: 1px solid #3c421f;
+        border-inline-start: 3px solid var(--lime);
+        background: #181a12;
+        color: var(--text);
+        font-size: 13.5px;
+        line-height: 1.5;
+        margin-bottom: 24px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .ranking-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .ranking-card {
+        padding: 32px 34px;
+      }
+      .ranking-card h2 {
+        font: 800 32px/1 var(--display);
+        text-transform: uppercase;
+        margin: 8px 0 0;
+        letter-spacing: 0.5px;
+      }
+      .ranking-card h2 em {
+        font-style: normal;
+        color: var(--lime);
+      }
+      .ranking-status-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .ranking-desc {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+        margin: 14px 0 0;
+      }
+      .ranking-signed-out-actions {
+        margin-top: 20px;
+      }
+      .ranking-history-head {
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+      }
+      .ranking-page .form-control {
+        font-size: max(1rem, 1em);
+      }
+      .ranking-page input[type="file"].form-control {
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+      .ranking-page input[type="file"].form-control::file-selector-button {
+        background: #232818;
+        border: 1px solid #485223;
+        color: var(--lime);
+        font: 700 12px var(--body);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 7px 14px;
+        margin-inline-end: 12px;
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+      .ranking-page input[type="file"].form-control::file-selector-button:hover {
+        background: #2d341f;
+        border-color: var(--lime);
+      }
+      .ranking-page .form-control:user-invalid {
+        border-color: #ef4444;
+      }
+      .ranking-page :is(a, button, input, textarea, select):focus-visible {
+        outline: 2px solid var(--lime);
+        outline-offset: 2px;
+      }
+      .ranking-page .request {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .ranking-page .request:first-child {
+        padding-top: 0;
+      }
+      .ranking-page .request:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      .ranking-page .request strong {
+        font: 700 16px/1.3 var(--body);
+        color: var(--text);
+        vertical-align: middle;
+      }
+      .ranking-page .request p {
+        margin: 8px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      /* Override global hero shield .badge so status pills render inline */
+      .ranking-page .badge {
+        display: inline-flex;
+        align-items: center;
+        width: auto;
+        height: auto;
+        clip-path: none;
+        background: #232818;
+        border: 1px solid #485223;
+        color: var(--text);
+        padding: 3px 10px;
+        margin-inline-start: 8px;
+        font: 800 11px/1.2 var(--body);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        vertical-align: middle;
+      }
+      .ranking-page .badge.pending {
+        background: rgba(234, 179, 8, 0.14);
+        border-color: rgba(250, 204, 21, 0.45);
+        color: #fde047;
+      }
+      .ranking-page .badge.accepted {
+        background: rgba(213, 244, 91, 0.14);
+        border-color: rgba(213, 244, 91, 0.5);
+        color: var(--lime);
+      }
+      .ranking-page .badge.denied {
+        background: rgba(239, 68, 68, 0.14);
+        border-color: rgba(248, 113, 113, 0.45);
+        color: #fca5a5;
+      }
+      @media (max-width: 680px) {
+        .ranking-card {
+          padding: 22px 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="wrap nav">
+        <div class="brand">
+          <a href="/home/" class="brand-logo-link" title="Frontline League Home" aria-label="Frontline League Home">
+            <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          </a>
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">COMMUNITY LEAGUE</small>
+            <div class="brand-status">
+              <span class="nav-beacon"></span>
+              <span>SEASON 1 ACTIVE</span>
+            </div>
+            <script>
+              (function(){
+                try {
+                  var s = JSON.parse(localStorage.getItem('frontline_season_settings'));
+                  if (s) {
+                    var el = document.currentScript.previousElementSibling;
+                    if (el && el.classList.contains('brand-status')) {
+                      el.className = 'brand-status' + (s.status_state === 'coming_soon' ? ' status-coming-soon' : ' status-active');
+                      var t = s.status_text || ('SEASON ' + (s.season_number || 1) + (s.status_state === 'coming_soon' ? ' COMING SOON' : ' ACTIVE'));
+                      el.innerHTML = '<span class="nav-beacon"></span><span>' + t + '</span>';
+                    }
+                  }
+                } catch(e){}
+              })();
+            </script>
+          </div>
+        </div>
+
+        <div class="header-center-hub">
+          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
+          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+            <a href="/home/" class="mode-switch-btn active-league" data-mode="league" title="Frontline Franchised League">
+              <span>🛡</span> <span>League</span>
+            </a>
+            <a href="/arena/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Circuit">
+              <span>⚔</span> <span>Arena</span>
+            </a>
+            <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+              <span>🏆</span> <span>Tournaments</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
+                  <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="/brackets/"><span class="nav-icon">⚔</span> Playoff Brackets</a>
+                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="/teams/"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.gg/frontlinecodleague"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <span>Join Discord</span>
+            <span class="cta-arrow">↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div style="background:#0c0d0a; border-bottom:1px solid #232718; padding:10px 0;">
+      <div class="wrap" style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);">
+        <a href="/home/" style="color:var(--muted); text-decoration:none;">League Home</a>
+        <span>/</span>
+        <a href="/profile/#overview" style="color:var(--muted); text-decoration:none;">Player Profile</a>
+        <span>/</span>
+        <strong style="color:var(--lime);">Season Ranking</strong>
+      </div>
+    </div>
+
+    <main class="wrap ranking-page">
+      <div class="ranking-hero">
+        <div class="eyebrow">Season Placement &amp; Review</div>
+        <h1>Find Your Place on the <em>Frontline</em></h1>
+        <p>Request your placement rank or ask the ranking team to take another look. Your answers and screenshots are private to league admins.</p>
+      </div>
+
+      <div id="message" class="notice" role="status" aria-live="polite">Checking your account…</div>
+
+      <section id="signed-out" class="signup-terminal ranking-card" hidden>
+        <div class="eyebrow">Combatant Access Required</div>
+        <h2>Sign In to <em>Get Started</em></h2>
+        <p class="ranking-desc">Use the website account attached to your player registration.</p>
+        <div class="ranking-signed-out-actions">
+          <a class="button" href="/profile/#signin">Sign In</a>
+        </div>
+      </section>
+
+      <div id="content" class="ranking-stack" hidden>
+        <section class="signup-terminal ranking-card">
+          <div class="ranking-status-head">
+            <div>
+              <span id="season" class="eyebrow"></span>
+              <h2 id="state-title"></h2>
+            </div>
+            <button id="refresh" type="button" class="btn btn-outline secondary">↻ Refresh Status</button>
+          </div>
+          <p id="state-description" class="ranking-desc"></p>
+        </section>
+
+        <section id="placement-section" class="signup-terminal ranking-card" hidden>
+          <div class="signup-header">
+            <div class="eyebrow">Initial Placement Dossier</div>
+            <h2>Request Your <em>Placement Rank</em></h2>
+            <p>Required screenshots: PNG, JPG, or WebP, up to 8 MB each. Make sure your Activision ID is readable.</p>
+          </div>
+          <form id="placement" class="signup-form">
+            <div class="form-group">
+              <label class="form-label" for="account-image">Submit a screenshot of your account with your Activision ID visible <span class="req">*</span></label>
+              <input class="form-control" id="account-image" name="account_image" type="file" accept="image/png,image/jpeg,image/webp" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="peak-rank">Peak rank in the last/current COD <span class="req">*</span></label>
+              <textarea class="form-control" id="peak-rank" name="peak_rank" maxlength="3000" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rank-image">Screenshot of rank <span class="form-hint">(optional)</span></label>
+              <input class="form-control" id="rank-image" name="rank_image" type="file" accept="image/png,image/jpeg,image/webp" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="average-rank">Average rank in last/current COD <span class="req">*</span></label>
+              <textarea class="form-control" id="average-rank" name="average_rank" maxlength="3000" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="other-leagues">Ranks in other leagues <span class="req">*</span></label>
+              <textarea class="form-control" id="other-leagues" name="other_leagues" maxlength="3000" placeholder="Enter your ranks, or None if you have not played in another league." required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="self-placement">Where do YOU think you should be placed? <span class="req">*</span></label>
+              <textarea class="form-control" id="self-placement" name="self_placement" maxlength="3000" required></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-submit-signup">Submit placement request</button>
+              <span class="form-hint">Answers and screenshots are private to league admins.</span>
+            </div>
+          </form>
+        </section>
+
+        <section id="rerank-section" class="signup-terminal ranking-card" hidden>
+          <div class="signup-header">
+            <div class="eyebrow">Rank Adjustment Review</div>
+            <h2>Request a <em>Re-Rank</em></h2>
+            <p>Provide your target rank and supporting reasoning for the ranking team.</p>
+          </div>
+          <form id="rerank" class="signup-form">
+            <div class="form-group">
+              <label class="form-label" for="requested-rank">What rank do you think you should be? <span class="req">*</span></label>
+              <textarea class="form-control" id="requested-rank" name="requested_rank" maxlength="3000" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reason">Why do you think you should be this rank? <span class="req">*</span></label>
+              <textarea class="form-control" id="reason" name="reason" maxlength="3000" required></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-submit-signup">Submit re-rank request</button>
+              <span class="form-hint">Your reasoning is reviewed privately by league admins.</span>
+            </div>
+          </form>
+        </section>
+
+        <section class="signup-terminal ranking-card">
+          <div class="signup-header ranking-history-head">
+            <div class="eyebrow">Submission Log</div>
+            <h2>Your <em>Requests</em></h2>
+          </div>
+          <div id="history"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <div class="footer-info">
+          <strong>FRONTLINE · COMMUNITY LEAGUE</strong>
+          <span>Unofficial community league. Not affiliated with or endorsed by Activision.</span>
+        </div>
+        <div class="footer-links">
+          <a href="/home/#league">League</a>
+          <a href="/home/#standings">Standings</a>
+          <a href="/schedule/">Schedule</a>
+          <a href="/teams/">Teams</a>
+          <a href="/players/">Players</a>
+          <a href="/brackets/">Playoff Brackets</a>
+          <a href="/tournaments/">Tournaments</a>
+          <a href="/draft/">Draft HQ</a>
+          <a href="/rules/">Rulebook</a>
+          <a href="/livestreams/">Livestreams</a>
+          <a href="/vods/">VODs</a>
+          <a href="/signup/">Sign Up</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.addEventListener("click", (e) => {
+        const toggle = document.getElementById("menu-toggle");
+        const menuWrap = document.querySelector(".menu-toggle");
+        if (toggle && toggle.checked && menuWrap && !menuWrap.contains(e.target)) {
+          toggle.checked = false;
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const toggle = document.getElementById("menu-toggle");
+          if (toggle) toggle.checked = false;
+        }
+      });
+    </script>
+    <script type="module" src="./player.js"></script>
+  </body>
+</html>
