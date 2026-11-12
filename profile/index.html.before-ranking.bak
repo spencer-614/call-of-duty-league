@@ -1,0 +1,2008 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11120f" />
+        <link rel="icon" type="image/png" href="/images/leaguelogo_1.png" />
+    <link rel="apple-touch-icon" href="/images/leaguelogo_1.png" />
+    <link rel="stylesheet" href="/styles.css?v=2" />
+    <style>
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #171912;
+        border: 1px solid #3d4522;
+        color: #ffffff;
+        font-family: var(--body);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 10px 18px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        box-sizing: border-box;
+      }
+      .btn:hover {
+        background: #232818;
+        border-color: var(--lime);
+        color: var(--lime);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(213, 244, 91, 0.2);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid #3d4522;
+        color: #d1d5db;
+      }
+      .btn-outline:hover {
+        background: rgba(213, 244, 91, 0.08);
+        border-color: var(--lime);
+        color: var(--lime);
+        box-shadow: 0 0 12px rgba(213, 244, 91, 0.2);
+      }
+      .btn-profile-signout {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(220, 38, 38, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.35);
+        color: #f87171;
+        font-family: var(--body);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        padding: 10px 16px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-sizing: border-box;
+      }
+      .btn-profile-signout:hover {
+        background: rgba(239, 68, 68, 0.22);
+        border-color: #ef4444;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+      }
+      .btn-profile-signout:active {
+        transform: translateY(0);
+      }
+      .btn-profile-signout svg {
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+      }
+      .btn-profile-signout:hover svg {
+        transform: translateX(2px);
+      }
+      /* Platform Switcher & Arena Dynamic Hide Overrides */
+      html.hide-mode-arena .btn-arena-toggle-target,
+      html.hide-mode-arena #btn-goto-arena-profile,
+      html.hide-mode-arena #section-league-arena-banner,
+      html.hide-platform-switcher .btn-arena-toggle-target,
+      html.hide-platform-switcher #btn-goto-arena-profile,
+      html.hide-platform-switcher #section-league-arena-banner {
+        display: none !important;
+      }
+    </style>
+    <title>Frontline League — Franchise Player Profile &amp; CDL Scouting</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase.js?v=4"></script>
+    <script src="/bullet-sparks.js" defer></script>
+      <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
+  </head>
+  <body>
+    <!-- =========================================================================
+         FRONTLINE LEAGUE TOP NAVIGATION HEADER
+         ========================================================================= -->
+    <header class="header">
+      <div class="wrap nav">
+        <div class="brand">
+          <a href="/home/" class="brand-logo-link" title="Frontline League Home" aria-label="Frontline League Home">
+            <img src="/images/leaguelogo_1.png" alt="Frontline League Logo" class="brand-logo" />
+          </a>
+          <div class="brand-text">
+            <span class="brand-title">FRONTLINE</span>
+            <small class="brand-sub">COMMUNITY LEAGUE</small>
+            <div class="brand-status">
+              <span class="nav-beacon"></span>
+              <span>SEASON 1 ACTIVE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Header Center Hub with Welcome Above Mode Switcher -->
+        <div class="header-center-hub">
+          <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent">FRONTLINE</span></h1>
+          <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+            <a href="/profile/" class="mode-switch-btn active-league" data-mode="league" title="Frontline Franchised League Profile">
+              <span>🛡</span> <span>League</span>
+            </a>
+            <a href="/arena/profile/" class="mode-switch-btn" data-mode="arena" title="Frontline Arena Combatant Profile">
+              <span>⚔</span> <span>Arena</span>
+            </a>
+            <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+              <span>🏆</span> <span>Tournaments</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- User-Centered Navigation Actions (Top Right) -->
+        <div class="nav-right-hub">
+          <div class="menu-toggle">
+            <input type="checkbox" id="menu-toggle" />
+            <label for="menu-toggle" class="menu-label-btn" aria-label="Toggle navigation menu">
+              <span>☰</span>
+              <span>Explore League</span>
+              <span class="menu-arrow">▾</span>
+            </label>
+            <nav class="links" aria-label="Main navigation">
+              <div class="nav-dropdown-grid">
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Matches &amp; Tournaments</div>
+                  <a href="/schedule/"><span class="nav-icon">📅</span> Match Schedule</a>
+                  <a href="/brackets/"><span class="nav-icon">⚔</span> Playoff Brackets</a>
+                  <a href="/home/#standings"><span class="nav-icon">🏆</span> Season Standings</a>
+                  <a href="/home/#league"><span class="nav-icon">⌖</span> The League</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Franchises &amp; Players</div>
+                  <a href="/teams/"><span class="nav-icon">🛡</span> Teams &amp; Rosters</a>
+                  <a href="/players/"><span class="nav-icon">🎯</span> Community Players</a>
+                  <a href="/draft/"><span class="nav-icon">⚡</span> General Draft HQ</a>
+                  <a href="/profile/" class="nav-league-profile-link" style="color:var(--lime); display:none;"><span class="nav-icon">👤</span> View Profile</a>
+                </div>
+                <div class="nav-dropdown-col">
+                  <div class="nav-category-title">Media &amp; Directives</div>
+                  <a href="/livestreams/"><span class="nav-icon">🔴</span> Live Broadcast</a>
+                  <a href="/vods/"><span class="nav-icon">📼</span> Match VODs</a>
+                  <a href="/rules/"><span class="nav-icon">📜</span> Official Rulebook</a>
+                  <a href="/signup/" class="nav-link-highlight"><span class="nav-icon">✳</span> Sign Up / Register</a>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <a
+            class="cta nav-discord-cta"
+            href="https://discord.gg/frontlinecodleague"
+            target="_blank"
+            rel="noopener"
+            aria-label="Join Discord Server"
+          >
+            <span>Join Discord</span>
+            <span class="cta-arrow">↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- League Breadcrumb Bar -->
+    <div style="background:#0c0d0a; border-bottom:1px solid #232718; padding:10px 0;">
+      <div class="wrap" style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);">
+        <a href="/home/" style="color:var(--muted); text-decoration:none;">League Home</a>
+        <span>/</span>
+        <a href="/players/" style="color:var(--muted); text-decoration:none;">Franchise Players</a>
+        <span>/</span>
+        <strong style="color:var(--lime);" id="league-breadcrumb-gamertag">Player Profile</strong>
+      </div>
+    </div>
+
+    <main class="wrap" style="padding-top:28px; padding-bottom:70px;">
+      <!-- Status Toast Notification -->
+      <div id="profile-toast" style="display:none; position:fixed; bottom:24px; right:24px; background:#181b12; border:1px solid var(--lime); color:#fff; padding:12px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.8); z-index:99999; font-size:13px; font-weight:700; align-items:center; gap:10px; transition:all 0.3s ease;">
+        <span id="profile-toast-icon">✓</span>
+        <span id="profile-toast-text">Profile updated successfully!</span>
+      </div>
+
+      <!-- Unauthenticated Combatant Gate (Shown when not logged in) -->
+      <section id="profile-auth-gate" style="display:none; max-width:620px; margin:40px auto 60px; background:linear-gradient(145deg, #161811 0%, #10110c 100%); border:1px solid #333d1c; padding:38px 32px; box-shadow:0 18px 45px rgba(0,0,0,0.6); text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(213,244,91,0.1); border:1px solid rgba(213,244,91,0.3); color:var(--lime); font:800 11px var(--body); letter-spacing:1.5px; text-transform:uppercase; padding:4px 12px; margin-bottom:14px;">
+          <span>🔒</span> <span>// COMBATANT ACCESS REQUIRED</span>
+        </div>
+        <h2 style="font:800 32px var(--display); text-transform:uppercase; color:#fff; margin:0 0 10px; letter-spacing:0.5px;">
+          Sign In to Access <span style="color:var(--lime);">Your Profile</span>
+        </h2>
+        <p style="font-size:14px; color:var(--muted); line-height:1.6; max-width:480px; margin:0 auto 26px;">
+          You must have an active Frontline League account to view your player card, track official CDL telemetry, or customize your competitive dossier.
+        </p>
+
+        <!-- Auth Method Selector Tabs -->
+        <div style="display:flex; gap:8px; justify-content:center; margin-bottom:20px; border-bottom:1px solid #232718; padding-bottom:12px;">
+          <button type="button" id="tab-profile-auth-discord" class="btn" onclick="switchProfileAuthTab('discord')" style="font-size:11px; padding:7px 14px; background:#5865F2; color:#fff; border-color:#5865F2;">
+            <span>💬</span> <span>Discord (1-Click)</span>
+          </button>
+          <button type="button" id="tab-profile-auth-email" class="btn btn-outline" onclick="switchProfileAuthTab('email')" style="font-size:11px; padding:7px 14px; color:var(--lime); border-color:#3d4522;">
+            <span>🔑</span> <span>Email &amp; Password</span>
+          </button>
+        </div>
+
+        <!-- Panel 1: Discord Sign In -->
+        <div id="panel-profile-auth-discord" style="display:flex; flex-direction:column; gap:12px; max-width:380px; margin:0 auto;">
+          <button type="button" id="btn-gate-discord" class="btn" onclick="signInWithDiscordGate()" style="width:100%; justify-content:center; background:#5865F2; border-color:#5865F2; color:#fff; font-size:13px; padding:12px 18px; box-shadow:0 4px 16px rgba(88,101,242,0.3); cursor:pointer;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" style="margin-right:8px; vertical-align:middle;">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+            <span>Sign In with Discord</span>
+          </button>
+
+          <button type="button" onclick="switchProfileAuthTab('email')" class="btn btn-outline" style="width:100%; justify-content:center; font-size:12px; padding:10px 18px; cursor:pointer;">
+            <span>🔑</span> <span>Sign In with Email &amp; Password</span>
+          </button>
+
+          <a href="https://discord.gg/frontlinecodleague" target="_blank" rel="noopener" class="btn btn-outline" style="width:100%; justify-content:center; font-size:13px; padding:10px 18px; text-decoration:none; border-color:#5865F2; color:#8ea1e1; display:inline-flex; align-items:center; gap:6px;">
+            <span>💬</span> <span>Join Official Discord ↗</span>
+          </a>
+        </div>
+
+        <!-- Panel 2: Email & Password Sign In Form -->
+        <form id="panel-profile-auth-email" onsubmit="handleProfileEmailSignIn(event)" style="display:none; flex-direction:column; gap:14px; max-width:380px; margin:0 auto; text-align:left;">
+          <div id="profile-gate-error" style="display:none; background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#fca5a5; font-size:12px; padding:10px 14px; line-height:1.4;"></div>
+          
+          <div>
+            <label for="profile-gate-email" style="display:block; font:800 11px var(--body); color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">
+              Email Address <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="email" id="profile-gate-email" placeholder="e.g. operative@frontlineleague.com" required autocomplete="email" style="width:100%; box-sizing:border-box; background:#0c0d0a; border:1px solid #333d1c; color:#fff; padding:11px 14px; font-family:var(--body); font-size:13px; outline:none;" />
+          </div>
+
+          <div>
+            <label for="profile-gate-password" style="display:block; font:800 11px var(--body); color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">
+              Password <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="password" id="profile-gate-password" placeholder="••••••••" required autocomplete="current-password" style="width:100%; box-sizing:border-box; background:#0c0d0a; border:1px solid #333d1c; color:#fff; padding:11px 14px; font-family:var(--body); font-size:13px; outline:none;" />
+          </div>
+
+          <button type="submit" id="btn-profile-gate-submit" class="btn" style="width:100%; justify-content:center; font-size:13px; padding:12px 18px; margin-top:4px;">
+            <span>🔑</span> <span>Sign In &amp; Open Profile</span>
+          </button>
+
+          <div style="text-align:center; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+            <a href="javascript:void(0)" onclick="switchProfileAuthTab('discord')" style="color:#8ea1e1; font-size:12px; text-decoration:none; font-weight:700;">← Use Discord</a>
+            <a href="/signup/" style="color:var(--lime); font-size:12px; text-decoration:none; font-weight:700;">Need an account? Register ↗</a>
+          </div>
+        </form>
+
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid #232718; font-size:12px; color:var(--muted);">
+          Looking for community rosters? <a href="/players/" style="color:var(--lime); text-decoration:none; font-weight:700;">Explore Community Players ↗</a>
+        </div>
+      </section>
+
+      <!-- Authenticated Profile Content Container -->
+      <div id="profile-content-wrap" style="display:none;">
+        <!-- League Profile Hero Banner -->
+        <section style="background:linear-gradient(135deg, #1b1e15 0%, #11120e 100%); border:1px solid #3d4522; padding:32px; position:relative; box-shadow:0 12px 35px rgba(0,0,0,0.5); margin-bottom:28px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:24px;">
+            <!-- Left: Player Avatar & Core Identity -->
+            <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap;">
+              <div style="position:relative;">
+                <img id="league-user-avatar" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=160&auto=format&fit=crop&q=80" alt="League Player Avatar" style="width:110px; height:110px; object-fit:cover; border:2px solid var(--lime); box-shadow:0 0 20px rgba(213,244,91,0.25);" />
+                <span id="league-user-tag" style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:#0f100d; border:1px solid var(--lime); color:var(--lime); font:800 10px var(--body); letter-spacing:1px; padding:2px 8px; text-transform:uppercase;">
+                  [AGENT]
+                </span>
+              </div>
+
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+                  <span class="pill" id="league-user-tier" style="color:var(--lime); border-color:#d5f45b50;">
+                    ★ FREE AGENT
+                  </span>
+                  <span class="pill" id="league-user-contract" style="color:#ffe270; border-color:#ffe27050;">
+                    UNASSIGNED FREE AGENT
+                  </span>
+                  <span id="league-user-status-pill" style="font-size:11px; color:#22c55e; font-weight:800; display:inline-flex; align-items:center; gap:4px;">
+                    ● AVAILABLE FOR SIGNING
+                  </span>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:12px; margin:0 0 8px; flex-wrap:wrap;">
+                  <h1 id="league-user-gamertag" style="font:800 42px/1 var(--display); text-transform:uppercase; margin:0; color:#ffffff; letter-spacing:0.5px;">
+                    Operative
+                  </h1>
+                  <button type="button" onclick="openLeagueEditModal()" class="btn btn-outline" style="font-size:11px; padding:4px 10px; border-color:#3d4522; color:var(--lime); display:inline-flex; align-items:center; gap:4px; text-transform:uppercase; cursor:pointer;" title="Edit Player Profile">
+                    <span>✏️</span> <span>Edit Profile</span>
+                  </button>
+                </div>
+
+                <div style="display:flex; gap:18px; font-size:13px; color:var(--muted); flex-wrap:wrap;">
+                  <span><strong style="color:#ffffff;">Franchise:</strong> <span id="league-user-team" style="color:var(--lime);">Free Agent / Unassigned</span></span>
+                  <span><strong style="color:#ffffff;">CDL Role:</strong> <span id="league-user-role" style="color:#cbd5e1;">Flex</span></span>
+                  <span><strong style="color:#ffffff;">Platform:</strong> <span id="league-user-platform" style="color:#cbd5e1;">PC</span></span>
+                  <span><strong style="color:#ffffff;">Input:</strong> <span id="league-user-input">Controller</span></span>
+                  <span><strong style="color:#ffffff;">Region:</strong> <span id="league-user-region">NA East</span></span>
+                  <span><strong style="color:#ffffff;">Activision:</strong> <span id="league-user-activision">Unlinked</span></span>
+                  <span><strong style="color:#ffffff;">Discord:</strong> <span id="league-user-discord" style="color:#8ea1e1; font-weight:700;">—</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Profile Actions -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <a href="/admin/" id="btn-admin-console-link" onclick="openLeagueAdminConsole(event)" class="btn" style="display:none; font-size:12px; padding:10px 18px; text-decoration:none; background:var(--lime); color:#11120f; font-weight:800; border-color:var(--lime); box-shadow:0 0 15px rgba(213,244,91,0.3); cursor:pointer;" title="Open Commissioner & Staff Admin Console">
+                <span>⚙</span> <span>Admin Console ↗</span>
+              </a>
+              <a href="https://discord.gg/frontlinecodleague" target="_blank" rel="noopener" class="btn" style="background:#5865F2; border-color:#5865F2; color:#fff; font-size:12px; padding:10px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow:0 4px 14px rgba(88,101,242,0.35);">
+                <span>💬</span> <span>Join Official Discord ↗</span>
+              </a>
+              <button type="button" class="btn" onclick="openLeagueEditModal()" style="font-size:12px; padding:10px 18px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                <span>✏️</span> <span>Edit Profile</span>
+              </button>
+              <a href="/teams/" class="btn btn-outline" style="font-size:12px; padding:10px 18px; text-decoration:none;">
+                <span>🛡</span> <span>View Franchise Roster</span>
+              </a>
+              <a href="/arena/profile/" id="btn-goto-arena-profile" class="btn btn-outline btn-arena-toggle-target" style="font-size:12px; padding:10px 18px; text-decoration:none; border-color:#ff1e44; color:#ff1e44;">
+                <span>⚔</span> <span>Go to Arena Profile ↗</span>
+              </a>
+              <button type="button" onclick="signOutLeagueProfile()" class="btn-profile-signout" title="Sign out of your account">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+      <!-- League Season 1 Performance Metrics -->
+      <section style="margin-bottom:32px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px;">
+          <div>
+            <div style="font:800 11px var(--body); color:var(--lime); letter-spacing:1.5px; text-transform:uppercase;">
+              // OFFICIAL LEAGUE TELEMETRY · SEASON 1
+            </div>
+            <h2 style="font:800 24px var(--display); text-transform:uppercase; margin:2px 0 0; color:#fff;">
+              Franchise Combat Record
+            </h2>
+          </div>
+          <span style="font-size:11px; color:var(--muted);">SANCTIONED CDL COMPETITIVE DATA</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px;">
+          <div style="background:#13150f; border:1px solid #282f18; padding:18px;">
+            <div style="font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase;">Season K/D Ratio</div>
+            <div style="font:800 32px var(--display); color:var(--lime); margin-top:4px;" id="stat-kd">0.00</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">Season Average</div>
+          </div>
+
+          <div style="background:#13150f; border:1px solid #282f18; padding:18px;">
+            <div style="font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase;">Hardpoint Hill Time</div>
+            <div style="font:800 32px var(--display); color:#ffffff; margin-top:4px;" id="stat-hill">0s</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">Per Map Average</div>
+          </div>
+
+          <div style="background:#13150f; border:1px solid #282f18; padding:18px;">
+            <div style="font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase;">SnD First Blood %</div>
+            <div style="font:800 32px var(--display); color:#ffe270; margin-top:4px;" id="stat-fb">0.0%</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">Opening duel conversion</div>
+          </div>
+
+          <div style="background:#13150f; border:1px solid #282f18; padding:18px;">
+            <div style="font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase;">Respawn Win Rate</div>
+            <div style="font:800 32px var(--display); color:#22c55e; margin-top:4px;" id="stat-respawn">0.0%</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">Hardpoint &amp; Control</div>
+          </div>
+
+          <div style="background:#13150f; border:1px solid #282f18; padding:18px;">
+            <div style="font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase;">Maps Competed</div>
+            <div style="font:800 32px var(--display); color:#ffffff; margin-top:4px;" id="stat-maps">0</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">0 Series Played</div>
+          </div>
+
+          <div style="background:#13150f; border:1px solid #282f18; padding:18px;">
+            <div style="font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase;">Draft Scout Grade</div>
+            <div style="font:800 32px var(--display); color:var(--lime); margin-top:4px;" id="stat-draft">Unranked</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">Scout grade pending</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Two Column Layout: Team Affiliation + Season Matches -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:36px;">
+        
+        <!-- Left: Franchise Team Roster -->
+        <div style="background:#12140d; border:1px solid #282f18; padding:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #232916; padding-bottom:10px;">
+            <h3 style="font:800 18px var(--display); text-transform:uppercase; color:#fff; margin:0;">
+              Franchise Squad Roster
+            </h3>
+            <span class="pill" id="profile-team-badge" style="color:var(--lime); border-color:#d5f45b50;">Unassigned</span>
+          </div>
+
+          <div id="profile-roster-list" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="background:#181b11; border:1px dashed #2e361c; padding:28px 16px; text-align:center;">
+              <div style="font-size:24px; margin-bottom:8px;">🛡️</div>
+              <strong style="color:#ffffff; font-size:13px; display:block; margin-bottom:4px;">No Franchise Roster Assigned</strong>
+              <div style="font-size:12px; color:var(--muted); max-width:320px; margin:0 auto 14px;">You are currently listed as an Unassigned Free Agent. Enlist a team or join a registered franchise squad.</div>
+              <a href="/signup/" class="btn" style="font-size:11px; padding:6px 14px; text-decoration:none; display:inline-flex;">Register Franchise Squad ↗</a>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid #232916; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:12px; color:var(--muted);">Franchise Circuit:</span>
+            <a href="/teams/" style="font-size:12px; color:var(--lime); text-decoration:none; font-weight:800;">View All Teams ↗</a>
+          </div>
+        </div>
+
+        <!-- Right: Recent League Matches & VODs -->
+        <div style="background:#12140d; border:1px solid #282f18; padding:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #232916; padding-bottom:10px;">
+            <h3 style="font:800 18px var(--display); text-transform:uppercase; color:#fff; margin:0;">
+              Official Match Records &amp; VODs
+            </h3>
+            <a href="/vods/" style="font-size:11px; color:var(--lime); text-decoration:none; font-weight:800;">All Broadcast VODs ↗</a>
+          </div>
+
+          <div id="profile-matches-list" style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:#181b11; border:1px dashed #2e361c; padding:28px 16px; text-align:center;">
+              <div style="font-size:24px; margin-bottom:8px;">📼</div>
+              <strong style="color:#ffffff; font-size:13px; display:block; margin-bottom:4px;">No Match Records Recorded Yet</strong>
+              <div style="font-size:12px; color:var(--muted); max-width:320px; margin:0 auto 14px;">Sanctioned match broadcasts, telemetry results, and VODs will appear here once official series are played.</div>
+              <a href="/schedule/" class="btn btn-outline" style="font-size:11px; padding:6px 14px; text-decoration:none; display:inline-flex;">View Match Schedule ↗</a>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid #232916; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:12px; color:var(--muted);">Tournament Progression:</span>
+            <a href="/brackets/" style="font-size:12px; color:var(--lime); text-decoration:none; font-weight:800;">Championship Bracket ↗</a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Section: Enlisted Tournament Squads -->
+      <section style="background:#12140d; border:1px solid #282f18; padding:24px; margin-bottom:32px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #232916; padding-bottom:12px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font:800 11px var(--body); color:#38bdf8; letter-spacing:1.5px; text-transform:uppercase;">
+              // TOURNAMENT CIRCUIT ENLISTMENTS
+            </div>
+            <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:2px 0 0;">
+              Tournament Teams &amp; Squad Rosters
+            </h3>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <a href="/tournaments/" class="btn btn-outline" style="font-size:11px; padding:6px 12px; border-color:#38bdf8; color:#38bdf8; text-decoration:none;">
+              <span>⚔</span> <span>Open Tournament Hub ↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div id="profile-tournament-teams-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px;">
+          <div style="text-align:center; padding:28px 16px; background:#181b11; border:1px dashed #2e361c; border-radius:3px; color:var(--muted); font-size:12.5px; grid-column:1 / -1;">
+            <div style="font-size:24px; margin-bottom:6px;">⚔️</div>
+            Loading tournament teams...
+          </div>
+        </div>
+      </section>
+
+      <!-- Official Notifications & Directives Panel -->
+      <section style="background:#12140d; border:1px solid #282f18; padding:24px; margin-bottom:32px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #232916; padding-bottom:12px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font:800 11px var(--body); color:var(--lime); letter-spacing:1.5px; text-transform:uppercase;">
+              // OFFICIAL HQ DIRECTIVES &amp; ALERTS
+            </div>
+            <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:2px 0 0;">
+              Notifications &amp; Registration Status
+            </h3>
+          </div>
+          <button type="button" id="btn-profile-clear-notifs" class="btn btn-outline" style="font-size:11px; padding:6px 12px; cursor:pointer;" onclick="clearProfileNotifications()">
+            ✓ Mark All As Read
+          </button>
+        </div>
+
+        <div id="profile-notifications-container" style="display:flex; flex-direction:column; gap:10px;">
+          <div style="text-align:center; padding:28px 16px; background:#181b11; border:1px dashed #2e361c; border-radius:3px; color:var(--muted); font-size:12.5px;">
+            <div style="font-size:24px; margin-bottom:6px;">📭</div>
+            No notifications on file. When your league or tournament registration is accepted, official directives will appear here.
+          </div>
+        </div>
+      </section>
+
+      <!-- Difference Banner: League vs Arena -->
+      <section id="section-league-arena-banner" class="btn-arena-toggle-target" style="background:linear-gradient(90deg, #161a10, #14090d); border:1px solid #3d4522; padding:24px 30px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
+        <div style="max-width:700px;">
+          <div style="font-size:11px; color:var(--lime); font-weight:800; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
+            FRONTLINE MULTI-CIRCUIT PLATFORM
+          </div>
+          <h3 style="font:800 20px var(--display); text-transform:uppercase; color:#fff; margin:0 0 6px;">
+            Looking for your Grassroots Arena Ladders &amp; Squads?
+          </h3>
+          <p style="font-size:13px; color:var(--muted); line-height:1.5; margin:0;">
+            This profile manages your <strong>Franchised League</strong> career, contract status, and division tournaments. To view your grassroots Arena ELO ratings, 4v4/2v2 squads, and Match Finder challenges, switch to your Arena Profile.
+          </p>
+        </div>
+        <a href="/arena/profile/" class="btn" style="background:#ff1e44; border-color:#ff1e44; color:#fff; font-size:13px; padding:12px 24px; text-decoration:none;">
+          <span>⚔</span> <span>Open Arena Profile ↗</span>
+        </a>
+      </section>
+      </div> <!-- end #profile-content-wrap -->
+    </main>
+
+    <!-- Modal: Edit League Profile Card -->
+    <div id="modal-league-edit" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+      <div style="background:#14170f; border:1px solid var(--lime); max-width:560px; width:100%; padding:28px; box-shadow:0 0 35px rgba(213,244,91,0.2); max-height:90vh; overflow-y:auto; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid #2c3319; padding-bottom:10px;">
+          <div>
+            <div style="font:800 10.5px var(--body); color:var(--lime); letter-spacing:1px; text-transform:uppercase;">// FRONTLINE DOSSIER HQ</div>
+            <h3 style="font:800 22px var(--display); text-transform:uppercase; color:#fff; margin:2px 0 0;">
+              Edit Player Profile
+            </h3>
+          </div>
+          <button type="button" onclick="closeLeagueEditModal()" style="background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;" title="Close modal">✕</button>
+        </div>
+
+        <form id="league-edit-form" onsubmit="saveLeagueProfile(event)" style="display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Gamertag / Player Handle <span style="color:#f87171;">*</span></label>
+            <input type="text" id="edit-league-gamertag" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" required />
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Franchise Team</label>
+              <select id="edit-league-team" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="Free Agent">Unsigned Free Agent</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">CDL Tactical Role</label>
+              <select id="edit-league-role" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="SMG">SMG / Slayer</option>
+                <option value="Main AR">Main AR</option>
+                <option value="Flex">Flex / Hybrid</option>
+                <option value="OBJ">OBJ (Objective)</option>
+                <option value="Anchor">Anchor</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Division Circuit</label>
+              <select id="edit-league-division" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="Division 1 · Premier">Division 1 · Premier</option>
+                <option value="Division 2 · Challengers">Division 2 · Challengers</option>
+                <option value="Division 3 · Open Recruit">Division 3 · Open Recruit</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Battle Platform</label>
+              <select id="edit-league-platform" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="PC">PC (Battle.net / Steam)</option>
+                <option value="PlayStation">PlayStation 5 / PS4</option>
+                <option value="Xbox">Xbox Series X|S / One</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Operational Region</label>
+              <select id="edit-league-region" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="NA East">North America — East</option>
+                <option value="NA Central">North America — Central</option>
+                <option value="NA West">North America — West</option>
+                <option value="EU">Europe</option>
+                <option value="Other">Other / International</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Input Device</label>
+              <select id="edit-league-input" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;">
+                <option value="Controller">Controller</option>
+                <option value="Mouse & Keyboard">Mouse &amp; Keyboard</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Activision ID <span style="color:#f87171;">*</span></label>
+              <input type="text" id="edit-league-activision" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="Player#1234567" required />
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:4px;">Discord Username</label>
+              <input type="text" id="edit-league-discord" style="width:100%; box-sizing:border-box; background:#0a0c08; border:1px solid #333d1c; padding:8px 12px; color:#fff; font-size:13px;" placeholder="Username#0000 or handle" />
+            </div>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase; margin-bottom:6px;">
+              Player Dossier Avatar / Emblem
+            </label>
+            <div style="display:flex; align-items:center; gap:16px; background:#0a0c08; border:1px solid #333d1c; padding:12px 14px; border-radius:4px;">
+              <div style="position:relative; flex-shrink:0;">
+                <img
+                  id="edit-league-avatar-preview"
+                  src="/images/leaguelogo_1.png"
+                  alt="Avatar Preview"
+                  style="width:68px; height:68px; border-radius:8px; object-fit:cover; border:2px solid var(--lime); box-shadow:0 0 16px rgba(213,244,91,0.3); background:#11120f; display:block;"
+                  onerror="this.src='/images/leaguelogo_1.png'"
+                />
+              </div>
+
+              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <label class="btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:12px; margin:0; border-radius:3px; font-weight:800;">
+                    <span>📷</span> <span>Choose Image File</span>
+                    <input
+                      type="file"
+                      id="edit-league-avatar-file-input"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      style="display:none;"
+                      onchange="handleLeagueAvatarFileSelect(event)"
+                    />
+                  </label>
+
+                  <button type="button" onclick="setLeagueAvatarPreset('/images/leaguelogo_1.png')" class="btn btn-outline" style="font-size:11px; padding:6px 10px; cursor:pointer;" title="Use official League Crest">
+                    🛡 League Logo
+                  </button>
+                  <button type="button" onclick="setLeagueAvatarPreset('/images/arenalogo_1.png')" class="btn btn-outline" style="font-size:11px; padding:6px 10px; cursor:pointer;" title="Use official Arena Insignia">
+                    ⚔ Arena Logo
+                  </button>
+                </div>
+
+                <div id="edit-league-avatar-file-status" style="font-size:11px; color:var(--muted);">
+                  Upload from your device (no URL needed)
+                </div>
+
+                <input
+                  type="text"
+                  id="edit-league-avatar"
+                  placeholder="Or paste an image URL (optional)"
+                  oninput="handleLeagueAvatarUrlInput(this.value)"
+                  style="width:100%; box-sizing:border-box; background:#050704; border:1px solid #283116; color:#cbd5e1; padding:6px 10px; border-radius:3px; font-size:11px;"
+                />
+              </div>
+            </div>
+            <span style="font-size:11px; color:var(--muted); margin-top:4px; display:block;">
+              Synced with your Frontline Arena profile. Changing your avatar updates both profiles automatically.
+            </span>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+            <button type="button" onclick="closeLeagueEditModal()" class="btn btn-outline" style="font-size:12px; padding:8px 16px; cursor:pointer;">Cancel</button>
+            <button type="submit" id="btn-save-league-profile" class="btn" style="font-size:12px; padding:8px 20px; cursor:pointer;">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- League Footer -->
+    <footer class="footer" style="background:#090a07; border-top:1px solid #232718; padding:32px 0;">
+      <div class="wrap" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="/images/leaguelogo_1.png" style="width:34px; height:34px;" alt="Frontline League" />
+          <div style="font-size:12px; color:var(--muted);">
+            <strong style="color:#ffffff;">FRONTLINE COMMUNITY LEAGUE</strong> · Franchised Division Circuit.<br />
+            Grassroots community tournament following the official CDL competitive ruleset.
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--muted);">
+          &copy; 2026 Frontline League. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      function openLeagueAdminConsole(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        try {
+          sessionStorage.setItem("frontline_admin_session", "authorized");
+          localStorage.setItem("frontline_admin_session", "authorized");
+          const existingEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email");
+          const storedUser = JSON.parse(localStorage.getItem("frontline_league_auth_user") || "null");
+          const activeEmail = (storedUser && (storedUser.email || storedUser.user_email)) || existingEmail || "todd061496@gmail.com";
+          sessionStorage.setItem("frontline_admin_email", activeEmail);
+          localStorage.setItem("frontline_admin_email", activeEmail);
+        } catch (_) {}
+
+        if (typeof window.navigateToAdminConsole === "function" && window.navigateToAdminConsole !== openLeagueAdminConsole) {
+          window.navigateToAdminConsole();
+          return;
+        }
+
+        if (window.location.protocol === "file:") {
+          window.location.href = "../admin/index.html";
+          return;
+        }
+
+        window.location.href = "/admin/";
+      }
+      window.openLeagueAdminConsole = openLeagueAdminConsole;
+      window.navigateToAdminConsole = openLeagueAdminConsole;
+
+      function checkIsStaffOrCommissioner(user, card) {
+        if (card && card.is_staff) return true;
+        if (user) {
+          if (user.is_commissioner === true || user.is_staff === true) return true;
+          if (user.user_metadata?.is_commissioner === true || user.user_metadata?.is_staff === true) return true;
+          const r = String(user.role || user.user_metadata?.role || '').toLowerCase();
+          if (r === 'commissioner' || r === 'admin' || r === 'staff') return true;
+        }
+        const cleanEmail = String(user?.email || card?._owner_email || sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+        if (cleanEmail === "todd061496@gmail.com" || cleanEmail === "todd61496@gmail.com" || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("todd") || cleanEmail.includes("frontlineleague.com") || cleanEmail.includes("invictus")) {
+          return true;
+        }
+        const commishNames = ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner spencer", "commissioner", "savory"];
+        const profileTag = String(user?.user_metadata?.gamertag || user?.gamertag || user?.user_metadata?.username || card?.gamertag || "").toLowerCase().trim();
+        if (commishNames.some(cn => profileTag === cn || profileTag.includes(cn) || cn.includes(profileTag))) {
+          return true;
+        }
+        if ((typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") ||
+            (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized")) {
+          return true;
+        }
+        if (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
+          if (window.LeagueDB.isAccountAdmin(user) || window.LeagueDB.isAccountAdmin(card)) return true;
+        }
+        return false;
+      }
+      window.checkIsStaffOrCommissioner = checkIsStaffOrCommissioner;
+
+      function showProfileToast(msg, isError = false) {
+        const toast = document.getElementById('profile-toast');
+        const icon = document.getElementById('profile-toast-icon');
+        const text = document.getElementById('profile-toast-text');
+        if (!toast || !text) return;
+        text.textContent = msg;
+        if (icon) icon.textContent = isError ? '✕' : '✓';
+        toast.style.borderColor = isError ? '#ef4444' : 'var(--lime)';
+        toast.style.display = 'inline-flex';
+        clearTimeout(window.__profileToastTimer);
+        window.__profileToastTimer = setTimeout(() => {
+          toast.style.display = 'none';
+        }, 4000);
+      }
+
+      async function checkCurrentAuth() {
+        let authUser = null;
+
+        // 1. Check live Supabase session first
+        if (window.LeagueDB && typeof window.LeagueDB.getAuthUser === "function") {
+          try {
+            const authRes = await window.LeagueDB.getAuthUser();
+            if (authRes?.success && authRes.user) {
+              authUser = authRes.user;
+            }
+          } catch (e) {}
+        }
+
+        if (!authUser && window.LeagueDB && typeof window.LeagueDB.getAuthSession === "function") {
+          try {
+            const sess = await window.LeagueDB.getAuthSession();
+            if (sess?.user) authUser = sess.user;
+          } catch (e) {}
+        }
+
+        // 2. Instant JWT parse from URL hash if returning from Discord OAuth
+        if (!authUser && typeof window !== "undefined" && window.location.hash && window.location.hash.includes("access_token=")) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const token = hashParams.get("access_token");
+            if (token) {
+              const parts = token.split(".");
+              if (parts.length === 3) {
+                const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+                const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+                if (payload && (payload.sub || payload.email)) {
+                  authUser = {
+                    id: payload.sub || "usr_" + Date.now(),
+                    email: payload.email || "",
+                    user_metadata: payload.user_metadata || {},
+                    app_metadata: payload.app_metadata || {}
+                  };
+                }
+              }
+            }
+          } catch(e) {}
+        }
+
+        // 3. Fallback to localStorage
+        if (!authUser) {
+          try {
+            authUser = JSON.parse(localStorage.getItem("frontline_league_auth_user")) || null;
+          } catch (e) {}
+        }
+
+        // 4. Fallback to commissioner or admin session
+
+        if (!authUser) {
+          try {
+            const adminEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email");
+            const adminAuth = (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
+            if (adminEmail && adminAuth) {
+              const clean = adminEmail.toLowerCase().trim();
+              const isSpencer = clean === "todd061496@gmail.com";
+              const commishGamertag = isSpencer ? "Commissioner Spencer" : (clean === "admin@frontlineleague.com" ? "Commissioner" : "Commissioner Spencer");
+              authUser = {
+                id: "admin_commissioner",
+                email: adminEmail,
+                user_metadata: {
+                  gamertag: commishGamertag,
+                  username: commishGamertag,
+                  name: commishGamertag,
+                  role: "commissioner",
+                  is_commissioner: true,
+                  avatar_url: "/images/leaguelogo_1.png"
+                }
+              };
+            }
+          } catch (e) {}
+        }
+
+        if (authUser) {
+          try {
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser));
+          } catch(e) {}
+        }
+
+        return authUser;
+      }
+
+      function switchProfileAuthTab(tab) {
+        const tabDiscord = document.getElementById('tab-profile-auth-discord');
+        const tabEmail = document.getElementById('tab-profile-auth-email');
+        const panelDiscord = document.getElementById('panel-profile-auth-discord');
+        const panelEmail = document.getElementById('panel-profile-auth-email');
+        const errEl = document.getElementById('profile-gate-error');
+        if (errEl) errEl.style.display = 'none';
+
+        if (tab === 'email') {
+          if (panelDiscord) panelDiscord.style.display = 'none';
+          if (panelEmail) panelEmail.style.display = 'flex';
+          if (tabDiscord) {
+            tabDiscord.className = 'btn btn-outline';
+            tabDiscord.style.background = 'transparent';
+            tabDiscord.style.borderColor = '#3d4522';
+            tabDiscord.style.color = '#8ea1e1';
+          }
+          if (tabEmail) {
+            tabEmail.className = 'btn';
+            tabEmail.style.background = 'var(--lime)';
+            tabEmail.style.color = '#11120f';
+            tabEmail.style.borderColor = 'var(--lime)';
+          }
+          const emailIn = document.getElementById('profile-gate-email');
+          if (emailIn) emailIn.focus();
+        } else {
+          if (panelDiscord) panelDiscord.style.display = 'flex';
+          if (panelEmail) panelEmail.style.display = 'none';
+          if (tabDiscord) {
+            tabDiscord.className = 'btn';
+            tabDiscord.style.background = '#5865F2';
+            tabDiscord.style.borderColor = '#5865F2';
+            tabDiscord.style.color = '#fff';
+          }
+          if (tabEmail) {
+            tabEmail.className = 'btn btn-outline';
+            tabEmail.style.background = 'transparent';
+            tabEmail.style.borderColor = '#3d4522';
+            tabEmail.style.color = 'var(--lime)';
+          }
+        }
+      }
+
+      async function handleProfileEmailSignIn(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const emailInput = document.getElementById('profile-gate-email');
+        const passInput = document.getElementById('profile-gate-password');
+        const errorEl = document.getElementById('profile-gate-error');
+        const submitBtn = document.getElementById('btn-profile-gate-submit');
+
+        const email = (emailInput?.value || '').trim();
+        const password = passInput?.value || '';
+
+        if (!email || !password) {
+          if (errorEl) {
+            errorEl.textContent = 'Please provide both your email and password.';
+            errorEl.style.display = 'block';
+          }
+          return;
+        }
+
+        if (errorEl) errorEl.style.display = 'none';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>⏳</span> <span>Authenticating Dossier...</span>';
+        }
+
+        try {
+          let authUser = null;
+          if (window.LeagueDB && typeof window.LeagueDB.signInPlayer === 'function') {
+            const res = await window.LeagueDB.signInPlayer(email, password);
+            if (res && res.error) {
+              throw new Error(res.error);
+            }
+            if (res && res.user) authUser = res.user;
+          } else if (window.supabaseClient) {
+            const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            if (data && data.user) authUser = data.user;
+          }
+
+          const cleanEmail = email.toLowerCase().trim();
+          let isStaffAccount = (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com");
+          if (!isStaffAccount && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === 'function') {
+            try {
+              isStaffAccount = await window.LeagueDB.isAccountAdminAsync({ email: cleanEmail });
+            } catch (err) {}
+          }
+          if (isStaffAccount) {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            sessionStorage.setItem("frontline_admin_email", cleanEmail);
+            const staffObj = {
+              id: authUser?.id || "admin_commissioner",
+              gamertag: "Commissioner Spencer",
+              username: "Commissioner Spencer",
+              email: cleanEmail,
+              tag: "COMM",
+              team_name: "Frontline League HQ",
+              elo: 1200,
+              tier: "Commissioner",
+              role: "League Commissioner",
+              avatar_url: "/images/leaguelogo_1.png",
+              discord: "—",
+              activision_id: "Spencer#0001",
+              is_staff: true,
+              is_commissioner: true
+            };
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser || staffObj));
+          } else if (authUser) {
+            localStorage.setItem("frontline_league_auth_user", JSON.stringify(authUser));
+          }
+
+          showProfileToast("Access granted. Loading commissioner dossier...", "success");
+          setTimeout(() => {
+            loadLeagueProfile();
+          }, 400);
+        } catch (err) {
+          console.error("Sign in failed:", err);
+          if (errorEl) {
+            errorEl.textContent = err.message || 'Invalid email or password. Please try again.';
+            errorEl.style.display = 'block';
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>🔑</span> <span>Sign In &amp; Open Profile</span>';
+          }
+        }
+      }
+
+      function renderProfileUI(p) {
+        if (!p) return;
+        const gamertagEl = document.getElementById('league-user-gamertag');
+        const breadcrumbEl = document.getElementById('league-breadcrumb-gamertag');
+        const teamEl = document.getElementById('league-user-team');
+        const tagEl = document.getElementById('league-user-tag');
+        const roleEl = document.getElementById('league-user-role');
+        const platformEl = document.getElementById('league-user-platform');
+        const regionEl = document.getElementById('league-user-region');
+        const inputEl = document.getElementById('league-user-input');
+        const activisionEl = document.getElementById('league-user-activision');
+        const discordEl = document.getElementById('league-user-discord');
+        const avatarEl = document.getElementById('league-user-avatar');
+        const contractEl = document.getElementById('league-user-contract');
+        const tierEl = document.getElementById('league-user-tier');
+        const statusPill = document.getElementById('league-user-status-pill');
+        const adminBtn = document.getElementById('btn-admin-console-link');
+
+        const displayTag = p.gamertag || 'Operative';
+        if (gamertagEl) gamertagEl.textContent = displayTag;
+        if (breadcrumbEl) breadcrumbEl.textContent = displayTag;
+        if (teamEl) teamEl.textContent = p.team || 'Free Agent';
+        if (tagEl) {
+          const t = p.tag || (p.team === 'Free Agent' ? 'AGENT' : (p.team || 'AGENT').slice(0, 5).toUpperCase());
+          tagEl.textContent = '[' + t + ']';
+        }
+        if (roleEl) roleEl.textContent = p.role || 'Flex';
+        if (platformEl) platformEl.textContent = p.platform || 'PC';
+        if (regionEl) regionEl.textContent = p.region || 'NA East';
+        if (inputEl) inputEl.textContent = p.input || 'Controller';
+        if (activisionEl) activisionEl.textContent = p.activision || 'Unlinked';
+        if (discordEl) discordEl.textContent = p.discord ? p.discord : '—';
+        if (avatarEl && p.avatar) avatarEl.src = p.avatar;
+        if (contractEl) contractEl.textContent = p.contract || 'UNASSIGNED FREE AGENT';
+        if (tierEl) tierEl.textContent = p.tier || (p.team && p.team !== 'Free Agent' ? '★ ' + p.team.toUpperCase() : '★ FREE AGENT');
+
+        const hasAdminSession = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("frontline_admin_session") === "authorized") ||
+                                (typeof localStorage !== "undefined" && localStorage.getItem("frontline_admin_session") === "authorized");
+        const isStaffUser = !!(p.is_staff || hasAdminSession || checkIsStaffOrCommissioner(null, p));
+        if (isStaffUser) {
+          if (adminBtn) {
+            adminBtn.style.display = 'inline-flex';
+            adminBtn.style.visibility = 'visible';
+            adminBtn.style.opacity = '1';
+          }
+          if (statusPill) {
+            statusPill.textContent = '● EXECUTIVE DIRECTIVE ACTIVE';
+            statusPill.style.color = 'var(--lime)';
+          }
+        } else {
+          if (adminBtn) adminBtn.style.display = 'none';
+          if (statusPill) {
+            statusPill.textContent = '● AVAILABLE FOR SIGNING';
+            statusPill.style.color = '#22c55e';
+          }
+        }
+      }
+
+      async function loadLeagueProfile() {
+        const authUser = await checkCurrentAuth();
+        const authGate = document.getElementById('profile-auth-gate');
+        const contentWrap = document.getElementById('profile-content-wrap');
+        const breadcrumbEl = document.getElementById('league-breadcrumb-gamertag');
+
+        if (!authUser) {
+          if (authGate) authGate.style.display = 'block';
+          if (contentWrap) contentWrap.style.display = 'none';
+          if (breadcrumbEl) breadcrumbEl.textContent = 'Combatant Gate';
+          return;
+        }
+
+        if (authGate) authGate.style.display = 'none';
+        if (contentWrap) contentWrap.style.display = 'block';
+
+        const cleanEmail = (authUser.email || "").toLowerCase().trim();
+        const meta = authUser.user_metadata || {};
+
+        // Validate cached player card: ONLY accept if it strictly belongs to THIS user
+        let cachedCard = null;
+        try {
+          const raw = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+          if (raw) {
+            const matchesOwner = (raw._owner_id && raw._owner_id === authUser.id) ||
+                                 (raw._owner_email && cleanEmail && raw._owner_email.toLowerCase() === cleanEmail);
+            if (matchesOwner) {
+              cachedCard = raw;
+            } else {
+              // Discard stale card from a different account!
+              localStorage.removeItem('frontline_league_player_card');
+            }
+          }
+        } catch (e) {}
+
+        // Determine if account has staff/commissioner credentials
+        let isStaff = checkIsStaffOrCommissioner(authUser, cachedCard);
+        if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === "function") {
+          try {
+            isStaff = await window.LeagueDB.isAccountAdminAsync(authUser);
+          } catch (e) {}
+        }
+
+        if (isStaff) {
+          try {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            localStorage.setItem("frontline_admin_session", "authorized");
+            if (cleanEmail) {
+              sessionStorage.setItem("frontline_admin_email", cleanEmail);
+              localStorage.setItem("frontline_admin_email", cleanEmail);
+            }
+          } catch(e) {}
+          const adminBtn = document.getElementById('btn-admin-console-link');
+          if (adminBtn) {
+            adminBtn.style.display = 'inline-flex';
+            adminBtn.style.visibility = 'visible';
+            adminBtn.style.opacity = '1';
+          }
+        }
+
+        let p = null;
+
+        if (isStaff) {
+          // ==========================================
+          // COMMISSIONER / STAFF PROFILE
+          // ==========================================
+          let staffProfile = null;
+          if (window.LeagueDB && typeof window.LeagueDB.getStaffProfile === "function") {
+            try {
+              staffProfile = await window.LeagueDB.getStaffProfile(cleanEmail);
+            } catch (e) {}
+          }
+          if (!staffProfile && (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com")) {
+            staffProfile = {
+              email: cleanEmail,
+              role: "commissioner",
+              display_name: cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "League Commissioner"
+            };
+          }
+
+          const isCommissioner = (staffProfile?.role === "commissioner" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com");
+          const defaultStaffName = staffProfile?.display_name || (isCommissioner ? "Commissioner Spencer" : "League Official");
+          const defaultRoleTitle = isCommissioner ? "League Commissioner" : (staffProfile?.role ? staffProfile.role.replace(/_/g, " ").toUpperCase() : "Staff Official");
+
+          p = {
+            _owner_id: authUser.id,
+            _owner_email: cleanEmail,
+            gamertag: cachedCard?.gamertag || meta.gamertag || meta.username || meta.display_name || defaultStaffName,
+            team: "Frontline League HQ",
+            tag: isCommissioner ? "COMM" : "EXEC",
+            role: defaultRoleTitle,
+            division: "Executive Operations",
+            activision: cachedCard?.activision || meta.activision_id || (isCommissioner ? "Spencer#0001" : "Official#0001"),
+            discord: cachedCard?.discord || meta.discord_name || meta.discord_username || (cleanEmail ? cleanEmail.split("@")[0] : "—"),
+            platform: cachedCard?.platform || meta.platform || "PC / Broadcast",
+            region: cachedCard?.region || meta.region || "NA East",
+            input: cachedCard?.input || "Controller",
+            avatar: cachedCard?.avatar || meta.avatar_url || "/images/leaguelogo_1.png",
+            contract: isCommissioner ? "LEAGUE COMMISSIONER // EXECUTIVE DIRECTIVE" : "SANCTIONED LEAGUE OFFICIAL",
+            tier: isCommissioner ? "★ COMMISSIONER" : "★ LEAGUE STAFF",
+            is_staff: true
+          };
+        } else {
+          // ==========================================
+          // REGULAR COMBATANT / PLAYER PROFILE
+          // ==========================================
+          if (window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+            window.LeagueDB.autoCheckDiscordOnboarding();
+          }
+
+          sessionStorage.removeItem("frontline_discord_oauth_pending");
+
+          // 1. Try to load player record directly from Supabase database
+          let dbPlayer = null;
+          const client = window.supabaseClient || window.dbClient;
+          if (client) {
+            try {
+              if (authUser.id) {
+                const { data: pById } = await client.from("players").select("*, teams(name, tag)").eq("user_id", authUser.id).maybeSingle();
+                if (pById) dbPlayer = pById;
+              }
+              if (!dbPlayer && cleanEmail) {
+                const { data: pByEmail } = await client.from("players").select("*, teams(name, tag)").eq("email", cleanEmail).maybeSingle();
+                if (pByEmail) dbPlayer = pByEmail;
+              }
+            } catch (e) {}
+          }
+
+          if (dbPlayer) {
+            const assignedTeam = dbPlayer.teams?.name || dbPlayer.team_name || (dbPlayer.team_id ? 'Franchise Starter' : 'Free Agent');
+            const isFA = !assignedTeam || assignedTeam === 'Free Agent' || assignedTeam === 'Unassigned' || assignedTeam === 'FA';
+            p = {
+              _owner_id: authUser.id,
+              _owner_email: cleanEmail,
+              gamertag: dbPlayer.gamertag || 'Operative',
+              team: isFA ? 'Free Agent' : assignedTeam,
+              tag: dbPlayer.teams?.tag || (isFA ? 'AGENT' : assignedTeam.slice(0, 5).toUpperCase()),
+              role: dbPlayer.role || 'Flex',
+              division: isFA ? 'Open Division' : (dbPlayer.division || 'Division 1 · Premier'),
+              activision: dbPlayer.activision_id || 'Unlinked#0000',
+              discord: dbPlayer.discord_name || '',
+              platform: dbPlayer.platform || 'PC',
+              region: dbPlayer.region || 'NA East',
+              input: cachedCard?.input || 'Controller',
+              avatar: dbPlayer.avatar_url || cachedCard?.avatar || '',
+              contract: isFA ? 'UNASSIGNED FREE AGENT' : 'SIGNED FRANCHISE STARTER',
+              tier: isFA ? '★ FREE AGENT' : `★ ${assignedTeam.toUpperCase()}`,
+              is_staff: false
+            };
+          } else {
+            const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
+              ? window.LeagueDB.getDiscordIdentity(authUser)
+              : null;
+            const isDiscord = discordInfo && discordInfo.isDiscord;
+            const defaultGamer = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || (cleanEmail ? cleanEmail.split("@")[0] : 'Operative');
+            const defaultDiscord = meta.discord_name || meta.discord_username || discordInfo?.handle || (isDiscord ? discordInfo?.primaryName : '');
+            const defaultAvatar = discordInfo?.avatarUrl || meta.avatar_url || '';
+
+            p = cachedCard || {
+              _owner_id: authUser.id,
+              _owner_email: cleanEmail,
+              gamertag: defaultGamer,
+              team: 'Free Agent',
+              tag: 'AGENT',
+              role: meta.role || 'Flex',
+              division: 'Division 1 · Premier',
+              activision: meta.activision_id || 'Unlinked#0000',
+              discord: defaultDiscord,
+              platform: meta.platform || 'PC',
+              region: meta.region || 'NA East',
+              input: 'Controller',
+              avatar: defaultAvatar,
+              contract: 'UNASSIGNED FREE AGENT',
+              tier: '★ FREE AGENT',
+              is_staff: false
+            };
+
+            // Check if player has been drafted into a franchise in General Draft HQ
+            if (window.LeagueDB && typeof window.LeagueDB.getDraftState === 'function' && p.gamertag && p.gamertag !== 'Operative') {
+              for (const divId of ['div-1', 'div-2', 'div-3']) {
+                try {
+                  const dState = await window.LeagueDB.getDraftState(divId);
+                  const pick = dState?.picks?.find(pk => pk.player_gamertag && pk.player_gamertag.toLowerCase() === p.gamertag.toLowerCase());
+                  if (pick && pick.team_name) {
+                    p.team = pick.team_name;
+                    p.tag = pick.team_tag || pick.team_name.slice(0, 5).toUpperCase();
+                    p.contract = 'SIGNED FRANCHISE DRAFT PICK';
+                    break;
+                  }
+                } catch(e) {}
+              }
+            }
+
+            if (!p.team || p.team === 'Unassigned') {
+              p.team = 'Free Agent';
+              p.tag = 'AGENT';
+              p.contract = 'UNASSIGNED FREE AGENT';
+            }
+          }
+        }
+
+        try {
+          localStorage.setItem('frontline_league_player_card', JSON.stringify(p));
+        } catch(e) {}
+
+        renderProfileUI(p);
+        await renderProfileNotifications(p);
+        await renderProfileTournamentTeams(p);
+
+        // Try loading dynamic player stats from DB if available
+        if (!isStaff && window.LeagueDB && typeof window.LeagueDB.getPlayerStats === 'function' && p.gamertag && p.gamertag !== 'Operative') {
+          try {
+            const stats = await window.LeagueDB.getPlayerStats(p.gamertag);
+            if (stats) {
+              const kdEl = document.getElementById('stat-kd');
+              const hillEl = document.getElementById('stat-hill');
+              const fbEl = document.getElementById('stat-fb');
+              const respawnEl = document.getElementById('stat-respawn');
+              const mapsEl = document.getElementById('stat-maps');
+              const draftEl = document.getElementById('stat-draft');
+              if (kdEl) kdEl.textContent = Number(stats.overall_kd || 1.0).toFixed(2);
+              if (hillEl) hillEl.textContent = (stats.hill_time_avg || 60) + 's';
+              if (fbEl) fbEl.textContent = Number(stats.first_blood_pct || 20.0).toFixed(1) + '%';
+              if (respawnEl) respawnEl.textContent = Number(stats.respawn_win_rate || 50.0).toFixed(1) + '%';
+              if (mapsEl) mapsEl.textContent = stats.total_maps || 0;
+              if (draftEl && stats.draft_grade) draftEl.textContent = stats.draft_grade;
+            }
+          } catch (e) {}
+        }
+
+        if (window.location.search.includes('edit=true')) {
+          openLeagueEditModal();
+        }
+      }
+
+      async function renderProfileTournamentTeams(userProfile) {
+        const container = document.getElementById('profile-tournament-teams-container');
+        if (!container || !userProfile) return;
+
+        let tourneyTeams = [];
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getPlayerTournamentTeams === 'function') {
+            tourneyTeams = await window.LeagueDB.getPlayerTournamentTeams(userProfile);
+          }
+        } catch (e) {
+          console.warn('Error loading player tournament teams:', e);
+        }
+
+        if (!tourneyTeams || tourneyTeams.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:32px 20px; background:#181b11; border:1px dashed #2e361c; border-radius:3px; color:var(--muted); font-size:12.5px; grid-column:1 / -1;">
+              <div style="font-size:28px; margin-bottom:8px;">🛡️</div>
+              <strong style="color:#ffffff; font-size:14px; display:block; margin-bottom:4px;">No Tournament Squads Enlisted Yet</strong>
+              <div style="max-width:440px; margin:0 auto 16px; line-height:1.5;">You are not currently enlisted in an upcoming tournament squad. Create your own squad or accept pending teammate invitations to compete.</div>
+              <a href="/tournaments/" class="btn" style="font-size:11px; padding:7px 16px; text-decoration:none; display:inline-flex;">Browse Tournaments &amp; Enlist ↗</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = tourneyTeams.map((ts, idx) => {
+          const gamertag = userProfile.gamertag || '';
+          const isCap = String(ts.captain_gamertag || '').toLowerCase() === String(gamertag).toLowerCase();
+          const rosterList = Array.isArray(ts.roster) ? ts.roster : (ts.roster_text ? ts.roster_text.split(/,\s*/) : []);
+          const dateStr = ts.registered_at ? new Date(ts.registered_at).toLocaleDateString() : 'Active';
+
+          return `
+            <div style="background:#131822; border:1px solid #293d56; border-left:4px solid #38bdf8; padding:20px 22px; border-radius:4px; display:flex; flex-direction:column; justify-content:space-between; gap:16px; box-shadow:0 6px 20px rgba(0,0,0,0.4);">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                  <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; display:inline-flex; align-items:center; gap:6px;">
+                    <span style="font-size:14px;">⚔️</span> <span>TOURNAMENT SQUAD #${idx + 1}</span>
+                  </span>
+                  <span style="background:rgba(56,189,248,0.2); border:1px solid #38bdf8; color:#ffffff; font-size:11px; font-weight:800; padding:3px 9px; border-radius:3px; text-transform:uppercase; letter-spacing:0.5px;">
+                    ${isCap ? '★ SQUAD CAPTAIN' : 'ROSTER MEMBER'}
+                  </span>
+                </div>
+                <h4 style="margin:4px 0 8px; font-size:24px; color:#ffffff; font-weight:800; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing:0.8px;">
+                  ${escapeHtml(ts.team_name || 'Tournament Squad')}
+                </h4>
+                <div style="font-size:14px; color:#cbd5e1; margin-bottom:12px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  Event: <strong style="color:#ffffff; font-weight:700;">${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</strong>
+                </div>
+
+                <div style="background:#0c1017; border:1px solid #202d40; padding:12px 14px; border-radius:4px; font-size:13px; color:#cbd5e1; margin-bottom:12px;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
+                    <span style="color:#38bdf8; font-weight:800; text-transform:uppercase; font-size:11.5px; letter-spacing:0.5px;">Squad Roster (${rosterList.length})</span>
+                    <span style="font-size:11.5px; color:#94a3b8;">Enlisted: <strong style="color:#e2e8f0;">${escapeHtml(dateStr)}</strong></span>
+                  </div>
+                  <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    ${(ts.roster_status || []).map(st => {
+                      const isAcc = st.status === 'accepted';
+                      const isMe = String(st.gamertag || '').toLowerCase() === String(gamertag).toLowerCase();
+                      return `
+                        <span style="display:inline-flex; align-items:center; gap:6px; background:${isAcc ? 'rgba(34,197,94,0.18)' : 'rgba(234,179,8,0.18)'}; border:1px solid ${isAcc ? '#22c55e' : '#eab308'}; padding:4px 9px; border-radius:3px; font-size:12.5px; color:#ffffff;">
+                          <span style="color:${isAcc ? '#4ade80' : '#facc15'}; font-weight:900; font-size:13px;">${isAcc ? '✓' : '⏳'}</span>
+                          <strong style="color:#ffffff; font-weight:800; ${isMe ? 'color:var(--lime); text-decoration:underline; text-underline-offset:3px;' : ''}">${escapeHtml(st.gamertag)}</strong>
+                          <span style="color:${isAcc ? '#86efac' : '#fef08a'}; font-size:10.5px; font-weight:800; text-transform:uppercase;">(${isAcc ? (st.role || 'Accepted') : 'Pending'})</span>
+                          ${(!isAcc && isCap && !isMe) ? `
+                            <button type="button" class="btn-reinvite" onclick="handleReinviteTournamentTeammate('${ts.id}', '${escapeHtml(st.gamertag)}', this)" style="background:rgba(234,179,8,0.25); border:1px solid #fbbf24; color:#fef08a; border-radius:3px; padding:2px 7px; font-size:11px; font-weight:800; cursor:pointer; margin-left:4px; display:inline-flex; align-items:center; gap:3px;" title="Resend invite notification to this player">
+                              <span>↻</span> <span>Resend Invite</span>
+                            </button>
+                          ` : ''}
+                        </span>
+                      `;
+                    }).join('') || rosterList.map(m => `<span style="background:#172030; border:1px solid #2d3e58; padding:4px 8px; border-radius:3px; color:#ffffff; font-weight:700; font-size:12px;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #202d40; padding-top:12px; font-size:12.5px;">
+                <span style="color:#94a3b8;">Registration: <strong style="color:#4ade80; font-weight:800;">✓ Confirmed Entry</strong></span>
+                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(ts.tournament_id)}" target="_blank" style="background:#0284c7; border:1px solid #38bdf8; color:#ffffff; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:3px; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
+                  <span>View Bracket</span> <span>↗</span>
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      async function renderProfileNotifications(userProfile) {
+        const container = document.getElementById('profile-notifications-container');
+        if (!container || !userProfile) return;
+
+        let notifs = [];
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getUserNotifications === 'function') {
+            notifs = await window.LeagueDB.getUserNotifications(userProfile);
+          } else {
+            const all = JSON.parse(localStorage.getItem('frontline_user_notifications')) || [];
+            const tag = (userProfile.gamertag || '').toLowerCase();
+            notifs = all.filter(n => (n.target_gamertag || '').toLowerCase() === tag);
+          }
+        } catch (e) {
+          console.warn('Error loading notifications for profile:', e);
+        }
+
+        // Also fetch active tournament team invites from registry to guarantee tournament invites are NEVER missed
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === 'function') {
+            const directInvites = await window.LeagueDB.getTournamentTeamInvites(userProfile);
+            if (Array.isArray(directInvites) && directInvites.length > 0) {
+              directInvites.forEach(inv => {
+                const alreadyHas = notifs.some(n => n.type === 'team_invite' && (n.metadata?.invite_id === inv.id || n.id === inv.id));
+                if (!alreadyHas) {
+                  notifs.unshift({
+                    id: 'synth_' + inv.id,
+                    title: 'Tournament Team Invite',
+                    message: `${inv.captain_gamertag || 'Team Captain'} has invited you to join team "${inv.team_name || 'Tournament Squad'}" for tournament "${inv.tournament_title || 'Tournament'}". Accept to join the squad roster.`,
+                    type: 'team_invite',
+                    created_at: inv.created_at || new Date().toISOString(),
+                    read: inv.status !== 'pending',
+                    metadata: {
+                      invite_id: inv.id,
+                      registration_id: inv.registration_id,
+                      tournament_id: inv.tournament_id,
+                      tournament_title: inv.tournament_title,
+                      team_name: inv.team_name,
+                      captain_gamertag: inv.captain_gamertag,
+                      invited_gamertag: inv.invited_gamertag,
+                      status: inv.status || 'pending'
+                    }
+                  });
+                }
+              });
+            }
+          }
+        } catch (_) {}
+
+        if (!notifs || notifs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:28px 16px; background:#181b11; border:1px dashed #2e361c; border-radius:3px; color:var(--muted); font-size:12.5px;">
+              <div style="font-size:24px; margin-bottom:6px;">📭</div>
+              No notifications on file. When your Frontline League recruitment registration is accepted, official acceptance directives will appear here.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = notifs.map(n => {
+          const isAccepted = n.type === 'registration_accepted';
+          const isInvite = n.type === 'team_invite';
+          const inviteId = n.metadata?.invite_id;
+          const inviteStatus = n.metadata?.status || 'pending';
+          const dateStr = n.created_at ? new Date(n.created_at).toLocaleString() : 'Recent';
+
+          let borderAccent = 'var(--lime)';
+          let badgeText = 'DIRECTIVE';
+          let badgeColor = 'var(--lime)';
+          let badgeBg = 'rgba(213,244,91,0.15)';
+          let cardBg = n.read ? '#14170f' : 'rgba(213,244,91,0.08)';
+
+          if (isAccepted) {
+            borderAccent = '#22c55e';
+            badgeText = '✓ LEAGUE REGISTRATION ACCEPTED';
+            badgeColor = '#22c55e';
+            badgeBg = 'rgba(34,197,94,0.2)';
+            cardBg = 'rgba(34,197,94,0.06)';
+          } else if (isInvite) {
+            borderAccent = '#38bdf8';
+            badgeText = '🛡 SQUAD INVITATION';
+            badgeColor = '#38bdf8';
+            badgeBg = 'rgba(56,189,248,0.2)';
+            cardBg = 'rgba(56,189,248,0.06)';
+          }
+
+          let inviteActionsHtml = '';
+          if (isInvite && inviteStatus === 'pending' && inviteId) {
+            inviteActionsHtml = `
+              <div style="display:flex; gap:10px; margin-top:12px;">
+                <button type="button" class="btn" style="background:#22c55e; color:#000; font-weight:800; font-size:12px; padding:8px 16px; border:none; cursor:pointer;" onclick="respondProfileInvite('${escapeHtml(inviteId)}', true, this)">
+                  ✓ Accept Invite
+                </button>
+                <button type="button" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; font-weight:700; font-size:12px; padding:8px 16px; cursor:pointer;" onclick="respondProfileInvite('${escapeHtml(inviteId)}', false, this)">
+                  ✕ Decline
+                </button>
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'accepted') {
+            inviteActionsHtml = `
+              <div style="margin-top:10px; font-size:12px; font-weight:800; color:#22c55e;">
+                ✓ You accepted this tournament team invite.
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'declined') {
+            inviteActionsHtml = `
+              <div style="margin-top:10px; font-size:12px; font-weight:700; color:#94a3b8;">
+                ✕ You declined this tournament team invite.
+              </div>
+            `;
+          }
+
+          return `
+            <div style="background:${cardBg}; border:1px solid ${borderAccent}33; border-left:4px solid ${borderAccent}; padding:16px 20px; border-radius:3px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+              <div style="max-width:760px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                  <span style="font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:2px; background:${badgeBg}; color:${badgeColor}; text-transform:uppercase; letter-spacing:0.5px;">
+                    ${badgeText}
+                  </span>
+                  <span style="font-size:11px; color:var(--muted);">${escapeHtml(dateStr)}</span>
+                  ${!n.read ? `<span style="font-size:10px; color:#ff1e44; font-weight:900;">● NEW</span>` : ''}
+                </div>
+                <h4 style="margin:2px 0 6px; font-size:16px; color:#ffffff; font-weight:800; font-family:var(--display); letter-spacing:0.5px;">
+                  ${escapeHtml(n.title)}
+                </h4>
+                <p style="margin:0; font-size:13px; color:#cbd5e1; line-height:1.5;">
+                  ${escapeHtml(n.message)}
+                </p>
+                ${inviteActionsHtml}
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                ${!n.read ? `
+                  <button type="button" class="btn btn-outline" style="font-size:11px; padding:6px 12px; border-color:#3d4522;" onclick="markProfileNotifRead('${escapeHtml(n.id)}')">
+                    Mark Read
+                  </button>
+                ` : `
+                  <span style="font-size:11px; color:var(--muted);">✓ Read</span>
+                `}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      window.respondProfileInvite = async function(inviteId, accept, btnEl) {
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.textContent = accept ? "Accepting..." : "Declining...";
+        }
+        try {
+          const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+          if (window.LeagueDB && typeof window.LeagueDB.respondTournamentTeamInvite === 'function') {
+            const res = await window.LeagueDB.respondTournamentTeamInvite(inviteId, accept, card);
+            if (res && !res.success && res.error) {
+              showProfileToast("Error: " + res.error, true);
+            } else {
+              showProfileToast(accept ? "✓ Team invite accepted! Added to tournament squad roster." : "Invite declined.", !accept);
+            }
+          }
+        } catch (e) {
+          console.error("respondProfileInvite error:", e);
+        }
+        await loadLeagueProfile();
+      };
+
+      window.markProfileNotifRead = async function(notifId) {
+        if (window.LeagueDB && typeof window.LeagueDB.markNotificationRead === 'function') {
+          await window.LeagueDB.markNotificationRead(notifId);
+        }
+        await loadLeagueProfile();
+      };
+
+      window.clearProfileNotifications = async function() {
+        const card = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+        if (card && window.LeagueDB && typeof window.LeagueDB.markAllNotificationsRead === 'function') {
+          await window.LeagueDB.markAllNotificationsRead(card);
+        }
+        await loadLeagueProfile();
+      };
+
+      function handleLeagueAvatarFileSelect(event) {
+        const file = event.target?.files?.[0];
+        if (!file) return;
+
+        if (file.size > 8 * 1024 * 1024) {
+          showProfileToast("Selected image exceeds 8 MB limit.", true);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result;
+          const preview = document.getElementById("edit-league-avatar-preview");
+          const input = document.getElementById("edit-league-avatar");
+          const status = document.getElementById("edit-league-avatar-file-status");
+
+          if (preview) preview.src = dataUrl;
+          if (input) input.value = dataUrl;
+          if (status) {
+            status.textContent = "✓ Image selected: " + file.name;
+            status.style.color = "var(--lime)";
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function setLeagueAvatarPreset(presetUrl) {
+        const preview = document.getElementById("edit-league-avatar-preview");
+        const input = document.getElementById("edit-league-avatar");
+        const status = document.getElementById("edit-league-avatar-file-status");
+        if (preview) preview.src = presetUrl;
+        if (input) input.value = presetUrl;
+        if (status) {
+          status.textContent = "✓ Selected official preset";
+          status.style.color = "var(--lime)";
+        }
+      }
+
+      function handleLeagueAvatarUrlInput(val) {
+        const preview = document.getElementById("edit-league-avatar-preview");
+        const status = document.getElementById("edit-league-avatar-file-status");
+        if (preview && val.trim()) {
+          preview.src = val.trim();
+        }
+        if (status) {
+          status.textContent = val.trim() ? "Custom image URL specified" : "Upload from your device (no URL needed)";
+          status.style.color = "var(--muted)";
+        }
+      }
+
+      async function openLeagueEditModal() {
+        const modal = document.getElementById('modal-league-edit');
+        if (!modal) return;
+        const authUser = await checkCurrentAuth();
+        const cleanEmail = (authUser?.email || "").toLowerCase().trim();
+        let p = null;
+        try {
+          const raw = JSON.parse(localStorage.getItem('frontline_league_player_card'));
+          if (raw && (raw._owner_id === authUser?.id || (raw._owner_email && raw._owner_email.toLowerCase() === cleanEmail))) {
+            p = raw;
+          }
+        } catch(e) {}
+        if (!p) {
+          p = {
+            gamertag: 'Operative',
+            team: 'Free Agent',
+            role: 'Flex',
+            division: 'Division 1 · Premier',
+            activision: 'Unlinked#0000',
+            discord: '',
+            platform: 'PC',
+            region: 'NA East',
+            input: 'Controller',
+            avatar: ''
+          };
+        }
+
+        // Dynamically populate registered teams from database
+        const teamSelect = document.getElementById('edit-league-team');
+        if (teamSelect && window.LeagueDB && typeof window.LeagueDB.getStandings === 'function') {
+          try {
+            const teams = await window.LeagueDB.getStandings();
+            let options = '<option value="Free Agent">Unsigned Free Agent</option>';
+            if (p.is_staff) {
+              options = '<option value="Frontline League HQ">Frontline League HQ</option>' + options;
+            }
+            if (Array.isArray(teams)) {
+              teams.forEach(t => {
+                const name = t.team_name || t.name;
+                if (name && name !== "Frontline League HQ" && name !== "FA" && name.toLowerCase() !== "free agent" && name.toLowerCase() !== "free agents") {
+                  options += `<option value="${name}">${name}</option>`;
+                }
+              });
+            }
+            teamSelect.innerHTML = options;
+          } catch (e) {}
+        }
+
+        document.getElementById('edit-league-gamertag').value = p.gamertag || '';
+        document.getElementById('edit-league-team').value = p.team || (p.is_staff ? 'Frontline League HQ' : 'Free Agent');
+        // Normalize role to matching dropdown options
+        let currentRole = p.role || 'Flex';
+        if (currentRole.toLowerCase().includes('anchor') && !currentRole.toLowerCase().includes('main ar')) {
+          currentRole = 'Anchor';
+        } else if (currentRole.toLowerCase().includes('main ar') || currentRole.toLowerCase() === 'ar') {
+          currentRole = 'Main AR';
+        } else if (currentRole.toLowerCase().includes('obj') || currentRole.toLowerCase().includes('objective')) {
+          currentRole = 'OBJ';
+        } else if (currentRole.toLowerCase().includes('smg') || currentRole.toLowerCase().includes('slayer') || currentRole.toLowerCase().includes('entry')) {
+          currentRole = 'SMG';
+        } else if (currentRole.toLowerCase().includes('sniper')) {
+          currentRole = 'Flex'; // Sniper removed, fall back gracefully to Flex
+        }
+        document.getElementById('edit-league-role').value = currentRole;
+        document.getElementById('edit-league-division').value = p.division || 'Division 1 · Premier';
+        document.getElementById('edit-league-activision').value = p.activision || '';
+        if (document.getElementById('edit-league-discord')) {
+          document.getElementById('edit-league-discord').value = p.discord || '';
+        }
+        if (document.getElementById('edit-league-platform')) {
+          document.getElementById('edit-league-platform').value = p.platform || 'PC';
+        }
+        if (document.getElementById('edit-league-region')) {
+          document.getElementById('edit-league-region').value = p.region || 'NA East';
+        }
+        if (document.getElementById('edit-league-input')) {
+          document.getElementById('edit-league-input').value = p.input || 'Controller';
+        }
+        const avatarVal = p.avatar || '/images/leaguelogo_1.png';
+        if (document.getElementById('edit-league-avatar')) {
+          document.getElementById('edit-league-avatar').value = p.avatar || '';
+        }
+        if (document.getElementById('edit-league-avatar-preview')) {
+          document.getElementById('edit-league-avatar-preview').src = avatarVal;
+        }
+        if (document.getElementById('edit-league-avatar-file-status')) {
+          document.getElementById('edit-league-avatar-file-status').textContent = "Upload from your device (no URL needed)";
+          document.getElementById('edit-league-avatar-file-status').style.color = "var(--muted)";
+        }
+
+        modal.style.display = 'flex';
+      }
+
+      function closeLeagueEditModal() {
+        const modal = document.getElementById('modal-league-edit');
+        if (modal) modal.style.display = 'none';
+      }
+
+      async function saveLeagueProfile(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('btn-save-league-profile');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving Changes...';
+        }
+
+        const authUser = await checkCurrentAuth();
+        const cleanEmail = (authUser?.email || "").toLowerCase().trim();
+
+        const gamertag = document.getElementById('edit-league-gamertag')?.value.trim() || 'Operative';
+        const team = document.getElementById('edit-league-team')?.value || 'Free Agent';
+        const role = document.getElementById('edit-league-role')?.value || 'Flex';
+        const division = document.getElementById('edit-league-division')?.value || 'Division 1 · Premier';
+        const activision = document.getElementById('edit-league-activision')?.value.trim() || 'Player#1234567';
+        const discord = document.getElementById('edit-league-discord')?.value.trim() || '';
+        const platform = document.getElementById('edit-league-platform')?.value || 'PC';
+        const region = document.getElementById('edit-league-region')?.value || 'NA East';
+        const inputDevice = document.getElementById('edit-league-input')?.value || 'Controller';
+        const avatarUrl = document.getElementById('edit-league-avatar')?.value.trim() || document.getElementById('edit-league-avatar-preview')?.src || '';
+
+        const currentCard = JSON.parse(localStorage.getItem('frontline_league_player_card')) || {};
+        const isStaff = checkIsStaffOrCommissioner(authUser, currentCard);
+
+        const p = {
+          ...currentCard,
+          _owner_id: authUser?.id || null,
+          _owner_email: cleanEmail,
+          gamertag,
+          team,
+          tag: team === 'Free Agent' ? 'AGENT' : (isStaff ? 'COMM' : team.slice(0, 5).toUpperCase()),
+          role,
+          division,
+          activision,
+          discord,
+          platform,
+          region,
+          input: inputDevice,
+          avatar: avatarUrl || currentCard.avatar || document.getElementById('league-user-avatar')?.src || '',
+          contract: isStaff ? (currentCard.contract || 'LEAGUE COMMISSIONER // EXECUTIVE DIRECTIVE') : (team === 'Free Agent' ? 'UNASSIGNED FREE AGENT' : 'SIGNED FRANCHISE STARTER'),
+          tier: isStaff ? (currentCard.tier || '★ COMMISSIONER') : (team === 'Free Agent' ? '★ FREE AGENT' : `★ ${team.toUpperCase()}`),
+          is_staff: isStaff
+        };
+
+        localStorage.setItem('frontline_league_player_card', JSON.stringify(p));
+
+        if (isStaff) {
+          try {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            localStorage.setItem("frontline_admin_session", "authorized");
+          } catch (_) {}
+          const adminBtn = document.getElementById('btn-admin-console-link');
+          if (adminBtn) {
+            adminBtn.style.display = 'inline-flex';
+            adminBtn.style.visibility = 'visible';
+            adminBtn.style.opacity = '1';
+          }
+        }
+
+        if (!isStaff && window.LeagueDB && typeof window.LeagueDB.completeCombatantDossier === "function") {
+          try {
+            await window.LeagueDB.completeCombatantDossier({
+              gamertag,
+              activisionId: activision,
+              role,
+              region,
+              platform,
+              discordName: discord,
+              avatarUrl: p.avatar
+            });
+          } catch (err) {
+            console.warn("Could not sync dossier across tables:", err);
+          }
+        }
+
+        try {
+          if (authUser) {
+            if (!authUser.user_metadata) authUser.user_metadata = {};
+            authUser.user_metadata.gamertag = gamertag;
+            authUser.user_metadata.username = gamertag;
+            authUser.user_metadata.name = gamertag;
+            authUser.user_metadata.activision_id = activision;
+            authUser.user_metadata.role = role;
+            authUser.user_metadata.region = region;
+            authUser.user_metadata.platform = platform;
+            authUser.user_metadata.discord_name = discord;
+            if (p.avatar) authUser.user_metadata.avatar_url = p.avatar;
+            localStorage.setItem('frontline_league_auth_user', JSON.stringify(authUser));
+
+            const client = window.supabaseClient || window.dbClient;
+            if (client && typeof client.auth?.updateUser === "function") {
+              await client.auth.updateUser({ data: authUser.user_metadata }).catch(() => {});
+            }
+          }
+        } catch (err) {}
+
+        // Two-way synchronization with Arena Profile (gamertag, activision, discord, and avatar — keeping clan tag separate)
+        try {
+          let arenaUser = JSON.parse(localStorage.getItem('frontline_arena_user') || 'null');
+          if (!arenaUser) {
+            arenaUser = {
+              id: authUser?.id || ('usr_' + Date.now()),
+              elo: 1200,
+              tier: isStaff ? 'Commissioner' : 'Specialist',
+              tag: isStaff ? 'COMM' : 'ARENA',
+              team_name: isStaff ? 'Frontline League HQ' : 'Frontline Arena',
+              created_at: new Date().toISOString()
+            };
+          }
+          arenaUser.gamertag = gamertag;
+          arenaUser.username = gamertag;
+          arenaUser.activision_id = activision;
+          arenaUser.discord = discord;
+          if (p.avatar) arenaUser.avatar_url = p.avatar;
+          if (authUser?.email) arenaUser.email = authUser.email;
+          if (isStaff) {
+            arenaUser.is_staff = true;
+            arenaUser.is_commissioner = true;
+          }
+          // Do not touch arenaUser.tag if already set
+          if (!arenaUser.tag) arenaUser.tag = (isStaff ? 'COMM' : 'ARENA');
+
+          localStorage.setItem('frontline_arena_user', JSON.stringify(arenaUser));
+
+          let arenaAuth = JSON.parse(localStorage.getItem('frontline_arena_auth_user') || 'null');
+          if (arenaAuth) {
+            arenaAuth.gamertag = gamertag;
+            arenaAuth.username = gamertag;
+            arenaAuth.activision_id = activision;
+            arenaAuth.discord = discord;
+            if (p.avatar) arenaAuth.avatar_url = p.avatar;
+            localStorage.setItem('frontline_arena_auth_user', JSON.stringify(arenaAuth));
+          }
+
+          let accounts = JSON.parse(localStorage.getItem('frontline_arena_registered_accounts') || '[]');
+          const idx = accounts.findIndex(a => 
+            (arenaUser.id && a.id === arenaUser.id) || 
+            (a.gamertag && a.gamertag.toLowerCase() === gamertag.toLowerCase())
+          );
+          if (idx >= 0) {
+            accounts[idx] = { 
+              ...accounts[idx], 
+              gamertag, 
+              username: gamertag, 
+              activision_id: activision, 
+              discord, 
+              avatar_url: p.avatar || accounts[idx].avatar_url 
+            };
+            localStorage.setItem('frontline_arena_registered_accounts', JSON.stringify(accounts));
+          }
+
+          if (window.LadderDB && typeof window.LadderDB.updateArenaNavProfile === 'function') {
+            window.LadderDB.updateArenaNavProfile();
+          }
+          window.dispatchEvent(new CustomEvent('frontline_arena_auth_changed', { detail: { player: arenaUser } }));
+        } catch (arenaSyncErr) {
+          console.warn('Arena profile sync notice:', arenaSyncErr);
+        }
+
+        if (window.LeagueDB && typeof window.LeagueDB.updateLeagueNavProfile === "function") {
+          window.LeagueDB.updateLeagueNavProfile();
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Changes';
+        }
+
+        closeLeagueEditModal();
+        renderProfileUI(p);
+        showProfileToast('✓ Profile successfully updated and applied!');
+      }
+
+      async function signOutLeagueProfile() {
+        if (confirm("Are you sure you want to sign out of your Frontline combatant profile?")) {
+          try {
+            localStorage.removeItem("frontline_admin_session");
+            localStorage.removeItem("frontline_admin_email");
+            sessionStorage.removeItem("frontline_admin_session");
+            sessionStorage.removeItem("frontline_admin_email");
+            if (window.LeagueDB && typeof window.LeagueDB.signOutPlayer === "function") {
+              const result = await window.LeagueDB.signOutPlayer();
+              if (!result?.success) throw new Error(result?.error || "Sign out failed.");
+            } else {
+              const client = window.supabaseClient || window.dbClient;
+              localStorage.removeItem("frontline_league_auth_user");
+              localStorage.removeItem("frontline_league_player_card");
+              localStorage.removeItem("frontline_admin_session");
+              localStorage.removeItem("frontline_admin_email");
+              sessionStorage.removeItem("frontline_admin_session");
+              sessionStorage.removeItem("frontline_admin_email");
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
+              Object.keys(localStorage).forEach(key => {
+                if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+                  localStorage.removeItem(key);
+                }
+              });
+              if (client?.auth?.signOut) {
+                const { error } = await client.auth.signOut();
+                if (error) throw error;
+              }
+              window.dispatchEvent(new CustomEvent("frontline_auth_changed", { detail: { user: null } }));
+            }
+            await loadLeagueProfile();
+            showProfileToast("✓ Successfully signed out.");
+          } catch (e) {
+            showProfileToast(`Sign out failed: ${e.message || "Please try again."}`, true);
+          }
+        }
+      }
+
+      async function signInWithDiscordGate() {
+        const btn = document.getElementById("btn-gate-discord");
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span>Connecting to Discord...</span> <span>⏳</span>`;
+        }
+        sessionStorage.setItem("frontline_discord_oauth_pending", "true");
+        try {
+          const redirectUrl = window.location.origin + window.location.pathname;
+          if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
+            const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
+            if (res && res.url) {
+              window.location.href = res.url;
+              return;
+            }
+            if (!res || !res.success) {
+              window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
+            }
+          } else {
+            window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
+          }
+        } catch (err) {
+          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
+        }
+      }
+
+      // Reinvite tournament squad member
+      window.handleReinviteTournamentTeammate = async function(regId, targetGamertag, btnEl) {
+        if (!regId || !targetGamertag) return;
+        const origText = btnEl ? btnEl.innerHTML : "";
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.innerHTML = `<span>⏳</span> <span>Sending...</span>`;
+        }
+        try {
+          if (!window.LeagueDB || typeof window.LeagueDB.reinviteTournamentPlayer !== "function") {
+            throw new Error("Reinvite service unavailable.");
+          }
+          const currentUser = userProfile || (window.Auth && window.Auth.currentUser) || null;
+          const res = await window.LeagueDB.reinviteTournamentPlayer(regId, targetGamertag, currentUser);
+          if (res && res.success) {
+            if (btnEl) {
+              btnEl.innerHTML = `<span>✓</span> <span>Invite Sent!</span>`;
+              btnEl.style.background = "rgba(34,197,94,0.3)";
+              btnEl.style.borderColor = "#22c55e";
+              btnEl.style.color = "#86efac";
+              setTimeout(() => {
+                if (btnEl) {
+                  btnEl.innerHTML = origText;
+                  btnEl.disabled = false;
+                  btnEl.style.background = "rgba(234,179,8,0.25)";
+                  btnEl.style.borderColor = "#fbbf24";
+                  btnEl.style.color = "#fef08a";
+                }
+              }, 4000);
+            }
+            showProfileToast("✓ Re-invite sent successfully.");
+          } else {
+            showProfileToast(res?.error || "Could not resend invite.", true);
+            if (btnEl) {
+              btnEl.disabled = false;
+              btnEl.innerHTML = origText;
+            }
+          }
+        } catch (err) {
+          console.error("handleReinviteTournamentTeammate failed:", err);
+          showProfileToast(err.message || "Failed to resend invite.", true);
+          if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origText;
+          }
+        }
+      };
+
+      function initAdminConsoleLink() {
+        const adminBtn = document.getElementById('btn-admin-console-link');
+        if (adminBtn) {
+          adminBtn.onclick = openLeagueAdminConsole;
+        }
+        if (typeof sessionStorage !== "undefined" && typeof localStorage !== "undefined") {
+          const isAuth = (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized");
+          const savedEmail = (sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email") || "").toLowerCase().trim();
+          const isCommish = isAuth || savedEmail.includes("todd") || savedEmail.includes("admin") || savedEmail.includes("invictus");
+          if (isCommish && adminBtn) {
+            adminBtn.style.display = 'inline-flex';
+            adminBtn.style.visibility = 'visible';
+            adminBtn.style.opacity = '1';
+          }
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        initAdminConsoleLink();
+        loadLeagueProfile();
+      });
+      window.addEventListener('frontline_auth_changed', () => {
+        initAdminConsoleLink();
+        loadLeagueProfile();
+      });
+      window.addEventListener('frontline_dossier_completed', loadLeagueProfile);
+    </script>
+  </body>
+</html>
+
+
