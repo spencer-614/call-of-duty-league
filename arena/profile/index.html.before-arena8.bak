@@ -1,0 +1,2026 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080a0f" />
+        <link rel="icon" type="image/png" href="/images/arenalogo_1.png" />
+    <link rel="apple-touch-icon" href="/images/arenalogo_1.png" />
+    <link rel="stylesheet" href="/styles.css?v=3" />
+    <style>
+      .btn-profile-signout {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(220, 38, 38, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.35);
+        color: #f87171;
+        font-family: var(--body);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        padding: 10px 16px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-sizing: border-box;
+      }
+      .btn-profile-signout:hover {
+        background: rgba(239, 68, 68, 0.22);
+        border-color: #ef4444;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+      }
+      .btn-profile-signout:active {
+        transform: translateY(0);
+      }
+      .btn-profile-signout svg {
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+      }
+      .btn-profile-signout:hover svg {
+        transform: translateX(2px);
+      }
+      .tier-commissioner {
+        background: rgba(213, 244, 91, 0.12) !important;
+        color: #d5f45b !important;
+        border: 1px solid #d5f45b !important;
+        box-shadow: 0 0 10px rgba(213, 244, 91, 0.25) !important;
+      }
+
+      .profile-teams-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+        gap: 16px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .profile-team-card {
+        background: #0d121c;
+        border: 1px solid #1c2638;
+        border-radius: 6px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+        position: relative;
+        box-sizing: border-box;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .profile-team-card.has-team {
+        border-left: 4px solid #ff1e44;
+      }
+      .profile-team-card.empty-team {
+        border: 1px dashed #232f42;
+        background: #080b11;
+      }
+      .team-card-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        margin-top: 14px !important;
+        padding-top: 12px !important;
+        border-top: 1px solid #182232 !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+      }
+      .team-card-actions > * {
+        box-sizing: border-box !important;
+        min-width: 0 !important;
+        text-align: center !important;
+        justify-content: center !important;
+      }
+      .team-card-actions .btn-team-roster,
+      .team-card-actions > .btn-crimson:first-child:not(:only-child) {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+      }
+      .team-card-actions > :only-child {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+      }
+    </style>
+    <title>Frontline Arena — Combatant Profile &amp; Match History</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase.js?v=4"></script>
+    <script src="/bullet-sparks.js" defer></script>
+      <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
+  </head>
+  <body class="gb-body">
+    <!-- =========================================================================
+         ARENA TOP NAVIGATION HEADER (WITH LARGE RED LOGO & PLATFORM SWITCH)
+         ========================================================================= -->
+    <header class="fl-topbar">
+      <div class="fl-topbar-left">
+        <!-- Brand Lockup with Large Visible & Readable Arena Logo -->
+        <a href="/arena/" class="fl-brand-lockup" title="Frontline Arena">
+          <div class="fl-brand-logo-wrapper">
+            <img src="/images/arenalogo_1.png" alt="Frontline Arena Insignia" class="fl-brand-logo-img" />
+          </div>
+          <div class="fl-brand-info">
+            <div class="fl-brand-text">
+              <span class="brand-frontline">FRONTLINE</span>
+              <span class="brand-arena">ARENA</span>
+            </div>
+            <div class="fl-circuit-tag-row">
+              <span class="fl-circuit-badge">COMPETITIVE ARENA</span>
+              <div class="fl-live-beacon">
+                <span class="fl-live-dot"></span>
+                <span>OPERATOR PROFILE</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Header Center Hub with Welcome Above Mode Switcher -->
+      <div class="header-center-hub">
+        <h1 class="header-welcome">WELCOME TO THE <span class="welcome-accent arena">ARENA</span></h1>
+        <div class="mode-switch-pill" role="group" aria-label="Platform Switcher">
+          <a href="/profile/" class="mode-switch-btn" data-mode="league" title="Go to Frontline Franchised League Profile">
+            <span>🛡</span> <span>League</span>
+          </a>
+          <a href="/arena/profile/" class="mode-switch-btn active-arena" data-mode="arena" title="Frontline Arena Profile">
+            <span>⚔</span> <span>Arena</span>
+          </a>
+          <a href="/tournaments/" class="mode-switch-btn" data-mode="tournaments" title="Frontline Tournaments Hub">
+            <span>🏆</span> <span>Tournaments</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="fl-topbar-right">
+        <!-- Main Navigation Links (Moved a bit to the right) -->
+        <nav class="fl-main-nav" aria-label="Arena Navigation">
+          <a href="/ladders/">Ladders</a>
+          <a href="/arena/tournaments/">Tournaments</a>
+          <a href="/arena/8s/">Arena 8's</a>
+          <a href="/arena/profile/#my-teams" class="active">My Teams</a>
+        
+
+        </nav>
+
+        <div id="arena-header-squad-container">
+          <a href="/ladders/" class="btn-crimson" style="font-size:12px; padding:9px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <span>⚔</span> <span>View Ladders ↗</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Frontline Arena Breadcrumb Bar -->
+    <div class="gb-breadcrumb-bar">
+      <div class="gb-breadcrumb-inner">
+        <a href="/arena/">Arena Home</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <a href="/ladders/">Ladders</a>
+        <span class="gb-breadcrumb-sep">/</span>
+        <strong style="color:#ffffff;" id="gb-breadcrumb-profile-label">Player Profile &amp; Records</strong>
+      </div>
+    </div>
+
+    <main class="gb-content-wrap" style="padding-top: 24px; padding-bottom: 60px;">
+      <!-- =======================================================================
+           VIEW 1: LOGGED IN PLAYER PROFILE VIEW
+           ======================================================================= -->
+      <div id="profile-logged-in-view" style="display:none;">
+        <!-- Executive Directive Commissioner Notice Banner -->
+        <div id="arena-commissioner-banner" style="display:none; background:linear-gradient(90deg, rgba(213,244,91,0.15) 0%, rgba(213,244,91,0.05) 100%); border:1px solid #d5f45b; padding:14px 20px; margin-bottom:18px; border-radius:4px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:22px;">⚡</span>
+            <div>
+              <strong style="color:#d5f45b; font-family:var(--display); font-size:15px; letter-spacing:0.5px; display:block;">LEAGUE COMMISSIONER DIRECTIVE ACTIVE</strong>
+              <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">You are authenticated as official Frontline League HQ Staff. Full executive authority granted.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <a href="/profile/" class="btn-crimson" style="background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; font-size:11px; padding:8px 16px; text-decoration:none; box-shadow:0 0 12px rgba(213,244,91,0.25);">
+              <span>🛡</span> <span>League Commissioner Profile ↗</span>
+            </a>
+            <a href="/admin/" onclick="openLeagueAdminConsole(event)" class="btn-crimson-outline" style="border-color:#d5f45b; color:#d5f45b; font-size:11px; padding:8px 16px; text-decoration:none; cursor:pointer;" title="Open Commissioner & Staff Admin Console">
+              <span>⚙</span> <span>Admin Console ↗</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Top Profile Hero Banner -->
+        <div class="profile-hero-card">
+          <div class="profile-hero-inner">
+            <div class="profile-user-left">
+              <div class="profile-avatar-box">
+                <img id="user-avatar-img" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80" alt="Player Avatar" />
+                <span class="profile-tag-pill" id="user-clan-tag">[TAG]</span>
+              </div>
+              <div class="profile-details">
+                <div class="profile-badge-row">
+                  <span class="profile-tier-badge tier-specialist" id="user-tier-badge">
+                    <span>🎯</span> <span id="user-tier-name">Specialist</span>
+                  </span>
+                  <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;" id="user-status-pill">
+                    ● ACTIVE COMBATANT
+                  </span>
+                </div>
+                <h2 id="user-gamertag-display">Operative</h2>
+                <div class="profile-submeta">
+                  <span><strong style="color:#fff;">Team:</strong> <span id="user-team-name" style="color:#ff1e44;">No Squad Assigned</span></span>
+                  <span><strong style="color:#fff;">Activision:</strong> <span id="user-activision-id">—</span></span>
+                  <span><strong style="color:#fff;">Discord:</strong> <span id="user-discord-tag">—</span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-actions-right">
+              <a href="/profile/" id="btn-arena-league-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; border-color:#d5f45b; color:#d5f45b; font-weight:800;">
+                <span>🛡</span> <span>League Profile ↗</span>
+              </a>
+              <a href="/admin/" id="btn-arena-admin-console" onclick="openLeagueAdminConsole(event)" class="btn-crimson" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none; background:#d5f45b; border-color:#d5f45b; color:#11120f; font-weight:800; box-shadow:0 0 12px rgba(213,244,91,0.25); cursor:pointer;" title="Open Commissioner & Staff Admin Console">
+                <span>⚙</span> <span>Admin Console ↗</span>
+              </a>
+              <a href="https://discord.gg/frontlinecodleague" target="_blank" rel="noopener" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none; background:#5865F2; border-color:#5865F2;">
+                <span>💬</span> <span>Join Discord ↗</span>
+              </a>
+              <a href="/match-finder/" class="btn-crimson" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+                <span>🎯</span> <span>Find Match</span>
+              </a>
+              <a href="/arena/profile/" id="btn-back-my-profile" class="btn-crimson-outline" style="padding:10px 16px; font-size:12px; text-decoration:none; display:none;">
+                <span>👤</span> <span>My Profile</span>
+              </a>
+              <button type="button" class="btn-crimson-outline" id="btn-edit-profile" onclick="openEditProfileModal()" style="padding:10px 16px; font-size:12px;">
+                <span>✏️</span> <span>Edit Profile</span>
+              </button>
+              <button type="button" class="btn-profile-signout" id="btn-sign-out" onclick="handleArenaSignOut()" title="Sign out of Arena account">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             STATISTICS & WIN/LOSS RECORD CARDS
+             ===================================================================== -->
+        <div style="margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font:900 14px var(--body); color:#ffffff; text-transform:uppercase; letter-spacing:0.8px; margin:0;">
+            COMBAT RECORD &amp; LADDER METRICS
+          </h3>
+          <span style="font-size:11px; color:#64748b;">OFFICIAL SANCTIONED STATS</span>
+        </div>
+
+        <div class="record-stats-grid">
+          <!-- Total Wins -->
+          <div class="record-stat-card stat-wins">
+            <span class="stat-label">Wins</span>
+            <div class="stat-value" id="stat-wins-num">0</div>
+            <div class="stat-sub">Victories Recorded</div>
+          </div>
+
+          <!-- Total Losses -->
+          <div class="record-stat-card stat-losses">
+            <span class="stat-label">Losses</span>
+            <div class="stat-value" id="stat-losses-num">0</div>
+            <div class="stat-sub">Series Defeats</div>
+          </div>
+
+          <!-- Win Percentage -->
+          <div class="record-stat-card stat-rate">
+            <span class="stat-label">Win Rate</span>
+            <div class="stat-value" id="stat-winrate-num">0.0%</div>
+            <div class="record-progress-bar-wrap">
+              <div class="record-progress-bar-fill" id="stat-winrate-bar" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Current Streak -->
+          <div class="record-stat-card stat-streak">
+            <span class="stat-label">Win Streak</span>
+            <div class="stat-value" id="stat-streak-num">0</div>
+            <div class="stat-sub">Current Momentum</div>
+          </div>
+
+          <!-- Total Matches -->
+          <div class="record-stat-card">
+            <span class="stat-label">Total Matches</span>
+            <div class="stat-value" id="stat-matches-num">0</div>
+            <div class="stat-sub">Competitive Series</div>
+          </div>
+
+          <!-- ELO Rating -->
+          <div class="record-stat-card">
+            <span class="stat-label">Ladder ELO</span>
+            <div class="stat-value" style="color:#ff1e44;" id="stat-elo-num">1200</div>
+            <div class="stat-sub" id="stat-tier-sub">Specialist</div>
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             CURRENT ACTIVE TEAMS (STRICTLY ONE TEAM PER LADDER)
+             ===================================================================== -->
+        <div id="my-teams" class="profile-teams-section" style="margin-bottom: 32px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+            <div>
+              <div style="font-size:11px; color:#ff1e44; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">
+                SANCTIONED SQUADS
+              </div>
+              <h3 style="font-family:var(--display); font-size:24px; text-transform:uppercase; color:#ffffff; margin:2px 0 4px;">
+                MY ACTIVE TEAMS
+              </h3>
+              <p style="font-size:12px; color:#94a3b8; margin:0;">
+                You can be on strictly <strong>ONE</strong> team per ladder circuit (4v4 Variant, 2v2 SnD, 1v1 Radar).
+              </p>
+            </div>
+            <a href="/ladders/#register" class="btn-crimson-outline" style="font-size:11px; padding:7px 14px; text-decoration:none;">
+              <span>🛡</span> <span>+ Register New Team</span>
+            </a>
+          </div>
+
+          <!-- 3-Column Ladder Squads Grid -->
+          <div class="profile-teams-grid" id="profile-teams-container">
+            <!-- Dynamically populated via renderActiveTeams() -->
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             TOURNAMENT TEAMS & SQUADS SECTION
+             ===================================================================== -->
+        <div id="my-tournament-teams" class="profile-teams-section" style="margin-bottom: 32px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+            <div>
+              <div style="font-size:11px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">
+                TOURNAMENT CIRCUIT SQUADS
+              </div>
+              <h3 style="font-family:var(--display); font-size:24px; text-transform:uppercase; color:#ffffff; margin:2px 0 4px;">
+                MY TOURNAMENT TEAMS
+              </h3>
+              <p style="font-size:12px; color:#94a3b8; margin:0;">
+                All tournament squads and rosters you are confirmed or enlisted in.
+              </p>
+            </div>
+            <a href="/tournaments/" class="btn-crimson-outline" style="font-size:11px; padding:7px 14px; text-decoration:none; border-color:#38bdf8; color:#38bdf8;">
+              <span>⚔</span> <span>+ Browse Tournaments ↗</span>
+            </a>
+          </div>
+
+          <!-- Tournament Teams Grid -->
+          <div class="profile-teams-grid" id="profile-tournament-teams-container">
+            <!-- Dynamically populated via renderTournamentTeams() -->
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             ALL MATCHES PLAYED (MATCH HISTORY SECTION)
+             ===================================================================== -->
+        <div class="match-history-section">
+          <div class="match-history-header">
+            <div>
+              <h3 style="font-family:var(--display); font-size:22px; text-transform:uppercase; color:#ffffff; margin:0 0 4px;">
+                MATCHES PLAYED (<span id="count-history-total">20</span>)
+              </h3>
+              <p style="font-size:12px; color:#94a3b8; margin:0;">
+                Complete record of all ladder matches you have competed in. Click any match to enter its CDL map veto room or view official scores.
+              </p>
+            </div>
+
+            <!-- Filter Pills -->
+            <div class="match-filter-pills">
+              <button type="button" class="match-filter-btn active" onclick="filterMatchHistory('all', this)">All</button>
+              <button type="button" class="match-filter-btn" onclick="filterMatchHistory('victory', this)">Wins</button>
+              <button type="button" class="match-filter-btn" onclick="filterMatchHistory('defeat', this)">Losses</button>
+              <button type="button" class="match-filter-btn" onclick="filterMatchHistory('in_progress', this)">In Progress</button>
+            </div>
+          </div>
+
+          <!-- Match List Container -->
+          <div id="match-history-list">
+            <!-- Dynamically populated via renderMatchHistory() -->
+          </div>
+        <!-- =====================================================================
+             OFFICIAL DIRECTIVES & NOTIFICATIONS SECTION
+             ===================================================================== -->
+        <div class="match-history-section" style="margin-top:28px;">
+          <div class="match-history-header" style="flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-size:11px; color:#22c55e; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">
+                HQ DIRECTIVES &amp; REGISTRATION STATUS
+              </div>
+              <h3 style="font-family:var(--display); font-size:22px; text-transform:uppercase; color:#ffffff; margin:2px 0 4px;">
+                NOTIFICATIONS &amp; APPROVALS
+              </h3>
+              <p style="font-size:12px; color:#94a3b8; margin:0;">
+                Official notifications regarding your league recruitment, team approvals, and tournament squad enlistments.
+              </p>
+            </div>
+            <button type="button" class="btn-crimson-outline" style="font-size:11px; padding:6px 12px;" onclick="clearArenaNotifications()">
+              ✓ Mark All As Read
+            </button>
+          </div>
+
+          <div id="arena-notifications-list" style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+            <div style="text-align:center; padding:28px 16px; background:#0e121a; border:1px dashed #232e42; border-radius:4px; color:#64748b; font-size:12.5px;">
+              <div style="font-size:24px; margin-bottom:6px;">📭</div>
+              No notifications on file. Official tournament and league registration approvals will appear here.
+            </div>
+          </div>
+        </div>
+
+        <!-- Fast Ladder CTA Bar -->
+        <div style="margin-top:28px; background:linear-gradient(90deg, #14080c, #0d121c); border:1px solid #2e151c; border-radius:6px; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+          <div>
+            <h4 style="font-family:var(--display); font-size:18px; text-transform:uppercase; color:#fff; margin:0 0 4px;">Ready For Your Next Combat Series?</h4>
+            <p style="font-size:12px; color:#94a3b8; margin:0;">Browse open challenges on the Match Finder board, post your squad's rules, or climb the ladder.</p>
+          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <a href="/match-finder/" class="btn-crimson" style="padding:10px 20px; font-size:12px; text-decoration:none;">
+              <span>🎯</span> <span>Open Match Finder ↗</span>
+            </a>
+            <a href="/ladders/" class="btn-crimson-outline" style="padding:10px 18px; font-size:12px; text-decoration:none;">
+              <span>⚔</span> <span>View Ladder Standings</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           VIEW 2: LOGGED OUT / SIGN IN VIEW
+           ======================================================================= -->
+      <div id="profile-logged-out-view" class="auth-box-container" style="display:none;">
+        <div style="text-align:center; margin-bottom:24px;">
+          <div style="font-size:42px; margin-bottom:8px;">🔑</div>
+          <h2 style="font-family:var(--display); font-size:28px; text-transform:uppercase; color:#ffffff; margin:0 0 6px;">
+            ARENA COMBATANT LOGIN
+          </h2>
+          <p style="font-size:13px; color:#94a3b8; margin:0;">
+            Sign in to access your personal profile, combat records, ladder statistics, and match history.
+          </p>
+        </div>
+
+        <!-- 1-Click Discord OAuth Login -->
+        <button type="button" id="btn-arena-discord-auth" onclick="handleDiscordOAuthLogin()" style="background:#5865F2; color:#fff; border:1px solid rgba(255,255,255,0.2); font-weight:800; font-size:13px; text-transform:uppercase; padding:12px 20px; width:100%; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; border-radius:4px; box-shadow:0 4px 18px rgba(88,101,242,0.35); margin-bottom:18px; transition:all 0.2s ease;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          <span>Continue with Discord</span>
+        </button>
+
+        <div style="display:flex; align-items:center; text-align:center; margin:14px 0 18px; color:#64748b; font-size:11px; font-weight:800; letter-spacing:1px;">
+          <span style="flex:1; border-bottom:1px solid #1e283a;"></span>
+          <span style="padding:0 10px;">OR USE PASSWORD</span>
+          <span style="flex:1; border-bottom:1px solid #1e283a;"></span>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="auth-tabs-row" style="justify-content:center;">
+          <button type="button" class="auth-tab-btn active" id="tab-auth-signin" onclick="switchAuthTab('signin')">
+            🔑 Sign In
+          </button>
+          <button type="button" class="auth-tab-btn" id="tab-auth-register" onclick="switchAuthTab('register')">
+            🛡 Create Account
+          </button>
+        </div>
+
+        <!-- Tab 1: Normal Sign In Form -->
+        <div id="auth-panel-signin">
+          <form onsubmit="handleFormSignIn(event)">
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Gamertag or Email</label>
+              <input type="text" id="signin-identifier" placeholder="Enter your Gamertag or Email" required style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:12px 14px; border-radius:4px;" />
+            </div>
+            <div style="margin-bottom:18px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Password</label>
+              <input type="password" id="signin-password" placeholder="••••••••" style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:12px 14px; border-radius:4px;" />
+            </div>
+            <button type="submit" class="btn-crimson" style="width:100%; justify-content:center; padding:14px; font-size:13px;">
+              <span>🔑</span> <span>Sign In to Arena</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab 2: Register Form -->
+        <div id="auth-panel-register" style="display:none;">
+          <form onsubmit="handleFormRegister(event)">
+            <!-- 1. Email Address -->
+            <div style="margin-bottom:12px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                Email Address <span style="color:#e11d48;">*</span>
+              </label>
+              <input
+                type="email"
+                id="reg-email"
+                placeholder="e.g. operative@frontlinearena.com"
+                required
+                autocomplete="email"
+                style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+              />
+              <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Used for account verification and tournament notifications</span>
+            </div>
+
+            <!-- 2. Password -->
+            <div style="margin-bottom:12px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                Password <span style="color:#e11d48;">*</span>
+              </label>
+              <input
+                type="password"
+                id="reg-password"
+                placeholder="•••••••• (Min. 6 characters)"
+                minlength="6"
+                required
+                autocomplete="new-password"
+                style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+              />
+            </div>
+
+            <!-- 3. Choose a Username for the Website -->
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:12px;">
+              <div>
+                <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                  Choose a Username for the Website <span style="color:#e11d48;">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="reg-gamertag"
+                  placeholder="e.g. Deadshot, Viper, Ghost"
+                  required
+                  autocomplete="nickname"
+                  style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+                />
+              </div>
+              <div>
+                <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                  Clan Tag
+                </label>
+                <input
+                  type="text"
+                  id="reg-clantag"
+                  placeholder="TAG"
+                  maxlength="5"
+                  style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+                />
+              </div>
+            </div>
+
+            <!-- 4. Activision ID -->
+            <div style="margin-bottom:18px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                Activision ID <span style="color:#e11d48;">*</span>
+              </label>
+              <input
+                type="text"
+                id="reg-activision"
+                placeholder="e.g. Deadshot#9988771"
+                required
+                autocomplete="off"
+                style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+              />
+              <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Enter your Activision ID with hashtag numbers for match lobby invites &amp; score reporting</span>
+            </div>
+
+            <!-- 5. Tactical Role -->
+            <div style="margin-bottom:18px;">
+              <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+                Tactical Role <span style="color:#e11d48;">*</span>
+              </label>
+              <select
+                id="reg-role"
+                required
+                style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px 12px; border-radius:4px;"
+              >
+                <option value="SMG">SMG / Slayer</option>
+                <option value="Main AR">Main AR</option>
+                <option value="Flex" selected>Flex / Hybrid</option>
+                <option value="OBJ">OBJ (Objective)</option>
+                <option value="Anchor">Anchor</option>
+              </select>
+              <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Your primary competitive weapon role</span>
+            </div>
+
+            <button type="submit" class="btn-crimson" style="width:100%; justify-content:center; padding:14px; font-size:13px;">
+              <span>🛡</span> <span>Register &amp; Create Profile</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         EDIT PROFILE MODAL
+         ========================================================================= -->
+    <div id="modal-edit-profile" class="modal-overlay">
+      <div class="ladder-modal-box" style="max-width:480px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #1c2638; padding-bottom:12px;">
+          <h3 style="font-family:var(--display); font-size:20px; text-transform:uppercase; color:#fff; margin:0;">
+            EDIT COMBATANT PROFILE
+          </h3>
+          <button type="button" onclick="closeEditProfileModal()" style="background:transparent; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+
+        <form onsubmit="handleSaveProfileEdit(event)">
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">
+              Username / Gamertag <span style="color:#e11d48;">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-gamertag"
+              placeholder="e.g. Deadshot, Viper, Ghost"
+              required
+              autocomplete="nickname"
+              style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;"
+            />
+            <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Your primary combatant handle across Arena leaderboards and matches</span>
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Clan Tag (Max 5 chars)</label>
+            <input type="text" id="edit-clan-tag" maxlength="5" style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;" />
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Activision ID</label>
+            <input type="text" id="edit-activision-id" style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;" />
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Discord Username</label>
+            <input type="text" id="edit-discord-tag" style="width:100%; box-sizing:border-box; background:#080a0f; border:1px solid #232f42; color:#fff; padding:10px; border-radius:4px;" />
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Combatant Profile Image</label>
+            <div style="display:flex; align-items:center; gap:14px; background:#080a0f; border:1px solid #232f42; padding:14px; border-radius:4px;">
+              <div style="position:relative; flex-shrink:0;">
+                <img
+                  id="edit-avatar-preview"
+                  src="/images/leaguelogo_1.png"
+                  alt="Avatar Preview"
+                  style="width:64px; height:64px; border-radius:6px; object-fit:cover; border:2px solid #ff1e44; box-shadow:0 0 14px rgba(255,30,68,0.35); background:#11120f; display:block;"
+                  onerror="this.src='/images/leaguelogo_1.png'"
+                />
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <label class="btn-crimson" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:12px; margin:0; border-radius:4px; font-weight:700;">
+                    <span>📷</span> <span>Choose Image File</span>
+                    <input
+                      type="file"
+                      id="edit-avatar-file-input"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      style="display:none;"
+                      onchange="handleArenaAvatarFileSelect(event)"
+                    />
+                  </label>
+                  <button type="button" onclick="setArenaAvatarPreset('/images/leaguelogo_1.png')" style="background:#151c28; border:1px solid #2d3c54; color:#cbd5e1; font-size:11px; padding:7px 10px; border-radius:4px; cursor:pointer;" title="Use official League Crest">
+                    🛡 League Logo
+                  </button>
+                  <button type="button" onclick="setArenaAvatarPreset('/images/arenalogo_1.png')" style="background:#151c28; border:1px solid #2d3c54; color:#cbd5e1; font-size:11px; padding:7px 10px; border-radius:4px; cursor:pointer;" title="Use official Arena Insignia">
+                    ⚔ Arena Logo
+                  </button>
+                </div>
+                <div id="edit-avatar-file-status" style="font-size:11px; color:#64748b;">
+                  Upload from your device (no URL needed)
+                </div>
+                <input
+                  type="text"
+                  id="edit-avatar-url"
+                  placeholder="Or paste image URL (optional)"
+                  oninput="handleArenaAvatarUrlInput(this.value)"
+                  style="width:100%; box-sizing:border-box; background:#0f141d; border:1px solid #1c2638; color:#94a3b8; padding:6px 10px; border-radius:4px; font-size:11px;"
+                />
+              </div>
+            </div>
+            <span style="font-size:11px; color:#64748b; margin-top:6px; display:block;">
+              Synced with your Frontline League profile. Changing your avatar updates both profiles automatically.
+            </span>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn-crimson-outline" onclick="closeEditProfileModal()" style="padding:9px 16px; font-size:12px;">Cancel</button>
+            <button type="submit" class="btn-crimson" style="padding:9px 20px; font-size:12px;">Save Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TEAM ROSTER & PLAYER STATS MODAL -->
+    <div class="modal-overlay" id="modal-team-roster" role="dialog" aria-modal="true" aria-labelledby="modal-roster-title">
+      <div class="ladder-modal-box" style="max-width: 720px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <button type="button" class="modal-close-btn" onclick="closeTeamRosterModal()" aria-label="Close Modal" style="background:transparent; border:none; color:#94a3b8; font-size:20px; cursor:pointer; position:absolute; top:16px; right:16px;">✕</button>
+        
+        <!-- Header with Team Banner / Info -->
+        <div id="roster-modal-team-header" style="margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #1c2638;">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <!-- Section Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding: 0 4px;">
+          <div>
+            <span class="pill" style="background:#2b0c12; color:#ff1e44; border-color:#ff1e44; font-size:10px;">TACTICAL ROSTER</span>
+            <h3 id="modal-roster-title" style="font-family:var(--display); font-size:18px; text-transform:uppercase; margin:4px 0 0; color:#fff;">
+              COMBATANT ROSTER &amp; STATS
+            </h3>
+          </div>
+          <span id="roster-modal-format-badge" style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">
+            COMBATANTS
+          </span>
+        </div>
+
+        <!-- Scrollable Players List -->
+        <div id="roster-modal-players-list" style="display:flex; flex-direction:column; gap:12px; overflow-y:auto; padding-right:6px; margin-bottom:16px;">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <!-- Footer -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1c2638; padding-top:14px; margin-top:auto;">
+          <div style="font-size:11px; color:#64748b;">
+            <span>🛡 Frontline Competitive Record Verified</span>
+          </div>
+          <div style="display:flex; gap:10px;" id="roster-modal-actions">
+            <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal()" style="font-size:12px; padding:8px 16px;">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         PAGE JAVASCRIPT LOGIC
+         ========================================================================= -->
+    <script>
+      function openLeagueAdminConsole(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        try {
+          sessionStorage.setItem("frontline_admin_session", "authorized");
+          localStorage.setItem("frontline_admin_session", "authorized");
+          const existingEmail = sessionStorage.getItem("frontline_admin_email") || localStorage.getItem("frontline_admin_email");
+          const activeEmail = existingEmail || "todd061496@gmail.com";
+          sessionStorage.setItem("frontline_admin_email", activeEmail);
+          localStorage.setItem("frontline_admin_email", activeEmail);
+        } catch (_) {}
+
+        if (typeof window.navigateToAdminConsole === "function" && window.navigateToAdminConsole !== openLeagueAdminConsole) {
+          window.navigateToAdminConsole();
+          return;
+        }
+
+        if (window.location.protocol === "file:") {
+          window.location.href = "../../admin/index.html";
+          return;
+        }
+
+        window.location.href = "/admin/";
+      }
+      window.openLeagueAdminConsole = openLeagueAdminConsole;
+      window.navigateToAdminConsole = openLeagueAdminConsole;
+
+      let currentMatchesList = [];
+      let activeFilter = "all";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        renderProfilePage();
+
+        // Handle URL hash direct linking to #login or #my-teams
+        if (window.location.hash === "#login") {
+          const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+          if (!player) {
+            document.getElementById("profile-logged-in-view").style.display = "none";
+            document.getElementById("profile-logged-out-view").style.display = "block";
+          }
+        } else if (window.location.hash === "#my-teams") {
+          const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+          if (player) {
+            setTimeout(() => {
+              const el = document.getElementById("my-teams");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }, 120);
+          } else {
+            document.getElementById("profile-logged-in-view").style.display = "none";
+            document.getElementById("profile-logged-out-view").style.display = "block";
+          }
+        }
+
+        // Handle URL direct linking to Edit Profile modal (?edit=true or #edit)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (window.location.hash === "#edit" || urlParams.get("edit") === "true" || urlParams.get("action") === "edit") {
+          setTimeout(() => {
+            const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+            if (player && typeof openEditProfileModal === "function") {
+              openEditProfileModal();
+            } else if (!player) {
+              document.getElementById("profile-logged-in-view").style.display = "none";
+              document.getElementById("profile-logged-out-view").style.display = "block";
+            }
+          }, 150);
+        }
+      });
+
+      window.addEventListener("frontline_arena_auth_changed", () => {
+        renderProfilePage();
+      });
+
+      // Handle OAuth return redirect from Supabase/Discord
+      if (typeof dbClient !== "undefined" && dbClient && dbClient.auth) {
+        try {
+          dbClient.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user) {
+              const u = session.user;
+              const meta = u.user_metadata || {};
+              const discordInfo = window.LeagueDB && typeof window.LeagueDB.getDiscordIdentity === "function"
+                ? window.LeagueDB.getDiscordIdentity(u)
+                : null;
+              sessionStorage.removeItem("frontline_discord_oauth_pending");
+
+              const cleanEmail = (u.email || "").toLowerCase().trim();
+              const isStaff = (window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function" && window.LeagueDB.isAccountAdmin(u)) || 
+                              cleanEmail === "todd061496@gmail.com" || 
+                              cleanEmail === "admin@frontlineleague.com" || 
+                              (sessionStorage.getItem("frontline_admin_session") === "authorized" && !discordInfo?.isDiscord);
+
+              let userObj;
+              if (isStaff) {
+                const staffName = meta.gamertag || (cleanEmail === "todd061496@gmail.com" ? "Commissioner Spencer" : "League Commissioner");
+                userObj = {
+                  id: u.id,
+                  email: u.email,
+                  gamertag: staffName,
+                  username: staffName,
+                  tag: "COMM",
+                  team_name: "Frontline League HQ",
+                  activision_id: cleanEmail === "todd061496@gmail.com" ? "Spencer#0001" : "Official#0001",
+                  discord: "—",
+                  avatar_url: "/images/leaguelogo_1.png",
+                  elo: 1200,
+                  tier: "Commissioner",
+                  role: "League Commissioner",
+                  region: "NA East",
+                  platform: "PC / Broadcast",
+                  is_staff: true,
+                  is_commissioner: true
+                };
+                sessionStorage.setItem("frontline_admin_session", "authorized");
+                sessionStorage.setItem("frontline_admin_email", cleanEmail);
+              } else {
+                const gamertag = meta.gamertag || meta.username || discordInfo?.globalName || discordInfo?.handle || meta.custom_claims?.global_name || meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "Operative");
+                const discordName = meta.discord_name || meta.discord_username || discordInfo?.primaryName || gamertag;
+                userObj = {
+                  id: u.id,
+                  email: u.email,
+                  gamertag: gamertag,
+                  username: gamertag,
+                  tag: "ARENA",
+                  activision_id: meta.activision_id || `${gamertag}#1234567`,
+                  discord: discordName,
+                  avatar_url: discordInfo?.avatarUrl || meta.avatar_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80",
+                  elo: 1200,
+                  tier: "Specialist",
+                  role: meta.role || "Flex",
+                  region: meta.region || "NA East",
+                  platform: meta.platform || "PC"
+                };
+              }
+              try {
+                localStorage.setItem("frontline_arena_user", JSON.stringify(userObj));
+                localStorage.setItem("frontline_arena_auth_user", JSON.stringify(userObj));
+              } catch(e) {}
+              if (!isStaff && window.LeagueDB && typeof window.LeagueDB.autoCheckDiscordOnboarding === "function") {
+                window.LeagueDB.autoCheckDiscordOnboarding();
+              }
+              renderProfilePage();
+            }
+          });
+        } catch(e) {}
+      }
+
+      function renderProfilePage() {
+        if (!window.LadderDB) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetGamertag = urlParams.get("player") || urlParams.get("user") || urlParams.get("gamertag");
+
+        const cur = window.LadderDB.getCurrentPlayer();
+        let player = null;
+        let isOwner = false;
+
+        if (targetGamertag) {
+          player = window.LadderDB.getPlayerByGamertag ? window.LadderDB.getPlayerByGamertag(targetGamertag) : { gamertag: targetGamertag };
+          isOwner = cur && ((cur.gamertag && cur.gamertag.toLowerCase() === player.gamertag?.toLowerCase()) || (cur.id && cur.id === player.id));
+        } else {
+          player = cur;
+          isOwner = true;
+        }
+
+        const loggedInView = document.getElementById("profile-logged-in-view");
+        const loggedOutView = document.getElementById("profile-logged-out-view");
+        const breadcrumbLabel = document.getElementById("gb-breadcrumb-profile-label");
+
+        if (player && player.gamertag) {
+          loggedInView.style.display = "block";
+          loggedOutView.style.display = "none";
+          if (breadcrumbLabel) breadcrumbLabel.textContent = isOwner ? `${player.gamertag}'s Profile` : `Operative ${player.gamertag}`;
+
+          // Populate User Info
+          document.getElementById("user-gamertag-display").textContent = player.gamertag;
+          document.getElementById("user-clan-tag").textContent = `[${player.tag || 'TAG'}]`;
+          document.getElementById("user-team-name").textContent = player.team_name || `${player.tag || 'ARENA'} Squad`;
+          document.getElementById("user-activision-id").textContent = player.activision_id || `${player.gamertag}#1234567`;
+          document.getElementById("user-discord-tag").textContent = player.discord || `${player.gamertag.toLowerCase()}#0001`;
+          if (player.avatar_url) {
+            document.getElementById("user-avatar-img").src = player.avatar_url;
+          }
+
+          const tier = window.LadderDB.getTier ? window.LadderDB.getTier(player.elo || 1200) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+          document.getElementById("user-tier-name").textContent = tier.name;
+          const tierBadgeEl = document.getElementById("user-tier-badge");
+          if (tierBadgeEl) {
+            tierBadgeEl.className = `profile-tier-badge ${tier.badgeClass || 'tier-specialist'}`;
+          }
+
+          const statusPill = document.getElementById("user-status-pill");
+          if (statusPill) {
+            statusPill.textContent = isOwner ? "● ACTIVE COMBATANT" : "● VERIFIED OPERATIVE";
+          }
+
+          // Staff / Commissioner Recognition in Arena Profile
+          const cleanEmail = (player.email || "").toLowerCase().trim();
+          let isStaff = player.is_staff || player.is_commissioner || player.tier === "Commissioner" || player.tag === "COMM" || cleanEmail === "todd061496@gmail.com" || cleanEmail === "todd61496@gmail.com" || cleanEmail.includes("todd") || cleanEmail === "admin@frontlineleague.com" || cleanEmail.includes("invictus") || (sessionStorage.getItem("frontline_admin_session") === "authorized") || (localStorage.getItem("frontline_admin_session") === "authorized") || ["invictus", "itzinvictus", "itzinvictus_", "spencer", "commissioner"].some(cn => String(player.gamertag || "").toLowerCase().trim().includes(cn));
+          if (!isStaff && window.LeagueDB && typeof window.LeagueDB.isAccountAdmin === "function") {
+            isStaff = window.LeagueDB.isAccountAdmin(player);
+          }
+          if (isStaff) {
+            try {
+              sessionStorage.setItem("frontline_admin_session", "authorized");
+              localStorage.setItem("frontline_admin_session", "authorized");
+            } catch(e) {}
+          }
+
+          const commBanner = document.getElementById("arena-commissioner-banner");
+          const arenaLeagueBtn = document.getElementById("btn-arena-league-profile");
+          const arenaAdminBtn = document.getElementById("btn-arena-admin-console");
+
+          if (isStaff) {
+            if (commBanner && isOwner) commBanner.style.display = "flex";
+            if (arenaLeagueBtn && isOwner) arenaLeagueBtn.style.display = "inline-flex";
+            if (arenaAdminBtn) arenaAdminBtn.style.display = "inline-flex";
+            if (isOwner) {
+              document.getElementById("user-clan-tag").textContent = (player.tag ? `[${player.tag}]` : "[COMM]");
+              document.getElementById("user-team-name").textContent = "Frontline League HQ";
+              document.getElementById("user-tier-name").textContent = "★ COMMISSIONER";
+              if (tierBadgeEl) {
+                tierBadgeEl.className = "profile-tier-badge tier-commissioner";
+              }
+              if (statusPill) {
+                statusPill.textContent = "● EXECUTIVE DIRECTIVE ACTIVE";
+                statusPill.style.color = "var(--lime, #d5f45b)";
+                statusPill.style.borderColor = "var(--lime, #d5f45b)";
+                statusPill.style.background = "rgba(213, 244, 91, 0.12)";
+              }
+            }
+          } else {
+            if (commBanner) commBanner.style.display = "none";
+            if (arenaLeagueBtn) arenaLeagueBtn.style.display = "none";
+            if (arenaAdminBtn) arenaAdminBtn.style.display = "none";
+          }
+
+          // Header action buttons visibility
+          const editBtn = document.getElementById("btn-edit-profile");
+          const signOutBtn = document.getElementById("btn-sign-out");
+          const backMyProfileBtn = document.getElementById("btn-back-my-profile");
+
+          if (editBtn) editBtn.style.display = isOwner ? "inline-flex" : "none";
+          if (signOutBtn) signOutBtn.style.display = isOwner ? "inline-flex" : "none";
+          if (backMyProfileBtn) backMyProfileBtn.style.display = (!isOwner && cur) ? "inline-flex" : "none";
+
+          // Populate Stats
+          const stats = window.LadderDB.getPlayerStats(player);
+          document.getElementById("stat-wins-num").textContent = stats.wins;
+          document.getElementById("stat-losses-num").textContent = stats.losses;
+          document.getElementById("stat-winrate-num").textContent = stats.winRate;
+          document.getElementById("stat-winrate-bar").style.width = stats.winRate;
+          document.getElementById("stat-streak-num").textContent = stats.streak;
+          document.getElementById("stat-matches-num").textContent = stats.totalMatches;
+          document.getElementById("stat-elo-num").textContent = player.elo || 1200;
+          document.getElementById("stat-tier-sub").textContent = tier.name;
+
+          // Populate Active Teams (Strictly 1 Team per Ladder)
+          renderActiveTeams(player);
+
+          // Populate Tournament Squads & Teams
+          renderArenaTournamentTeams(player);
+
+          // Populate Match History
+          currentMatchesList = window.LadderDB.getPlayerMatchHistory(player);
+          document.getElementById("count-history-total").textContent = currentMatchesList.length;
+          renderMatchHistory();
+
+          // Populate Directives & Notifications
+          renderArenaNotifications(player);
+        } else {
+          // Player is Logged Out
+          loggedInView.style.display = "none";
+          loggedOutView.style.display = "block";
+          if (breadcrumbLabel) breadcrumbLabel.textContent = "Combatant Login";
+        }
+      }
+
+      async function renderArenaTournamentTeams(player) {
+        const container = document.getElementById("profile-tournament-teams-container");
+        if (!container || !player) return;
+
+        let tourneyTeams = [];
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getPlayerTournamentTeams === "function") {
+            tourneyTeams = await window.LeagueDB.getPlayerTournamentTeams(player);
+          }
+        } catch (e) {
+          console.warn("Error loading arena tournament teams:", e);
+        }
+
+        if (!tourneyTeams || tourneyTeams.length === 0) {
+          container.innerHTML = `
+            <div class="profile-team-card empty-team" style="grid-column: 1 / -1; max-width: 100%; overflow: hidden; box-sizing: border-box;">
+              <div class="team-card-ladder-bar">
+                <span class="team-card-ladder-name" style="color:#94a3b8;">
+                  <span>⚔</span> <span>Tournament Circuit</span>
+                </span>
+                <span class="val-badge" style="background:#161c28; color:#94a3b8; border-color:#2a364a;">NO TOURNAMENT TEAMS</span>
+              </div>
+              <div style="text-align:center; padding:24px 16px;">
+                <div style="font-size:28px; margin-bottom:6px;">🛡</div>
+                <div style="font-size:14px; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:4px;">No Active Tournament Squad</div>
+                <p style="font-size:12px; color:#64748b; margin:0 0 16px; line-height:1.4; max-width: 440px; margin-left:auto; margin-right:auto;">
+                  You are not currently registered in any active tournament squads. Form a team with your teammates to compete for championship rings and cash prizes.
+                </p>
+                <a href="/tournaments/" class="btn-crimson" style="padding:8px 18px; font-size:11px; text-decoration:none; display:inline-flex;">
+                  <span>⚔</span> <span>Browse Open Tournaments ↗</span>
+                </a>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = tourneyTeams.map(ts => {
+          const gamertag = player.gamertag || "";
+          const isCap = String(ts.captain_gamertag || "").toLowerCase() === String(gamertag).toLowerCase();
+          const rosterList = Array.isArray(ts.roster) ? ts.roster : (ts.roster_text ? ts.roster_text.split(/,\s*/) : []);
+          const dateStr = ts.registered_at ? new Date(ts.registered_at).toLocaleDateString() : "Recent";
+
+          return `
+            <div class="profile-team-card has-team" style="border-left: 4px solid #38bdf8; background:#121824; border-color:#2a3d54; overflow: hidden; box-sizing: border-box; margin-bottom: 12px;">
+              <div class="team-card-ladder-bar" style="background:#172233; padding:10px 14px;">
+                <span class="team-card-ladder-name" style="color:#38bdf8; font-weight:800; font-size:12.5px; letter-spacing:0.5px;">
+                  <span style="font-size:14px;">⚔</span> <span>${escapeHtml(ts.tournament_title || 'Frontline Tournament')}</span>
+                </span>
+                <span class="val-badge" style="background:rgba(56,189,248,0.2); color:#ffffff; border-color:#38bdf8; font-size:11px; font-weight:800; padding:3px 8px;">
+                  ${isCap ? '★ SQUAD CAPTAIN' : 'ROSTER MEMBER'}
+                </span>
+              </div>
+              <div class="team-card-content" style="padding:14px 16px;">
+                <img src="/images/leaguelogo_1.png" class="team-card-avatar" style="border-color:#38bdf8; width:48px; height:48px;" />
+                <div style="flex:1;">
+                  <div class="team-card-role-badge" style="background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:10.5px; font-weight:800;">
+                    ${isCap ? 'Captain / In-Game Leader' : 'Confirmed Teammate'}
+                  </div>
+                  <h4 class="team-card-title" style="font-size:20px; color:#ffffff; font-weight:800; font-family:'Chakra Petch', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing:0.8px; margin:4px 0 2px;">
+                    [SQUAD] ${escapeHtml(ts.team_name)}
+                  </h4>
+                  <div style="font-size:13px; color:#cbd5e1; margin-top:3px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                    Enlisted: <strong style="color:#ffffff; font-weight:700;">${escapeHtml(dateStr)}</strong>
+                  </div>
+                </div>
+              </div>
+              <div style="background:#0a0e16; border:1px solid #1f2c3e; padding:12px 14px; margin:0 14px 14px; border-radius:4px; font-size:12.5px;">
+                <div style="color:#38bdf8; font-weight:800; font-size:11px; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">
+                  Active Squad Roster (${rosterList.length})
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  ${(ts.roster_status || []).map(st => {
+                    const isAcc = st.status === 'accepted';
+                    const isMe = String(st.gamertag || '').toLowerCase() === String(gamertag).toLowerCase();
+                    return `
+                      <span style="display:inline-flex; align-items:center; gap:6px; background:${isAcc ? 'rgba(34,197,94,0.18)' : 'rgba(234,179,8,0.18)'}; border:1px solid ${isAcc ? '#22c55e' : '#eab308'}; padding:4px 8px; border-radius:3px; font-size:12px; color:#fff;">
+                        <span style="color:${isAcc ? '#4ade80' : '#facc15'}; font-weight:900;">${isAcc ? '✓' : '⏳'}</span>
+                        <strong style="color:#ffffff; font-weight:800; ${isMe ? 'color:#38bdf8; text-decoration:underline;' : ''}">${escapeHtml(st.gamertag)}</strong>
+                        ${!isAcc ? `<span style="color:#fef08a; font-size:10px; font-weight:700; text-transform:uppercase;">(Pending)</span>` : ''}
+                        ${(!isAcc && isCap && !isMe) ? `
+                          <button type="button" class="btn-reinvite" onclick="handleReinviteTournamentTeammate('${ts.id}', '${escapeHtml(st.gamertag)}', this)" style="background:rgba(234,179,8,0.25); border:1px solid #fbbf24; color:#fef08a; border-radius:3px; padding:2px 6px; font-size:10.5px; font-weight:800; cursor:pointer; margin-left:2px; display:inline-flex; align-items:center; gap:3px;" title="Resend invite notification to this player">
+                            <span>↻</span> <span>Resend Invite</span>
+                          </button>
+                        ` : ''}
+                      </span>
+                    `;
+                  }).join('') || rosterList.map(m => `<span style="background:#172233; padding:3px 8px; border-radius:3px; color:#fff; font-weight:700; font-size:11.5px;">${escapeHtml(typeof m === 'object' ? (m.gamertag || m.name) : m)}</span>`).join('')}
+                </div>
+              </div>
+              <div class="team-card-actions" style="padding:0 14px 14px;">
+                <a href="/tournaments/bracket/?tournament=${encodeURIComponent(ts.tournament_id)}" target="_blank" class="btn-crimson" style="padding:10px 14px; font-size:12px; font-weight:800; flex:1; justify-content:center; text-decoration:none; background:#0284c7; border-color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">
+                  <span>⚔</span> <span>View Bracket ↗</span>
+                </a>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function renderActiveTeams(player) {
+        const container = document.getElementById("profile-teams-container");
+        if (!container || !window.LadderDB) return;
+
+        const ladderGroups = window.LadderDB.getUserTeams(player);
+
+        container.innerHTML = ladderGroups.map(ladder => {
+          const userTeams = Array.isArray(ladder.teams) && ladder.teams.length > 0 
+            ? ladder.teams 
+            : (ladder.team ? [ladder.team] : []);
+          
+          let cardsHtml = '';
+
+          // Render cards for each team owned/joined on this ladder (up to 2)
+          userTeams.forEach((team, tIdx) => {
+            const tier = window.LadderDB.getTier ? window.LadderDB.getTier(team.elo || 1200) : { name: "Specialist", icon: "🎯" };
+            const isPrimary = tIdx === 0;
+            cardsHtml += `
+              <div class="profile-team-card has-team" style="margin-bottom:12px; overflow:hidden; box-sizing:border-box;">
+                <div class="team-card-ladder-bar">
+                  <span class="team-card-ladder-name">
+                    <span>${ladder.icon}</span> <span>${ladder.ladder_name} ${userTeams.length > 1 ? `(Team ${tIdx + 1})` : ''}</span>
+                  </span>
+                  <span class="val-badge" style="background:#0f2918; color:#22c55e; border-color:#1b4d2c;">
+                    ${isPrimary ? '● ACTIVE SQUAD' : 'SQUAD ' + (tIdx + 1)}
+                  </span>
+                </div>
+                <div class="team-card-content team-clickable" onclick="openTeamRosterModal('${team.id}')" title="Click to view squad roster &amp; player stats">
+                  <img src="${team.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" class="team-card-avatar" />
+                  <div style="flex:1; min-width:0; overflow:hidden;">
+                    <div class="team-card-role-badge">${team.role || 'Captain / Starter'}</div>
+                    <h4 class="team-card-title team-link-hover" style="word-break:break-word; overflow-wrap:break-word;">[${team.tag || 'TAG'}] ${team.name}</h4>
+                    <div style="font-size:12px; color:#ff1e44; font-weight:800;">
+                      ${team.elo || 1200} ELO • ${tier.name}
+                    </div>
+                  </div>
+                </div>
+                <div class="team-card-stats-row">
+                  <span><strong>Wins:</strong> ${team.wins || 0}</span>
+                  <span><strong>Losses:</strong> ${team.losses || 0}</span>
+                  <span><strong>Streak:</strong> ${team.streak || 0}W</span>
+                </div>
+                <div class="team-card-actions">
+                  <button type="button" class="btn-crimson btn-team-roster" onclick="openTeamRosterModal('${team.id}')" style="padding:9px 12px; font-size:11px; justify-content:center; width:100%; white-space:nowrap; grid-column:1 / -1; box-sizing:border-box;">
+                    <span>👥</span> <span>Roster &amp; Stats</span>
+                  </button>
+                  <a href="/ladders/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 6px; font-size:11px; text-decoration:none; justify-content:center; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;">
+                    <span>⚔</span> <span>Ladder</span>
+                  </a>
+                  <a href="/match-finder/?ladder=${ladder.ladder_type}" class="btn-crimson-outline" style="padding:8px 6px; font-size:11px; text-decoration:none; justify-content:center; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;">
+                    <span>🎯</span> <span>Matches</span>
+                  </a>
+                </div>
+              </div>
+            `;
+          });
+
+          // If user has less than 2 teams on this ladder, render an available slot card
+          if (userTeams.length < 2) {
+            const slotNum = userTeams.length + 1;
+            cardsHtml += `
+              <div class="profile-team-card empty-team" style="margin-bottom:12px; overflow:hidden; box-sizing:border-box;">
+                <div class="team-card-ladder-bar">
+                  <span class="team-card-ladder-name" style="color:#94a3b8;">
+                    <span>${ladder.icon}</span> <span>${ladder.ladder_name} (Slot ${slotNum}/2)</span>
+                  </span>
+                  <span class="val-badge" style="background:#161c28; color:#94a3b8; border-color:#2a364a;">EMPTY SLOT</span>
+                </div>
+                <div style="text-align:center; padding:16px 10px;">
+                  <div style="font-size:26px; margin-bottom:6px;">🛡</div>
+                  <div style="font-size:13px; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:4px;">${userTeams.length === 0 ? 'No Active Squad' : 'Secondary Squad Slot Available'}</div>
+                  <p style="font-size:11px; color:#64748b; margin:0 0 14px; line-height:1.4;">
+                    You are allowed a maximum of 2 teams on this ladder (up to 8 combatants each).
+                  </p>
+                  <a href="/ladders/?ladder=${ladder.ladder_type}&action=register" class="btn-crimson-outline" style="padding:7px 14px; font-size:11px; text-decoration:none;">
+                    <span>+</span> <span>Register Squad (${userTeams.length}/2) ↗</span>
+                  </a>
+                </div>
+              </div>
+            `;
+          }
+
+          return cardsHtml;
+        }).join("");
+      }
+
+      async function renderArenaNotifications(player) {
+        const container = document.getElementById("arena-notifications-list");
+        if (!container || !player) return;
+
+        let notifs = [];
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getUserNotifications === "function") {
+            notifs = await window.LeagueDB.getUserNotifications(player);
+          } else {
+            const all = JSON.parse(localStorage.getItem("frontline_user_notifications")) || [];
+            const tag = (player.gamertag || player.username || "").toLowerCase();
+            notifs = all.filter(n => (n.target_gamertag || "").toLowerCase() === tag);
+          }
+        } catch (e) {
+          console.warn("Error loading arena notifications:", e);
+        }
+
+        // Also fetch active tournament team invites from registry to guarantee tournament invites are NEVER missed
+        try {
+          if (window.LeagueDB && typeof window.LeagueDB.getTournamentTeamInvites === "function") {
+            const directInvites = await window.LeagueDB.getTournamentTeamInvites(player);
+            if (Array.isArray(directInvites) && directInvites.length > 0) {
+              directInvites.forEach(inv => {
+                const alreadyHas = notifs.some(n => n.type === "team_invite" && (n.metadata?.invite_id === inv.id || n.id === inv.id));
+                if (!alreadyHas) {
+                  notifs.unshift({
+                    id: "synth_" + inv.id,
+                    title: "Tournament Team Invite",
+                    message: `${inv.captain_gamertag || "Team Captain"} has invited you to join team "${inv.team_name || "Tournament Squad"}" for tournament "${inv.tournament_title || "Tournament"}". Accept to join the squad roster.`,
+                    type: "team_invite",
+                    created_at: inv.created_at || new Date().toISOString(),
+                    read: inv.status !== "pending",
+                    metadata: {
+                      invite_id: inv.id,
+                      registration_id: inv.registration_id,
+                      tournament_id: inv.tournament_id,
+                      tournament_title: inv.tournament_title,
+                      team_name: inv.team_name,
+                      captain_gamertag: inv.captain_gamertag,
+                      invited_gamertag: inv.invited_gamertag,
+                      status: inv.status || "pending"
+                    }
+                  });
+                }
+              });
+            }
+          }
+        } catch (_) {}
+
+        if (!notifs || notifs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:28px 16px; background:#0e121a; border:1px dashed #232e42; border-radius:4px; color:#64748b; font-size:12.5px;">
+              <div style="font-size:24px; margin-bottom:6px;">📭</div>
+              No notifications on file. Official Frontline League recruitment and registration approvals will appear here.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = notifs.map(n => {
+          const isAccepted = n.type === "registration_accepted";
+          const isInvite = n.type === "team_invite";
+          const inviteId = n.metadata?.invite_id;
+          const inviteStatus = n.metadata?.status || 'pending';
+          const dateStr = n.created_at ? new Date(n.created_at).toLocaleString() : "Recent";
+
+          let borderAccent = "#ff1e44";
+          let badgeText = "DIRECTIVE";
+          let badgeColor = "#ff1e44";
+          let badgeBg = "rgba(255,30,68,0.15)";
+          let cardBg = n.read ? "#0c0f17" : "rgba(255,30,68,0.06)";
+
+          if (isAccepted) {
+            borderAccent = "#22c55e";
+            badgeText = "✓ LEAGUE REGISTRATION ACCEPTED";
+            badgeColor = "#22c55e";
+            badgeBg = "rgba(34,197,94,0.2)";
+            cardBg = "rgba(34,197,94,0.06)";
+          } else if (isInvite) {
+            borderAccent = "#38bdf8";
+            badgeText = "🛡 SQUAD INVITATION";
+            badgeColor = "#38bdf8";
+            badgeBg = "rgba(56,189,248,0.2)";
+            cardBg = "rgba(56,189,248,0.06)";
+          }
+
+          let inviteActionsHtml = '';
+          if (isInvite && inviteStatus === 'pending' && inviteId) {
+            inviteActionsHtml = `
+              <div style="display:flex; gap:10px; margin-top:12px;">
+                <button type="button" class="btn-crimson" style="background:#22c55e; color:#000; font-weight:800; font-size:12px; padding:8px 16px; border:none; cursor:pointer;" onclick="respondArenaInvite('${inviteId}', true, this)">
+                  ✓ Accept Invite
+                </button>
+                <button type="button" class="btn-crimson-outline" style="border-color:#ef4444; color:#ef4444; font-weight:700; font-size:12px; padding:8px 16px; cursor:pointer;" onclick="respondArenaInvite('${inviteId}', false, this)">
+                  ✕ Decline
+                </button>
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'accepted') {
+            inviteActionsHtml = `
+              <div style="margin-top:10px; font-size:12px; font-weight:800; color:#22c55e;">
+                ✓ You accepted this tournament team invite.
+              </div>
+            `;
+          } else if (isInvite && inviteStatus === 'declined') {
+            inviteActionsHtml = `
+              <div style="margin-top:10px; font-size:12px; font-weight:700; color:#94a3b8;">
+                ✕ You declined this tournament team invite.
+              </div>
+            `;
+          }
+
+          return `
+            <div style="background:${cardBg}; border:1px solid ${borderAccent}33; border-left:4px solid ${borderAccent}; padding:16px 20px; border-radius:4px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+              <div style="max-width:760px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                  <span style="font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:2px; background:${badgeBg}; color:${badgeColor}; text-transform:uppercase; letter-spacing:0.5px;">
+                    ${badgeText}
+                  </span>
+                  <span style="font-size:11px; color:#64748b;">${dateStr}</span>
+                  ${!n.read ? `<span style="font-size:10px; color:#ff1e44; font-weight:900;">● NEW</span>` : ''}
+                </div>
+                <h4 style="margin:2px 0 6px; font-size:16px; color:#ffffff; font-weight:800; font-family:var(--display); letter-spacing:0.5px;">
+                  ${n.title}
+                </h4>
+                <p style="margin:0; font-size:13px; color:#cbd5e1; line-height:1.5;">
+                  ${n.message}
+                </p>
+                ${inviteActionsHtml}
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                ${!n.read ? `
+                  <button type="button" class="btn-crimson-outline" style="font-size:11px; padding:6px 12px;" onclick="markArenaNotifRead('${n.id}')">
+                    Mark Read
+                  </button>
+                ` : `
+                  <span style="font-size:11px; color:#64748b;">✓ Read</span>
+                `}
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      window.respondArenaInvite = async function(inviteId, accept, btnEl) {
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.textContent = accept ? "Accepting..." : "Declining...";
+        }
+        try {
+          const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+          if (window.LeagueDB && typeof window.LeagueDB.respondTournamentTeamInvite === "function") {
+            const res = await window.LeagueDB.respondTournamentTeamInvite(inviteId, accept, player);
+            if (res && !res.success && res.error) {
+              alert("Error: " + res.error);
+            } else {
+              alert(accept ? "✓ Team invite accepted! You have joined the tournament squad." : "Invite declined.");
+            }
+          }
+        } catch (e) {
+          console.error("respondArenaInvite error:", e);
+        }
+        renderProfilePage();
+      };
+
+      window.markArenaNotifRead = async function(notifId) {
+        if (window.LeagueDB && typeof window.LeagueDB.markNotificationRead === "function") {
+          await window.LeagueDB.markNotificationRead(notifId);
+        }
+        renderProfilePage();
+      };
+
+      window.clearArenaNotifications = async function() {
+        const player = window.LadderDB ? window.LadderDB.getCurrentPlayer() : null;
+        if (player && window.LeagueDB && typeof window.LeagueDB.markAllNotificationsRead === "function") {
+          await window.LeagueDB.markAllNotificationsRead(player);
+        }
+        renderProfilePage();
+      };
+
+      function renderMatchHistory() {
+        const container = document.getElementById("match-history-list");
+        if (!container) return;
+
+        let filtered = currentMatchesList;
+        if (activeFilter === "victory") {
+          filtered = currentMatchesList.filter(m => m.outcome === "victory");
+        } else if (activeFilter === "defeat") {
+          filtered = currentMatchesList.filter(m => m.outcome === "defeat");
+        } else if (activeFilter === "in_progress") {
+          filtered = currentMatchesList.filter(m => m.status === "in_progress" || m.status === "disputed");
+        }
+
+        if (filtered.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:50px 20px; color:#64748b; background:#080a0f; border-radius:4px; border:1px dashed #1c2638;">
+              <div style="font-size:36px; margin-bottom:8px;">⚔</div>
+              <div style="font-size:14px; font-weight:800; color:#fff; text-transform:uppercase; margin-bottom:4px;">No Matches in this View</div>
+              <div style="font-size:12px; margin-bottom:16px;">Ready to battle? Hop into Match Finder to challenge active arena teams.</div>
+              <a href="/match-finder/" class="btn-crimson" style="padding:8px 16px; font-size:11px; text-decoration:none;">
+                <span>🎯</span> <span>Find Open Challenge ↗</span>
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = filtered.map(m => {
+          const isVictory = m.outcome === "victory";
+          const isDefeat = m.outcome === "defeat";
+          const isLive = m.status === "in_progress";
+          const isDisputed = m.status === "disputed";
+
+          let outcomeClass = "outcome-pill-win";
+          let outcomeText = "✓ VICTORY";
+          let itemClass = "outcome-victory";
+
+          if (isDisputed) {
+            outcomeClass = "outcome-pill-dispute";
+            outcomeText = "⚠️ DISPUTED";
+            itemClass = "outcome-disputed";
+          } else if (isLive) {
+            outcomeClass = "outcome-pill-live";
+            outcomeText = "⚔ IN PROGRESS";
+            itemClass = "outcome-in_progress";
+          } else if (isDefeat) {
+            outcomeClass = "outcome-pill-loss";
+            outcomeText = "✕ DEFEAT";
+            itemClass = "outcome-defeat";
+          }
+
+          return `
+            <div class="match-item-card ${itemClass}">
+              <div style="flex:1; min-width:260px;">
+                <div class="match-card-meta">
+                  <strong style="color:#ffffff;">MATCH #FR-${m.id}</strong>
+                  <span>•</span>
+                  <span>${m.ladder_name || '4v4 CDL Variant'}</span>
+                  <span>•</span>
+                  <span>${m.date || 'Recent'}</span>
+                </div>
+
+                <div class="match-card-vs-row">
+                  <div class="match-team-block team-clickable" onclick="openTeamRosterModal('${m.opponent_name || m.opponent_tag}')" title="Click to view opponent squad roster &amp; player stats">
+                    <img src="${m.opponent_avatar || 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=80'}" class="match-team-avatar" />
+                    <div>
+                      <div style="font-size:11px; color:#94a3b8; text-transform:uppercase;">VS Opponent • <span style="color:#ff1e44; text-decoration:underline;">Roster &raquo;</span></div>
+                      <strong style="color:#ffffff; font-size:14px;" class="team-link-hover">[${m.opponent_tag || 'OPP'}] ${m.opponent_name || 'Opponent Squad'}</strong>
+                    </div>
+                  </div>
+
+                  <div class="match-score-badge">
+                    ${m.score_display || `${m.my_score || 0} – ${m.opp_score || 0}`}
+                  </div>
+
+                  <span class="match-outcome-pill ${outcomeClass}">
+                    ${outcomeText}
+                  </span>
+                </div>
+
+                <div class="match-maps-text">
+                  <span style="color:#64748b;">Rotation:</span> ${m.maps || 'Standard Sanctioned CDL Map Set'}
+                </div>
+              </div>
+
+              <div>
+                <a href="/match/?id=${m.id}" class="btn-crimson" style="padding:10px 18px; font-size:11px; text-decoration:none; white-space:nowrap;">
+                  <span>👁</span> <span>View Match Room ↗</span>
+                </a>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function filterMatchHistory(filterType, btnEl) {
+        activeFilter = filterType;
+        document.querySelectorAll(".match-filter-btn").forEach(b => b.classList.remove("active"));
+        if (btnEl) btnEl.classList.add("active");
+        renderMatchHistory();
+      }
+
+      // Switch Authentication Sub-Panels (Sign In vs Register)
+      function switchAuthTab(tab) {
+        document.getElementById("auth-panel-signin").style.display = tab === "signin" ? "block" : "none";
+        document.getElementById("auth-panel-register").style.display = tab === "register" ? "block" : "none";
+
+        document.getElementById("tab-auth-signin").classList.toggle("active", tab === "signin");
+        document.getElementById("tab-auth-register").classList.toggle("active", tab === "register");
+      }
+
+      // Handle Discord OAuth Login on Arena Profile
+      async function handleDiscordOAuthLogin() {
+        const btn = document.getElementById("btn-arena-discord-auth");
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span>Connecting to Discord...</span> <span>⏳</span>`;
+        }
+        sessionStorage.setItem("frontline_discord_oauth_pending", "true");
+        try {
+          const redirectUrl = window.location.origin + window.location.pathname;
+          if (window.LeagueDB && typeof window.LeagueDB.signInWithDiscord === "function") {
+            const res = await window.LeagueDB.signInWithDiscord(redirectUrl);
+            if (res && res.url) {
+              window.location.href = res.url;
+              return;
+            }
+            if (!res || !res.success) {
+              window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
+            }
+          } else {
+            window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(redirectUrl);
+          }
+        } catch (err) {
+          window.location.href = "https://sllilxkbmxheclhgstcq.supabase.co/auth/v1/authorize?provider=discord&redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
+        }
+      }
+
+      // Custom Sign In Form Submission
+      async function handleFormSignIn(e) {
+        e.preventDefault();
+        const idInput = document.getElementById("signin-identifier").value;
+        const pwdInput = document.getElementById("signin-password").value;
+
+        if (!window.LadderDB) return;
+        const res = await window.LadderDB.loginArenaPlayer(idInput, pwdInput);
+        if (res.success) {
+          const cur = window.LadderDB.getCurrentPlayer ? window.LadderDB.getCurrentPlayer() : null;
+          const cleanEmail = (cur?.email || "").toLowerCase().trim();
+          let isStaffAccount = cur?.is_staff || cur?.tag === "COMM" || (cleanEmail === "todd061496@gmail.com" || cleanEmail === "admin@frontlineleague.com");
+          if (!isStaffAccount && window.LeagueDB && typeof window.LeagueDB.isAccountAdminAsync === "function") {
+            try {
+              isStaffAccount = await window.LeagueDB.isAccountAdminAsync(cur);
+            } catch (err) {}
+          }
+          if (isStaffAccount) {
+            sessionStorage.setItem("frontline_admin_session", "authorized");
+            sessionStorage.setItem("frontline_admin_email", cleanEmail);
+          }
+          renderProfilePage();
+        } else {
+          alert("Sign in failed: " + (res.error || "Unknown error"));
+        }
+      }
+
+      // Custom Registration Form Submission
+      async function handleFormRegister(e) {
+        e.preventDefault();
+        const email = document.getElementById("reg-email")?.value.trim() || "";
+        const password = document.getElementById("reg-password")?.value || "";
+        const gamertag = document.getElementById("reg-gamertag")?.value.trim() || "";
+        const activision = document.getElementById("reg-activision")?.value.trim() || "";
+        const role = document.getElementById("reg-role")?.value || "Flex";
+        const clanTag = document.getElementById("reg-clantag")?.value.trim() || "";
+
+        if (!email) {
+          alert("Email address is required.");
+          return;
+        }
+        if (!password || password.length < 6) {
+          alert("Password must be at least 6 characters long.");
+          return;
+        }
+        if (!gamertag) {
+          alert("Please choose a username for the website.");
+          return;
+        }
+        if (!activision) {
+          alert("Activision ID is required (e.g. Username#1234567).");
+          return;
+        }
+
+        if (!window.LadderDB) return;
+        const submitBtn = e.target.querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span>⏳</span> <span>Creating Account...</span>`;
+        }
+
+        try {
+          const res = await window.LadderDB.registerArenaPlayer({
+            email,
+            password,
+            gamertag,
+            activision_id: activision,
+            clan_tag: clanTag,
+            role
+          });
+
+          if (res.success) {
+            renderProfilePage();
+          } else {
+            alert("Registration failed: " + (res.error || "Unknown error"));
+          }
+        } catch (err) {
+          alert("Registration error: " + (err.message || "Failed to register"));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>🛡</span> <span>Register &amp; Create Profile</span>`;
+          }
+        }
+      }
+
+      // Sign Out Handler
+      async function handleArenaSignOut() {
+        if (confirm("Sign out of Frontline Arena?")) {
+          try {
+            localStorage.removeItem("frontline_arena_user");
+            localStorage.removeItem("frontline_arena_auth_user");
+            localStorage.removeItem("frontline_admin_session");
+            localStorage.removeItem("frontline_admin_email");
+            sessionStorage.removeItem("frontline_admin_session");
+            sessionStorage.removeItem("frontline_admin_email");
+            sessionStorage.removeItem("frontline_discord_oauth_pending");
+
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+                localStorage.removeItem(k);
+              }
+            });
+
+            if (window.LadderDB && typeof window.LadderDB.logoutArenaPlayer === "function") {
+              window.LadderDB.logoutArenaPlayer();
+            }
+            // League session remains intact
+            if (window.supabaseClient && window.supabaseClient.auth) {
+              await window.supabaseClient.auth.signOut().catch(() => {});
+            }
+          } catch(e) {}
+          renderProfilePage();
+        }
+      }
+
+      function handleArenaAvatarFileSelect(event) {
+        const file = event.target?.files?.[0];
+        if (!file) return;
+
+        if (file.size > 8 * 1024 * 1024) {
+          alert("Selected image is too large. Please choose an image under 8 MB.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result;
+          const preview = document.getElementById("edit-avatar-preview");
+          const input = document.getElementById("edit-avatar-url");
+          const status = document.getElementById("edit-avatar-file-status");
+
+          if (preview) preview.src = dataUrl;
+          if (input) input.value = dataUrl;
+          if (status) {
+            status.textContent = "✓ Image selected: " + file.name;
+            status.style.color = "#4ade80";
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function setArenaAvatarPreset(presetUrl) {
+        const preview = document.getElementById("edit-avatar-preview");
+        const input = document.getElementById("edit-avatar-url");
+        const status = document.getElementById("edit-avatar-file-status");
+        if (preview) preview.src = presetUrl;
+        if (input) input.value = presetUrl;
+        if (status) {
+          status.textContent = "✓ Selected official preset";
+          status.style.color = "#4ade80";
+        }
+      }
+
+      function handleArenaAvatarUrlInput(val) {
+        const preview = document.getElementById("edit-avatar-preview");
+        const status = document.getElementById("edit-avatar-file-status");
+        if (preview && val.trim()) {
+          preview.src = val.trim();
+        }
+        if (status) {
+          status.textContent = val.trim() ? "Custom image URL specified" : "Upload from your device (no URL needed)";
+          status.style.color = "#64748b";
+        }
+      }
+
+      // Edit Profile Modal Handlers
+      function openEditProfileModal() {
+        const player = window.LadderDB.getCurrentPlayer();
+        if (!player) return;
+
+        const gamertagInput = document.getElementById("edit-gamertag");
+        if (gamertagInput) gamertagInput.value = player.gamertag || player.username || "";
+
+        document.getElementById("edit-clan-tag").value = player.tag || "";
+        document.getElementById("edit-activision-id").value = player.activision_id || "";
+        document.getElementById("edit-discord-tag").value = player.discord || "";
+        
+        const avatarUrl = player.avatar_url || "/images/leaguelogo_1.png";
+        const avatarInput = document.getElementById("edit-avatar-url");
+        if (avatarInput) avatarInput.value = avatarUrl;
+        const avatarPreview = document.getElementById("edit-avatar-preview");
+        if (avatarPreview) avatarPreview.src = avatarUrl;
+        const fileStatus = document.getElementById("edit-avatar-file-status");
+        if (fileStatus) {
+          fileStatus.textContent = "Upload from your device (no URL needed)";
+          fileStatus.style.color = "#64748b";
+        }
+
+        const modal = document.getElementById("modal-edit-profile");
+        if (modal) modal.classList.add("active");
+      }
+
+      function closeEditProfileModal() {
+        const modal = document.getElementById("modal-edit-profile");
+        if (modal) modal.classList.remove("active");
+      }
+
+      async function handleSaveProfileEdit(e) {
+        e.preventDefault();
+        const gamertag = document.getElementById("edit-gamertag")?.value.trim();
+        const tag = document.getElementById("edit-clan-tag").value.trim().toUpperCase().slice(0, 5);
+        const activision_id = document.getElementById("edit-activision-id").value.trim();
+        const discord = document.getElementById("edit-discord-tag").value.trim();
+        const avatar_url = document.getElementById("edit-avatar-url")?.value.trim() || document.getElementById("edit-avatar-preview")?.src || "/images/leaguelogo_1.png";
+
+        if (!gamertag) {
+          alert("Username / Gamertag is required.");
+          return;
+        }
+
+        const submitBtn = e.target.querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Saving...";
+        }
+
+        try {
+          const res = await window.LadderDB.updatePlayerProfile({
+            gamertag,
+            username: gamertag,
+            tag: tag || "TAG",
+            activision_id,
+            discord,
+            avatar_url: avatar_url || undefined
+          });
+
+          if (res && !res.success) {
+            alert(res.error || "Failed to update profile.");
+            return;
+          }
+
+          closeEditProfileModal();
+          renderProfilePage();
+        } catch (err) {
+          alert("Error saving profile: " + (err.message || err));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Save Profile";
+          }
+        }
+      }
+
+      // Open Team Roster & Player Stats Modal
+      async function openTeamRosterModal(teamIdOrName) {
+        if (!window.LadderDB) return;
+        const modal = document.getElementById("modal-team-roster");
+        const headerEl = document.getElementById("roster-modal-team-header");
+        const listEl = document.getElementById("roster-modal-players-list");
+        const formatBadge = document.getElementById("roster-modal-format-badge");
+        const actionsEl = document.getElementById("roster-modal-actions");
+        if (!modal || !headerEl || !listEl) return;
+
+        // Find team
+        let team = null;
+        if (window.LadderDB.getTeamById) {
+          team = window.LadderDB.getTeamById(teamIdOrName);
+        }
+        if (!team) {
+          const player = window.LadderDB.getCurrentPlayer ? window.LadderDB.getCurrentPlayer() : null;
+          const userTeams = window.LadderDB.getUserTeams ? window.LadderDB.getUserTeams(player) : [];
+          for (const item of userTeams) {
+            if (item.team && (String(item.team.id) === String(teamIdOrName) || (item.team.name && item.team.name.toLowerCase() === String(teamIdOrName).toLowerCase()))) {
+              team = item.team;
+              break;
+            }
+          }
+        }
+        if (!team) return;
+
+        const roster = window.LadderDB.getTeamRoster ? window.LadderDB.getTeamRoster(team) : [];
+        const teamTier = (window.LadderDB.getDivisionTier ? window.LadderDB.getDivisionTier(team.elo) : (window.LadderDB.getTier ? window.LadderDB.getTier(team.elo) : null)) || { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" };
+        const winRate = (team.wins + team.losses) > 0 ? Math.round((team.wins / (team.wins + team.losses)) * 100) : 0;
+        const streakStr = team.streak > 0 ? `+${team.streak}W` : team.streak < 0 ? `${team.streak}L` : '-';
+
+        // Render Team Header
+        headerEl.innerHTML = `
+          <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+            <img src="${team.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&auto=format&fit=crop&q=80'}" style="width:68px; height:68px; border-radius:8px; border:2px solid #ff1e44; object-fit:cover;" alt="${team.name}" />
+            <div style="flex:1; min-width:200px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                <h2 style="font-family:var(--display); font-size:24px; text-transform:uppercase; color:#fff; margin:0;">
+                  [${team.tag}] ${team.name}
+                </h2>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px;">
+                <span class="val-badge ${teamTier.badgeClass}" style="padding:2px 8px; font-size:10px;">
+                  ${teamTier.icon} ${teamTier.name}
+                </span>
+                <span style="color:#ff1e44; font-weight:900;">${team.elo} ELO</span>
+                <span style="color:#64748b;">•</span>
+                <span style="color:#cbd5e1;">Record: <strong style="color:#fff;">${team.wins}W - ${team.losses}L</strong> (${winRate}%)</span>
+                <span style="color:#64748b;">•</span>
+                <span style="color:${team.streak > 0 ? '#22c55e' : '#94a3b8'}; font-weight:700;">Streak: ${streakStr}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (formatBadge) {
+          formatBadge.textContent = `${roster.length} COMBATANTS (${(team.ladder_type || 'ladder').toUpperCase().replace("_", " ")})`;
+        }
+
+        // Render Players Cards
+        if (!roster || roster.length === 0) {
+          listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">No registered combatants found for this team roster.</div>`;
+        } else {
+          listEl.innerHTML = roster.map((player, idx) => {
+            const pTier = player.tier || (window.LadderDB.getDivisionTier ? window.LadderDB.getDivisionTier(player.elo) : { name: "Specialist", badgeClass: "tier-specialist", icon: "🎯" });
+            const pWinRate = player.win_rate !== undefined ? player.win_rate : ((player.wins + player.losses) > 0 ? Math.round((player.wins / (player.wins + player.losses)) * 100) : 0);
+            const isCaptain = idx === 0 || (player.role && player.role.toLowerCase().includes("captain"));
+
+            return `
+              <div class="roster-player-card">
+                <!-- Left: Avatar & Identity -->
+                <div style="display:flex; align-items:center; gap:14px; min-width:200px;">
+                  <a href="/arena/profile/?player=${encodeURIComponent(player.gamertag)}" style="position:relative; display:inline-block; text-decoration:none;" title="View ${player.gamertag}'s Profile">
+                    <img src="${player.avatar_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&auto=format&fit=crop&q=80'}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid ${isCaptain ? '#ff1e44' : '#233249'}; transition:border-color 0.2s;" alt="${player.gamertag}" class="team-avatar-sm" />
+                    <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#22c55e; border:2px solid #090d14; border-radius:50%;" title="Verified Combatant"></span>
+                  </a>
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <a href="/arena/profile/?player=${encodeURIComponent(player.gamertag)}" class="team-link-hover" style="color:#ffffff; font-size:15px; font-family:var(--display); letter-spacing:0.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="View ${player.gamertag}'s Profile">
+                        <strong style="color:#ffffff;">${player.gamertag}</strong>
+                        <span style="font-size:10px; color:#ff1e44; opacity:0.85;">↗</span>
+                      </a>
+                      <span style="font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:3px; background:${isCaptain ? '#3b0d16' : '#141d2e'}; color:${isCaptain ? '#ff4d6d' : '#7dd3fc'}; border:1px solid ${isCaptain ? '#ff1e44' : '#223654'};">
+                        ${player.role || (isCaptain ? 'Captain' : 'Starter')}
+                      </span>
+                    </div>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:3px; display:flex; align-items:center; gap:6px;">
+                      <span>🆔 ${player.activision_id || (player.gamertag + '#1234567')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Rank, Individual Elo, W/L Ratio -->
+                <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+                  
+                  <!-- Rank / Tier -->
+                  <div style="text-align:right;">
+                    <div style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; margin-bottom:3px;">RANK &amp; TIER</div>
+                    <span class="tier-badge ${pTier.badgeClass}" style="font-size:10px; padding:3px 8px;">
+                      ${pTier.icon} ${pTier.name}
+                    </span>
+                  </div>
+
+                  <!-- Individual Elo -->
+                  <div style="text-align:center; min-width:70px; background:#04060a; padding:6px 12px; border-radius:4px; border:1px solid #1c2638;">
+                    <div style="font-size:9px; color:#64748b; font-weight:800; text-transform:uppercase;">INDIVIDUAL ELO</div>
+                    <div style="font-size:15px; font-weight:900; color:#ff1e44; font-family:var(--display);">${player.elo}</div>
+                  </div>
+
+                  <!-- Individual W/L Ratio -->
+                  <div style="min-width:115px; text-align:right;">
+                    <div style="font-size:10px; color:#64748b; font-weight:800; text-transform:uppercase; margin-bottom:2px;">W/L RECORD</div>
+                    <div style="font-size:13px; font-weight:800; color:#ffffff;">
+                      ${player.wins}W - ${player.losses}L
+                      <span style="font-size:11px; color:#22c55e; margin-left:4px;">(${pWinRate}%)</span>
+                    </div>
+                    <!-- Mini progress bar -->
+                    <div style="width:100%; height:4px; background:#1c2638; border-radius:2px; margin-top:4px; overflow:hidden;">
+                      <div style="width:${pWinRate}%; height:100%; background:linear-gradient(90deg, #ff1e44, #22c55e); border-radius:2px;"></div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            `;
+          }).join("");
+        }
+
+        // Render Action Buttons
+        if (actionsEl) {
+          const curPlayer = window.LadderDB && typeof window.LadderDB.getCurrentPlayer === 'function' ? window.LadderDB.getCurrentPlayer() : null;
+          const isCaptain = curPlayer && curPlayer.gamertag && team.captain_name && curPlayer.gamertag.toLowerCase() === team.captain_name.toLowerCase();
+          const canInviteMore = isCaptain && roster.length < 8;
+
+          let inviteBtnHtml = '';
+          if (canInviteMore) {
+            inviteBtnHtml = `
+              <button type="button" class="btn-crimson" onclick="promptInviteTeammateToLadderTeam('${team.id}')" style="font-size:12px; padding:8px 16px;">
+                <span>➕</span> <span>Invite Player (${roster.length}/8)</span>
+              </button>
+            `;
+          }
+
+          actionsEl.innerHTML = `
+            ${inviteBtnHtml}
+            <a href="/ladders/?ladder=${team.ladder_type || '4v4_variant'}" class="btn-crimson" style="font-size:12px; padding:8px 16px; text-decoration:none;">
+              <span>⚔</span> <span>View On Ladder</span>
+            </a>
+            <button type="button" class="btn-crimson-outline" onclick="closeTeamRosterModal()" style="font-size:12px; padding:8px 16px;">
+              Close
+            </button>
+          `;
+        }
+
+        modal.classList.add("active");
+      }
+
+      async function promptInviteTeammateToLadderTeam(teamId) {
+        if (!window.LadderDB || typeof window.LadderDB.inviteLadderTeammate !== 'function') {
+          alert("Invite feature is currently unavailable.");
+          return;
+        }
+
+        const gamertag = prompt("Enter the exact player Gamertag or username to invite to this squad (CheckMate Gaming style notification with Accept/Decline will be sent):");
+        if (!gamertag || !gamertag.trim()) return;
+
+        const curPlayer = window.LadderDB.getCurrentPlayer ? window.LadderDB.getCurrentPlayer() : null;
+        try {
+          const res = await window.LadderDB.inviteLadderTeammate(teamId, gamertag.trim(), curPlayer);
+          if (res && res.success) {
+            alert(`✓ ${res.message || "Team invite dispatched successfully!"}`);
+          } else {
+            alert(`Could not send invite: ${res && res.error ? res.error : "Unknown error"}`);
+          }
+        } catch (err) {
+          alert(`Error sending team invite: ${err.message}`);
+        }
+      }
+
+      function closeTeamRosterModal() {
+        const modal = document.getElementById("modal-team-roster");
+        if (modal) modal.classList.remove("active");
+      }
+
+      // Reinvite tournament squad member
+      window.handleReinviteTournamentTeammate = async function(regId, targetGamertag, btnEl) {
+        if (!regId || !targetGamertag) return;
+        const origText = btnEl ? btnEl.innerHTML : "";
+        if (btnEl) {
+          btnEl.disabled = true;
+          btnEl.innerHTML = `<span>⏳</span> <span>Sending...</span>`;
+        }
+        try {
+          if (!window.LeagueDB || typeof window.LeagueDB.reinviteTournamentPlayer !== "function") {
+            throw new Error("Reinvite service unavailable.");
+          }
+          const currentUser = (window.Auth && window.Auth.currentUser) || null;
+          const res = await window.LeagueDB.reinviteTournamentPlayer(regId, targetGamertag, currentUser);
+          if (res && res.success) {
+            if (btnEl) {
+              btnEl.innerHTML = `<span>✓</span> <span>Invite Sent!</span>`;
+              btnEl.style.background = "rgba(34,197,94,0.3)";
+              btnEl.style.borderColor = "#22c55e";
+              btnEl.style.color = "#86efac";
+              setTimeout(() => {
+                if (btnEl) {
+                  btnEl.innerHTML = origText;
+                  btnEl.disabled = false;
+                  btnEl.style.background = "rgba(234,179,8,0.25)";
+                  btnEl.style.borderColor = "#fbbf24";
+                  btnEl.style.color = "#fef08a";
+                }
+              }, 4000);
+            }
+          } else {
+            alert(res?.error || "Could not resend invite.");
+            if (btnEl) {
+              btnEl.disabled = false;
+              btnEl.innerHTML = origText;
+            }
+          }
+        } catch (err) {
+          console.error("handleReinviteTournamentTeammate failed:", err);
+          alert(err.message || "Failed to resend invite.");
+          if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origText;
+          }
+        }
+      };
+
+      // Close modal on Escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeEditProfileModal();
+          closeTeamRosterModal();
+        }
+      });
+    </script>
+  </body>
+</html>
+
