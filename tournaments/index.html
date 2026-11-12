@@ -10,7 +10,7 @@
     <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/supabase.js?v=switch-v2"></script>
-    <script src="/tournament-switch-wheel.js?v=20261103"></script>
+    <script src="/tournament-switch-wheel.js?v=registration-fix-20261112" defer></script>
     <script src="/bullet-sparks.js" defer></script>
     <style>
       /* Page-specific styling for Tournaments Hub */
@@ -2267,42 +2267,9 @@
         document.getElementById('reg-modal-title').textContent = `Enlist: ${t.title || 'Tournament'}`;
 
         const warningEl = document.getElementById('reg-modal-duplicate-warning');
-        // Check entry fee if required
-        const currentTourneyObj = (currentTournaments || []).find(t => String(t.id) === String(tourneyId));
-        const isRegTourneyPaid = !!(currentTourneyObj && (currentTourneyObj.has_entry_fee || (currentTourneyObj.entry_fee && !String(currentTourneyObj.entry_fee).toLowerCase().includes('free'))));
-        let paymentData = {};
-
-        if (isRegTourneyPaid) {
-          const pMethod = document.getElementById('reg-payment-method')?.value || 'Cash App';
-          const pSender = (document.getElementById('reg-payment-sender')?.value || '').trim();
-          const pNote = (document.getElementById('reg-payment-note')?.value || '').trim();
-          const pConfirmed = !!document.getElementById('reg-payment-confirm-chk')?.checked;
-
-          if (!pSender) {
-            showToast('Please enter your Cash App $Cashtag or PayPal sender name used for the entry fee.', true);
-            const sendInput = document.getElementById('reg-payment-sender');
-            if (sendInput) sendInput.focus();
-            return;
-          }
-
-          if (!pConfirmed) {
-            showToast('Please check the confirmation box acknowledging the tournament entry fee directive.', true);
-            return;
-          }
-
-          paymentData = {
-            has_entry_fee: true,
-            entry_fee: currentTourneyObj.entry_fee || '$25 / Team',
-            payment_status: 'pending_verification',
-            payment_method: pMethod,
-            payment_sender_handle: pSender,
-            payment_note: pNote,
-            payment_amount: currentTourneyObj.entry_fee_amount || currentTourneyObj.entry_fee || '$25 / Team'
-          };
-        }
         const submitBtn = document.getElementById('btn-submit-reg');
         if (warningEl) warningEl.style.display = 'none';
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; submitBtn.textContent = 'Confirm Registration ↗'; }
 
         // Setup format squad size
         maxSquadSize = getFormatSquadSize(t.format);
@@ -2491,27 +2458,35 @@
           };
         }
 
+        // Clear payment details from any previously opened tournament.
+        for (const fieldId of ['reg-payment-sender', 'reg-payment-note']) {
+          const field = document.getElementById(fieldId);
+          if (field) field.value = '';
+        }
+        const paymentConfirmed = document.getElementById('reg-payment-confirm-chk');
+        if (paymentConfirmed) paymentConfirmed.checked = false;
+
         // Setup Payment Gateway Directives
         const regPaySection = document.getElementById('reg-payment-section');
-        const isTourneyPaid = !!(targetTourney && (targetTourney.has_entry_fee || (targetTourney.entry_fee && !String(targetTourney.entry_fee).toLowerCase().includes('free'))));
+        const isTourneyPaid = !!(t && (t.has_entry_fee || (t.entry_fee && !String(t.entry_fee).toLowerCase().includes('free'))));
         if (regPaySection) {
           if (isTourneyPaid) {
             regPaySection.style.display = 'block';
-            const feeAmt = targetTourney.entry_fee_amount || targetTourney.entry_fee || '$25 / Team';
+            const feeAmt = t.entry_fee_amount || t.entry_fee || '$25 / Team';
             const badge = document.getElementById('reg-payment-fee-badge');
             if (badge) badge.textContent = feeAmt;
 
             const inst = document.getElementById('reg-payment-instructions-text');
-            if (inst) inst.textContent = targetTourney.payment_instructions || ('Please pay the ' + feeAmt + ' entry fee using Cash App or PayPal. Include your squad name in the note!');
+            if (inst) inst.textContent = t.payment_instructions || ('Please pay the ' + feeAmt + ' entry fee using Cash App or PayPal. Include your squad name in the note!');
 
-            const cashTag = targetTourney.cashapp_tag || '$FrontlineLeague';
+            const cashTag = t.cashapp_tag || '$FrontlineLeague';
             const cleanCash = String(cashTag).replace(/^[$@]/, '').trim();
             const cashDisp = document.getElementById('reg-cashapp-display');
             const cashLnk = document.getElementById('reg-cashapp-link');
             if (cashDisp) cashDisp.textContent = "$" + cleanCash;
             if (cashLnk) cashLnk.href = "https://cash.app/$" + cleanCash;
 
-            const payHandle = targetTourney.paypal_handle || 'frontlinecdl';
+            const payHandle = t.paypal_handle || 'frontlinecdl';
             const cleanPay = String(payHandle).replace(/^https?:\/\/(www\.)?paypal\.me\//i, '').replace(/^@/, '').trim();
             const payDisp = document.getElementById('reg-paypal-display');
             const payLnk = document.getElementById('reg-paypal-link');
@@ -2597,6 +2572,43 @@
           }
         }
 
+        // Validate payment details only when the completed form is submitted.
+        const currentTourneyObj = (currentTournaments || []).find(t => String(t.id) === String(tourneyId));
+        if (!currentTourneyObj) {
+          showToast('Tournament not found. Refresh the page and try again.', true);
+          return;
+        }
+        const isRegTourneyPaid = !!(currentTourneyObj && (currentTourneyObj.has_entry_fee || (currentTourneyObj.entry_fee && !String(currentTourneyObj.entry_fee).toLowerCase().includes('free'))));
+        let paymentData = {};
+
+        if (isRegTourneyPaid) {
+          const pMethod = document.getElementById('reg-payment-method')?.value || 'Cash App';
+          const pSender = (document.getElementById('reg-payment-sender')?.value || '').trim();
+          const pNote = (document.getElementById('reg-payment-note')?.value || '').trim();
+          const pConfirmed = !!document.getElementById('reg-payment-confirm-chk')?.checked;
+
+          if (!pSender) {
+            showToast('Please enter your Cash App $Cashtag or PayPal sender name used for the entry fee.', true);
+            const sendInput = document.getElementById('reg-payment-sender');
+            if (sendInput) sendInput.focus();
+            return;
+          }
+
+          if (!pConfirmed) {
+            showToast('Please check the confirmation box acknowledging the tournament entry fee directive.', true);
+            return;
+          }
+
+          paymentData = {
+            has_entry_fee: true,
+            entry_fee: currentTourneyObj.entry_fee || '$25 / Team',
+            payment_status: 'pending_verification',
+            payment_method: pMethod,
+            payment_sender_handle: pSender,
+            payment_note: pNote,
+            payment_amount: currentTourneyObj.entry_fee_amount || currentTourneyObj.entry_fee || '$25 / Team'
+          };
+        }
         const submitBtn = document.getElementById('btn-submit-reg');
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -2615,6 +2627,10 @@
             registered_at: new Date().toISOString()
           };
 
+          if (!window.LeagueDB || typeof window.LeagueDB.registerSquadForTournament !== 'function') {
+            showToast('Registration service unavailable. Refresh the page and try again.', true);
+            return;
+          }
           if (window.LeagueDB && typeof window.LeagueDB.registerSquadForTournament === 'function') {
             const regRes = await window.LeagueDB.registerSquadForTournament(tourneyId, squadData);
             if (!regRes || !regRes.success) {

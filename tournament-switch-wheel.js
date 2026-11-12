@@ -441,6 +441,17 @@
     }
 
     initModalDOM() {
+      // This shared script can be included in <head>, before a body exists.
+      if (!document.body) {
+        if (!this._modalInitQueued) {
+          this._modalInitQueued = true;
+          document.addEventListener('DOMContentLoaded', () => {
+            this._modalInitQueued = false;
+            this.initModalDOM();
+          }, { once: true });
+        }
+        return;
+      }
       if (document.getElementById('modal-duo-switch-wheel-wrap')) return;
 
       const wrap = document.createElement('div');
