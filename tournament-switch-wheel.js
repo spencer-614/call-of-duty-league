@@ -670,8 +670,8 @@
             <!-- Column 3: Right - Paid Action Alerts & Payment Directives -->
             <div id="dsw-alerts-payment-panel" style="width:340px; flex:0 0 340px; background:#080b06; border-left:1px solid #1e2614; display:flex; flex-direction:column; min-height:0; overflow-y:auto; padding:14px; gap:12px;">
               <!-- Upper: Live Action Alerts Feed -->
-              <div style="display:flex; flex-direction:column; min-height:160px; max-height:260px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1a2211; padding-bottom:8px; margin-bottom:8px;">
+              <div style="display:flex; flex-direction:column; min-height:160px; max-height:260px; height:240px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1a2211; padding-bottom:8px; margin-bottom:8px; flex:0 0 auto;">
                   <div style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; letter-spacing:0.7px; display:flex; align-items:center; gap:6px;">
                     <span class="live-pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#22c55e; box-shadow:0 0 6px #22c55e;"></span>
                     <span>Live Action Alerts</span>
@@ -679,7 +679,7 @@
                   <span id="dsw-alerts-count-badge" style="font-size:9.5px; font-weight:800; color:#4ade80; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); padding:1px 5px; border-radius:3px;">0 Alerts</span>
                 </div>
 
-                <div id="dsw-action-alerts-feed" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
+                <div id="dsw-action-alerts-feed" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:2px; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#283716 transparent;">
                   <div id="dsw-alerts-empty-state" style="padding:14px; text-align:center; background:#0b0f06; border:1px dashed #1f2a12; border-radius:4px; color:#64748b; font-size:11.5px; line-height:1.4;">
                     Watching for live paid actions... Respins, locks, unlocks, and blowups pop up here in real time.
                   </div>
@@ -813,6 +813,12 @@
 
       if (countBadge) countBadge.textContent = `${teams.length} Squads`;
 
+      const currentTeamsSig = teams.map(t => `${t.id || t.name}_${t.isLocked}_${t.duo1_name || ''}_${t.duo2_name || ''}`).join('|') + '|' + (state.unpaired || []).join(',');
+      if (this._lastTeamsSig === currentTeamsSig && container.children.length > 0) {
+        return;
+      }
+      this._lastTeamsSig = currentTeamsSig;
+
       if (!teams.length) {
         container.innerHTML = `
           <div style="background:#0c1107; border:1px dashed #233113; border-radius:4px; padding:12px; text-align:center; color:#94a3af; font-size:11px; line-height:1.4;">
@@ -860,15 +866,20 @@
           if (t.duo2_id) pairedDuoIds.add(String(t.duo2_id));
         });
 
-        let unpaired = allRegs.filter(r => {
-          const name = (r.team_name || r.name || '').toLowerCase();
-          const id = String(r.id || '');
-          return !pairedDuoNames.has(name) && !pairedDuoIds.has(id);
-        });
+        let unpaired = [];
+        if (allRegs.length) {
+          unpaired = allRegs.filter(r => {
+            const name = (r.team_name || r.name || '').toLowerCase();
+            const id = String(r.id || '');
+            return !pairedDuoNames.has(name) && !pairedDuoIds.has(id);
+          });
 
-        if (Array.isArray(state.unpaired) && state.unpaired.length) {
-          const stateUnpairedSet = new Set(state.unpaired.map(x => typeof x === 'object' ? String(x.id || x.name) : String(x)));
-          unpaired = allRegs.filter(r => stateUnpairedSet.has(String(r.id)) || stateUnpairedSet.has(r.team_name));
+          if (Array.isArray(state.unpaired) && state.unpaired.length) {
+            const stateUnpairedSet = new Set(state.unpaired.map(x => typeof x === 'object' ? String(x.id || x.name || x.team_name) : String(x)));
+            unpaired = allRegs.filter(r => stateUnpairedSet.has(String(r.id)) || stateUnpairedSet.has(r.team_name) || stateUnpairedSet.has(r.name));
+          }
+        } else if (Array.isArray(state.unpaired) && state.unpaired.length) {
+          unpaired = state.unpaired.map(x => (typeof x === 'object' ? x : { name: String(x), team_name: String(x) }));
         }
 
         if (unpairedBadge) unpairedBadge.textContent = unpaired.length;
@@ -897,21 +908,40 @@
       if (badge) badge.textContent = `${alerts.length} Alert${alerts.length === 1 ? '' : 's'}`;
 
       if (!alerts.length) {
-        feed.innerHTML = `
-          <div id="dsw-alerts-empty-state" style="padding:14px; text-align:center; background:#0b0f06; border:1px dashed #1f2a12; border-radius:4px; color:#64748b; font-size:11px; line-height:1.4;">
-            Watching for live paid actions...<br />
-            <span style="color:#fbbf24;">Respins, locks, unlocks, and blowups pop up here in real time.</span>
-          </div>
-        `;
+        if (!feed.querySelector('#dsw-alerts-empty-state')) {
+          feed.innerHTML = `
+            <div id="dsw-alerts-empty-state" style="padding:14px; text-align:center; background:#0b0f06; border:1px dashed #1f2a12; border-radius:4px; color:#64748b; font-size:11px; line-height:1.4;">
+              Watching for live paid actions...<br />
+              <span style="color:#fbbf24;">Respins, locks, unlocks, and blowups pop up here in real time.</span>
+            </div>
+          `;
+        }
+        this._lastAlertsRenderSig = 'empty';
         return;
       }
+
+      // Check if alert items actually changed before modifying DOM
+      const currentSig = alerts.map(a => `${a.id || ''}_${a.type || ''}_${a.amount || ''}_${a.duo || ''}_${a.target || ''}`).join('|');
+      if (this._lastAlertsRenderSig === currentSig && feed.children.length > 0 && !feed.querySelector('#dsw-alerts-empty-state')) {
+        // Update relative timestamps in place without DOM re-render or scroll jump
+        this.updateAlertTimestamps(feed);
+        return;
+      }
+      this._lastAlertsRenderSig = currentSig;
+
+      // Preserve user scroll position inside alerts feed
+      const prevScrollTop = feed.scrollTop;
 
       feed.innerHTML = alerts.map((a, i) => {
         let accentBorder = '#38bdf8';
         let accentBg = 'rgba(56,189,248,0.1)';
         let badgeColor = '#38bdf8';
         let icon = '🎲';
-        let title = a.action || 'Respin';
+        let title = a.action || (
+          a.type === 'lock' ? 'Squad Locked' :
+          a.type === 'unlock' ? 'Squad Unlocked' :
+          a.type === 'nuke' ? 'Blow It Up' : 'Partner Respin'
+        );
 
         if (a.type === 'lock') {
           accentBorder = '#22c55e';
@@ -936,16 +966,19 @@
         else if (timeDiff >= 5) timeStr = `${timeDiff}s ago`;
 
         const isLatest = i === 0;
+        // Only animate freshly triggered alerts; never re-animate on routine re-render to stop blinking
+        const animCss = (a._isNew && isLatest) ? 'animation:dswAlertSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);' : '';
+        a._isNew = false;
 
         return `
-          <div class="dsw-alert-item" style="background:#0c1107; border:1px solid ${accentBorder}55; border-left:3px solid ${accentBorder}; border-radius:4px; padding:7px 9px; animation:dswAlertSlideIn 0.3s ease-out; ${isLatest ? 'box-shadow:0 0 14px ' + accentBorder + '30;' : ''}">
+          <div class="dsw-alert-item" data-alert-time="${a.timestamp || Date.now()}" style="background:#0c1107; border:1px solid ${accentBorder}55; border-left:3px solid ${accentBorder}; border-radius:4px; padding:7px 9px; ${animCss} ${isLatest ? 'box-shadow:0 0 14px ' + accentBorder + '30;' : ''}">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
               <span style="font-size:9.5px; font-weight:800; color:${badgeColor}; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
                 <span>${icon}</span>
                 <span>${esc(title)}</span>
                 ${a.amount ? `<span style="background:${accentBg}; padding:1px 4px; border-radius:2px;">$${a.amount}</span>` : ''}
               </span>
-              <span style="font-size:9px; color:#64748b;">${esc(timeStr)}</span>
+              <span class="dsw-alert-time-label" style="font-size:9px; color:#64748b;">${esc(timeStr)}</span>
             </div>
             <div style="font-size:11px; color:#e2e8f0; font-weight:700;">
               ${esc(a.duo)}
@@ -955,6 +988,26 @@
           </div>
         `;
       }).join('');
+
+      // Restore scroll position so user never experiences scroll stutter or jumping
+      if (prevScrollTop > 0) {
+        feed.scrollTop = prevScrollTop;
+      }
+    }
+
+    updateAlertTimestamps(feed) {
+      if (!feed) return;
+      const items = feed.querySelectorAll('.dsw-alert-item');
+      items.forEach(item => {
+        const ts = Number(item.dataset.alertTime);
+        if (!ts) return;
+        const diff = Math.floor((Date.now() - ts) / 1000);
+        let str = 'Just now';
+        if (diff >= 60) str = `${Math.floor(diff / 60)}m ago`;
+        else if (diff >= 5) str = `${diff}s ago`;
+        const lbl = item.querySelector('.dsw-alert-time-label');
+        if (lbl && lbl.textContent !== str) lbl.textContent = str;
+      });
     }
 
     async updatePaymentDirectives() {
@@ -996,14 +1049,19 @@
     postActionAlert(alertData) {
       if (!alertData) return;
       const alertObj = {
-        id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        id: alertData.id || `alert_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         type: alertData.type || 'reroll',
-        action: alertData.action || alertData.title || 'Paid Action',
+        action: alertData.action || alertData.title || (
+          alertData.type === 'lock' ? 'Squad Locked' :
+          alertData.type === 'unlock' ? 'Squad Unlocked' :
+          alertData.type === 'nuke' ? 'Blow It Up' : 'Partner Respin'
+        ),
         duo: alertData.duo || alertData.duo_name || alertData.requesting_duo_name || 'Competitor Duo',
         target: alertData.target || alertData.target_squad || '',
         amount: alertData.amount || (alertData.type === 'lock' || alertData.type === 'unlock' ? 15 : alertData.type === 'nuke' ? 20 : 10),
         detail: alertData.detail || alertData.message || '',
-        timestamp: alertData.timestamp || Date.now()
+        timestamp: alertData.timestamp || Date.now(),
+        _isNew: true
       };
 
       if (!this.actionAlerts) this.actionAlerts = [];
@@ -1032,6 +1090,7 @@
         nuke: 'Blow It Up'
       };
 
+      let addedCount = 0;
       history.forEach(h => {
         if (!validActions.has(h.action)) return;
         const exists = this.actionAlerts.some(a => a.id === h.id || (a.type === h.action && a.timestamp === Date.parse(h.created_at)));
@@ -1045,10 +1104,15 @@
             target: h.summary?.target_squad || '',
             amount: h.amount || (h.action === 'nuke' ? 20 : h.action === 'lock' || h.action === 'unlock' ? 15 : 10),
             detail: h.summary?.partner ? `Paired with ${h.summary.partner}` : (h.note || ''),
-            timestamp: Date.parse(h.created_at) || Date.now()
+            timestamp: Date.parse(h.created_at) || Date.now(),
+            _isNew: false
           });
+          addedCount++;
         }
       });
+
+      // If zero new alerts were ingested, do not re-render or disturb user view
+      if (addedCount === 0) return;
 
       this.actionAlerts.sort((a, b) => b.timestamp - a.timestamp);
       if (this.actionAlerts.length > 25) this.actionAlerts.length = 25;

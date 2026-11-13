@@ -18,6 +18,7 @@
     if(!data)return;
     offset=Date.parse(data.server_now)-Date.now();
     active=data;
+    const isNewRev=(data.revision!==lastRevision);
     if(window.DuoSwitchEngine){
       window.DuoSwitchEngine.cachedRegs=data.state.duos;
       window.DuoSwitchEngine.currentSwitchState={
@@ -27,15 +28,17 @@
         reroll_base_fee:currentPrices().reroll,lock_fee:currentPrices().lock,unlock_fee:currentPrices().unlock,nuke_fee:currentPrices().nuke,blowup_count:data.state.blowup_count,
         status:data.state.phase==='finalized'?'locked':'open'
       };
-      if(typeof window.DuoSwitchEngine.renderModalPanels==='function'){
-        window.DuoSwitchEngine.renderModalPanels();
-      }
-      if(typeof window.DuoSwitchEngine.syncHistoryAlerts==='function'&&Array.isArray(data.history)){
-        window.DuoSwitchEngine.syncHistoryAlerts(data.history);
+      if(isNewRev){
+        if(typeof window.DuoSwitchEngine.renderModalPanels==='function'){
+          window.DuoSwitchEngine.renderModalPanels();
+        }
+        if(typeof window.DuoSwitchEngine.syncHistoryAlerts==='function'&&Array.isArray(data.history)){
+          window.DuoSwitchEngine.syncHistoryAlerts(data.history);
+        }
       }
     }
     latestOK=Date.now();
-    if(data.revision!==lastRevision){render();lastRevision=data.revision;}
+    if(isNewRev){render();lastRevision=data.revision;}
     showSpin();
     tick();
   }
@@ -71,7 +74,7 @@
     const op=retry||{p_id:active.id,p_action:action,p_args:args,p_operation:crypto.randomUUID(),p_revision:active.revision};
     try{
       const data=await rpc('fcl_switch_command',op);
-      const charged=data.history.find(h=>h.id===op.p_operation)?.amount || 0;
+      const charged=data?.history?.find(h=>h.id===op.p_operation)?.amount || currentPrices()[action];
       retry=null;
       accept(data);
       message(`${labels[action]||action} completed${charged?` · $${charged}`:''}.`);
@@ -83,7 +86,7 @@
           type: action,
           duo: buyerName,
           target: targetSquad,
-          amount: charged,
+          amount: charged || 0,
           created_at: new Date().toISOString()
         });
       }
