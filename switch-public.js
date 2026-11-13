@@ -44,7 +44,7 @@
   if (!isSpectatorRoute || document.querySelector('[data-switch-public]')) return;
   document.title = 'Live Switch Tournament · Frontline';
   document.body.innerHTML = '<header style="max-width:1240px;margin:auto;padding:24px"><a href="/tournaments/" style="color:#d5f45b">FRONTLINE / TOURNAMENTS</a><h1>Live Switch Arena</h1></header><main data-switch-public aria-live="polite" style="max-width:1240px;margin:auto;padding:24px">Connecting…</main>';
-  const script = document.createElement('script'); script.src = '/switch-client.js?v=performance-v112';
+  const script = document.createElement('script'); script.src = '/switch-client.js?v=performance-v113';
   script.onerror = () => { document.querySelector('[data-switch-public]').textContent = 'The spectator files could not load. Please refresh or contact tournament staff.'; };
   document.body.append(script);
  }

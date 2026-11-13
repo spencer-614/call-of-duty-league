@@ -2,26 +2,41 @@ BEGIN;
 -- SECURITY INVOKER preserves the existing caller's table permissions and RLS.
 CREATE OR REPLACE FUNCTION public.fcl_tournament_summaries() RETURNS jsonb
 LANGUAGE plpgsql SECURITY INVOKER SET search_path=public,pg_temp AS $$
-DECLARE registry jsonb; registrations jsonb; result jsonb;
+DECLARE registry jsonb; registrations jsonb; extras jsonb:='{}'::jsonb;
+ counts jsonb:='{}'::jsonb; result jsonb:='[]'::jsonb; row_data record;
+ item jsonb; extra jsonb; entry jsonb; metadata_keys text[];
 BEGIN
  SELECT status_text::jsonb INTO registry FROM league_settings WHERE id='tournaments_registry';
  SELECT status_text::jsonb INTO registrations FROM league_settings WHERE id='tournament_registrations_registry';
- WITH rows AS (
-  SELECT t.id, to_jsonb(t) AS canonical,
-   coalesce((SELECT x FROM jsonb_array_elements(coalesce(registry,'[]'::jsonb)) x WHERE x->>'id'=t.id::text LIMIT 1),'{}'::jsonb) AS extra
-  FROM tournaments t
- ), merged AS (
-  SELECT id, extra || canonical || coalesce((SELECT jsonb_object_agg(k,extra->k)
-   FROM unnest(ARRAY['circuit','cashapp_tag','paypal_handle','payment_instructions','has_entry_fee','entry_fee_amount','pinned','is_active','banner_fit','banner_url','rules_notes']) k
-   WHERE extra ? k),'{}'::jsonb) AS item FROM rows
- ), counted AS (
-  SELECT item || jsonb_build_object(
-   'registered_teams', CASE WHEN jsonb_typeof(registrations)='array' THEN
-    (SELECT count(*) FROM jsonb_array_elements(registrations) r WHERE r->>'tournament_id'=id::text)
-    ELSE (SELECT count(*) FROM tournament_registrations r WHERE r.tournament_id::text=id::text) END,
-   'has_bracket', item->'bracket_data' IS NOT NULL AND item->'bracket_data'<>'null'::jsonb
-  ) AS item FROM merged
- ) SELECT coalesce(jsonb_agg(item - 'bracket_data' - 'bracket' - 'bracketData' - 'switch_state' ORDER BY item->>'start_date'),'[]'::jsonb) INTO result FROM counted;
+ metadata_keys:=ARRAY['circuit','cashapp_tag','paypal_handle','payment_instructions','has_entry_fee','entry_fee_amount','pinned','is_active','banner_fit','banner_url','rules_notes'];
+ IF jsonb_typeof(registry)='array' THEN
+  FOR entry IN SELECT value FROM jsonb_array_elements(registry) LOOP
+   -- Keep first matching registry row, as in the previous loader.
+   IF entry->>'id' IS NOT NULL AND NOT extras ? (entry->>'id') THEN
+    extras:=extras || jsonb_build_object(entry->>'id',entry-'bracket_data'-'bracket'-'bracketData'-'switch_state');
+   END IF;
+  END LOOP;
+ END IF;
+ IF jsonb_typeof(registrations)='array' THEN
+  SELECT coalesce(jsonb_object_agg(id,n),'{}'::jsonb) INTO counts
+   FROM (SELECT value->>'tournament_id' AS id,count(*) AS n FROM jsonb_array_elements(registrations)
+    WHERE value->>'tournament_id' IS NOT NULL GROUP BY 1) c;
+ ELSE
+  SELECT coalesce(jsonb_object_agg(id,n),'{}'::jsonb) INTO counts
+   FROM (SELECT tournament_id::text AS id,count(*) AS n FROM tournament_registrations GROUP BY 1) c;
+ END IF;
+ FOR row_data IN SELECT t.id, to_jsonb(t)-'bracket_data'-'bracket'-'bracketData'-'switch_state' AS canonical,
+  t.bracket_data IS NOT NULL AND t.bracket_data<>'null'::jsonb AS has_bracket
+  FROM tournaments t ORDER BY t.start_date LOOP
+  extra:=coalesce(extras->row_data.id::text,'{}'::jsonb);
+  item:=extra || row_data.canonical;
+  FOR entry IN SELECT to_jsonb(k) FROM unnest(metadata_keys) k LOOP
+   IF extra ? (entry#>>'{}') THEN item:=item || jsonb_build_object(entry#>>'{}',extra->(entry#>>'{}')); END IF;
+  END LOOP;
+  item:=item || jsonb_build_object('registered_teams',coalesce((counts->>row_data.id::text)::integer,0),
+   'teams_registered_count',coalesce((counts->>row_data.id::text)::integer,0),'has_bracket',row_data.has_bracket);
+  result:=result || jsonb_build_array(item);
+ END LOOP;
  RETURN result;
 END $$;
 REVOKE ALL ON FUNCTION public.fcl_tournament_summaries() FROM PUBLIC;

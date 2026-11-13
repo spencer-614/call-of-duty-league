@@ -5242,7 +5242,8 @@ if (dbClient && cleanPayload.user_id) {
         );
       }
       // Compatibility with deployments that have not applied performance/migration.sql.
-      if (error) console.warn('Tournament summaries unavailable; using full tournament loader.', error.message);
+      if (error && error.code !== 'PGRST202') throw new Error('Tournament list failed: ' + error.message);
+      if (error) console.warn('Tournament summary function is not installed; using legacy loader.');
     }
     let list = null;
 
@@ -15961,7 +15962,7 @@ if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
               localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
               localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
               if (window.LeagueDB && typeof window.LeagueDB.syncDiscordAuthAccount === "function") {
-                setTimeout(() => window.LeagueDB.syncDiscordAuthAccount(session.user).catch(console.warn), 0);
+                // The initial auth listener owns background account sync; do not launch a second sync here.
               }
             } catch(e) {}
           }
@@ -16009,4 +16010,28 @@ if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
       return result === undefined ? undefined : JSON.parse(JSON.stringify(result));
     };
   }
+})();
+
+// Background account linking is not authorization. Database role checks remain authoritative.
+(() => {
+ const original=window.LeagueDB?.syncDiscordAuthAccount;
+ if(typeof original!=='function')return;
+ const running=new Map(),recent=new Map();
+ window.LeagueDB.syncDiscordAuthAccount=async function(user){
+  if(!user?.id)return original.call(this,user);
+  const signature=JSON.stringify([user.id,user.email,user.user_metadata,user.app_metadata]);
+  const key='frontline_identity_sync_v113:'+user.id;
+  if(running.has(signature))return running.get(signature);
+  let record=recent.get(signature);
+  try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved?.signature===signature&&(!record||saved.until>record.until))record=saved;}catch(_){}
+  if(record&&record.until>Date.now())return {success:true,skipped:true};
+  const task=(async()=>{
+   // A short shared cooldown prevents repeated auth events/tabs retrying at once.
+   const save=until=>{const r={signature,until};recent.set(signature,r);try{localStorage.setItem(key,JSON.stringify(r));}catch(_){}};
+   save(Date.now()+30000);
+   try{const result=await original.call(this,user);if(result?.success)save(Date.now()+300000);return result;}
+   finally{running.delete(signature);}
+  })();
+  running.set(signature,task);return task;
+ };
 })();

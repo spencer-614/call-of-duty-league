@@ -1,15 +1,24 @@
-# Performance update v1.11
+# v1.13 performance repair
 
-1. Open Supabase SQL Editor and run `performance/migration.sql` in full. This adds three read functions. It does not delete or rewrite tournament/player records. Apply it after the existing Switch migration; do not rerun other migrations for this update.
-2. Copy the updated project files into your website repository and publish through your usual GitHub Pages process. Do not delete unrelated files. The HTML files include updated script version tags so browsers load the changes.
-3. Hard-refresh the admin page (Ctrl+Shift+R). In Network / Fetch-XHR, expect `fcl_tournament_summaries` for lists, `fcl_switch_summary` for public event status, and `fcl_switch_poll` approximately every two seconds on the wheel. Unchanged wheel responses contain no full state or action history. Hidden wheel tabs pause polling.
-4. Verify the player list, registration, tournament counts, edit/save, Switch desk, a practice spin, and opening an existing bracket. Compare the network transfer sizes and loading times with the previous capture before the tournament.
+## Install
 
-Full bracket data remains in the database. Bracket viewing fetches the selected tournament's bracket; mutations retain the existing full-data workflow. Identical concurrent lookups share a request but no response cache is retained after completion. The Switch desk no longer waits for unrelated bracket and registration downloads before mounting.
+1. In Supabase SQL Editor, run `performance/hotfix-v113.sql` in full. This replaces the tournament-summary reader and makes identity updates conditional on actual changes. It also includes the previous lightweight wheel readers. It does not delete tournament/player records or change staff roles/RLS policies.
+2. Publish the updated project files using the normal GitHub Pages workflow.
+3. Close extra Frontline tabs, then hard-refresh the admin page (Ctrl+Shift+R).
+4. Check Network / Fetch-XHR: the summary call should succeed. Refreshing several times within five minutes should not repeatedly call `sync_my_discord_staff_identity` for unchanged account details. The throttle applies only to background linking, not database authorization. Account metadata changes allow a new sync.
+5. Verify player registration, admin access, tournament editing and counts, Switch desk, a practice spin and an existing bracket. Confirm response times before the event.
 
-If the new SQL functions are not installed, lists and wheel polling fall back to the old readers. Apply the SQL to receive the full improvement. Existing database permissions/RLS still govern tournament summaries. The Switch readers retain the existing public read model and do not expose payment history through summaries.
+## Changes and limits
 
-This update targets excessive reads and repeated concurrent lookups. It does not establish a measured production speedup or fix every possible bottleneck. Embedded image data can still make summaries large; the query below identifies which fields account for the actual stored size without returning their contents:
+- Only one auth listener initiates background account linking. Concurrent calls share work; subsequent unchanged syncs are limited to once per five minutes across pages/tabs, with a short retry cooldown. This is a load reduction, not a permissions cache.
+- The SQL sync skips updates when stored values already match, avoiding needless update triggers. Ambiguous SQL variable names are qualified. The existing staff-matching rules are retained, and role assignments are not changed by this update.
+- Summary construction processes registry/counts once and avoids repeated expansion of full JSON expressions. It still respects existing caller permissions/RLS.
+- A summary timeout is surfaced as an error instead of starting another heavy full-list download. The compatibility fallback remains only for an uninstalled summary function.
+- Previous v1.11/v1.12 wheel timeout/recovery and conditional-state polling improvements remain.
+
+These changes pass local database and client tests; they do not establish production response times or prove that database resource pressure has been eliminated. Large embedded images, other database triggers, or external load may still require investigation.
+
+If summaries remain large, inspect field sizes without returning their contents:
 
 ```sql
 SELECT t.id, f.key, octet_length(f.value::text) AS bytes
@@ -18,12 +27,8 @@ CROSS JOIN LATERAL jsonb_each(to_jsonb(t)) f
 ORDER BY bytes DESC LIMIT 15;
 ```
 
-If image_url/banner_url contains large embedded images, move those assets to image storage and save their URLs through the existing editor after preserving the images. Do not clear those fields blindly.
+Move large embedded images to asset storage through the existing editor only after preserving the images; do not blindly clear fields.
 
-Local validation: run `node --test performance/performance.test.cjs switch/test/*.test.cjs match-fixes/test/*.test.cjs` after `npm install`.
+Validation: `node --test performance/*.test.cjs switch/test/*.test.cjs match-fixes/test/*.test.cjs` after `npm install`.
 
-Rollback: restore the previous website files. The added SQL functions may remain unused; no tournament or registration data restoration is needed.
-
-## v1.12 connection recovery
-
-For an existing v1.11 installation, publish the updated files and hard-refresh; there is no additional SQL change. If v1.11 SQL was never applied, follow the migration step above. Read-only polling requests now time out after eight seconds. If the lightweight reader fails, the desk tries the existing full reader immediately. A short delay shows Syncing; a fifteen-second gap pauses actions. Returning to the tab triggers an immediate refresh. Errors include the actual read failure reason for diagnosis. Server revision checks and command payment/idempotency behavior are unchanged.
+Do not rerun the old identity migration after this hotfix without reapplying the hotfix, as that would restore the unconditional sync updates. Earlier website versions remain compatible with the SQL sync change.
