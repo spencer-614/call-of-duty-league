@@ -24,13 +24,13 @@ test('Switch database workflow, payments, random pairing, protection, permission
  await cmd('reroll',{duo_id:purchaser});invariant();let mine=session.state.teams.find(t=>[t.duo1_id,t.duo2_id].includes(purchaser));assert.ok(![mine.duo1_id,mine.duo2_id].includes(oldPartner));await finish();
  await cmd('lock',{duo_id:purchaser});const protectedTeam=session.state.teams.find(t=>t.isLocked);const before=JSON.stringify(protectedTeam);
  await assert.rejects(cmd('reroll',{duo_id:purchaser}),/locked/i);
- await cmd('nuke',{duo_id:purchaser});assert.equal(session.state.teams.length,1);assert.equal(JSON.stringify(session.state.teams[0]),before);assert.equal(session.state.unpaired.length,6);invariant();
+ const nukeOp=uuid(),nukeRev=session.revision;await cmd('nuke',{duo_id:purchaser},nukeOp);assert.equal(session.state.blowup_count,1);assert.equal(session.history.find(h=>h.id===nukeOp).amount,20);await cmd('nuke',{duo_id:purchaser},nukeOp,nukeRev);assert.equal(session.state.blowup_count,1);assert.equal(session.state.teams.length,1);assert.equal(JSON.stringify(session.state.teams[0]),before);assert.equal(session.state.unpaired.length,6);invariant();
  await assert.rejects(cmd('finalize'),/complete/i);
  while(session.state.unpaired.length){await cmd('spin');invariant();await finish();}
  const another=session.state.teams.find(t=>!t.isLocked).duo1_id;await cmd('unlock',{duo_id:another,target_id:protectedTeam.id});assert.equal(session.state.teams.find(t=>t.id===protectedTeam.id).isLocked,false);
- await cmd('nuke',{duo_id:another});assert.equal(session.state.unpaired.length,8);assert.equal(session.state.teams.length,0);invariant();
+ assert.equal(session.history.find(h=>h.action==='unlock'&&h.status==='completed').amount,20);await cmd('nuke',{duo_id:another});assert.equal(session.state.blowup_count,2);assert.equal(session.history.find(h=>h.action==='nuke').amount,25);assert.equal(session.state.unpaired.length,8);assert.equal(session.state.teams.length,0);invariant();
  while(session.state.unpaired.length){await cmd('spin');await finish();}
- await cmd('finalize');await assert.rejects(cmd('reroll',{duo_id:another}),/closed/i);await assert.rejects(cmd('nuke',{duo_id:another}),/closed/i);
+ await cmd('lock',{duo_id:another});assert.equal(session.history.find(h=>h.action==='lock').amount,25);await cmd('reroll',{duo_id:session.state.teams.find(t=>!t.isLocked).duo1_id});assert.equal(session.history.find(h=>h.action==='reroll'&&h.status==='completed').amount,20);await finish();await cmd('finalize');await assert.rejects(cmd('reroll',{duo_id:another}),/closed/i);await assert.rejects(cmd('nuke',{duo_id:another}),/closed/i);
  await who(player);const publicState=(await db.query('SELECT fcl_switch_read($1) AS s',[session.id])).rows[0].s;assert.equal(publicState.can_admin,false);assert.ok(publicState.history.every(a=>!('note'in a)&&!('actor'in a)&&!('reference'in a)));
  await assert.rejects(cmd('reset'),/operator/i);await who(staff);
  // Real tournament import, external-payment validation and transaction rollback.
@@ -67,6 +67,12 @@ test('Switch database workflow, payments, random pairing, protection, permission
  const reporters=(await db.query('SELECT * FROM tournament_report_members')).rows;assert.ok(reporters.length>=2);for(const member of reporters){const team=member.team===1?match.team1:match.team2;assert.ok(session.state.duos.some(d=>[team.duo1_id,team.duo2_id].includes(d.id)&&d.registered_by===member.user_id));}
  await who(player);await assert.rejects(db.query("UPDATE tournaments SET title='unauthorized' WHERE id='real'"),/authorized Switch operator/i);await who(staff);
 
+ await who(player);await assert.rejects(db.query("SELECT fcl_switch_delete_tournament('real')"),/operator/i);await who(staff);
+ await db.query("INSERT INTO league_settings(id,status_text) VALUES('tournaments_registry',$1)",[JSON.stringify([{id:'real'},{id:'keep'}])]);
+ await db.query("SELECT fcl_switch_delete_tournament('real')");
+ for(const table of ['tournaments','fcl_switch_sessions','tournament_report_matches','tournament_report_members'])assert.equal((await db.query('SELECT count(*)::int AS n FROM '+table+" WHERE "+(table==='tournaments'?'id':'tournament_id')+"='real'")).rows[0].n,0);
+ assert.deepEqual(JSON.parse((await db.query("SELECT status_text FROM league_settings WHERE id='tournaments_registry'")).rows[0].status_text),[{id:'keep'}]);
+ assert.deepEqual(JSON.parse((await db.query("SELECT status_text FROM league_settings WHERE id='tournament_registrations_registry'")).rows[0].status_text),[]);
  // Practice previews run the exact bracket builder without publishing anything, including byes.
  session=(await db.query('SELECT fcl_switch_create(NULL,true) AS s')).rows[0].s;
  await db.query("UPDATE fcl_switch_sessions SET state=jsonb_set(state,'{duos}',$2) WHERE id=$1",[session.id,session.state.duos.slice(0,6)]);
@@ -74,7 +80,7 @@ test('Switch database workflow, payments, random pairing, protection, permission
  await cmd('practice_entries');await cmd('start');while(session.state.unpaired.length){await cmd('spin');await finish();}await cmd('finalize');
  const preview=await api.generateTournamentBracket(session.id,{practice:true,notifyCompetitors:false});assert.equal(preview.success,true,preview.error);assert.equal(preview.practice,true);assert.ok(preview.bracket.stages[0].rounds[0].matches.some(m=>m.isBye));
  for(const stage of preview.bracket.stages)for(const round of stage.rounds)for(const m of round.matches)for(const t of [m.team1,m.team2])if(t.isDuoSwitch)assert.equal(t.roster.length,4);
- assert.equal((await db.query('SELECT state FROM fcl_switch_sessions WHERE id=$1',[session.id])).rows[0].state.bracket_generated,false);await cmd('reset');assert.equal(session.state.phase,'registration');
+ assert.equal((await db.query('SELECT state FROM fcl_switch_sessions WHERE id=$1',[session.id])).rows[0].state.bracket_generated,false);await cmd('reset');assert.equal(session.state.phase,'registration');assert.equal(session.state.blowup_count,0);
  await db.exec('SET ROLE authenticated');await assert.rejects(db.query('SELECT fcl_switch_command_core($1,$2,$3,$4,$5)',[session.id,'start',{},uuid(),session.revision]),/permission/i);await db.exec('RESET ROLE');
  await db.exec('SET ROLE anon');await assert.rejects(db.query('SELECT * FROM fcl_switch_actions'),/permission/i);await db.exec('RESET ROLE');
  }finally{await db.close();}

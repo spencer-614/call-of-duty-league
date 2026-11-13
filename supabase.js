@@ -4817,7 +4817,7 @@ if (dbClient && cleanPayload.user_id) {
         }
 
         const { data, error } = await query;
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           list = data;
           this._saveStoredArenaAnnouncements(data);
         } else if (error) {
@@ -5242,7 +5242,7 @@ if (dbClient && cleanPayload.user_id) {
           .select("*")
           .order("start_date", { ascending: true });
 
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           list = data;
           try {
             localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
@@ -5277,7 +5277,7 @@ if (dbClient && cleanPayload.user_id) {
                   for (const key of extended) if (Object.prototype.hasOwnProperty.call(extra, key)) merged[key] = extra[key];
                   return merged;
                 });
-              } else {
+              } else if (list === null) {
                 list = parsed;
               }
               try {
@@ -5291,7 +5291,7 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     // 3. Fallback to localStorage
-    if (!list || list.length === 0) {
+    if (list === null) {
       try {
         const local = localStorage.getItem("frontline_tournaments_data");
         if (local !== null) {
@@ -5493,30 +5493,27 @@ if (dbClient && cleanPayload.user_id) {
     const currentList = await this.getTournaments();
     const filtered = currentList.filter(t => String(t.id) !== String(tournamentId));
 
+    if (!dbClient) return { success: false, error: "Database connection unavailable. Tournament was not deleted." };
+    const tournament = currentList.find(t => String(t.id) === String(tournamentId));
     try {
-      localStorage.setItem("frontline_tournaments_data", JSON.stringify(filtered));
-      localStorage.setItem("frontline_tournaments_initialized", "true");
-    } catch (e) {}
-
-    if (dbClient) {
-      try {
-        await dbClient.from("tournaments").delete().eq("id", tournamentId);
-      } catch (e) {}
-      try {
-        await dbClient.from("tournament_registrations").delete().eq("tournament_id", tournamentId);
-      } catch (e) {}
-      try {
-        await dbClient.from("tournament_matches").delete().eq("division_id", tournamentId);
-      } catch (e) {}
-      try {
-        await dbClient.from("league_settings").upsert({
-          id: "tournaments_registry",
-          status_state: "active",
-          status_text: JSON.stringify(filtered),
-          updated_at: new Date().toISOString()
-        }, { onConflict: "id" });
-      } catch (e) {}
-    }
+      if (/duo|switch/i.test(tournament?.format || '')) {
+        const { data, error } = await dbClient.rpc('fcl_switch_delete_tournament', { p_tournament: String(tournamentId) });
+        if (error) throw new Error(error.message + " Run the updated switch/migration.sql if the deletion function is missing.");
+        if (!data?.success) throw new Error('Tournament deletion was not confirmed.');
+      } else {
+        const { data, error } = await dbClient.from('tournaments').delete().eq('id', tournamentId).select('id');
+        if (error) throw error;
+        if (!data?.length) throw new Error('No tournament was deleted. Check your permissions and refresh.');
+        const { error: registryError } = await dbClient.from('league_settings').upsert({
+          id: 'tournaments_registry', status_state: 'active', status_text: JSON.stringify(filtered), updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+        if (registryError) throw registryError;
+      }
+    } catch (error) { return { success: false, error: error.message || String(error) }; }
+    try {
+      localStorage.setItem('frontline_tournaments_data', JSON.stringify(filtered));
+      localStorage.setItem('frontline_tournaments_initialized', 'true');
+    } catch (_) {}
 
     window.dispatchEvent(new CustomEvent("frontline_tournaments_updated", { detail: { id: tournamentId, deleted: true } }));
     return { success: true };
@@ -6051,7 +6048,7 @@ if (dbClient && cleanPayload.user_id) {
           query = query.eq("tournament_id", String(tournamentId));
         }
         const { data, error } = await query;
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           list = data;
         }
       } catch (err) {}
@@ -6673,7 +6670,7 @@ if (dbClient && cleanPayload.user_id) {
           .from("tournament_players")
           .select("*")
           .order("gamertag", { ascending: true });
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           list = data;
           try {
             localStorage.setItem("frontline_tournament_players", JSON.stringify(list));

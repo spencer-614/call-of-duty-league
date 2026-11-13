@@ -695,19 +695,19 @@
                   </div>
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
                     <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #38bdf8; padding:6px 8px; border-radius:3px;">
-                      <div style="font-weight:800; color:#ffffff;">🎲 Respin: <span style="color:#38bdf8;">$10</span></div>
-                      <div style="font-size:9px; color:#9ca3af;">+$5 escalation</div>
+                      <div style="font-weight:800; color:#ffffff;">🎲 Respin: <span style="color:#38bdf8;" data-switch-price="reroll_base_fee">$${this.currentSwitchState?.reroll_base_fee ?? 10}</span></div>
+                      <div style="font-size:9px; color:#9ca3af;">+$5 per Nuke</div>
                     </div>
                     <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #22c55e; padding:6px 8px; border-radius:3px;">
-                      <div style="font-weight:800; color:#ffffff;">🔒 Lock: <span style="color:#4ade80;">$15</span></div>
+                      <div style="font-weight:800; color:#ffffff;">🔒 Lock: <span style="color:#4ade80;" data-switch-price="lock_fee">$${this.currentSwitchState?.lock_fee ?? 15}</span></div>
                       <div style="font-size:9px; color:#9ca3af;">Squad immunity</div>
                     </div>
                     <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #fbbf24; padding:6px 8px; border-radius:3px;">
-                      <div style="font-weight:800; color:#ffffff;">🔓 Unlock: <span style="color:#fde047;">$15</span></div>
+                      <div style="font-weight:800; color:#ffffff;">🔓 Unlock: <span style="color:#fde047;" data-switch-price="unlock_fee">$${this.currentSwitchState?.unlock_fee ?? 15}</span></div>
                       <div style="font-size:9px; color:#9ca3af;">Break squad lock</div>
                     </div>
                     <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #ef4444; padding:6px 8px; border-radius:3px;">
-                      <div style="font-weight:800; color:#ffffff;">💥 Blow Up: <span style="color:#f87171;">$20</span></div>
+                      <div style="font-weight:800; color:#ffffff;">💥 Blow Up: <span style="color:#f87171;" data-switch-price="nuke_fee">$${this.currentSwitchState?.nuke_fee ?? 20}</span></div>
                       <div style="font-size:9px; color:#9ca3af;">Scramble all</div>
                     </div>
                   </div>
@@ -789,6 +789,11 @@
     }
 
     renderModalPanels() {
+      const fees = this.currentSwitchState || {};
+      document.querySelectorAll('[data-switch-price]').forEach(el => {
+        const key = el.dataset.switchPrice;
+        el.textContent = '$' + (fees[key] ?? ({reroll_base_fee:10,lock_fee:15,unlock_fee:15,nuke_fee:20})[key]);
+      });
       this.renderTeamsPanel();
       this.renderAlertsPanel();
       this.updatePaymentDirectives();
@@ -1311,7 +1316,7 @@
           ${esc(payload.requesting_duo_name || 'A competitor')} paid the Nuke fee! All unlocked squads re-shuffled!
         </div>
         <div style="font-size:12px; font-weight:800; color:#fef08a; margin-top:6px;">
-          📈 Partner respin fee escalated by +$5! (Now $${payload.new_reroll_fee || '15'}+)
+          📈 Respin, lock, unlock, and Nuke prices each increased by $5!
         </div>
       `;
       document.body.appendChild(nukeBanner);
@@ -1398,7 +1403,7 @@
       const isMyTeamLocked = my4v4Team && (my4v4Team.isLocked || (state.locked_teams || []).includes(my4v4Team.name));
 
       const myRerollCount = (myDuo && state.duo_reroll_counts && state.duo_reroll_counts[myDuo.id]) || 0;
-      const rerollCost = (state.reroll_base_fee || 10) + myRerollCount * (state.reroll_escalation || 5);
+      const rerollCost = (state.reroll_base_fee || 10);
       const maxRerolls = state.max_rerolls_per_duo || 2;
       const canReroll = myDuo && isWindowOpen && !isMyTeamLocked && (myRerollCount < maxRerolls);
 
@@ -1477,7 +1482,7 @@
                     style="font-size:11.5px; padding:7px 12px; border-color:#22c55e; color:#4ade80; background:rgba(34,197,94,0.08); ${isWindowOpen && !isMyTeamLocked ? '' : 'opacity:0.4; cursor:not-allowed;'}"
                     ${isWindowOpen && !isMyTeamLocked ? '' : 'disabled'}
                     onclick="window.DuoSwitchEngine.requestPowerUp('lock', ${state.lock_fee || 15})"
-                    title="Lock your 4v4 squad ($15) so nobody can swap or take your partner!">
+                    title="Lock your 4v4 squad ($${state.lock_fee || 15}) so nobody can swap or take your partner!">
                     🔒 Lock Squad ($${state.lock_fee || 15})
                   </button>
 
@@ -1486,16 +1491,16 @@
                     class="btn-tourney-outline" 
                     style="font-size:11.5px; padding:7px 12px; border-color:#ef4444; color:#f87171; background:rgba(239,68,68,0.08); ${isWindowOpen ? '' : 'opacity:0.4; cursor:not-allowed;'}"
                     ${isWindowOpen ? '' : 'disabled'}
-                    onclick="window.DuoSwitchEngine.requestPowerUp('nuke', ${state.nuke_fee || 25})"
-                    title="Blow it up! Re-shuffle all unlocked duos across the tournament! (Escalates respin costs by +$5)">
-                    💥 Blow It Up ($${state.nuke_fee || 25})
+                    onclick="window.DuoSwitchEngine.requestPowerUp('nuke', ${state.nuke_fee || 20})"
+                    title="Blow it up! Re-shuffle all unlocked duos across the tournament! (Raises all action prices by $5)">
+                    💥 Blow It Up ($${state.nuke_fee || 20})
                   </button>
                 `}
               </div>
             </div>
           ` : `
             <div style="background:#131a0e; border:1px solid #273718; padding:10px 14px; border-radius:3px; margin-bottom:12px; font-size:12px; color:#cbd5e1; display:flex; justify-content:space-between; align-items:center;">
-              <span>Enlisted duos can request partner respins, locks ($15), or bracket scrambles. Blowups escalate respin fees by +$5!</span>
+              <span>Enlisted duos can request partner respins, locks ($${state.lock_fee || 15}), or bracket scrambles. Every Nuke raises respin, lock, unlock, and Nuke prices by $5!</span>
               <button type="button" onclick="window.DuoSwitchEngine.openLiveWheelPreview()" class="btn-tourney-outline" style="font-size:11px; padding:4px 10px; border-color:#fbbf24; color:#fbbf24;">
                 🎡 View Live Wheel Slices
               </button>
@@ -1506,9 +1511,9 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:11px; color:#9ca3af; border-top:1px solid #1f2a13; padding-top:10px;">
             <div>
               <strong style="color:#ffffff;">Duo Switch Rules:</strong> 
-              • 🎲 <strong>Reroll Partner:</strong> Starts at $${state.reroll_base_fee || 10} (+$5 each roll, max 2).
-              • 🔒 <strong>Lock Squad ($15):</strong> Permanent immunity from swaps.
-              • 💥 <strong>Blow It Up ($25):</strong> Scrambles all unlocked teams live &amp; escalates respin fee by +$5!
+              • 🎲 <strong>Reroll Partner:</strong> Starts at $${state.reroll_base_fee || 10} (+$5 per Nuke; no respin limit).
+              • 🔒 <strong>Lock Squad ($${state.lock_fee || 15}):</strong> Protection until another duo purchases an unlock.
+              • 💥 <strong>Blow It Up ($${state.nuke_fee || 20}):</strong> Scrambles all unlocked teams live &amp; raises all action prices by $5!
             </div>
             <button type="button" onclick="window.DuoSwitchEngine.openLiveWheelPreview()" style="background:none; border:none; color:#fbbf24; font-size:11px; cursor:pointer; text-decoration:underline;">
               🎡 Open Synchronized Wheel Modal ↗
@@ -1535,8 +1540,8 @@
       }
 
       let label = 'Partner Respin';
-      if (actionType === 'lock') label = 'Lock Squad ($15)';
-      else if (actionType === 'nuke') label = 'Blow It Up ($25)';
+      if (actionType === 'lock') label = 'Lock Squad';
+      else if (actionType === 'nuke') label = 'Blow It Up';
 
       const confirmMsg = `Submit request to Commissioner for ${label} ($${amount}.00 USD)?\n\nOnce accepted by the Commissioner, your payment directive will pop up on your screen to complete the action.`;
       if (!confirm(confirmMsg)) return;

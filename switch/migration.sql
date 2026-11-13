@@ -124,7 +124,7 @@ BEGIN
  ELSE
  IF phase<>'window' OR jsonb_array_length(pool)>0 THEN RAISE EXCEPTION 'Finish pairing all duos before accepting power-ups.'; END IF;
  IF NOT (a->>'entry_verified')::boolean THEN RAISE EXCEPTION 'Purchaser must have a verified entry.'; END IF;
- amount:=CASE p_action WHEN 'reroll' THEN 10 WHEN 'nuke' THEN 20 ELSE 15 END;
+ amount:=(CASE p_action WHEN 'reroll' THEN 10 WHEN 'nuke' THEN 20 ELSE 15 END)+5*coalesce((st->>'blowup_count')::integer,0);
  END IF;
  method_text:=p_args->>'method';ref_text:=nullif(btrim(p_args->>'reference'),'');
  IF s.practice THEN method_text:='Practice';ref_text:=NULL;
@@ -145,7 +145,7 @@ BEGIN
  FOR t IN SELECT value FROM jsonb_array_elements(teams) LOOP
  IF (t->>'isLocked')::boolean THEN result_teams:=result_teams||jsonb_build_array(t);
  ELSE pool:=pool||jsonb_build_array(t->>'duo1_id',t->>'duo2_id'); END IF;END LOOP;
- teams:=result_teams;st:=st||jsonb_build_object('phase','repairing','last_spin',null,'blowup_count',(st->>'blowup_count')::integer+1);
+ teams:=result_teams;st:=st||jsonb_build_object('phase','repairing','last_spin',null,'blowup_count',coalesce((st->>'blowup_count')::integer,0)+1);
  ELSIF p_action='reroll' THEN
  SELECT value INTO t FROM jsonb_array_elements(teams) WHERE value->>'duo1_id'=buyer OR value->>'duo2_id'=buyer;
  IF t IS NULL OR (t->>'isLocked')::boolean THEN RAISE EXCEPTION 'Purchasing squad is missing or locked.'; END IF;
@@ -223,7 +223,7 @@ BEGIN
  IF SQLSTATE='23505' THEN failure:='This payment reference was already used. Check the activity history before recording it again.'; END IF;
  IF EXISTS(SELECT 1 FROM fcl_switch_sessions WHERE id=p_id) AND NOT EXISTS(SELECT 1 FROM fcl_switch_actions WHERE operation_id=p_operation) THEN
  INSERT INTO fcl_switch_actions(operation_id,session_id,actor,action,args,amount,method,reference,status,error)
- VALUES(p_operation,p_id,auth.uid(),p_action,p_args,CASE p_action WHEN 'entry' THEN 5 WHEN 'reroll' THEN 10 WHEN 'lock' THEN 15 WHEN 'unlock' THEN 15 WHEN 'nuke' THEN 20 ELSE 0 END,
+ VALUES(p_operation,p_id,auth.uid(),p_action,p_args,CASE p_action WHEN 'entry' THEN 5 WHEN 'reroll' THEN 10 WHEN 'lock' THEN 15 WHEN 'unlock' THEN 15 WHEN 'nuke' THEN 20 ELSE 0 END + CASE WHEN p_action IN ('reroll','lock','unlock','nuke') THEN 5*coalesce((SELECT (state->>'blowup_count')::integer FROM fcl_switch_sessions WHERE id=p_id),0) ELSE 0 END,
  p_args->>'method',nullif(btrim(p_args->>'reference'),''),'failed',failure);
  UPDATE fcl_switch_sessions SET revision=revision+1 WHERE id=p_id;
  END IF;
@@ -272,8 +272,9 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 BEGIN
  IF EXISTS(SELECT 1 FROM fcl_switch_sessions WHERE tournament_id=OLD.id::text) THEN
  IF NOT fcl_switch_is_operator() THEN RAISE EXCEPTION 'Only an authorized Switch operator can change this tournament.'; END IF;
- IF TG_OP='DELETE' THEN RAISE EXCEPTION 'A tournament with a Switch session cannot be deleted.'; END IF;
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'Use the authorized Switch tournament deletion function.'; END IF;
  END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF;
  RETURN NEW;
 END $$;
 DROP TRIGGER IF EXISTS fcl_switch_protect_tournament ON public.tournaments;
@@ -317,4 +318,32 @@ DO $$ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.fcl_switch_protect_tournament(),public.fcl_switch_protect_registration(),public.fcl_switch_assign_reporters() FROM PUBLIC,anon,authenticated;
 
+-- Staff-only atomic deletion: remove protected Switch state before registrations.
+CREATE OR REPLACE FUNCTION public.fcl_switch_delete_tournament(p_tournament text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE item record; removed integer; registry_id text; key_name text;
+BEGIN
+ IF NOT fcl_switch_is_operator() THEN RAISE EXCEPTION 'Switch operator access required.'; END IF;
+ PERFORM 1 FROM tournaments WHERE id::text=p_tournament FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Tournament not found; refresh the tournament hub.'; END IF;
+ DELETE FROM fcl_switch_sessions WHERE tournament_id=p_tournament;
+ -- Optional tournament tables vary between installations.
+ FOR item IN SELECT table_name,column_name FROM information_schema.columns
+ WHERE table_schema='public' AND (column_name='tournament_id' OR (table_name='tournament_matches' AND column_name='division_id'))
+ AND table_name NOT IN ('fcl_switch_sessions','tournaments')
+ ORDER BY CASE WHEN table_name='tournament_registrations' THEN 1 ELSE 0 END LOOP
+ EXECUTE format('DELETE FROM public.%I WHERE %I::text=$1',item.table_name,item.column_name) USING p_tournament;
+ END LOOP;
+ DELETE FROM tournaments WHERE id::text=p_tournament;
+ GET DIAGNOSTICS removed=ROW_COUNT;
+ FOREACH registry_id IN ARRAY ARRAY['tournaments_registry','tournament_registrations_registry'] LOOP
+ key_name:=CASE WHEN registry_id='tournaments_registry' THEN 'id' ELSE 'tournament_id' END;
+ UPDATE league_settings SET status_text=(SELECT coalesce(jsonb_agg(x),'[]'::jsonb)::text
+ FROM jsonb_array_elements(status_text::jsonb) x WHERE x->>key_name IS DISTINCT FROM p_tournament)
+ WHERE id=registry_id;
+ END LOOP;
+ RETURN jsonb_build_object('success',removed=1);
+END $$;
+REVOKE ALL ON FUNCTION public.fcl_switch_delete_tournament(text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.fcl_switch_delete_tournament(text) TO authenticated;
 COMMIT;
