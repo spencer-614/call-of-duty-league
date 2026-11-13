@@ -3103,12 +3103,12 @@
                   <label class="form-label" for="tourney-format-input">Format / Game Mode *</label>
                   <select id="tourney-format-input" class="form-control" required onchange="handleTourneyFormatChange(this.value)">
                     <optgroup label="Duo Switch (4v4 Team Shuffle)">
-                      <option value="Duo Switch (All Modes)">Duo Switch 4v4 (All Modes - HP / SnD / Ctrl)</option>
+                      <option value="Duo Switch (All Modes)">Duo Switch 4v4 (All Modes - HP / SnD / Hijacked)</option>
                       <option value="Duo Switch (HP & SnD)">Duo Switch 4v4 (Hardpoint &amp; SnD Only)</option>
                       <option value="Duo Switch (SnD Only)">Duo Switch 4v4 (Search &amp; Destroy Only)</option>
                     </optgroup>
                     <optgroup label="CDL &amp; Team Formats">
-                      <option value="4v4 CDL Variant" selected>4v4 CDL Variant (HP / SnD / Ctrl)</option>
+                      <option value="4v4 CDL Variant" selected>4v4 CDL Variant (HP / SnD / Hijacked)</option>
                       <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
                       <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
                       <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
@@ -3118,7 +3118,7 @@
                 </div>
 
                 <!-- Duo Switch Game Modes Directive (appears when any Duo Switch format is selected) -->
-                <div id="tourney-duo-switch-modes-wrap" style="display:none; grid-column: 1 / -1; background:#12160d; border:1px solid #2e3b1c; border-left:3px solid #fbbf24; padding:12px 14px; border-radius:3px;">
+                <div id="tourney-duo-switch-modes-wrap" style="display:none; grid-column: 1 / -1; background:#12160d; border:1px solid #2e3b1c; border-left:3px solid #fbbf24; padding:12px 14px; border-radius:3px;"><h4>Switch power-up base prices</h4><p style="font-size:12px;color:#cbd5e1">Entry uses the Entry Fee setting below. Each Nuke adds $5 to all four power-ups. Prices lock after the first confirmed payment or when pairing begins.</p><div style="display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:10px"><label>Respin ($)<input id="switch-price-create-reroll" class="form-control" type="number" min="0" max="10000" step="1" value="10"></label><label>Lock ($)<input id="switch-price-create-lock" class="form-control" type="number" min="0" max="10000" step="1" value="15"></label><label>Unlock ($)<input id="switch-price-create-unlock" class="form-control" type="number" min="0" max="10000" step="1" value="20"></label><label>Nuke ($)<input id="switch-price-create-nuke" class="form-control" type="number" min="0" max="10000" step="1" value="15"></label></div>
                   <label class="form-label" style="font-size:12px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
                     <span>⚡ Duo Switch 4v4 Directive (Sign Up as Duo, Paired into 4v4) *</span>
                   </label>
@@ -3129,7 +3129,7 @@
                   <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
                     <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
                       <input type="radio" name="tourney-duo-mode-radio" id="duo-radio-all" value="all" checked onchange="onDuoSwitchRadioChange('composer', this.value)" style="accent-color:#fbbf24;" />
-                      <span>All Game Modes (HP, SnD, Ctrl)</span>
+                      <span>All Game Modes (HP, SnD, Hijacked)</span>
                     </label>
                     <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
                       <input type="radio" name="tourney-duo-mode-radio" id="duo-radio-hp-snd" value="hp_snd" onchange="onDuoSwitchRadioChange('composer', this.value)" style="accent-color:#fbbf24;" />
@@ -4498,12 +4498,12 @@
               <label class="form-label" for="modal-edit-tourney-format">Format / Game Mode *</label>
               <select id="modal-edit-tourney-format" class="form-control" required onchange="handleModalEditFormatChange(this.value)">
                 <optgroup label="Duo Switch (4v4 Team Shuffle)">
-                  <option value="Duo Switch (All Modes)">Duo Switch 4v4 (All Modes - HP / SnD / Ctrl)</option>
+                  <option value="Duo Switch (All Modes)">Duo Switch 4v4 (All Modes - HP / SnD / Hijacked)</option>
                   <option value="Duo Switch (HP & SnD)">Duo Switch 4v4 (Hardpoint &amp; SnD Only)</option>
                   <option value="Duo Switch (SnD Only)">Duo Switch 4v4 (Search &amp; Destroy Only)</option>
                 </optgroup>
                 <optgroup label="CDL &amp; Team Formats">
-                  <option value="4v4 CDL Variant">4v4 CDL Variant (HP / SnD / Ctrl)</option>
+                  <option value="4v4 CDL Variant">4v4 CDL Variant (HP / SnD / Hijacked)</option>
                   <option value="4v4 Hardpoint Only">4v4 Hardpoint Only Cup</option>
                   <option value="2v2 SnD Primes">2v2 Search &amp; Destroy Primes</option>
                   <option value="1v1 Radar Duel">1v1 Radar On / SnD Duel</option>
@@ -4513,7 +4513,7 @@
             </div>
 
             <!-- Modal Duo Switch Game Modes Directive -->
-            <div id="modal-edit-tourney-duo-modes-wrap" style="display:none; grid-column: 1 / -1; background:#12160d; border:1px solid #2e3b1c; border-left:3px solid #fbbf24; padding:12px 14px; border-radius:3px;">
+            <div id="modal-edit-tourney-duo-modes-wrap" style="display:none; grid-column: 1 / -1; background:#12160d; border:1px solid #2e3b1c; border-left:3px solid #fbbf24; padding:12px 14px; border-radius:3px;"><h4>Switch power-up base prices</h4><p style="font-size:12px;color:#cbd5e1">Entry uses the Entry Fee setting below. Each Nuke adds $5 to all four power-ups. Prices lock after the first confirmed payment or when pairing begins.</p><div style="display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:10px"><label>Respin ($)<input id="switch-price-edit-reroll" class="form-control" type="number" min="0" max="10000" step="1" value="10"></label><label>Lock ($)<input id="switch-price-edit-lock" class="form-control" type="number" min="0" max="10000" step="1" value="15"></label><label>Unlock ($)<input id="switch-price-edit-unlock" class="form-control" type="number" min="0" max="10000" step="1" value="20"></label><label>Nuke ($)<input id="switch-price-edit-nuke" class="form-control" type="number" min="0" max="10000" step="1" value="15"></label></div>
               <label class="form-label" style="font-size:12px; font-weight:800; color:#fbbf24; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
                 <span>⚡ Duo Switch 4v4 Directive (Sign Up as Duo, Paired into 4v4) *</span>
               </label>
@@ -4524,7 +4524,7 @@
               <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
                 <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
                   <input type="radio" name="modal-duo-mode-radio" id="modal-duo-radio-all" value="all" checked onchange="onDuoSwitchRadioChange('modal', this.value)" style="accent-color:#fbbf24;" />
-                  <span>All Game Modes (HP, SnD, Ctrl)</span>
+                  <span>All Game Modes (HP, SnD, Hijacked)</span>
                 </label>
                 <label style="display:flex; align-items:center; gap:6px; background:#0c0f0a; border:1px solid #232d16; padding:8px 12px; border-radius:3px; cursor:pointer; font-size:12px; color:#ffffff; font-weight:700;">
                   <input type="radio" name="modal-duo-mode-radio" id="modal-duo-radio-hp-snd" value="hp_snd" onchange="onDuoSwitchRadioChange('modal', this.value)" style="accent-color:#fbbf24;" />
@@ -4770,7 +4770,8 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=match-fixes-v19"></script>
+    <script src="/switch-pricing.js?v=prices-v110"></script>
+    <script src="/supabase.js?v=prices-v110"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -10476,7 +10477,7 @@
               } else if (fLower.includes("snd")) {
                 rulesEl.value = "• Official 2v2 Duo Switch Competitive Ruleset (Search & Destroy Only).\n• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\n• Teams switch host each map. Dedicated Central host required.\n• Check-in opens 45 minutes prior to bracket start in Discord.";
               } else {
-                rulesEl.value = "• Official 2v2 Duo Switch Competitive Ruleset (All Game Modes: HP / SnD / Ctrl).\n• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\n• Teams switch hosts between maps. Dedicated Central host required.\n• Check-in opens 45 minutes prior to bracket start in Discord.";
+                rulesEl.value = "• Official 2v2 Duo Switch Competitive Ruleset (All Game Modes: HP / SnD / Hijacked).\n• Double Elimination bracket: Best-of-3 Upper / Lower, Best-of-5 Grand Finals.\n• Teams switch hosts between maps. Dedicated Central host required.\n• Check-in opens 45 minutes prior to bracket start in Discord.";
               }
             }
           }
@@ -10698,6 +10699,7 @@
           document.getElementById("modal-edit-tourney-rules-notes").value = tourney.rules_notes || defaultRules;
           document.getElementById("modal-edit-tourney-format").value = tourney.format || "4v4 CDL Variant";
           handleModalEditFormatChange(tourney.format || "4v4 CDL Variant");
+          window.SwitchPricing.fill("switch-price-edit-", tourney);
           document.getElementById("modal-edit-tourney-bracket-type").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("modal-edit-tourney-prize").value = tourney.prize_pool || "$1,500 USD";
           const isTourneyPaid = !!(tourney.has_entry_fee || (tourney.entry_fee && !String(tourney.entry_fee).toLowerCase().includes("free")));
@@ -10845,6 +10847,9 @@
             return;
           }
 
+          let switchPrices = null;
+          try { if (String(format).toLowerCase().includes('duo')) switchPrices = window.SwitchPricing.read('switch-price-edit-', entryFee, hasEntryFee); }
+          catch (e) { showToast(e.message, true); return; }
           const saveBtn = document.getElementById("btn-modal-save-tourney");
           if (saveBtn) {
             saveBtn.disabled = true;
@@ -10861,6 +10866,7 @@
             format,
             bracket_type: bracketType,
             prize_pool: prizePool,
+            switch_prices: switchPrices,
             entry_fee: entryFee,
             has_entry_fee: hasEntryFee,
             entry_fee_amount: hasEntryFee ? entryFee : "FREE ENTRY",
@@ -10941,6 +10947,7 @@
           if (rulesInput) rulesInput.value = tourney.rules_notes || defaultRulesComposer;
           document.getElementById("tourney-format-input").value = tourney.format || "4v4 CDL Variant";
           handleTourneyFormatChange(tourney.format || "4v4 CDL Variant");
+          window.SwitchPricing.fill("switch-price-create-", tourney);
           document.getElementById("tourney-bracket-type-input").value = tourney.bracket_type || "Double Elimination";
           document.getElementById("tourney-prize-input").value = tourney.prize_pool || "$1,500 USD";
           const isCompPaid = !!(tourney.has_entry_fee || (tourney.entry_fee && !String(tourney.entry_fee).toLowerCase().includes("free")));
@@ -11214,6 +11221,9 @@
 
           const existingTourney = existingId ? cachedAdminTournaments.find(t => String(t.id) === String(existingId)) : null;
 
+          let switchPrices = null;
+          try { if (String(format).toLowerCase().includes('duo')) switchPrices = window.SwitchPricing.read('switch-price-create-', entryFee, hasEntryFee); }
+          catch (e) { showToast(e.message, true); return; }
           const tourneyObj = {
             id: existingId || ('tourney-' + Date.now()),
             circuit,
@@ -11221,6 +11231,7 @@
             format,
             bracket_type: bracketType,
             prize_pool: prizePool,
+            switch_prices: switchPrices,
             entry_fee: entryFee,
             has_entry_fee: hasEntryFee,
             entry_fee_amount: hasEntryFee ? entryFee : "FREE ENTRY",
@@ -14894,7 +14905,7 @@
     </script>
   <script src="/tournament-reports.js?v=match-fixes-v19"></script>
   <script src="/tournament-switch-wheel.js?v=switch-v3"></script>
-  <script src="/switch-client.js?v=match-fixes-v19"></script>
+  <script src="/switch-client.js?v=prices-v110"></script>
 <a href="/admin/league/" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#d5f45b;color:#182000;padding:12px 18px;border-radius:6px;font:700 14px system-ui;text-decoration:none">League Operations &amp; Discord</a>
 <script src="/ranking/navigation.js?v=1" defer></script>
 </body>

@@ -31,6 +31,55 @@ LANGUAGE sql VOLATILE SET search_path=public,pg_temp AS $$
  'roster',(a->'roster')||(b->'roster'),'report_members',coalesce(a->'report_members','[]'::jsonb)||coalesce(b->'report_members','[]'::jsonb),
  'isDuoSwitch',true,'isLocked',false);
 $$;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS switch_prices jsonb;
+CREATE OR REPLACE FUNCTION public.fcl_switch_validate_prices(p jsonb) RETURNS jsonb
+LANGUAGE plpgsql IMMUTABLE SET search_path=public,pg_temp AS $$
+DECLARE k text;
+BEGIN
+ IF jsonb_typeof(p) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'Switch prices must include entry, reroll, lock, unlock and nuke.'; END IF;
+ FOREACH k IN ARRAY ARRAY['entry','reroll','lock','unlock','nuke'] LOOP
+ IF jsonb_typeof(p->k) IS DISTINCT FROM 'number' OR (p->>k)::numeric<0 OR (p->>k)::numeric>10000 OR trunc((p->>k)::numeric)<>(p->>k)::numeric THEN RAISE EXCEPTION 'Switch price % must be a whole dollar amount from 0 to 10000.',k; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('entry',((p->>'entry')::numeric)::integer,'reroll',((p->>'reroll')::numeric)::integer,'lock',((p->>'lock')::numeric)::integer,'unlock',((p->>'unlock')::numeric)::integer,'nuke',((p->>'nuke')::numeric)::integer);
+END $$;
+CREATE OR REPLACE FUNCTION public.fcl_switch_base_prices(tid text,st jsonb,is_practice boolean) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE p jsonb;
+BEGIN
+ IF NOT is_practice AND st->>'phase'='registration' THEN SELECT switch_prices INTO p FROM tournaments WHERE id::text=tid; END IF;
+ p:=coalesce(p,nullif(st->'base_prices','null'::jsonb),'{"entry":5,"reroll":10,"lock":15,"unlock":15,"nuke":20}'::jsonb);
+ RETURN fcl_switch_validate_prices(p);
+END $$;
+CREATE OR REPLACE FUNCTION public.fcl_switch_price(sid text,action text) RETURNS integer
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE s fcl_switch_sessions;p jsonb;
+BEGIN
+ SELECT * INTO s FROM fcl_switch_sessions WHERE id=sid;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Switch session not found.'; END IF;
+ p:=fcl_switch_base_prices(s.tournament_id,s.state,s.practice);
+ RETURN coalesce((p->>action)::integer,0)+CASE WHEN action IN('reroll','lock','unlock','nuke') THEN 5*coalesce((s.state->>'blowup_count')::integer,0) ELSE 0 END;
+END $$;
+CREATE OR REPLACE FUNCTION public.fcl_switch_guard_prices() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+ IF NEW.switch_prices IS NOT NULL THEN NEW.switch_prices:=fcl_switch_validate_prices(NEW.switch_prices); END IF;
+ IF TG_OP='UPDATE' AND NEW.switch_prices IS DISTINCT FROM OLD.switch_prices THEN
+ -- Shares the tournament row lock used by commands, preventing price/payment races.
+ IF EXISTS(SELECT 1 FROM fcl_switch_sessions s WHERE s.tournament_id=OLD.id::text AND fcl_switch_base_prices(s.tournament_id,s.state,s.practice) IS DISTINCT FROM NEW.switch_prices AND
+ (s.state->>'phase'<>'registration' OR EXISTS(SELECT 1 FROM fcl_switch_actions a WHERE a.session_id=s.id AND a.status='completed' AND a.action IN('entry','reroll','lock','unlock','nuke')))) THEN
+ RAISE EXCEPTION 'Switch prices are locked after the first confirmed payment or after pairing begins.'; END IF;
+ END IF;
+ IF TG_OP='UPDATE' AND NEW.switch_prices IS DISTINCT FROM OLD.switch_prices THEN
+ UPDATE fcl_switch_sessions SET revision=revision+1,state=state||jsonb_build_object('base_prices',NEW.switch_prices) WHERE tournament_id=OLD.id::text;
+ END IF;
+ IF NEW.switch_prices IS NOT NULL AND lower(NEW.format) LIKE '%duo%' THEN
+ NEW.entry_fee:=CASE WHEN (NEW.switch_prices->>'entry')::integer=0 THEN 'FREE ENTRY' ELSE '$'||(NEW.switch_prices->>'entry')||' / Duo' END;
+ END IF;
+ RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS fcl_switch_guard_prices ON public.tournaments;
+CREATE TRIGGER fcl_switch_guard_prices BEFORE INSERT OR UPDATE ON public.tournaments FOR EACH ROW EXECUTE FUNCTION public.fcl_switch_guard_prices();
+REVOKE ALL ON FUNCTION public.fcl_switch_validate_prices(jsonb),public.fcl_switch_base_prices(text,jsonb,boolean),public.fcl_switch_price(text,text),public.fcl_switch_guard_prices() FROM PUBLIC,anon,authenticated;
 CREATE OR REPLACE FUNCTION public.fcl_switch_read(p_id text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE s fcl_switch_sessions; history jsonb;
@@ -43,7 +92,7 @@ BEGIN
  CASE WHEN fcl_switch_is_operator() THEN jsonb_build_object('actor',actor,'method',method,'reference',reference,'note',args->>'note','error',error) ELSE '{}'::jsonb END AS item
  FROM fcl_switch_actions WHERE session_id=s.id ORDER BY created_at DESC LIMIT 100) h;
  RETURN jsonb_build_object('id',s.id,'tournament_id',s.tournament_id,'title',s.title,'practice',s.practice,'revision',s.revision,
- 'state',s.state,'history',history,'server_now',clock_timestamp(),'can_admin',fcl_switch_is_operator());
+ 'state',s.state||jsonb_build_object('base_prices',fcl_switch_base_prices(s.tournament_id,s.state,s.practice),'prices',jsonb_build_object('entry',fcl_switch_price(s.id,'entry'),'reroll',fcl_switch_price(s.id,'reroll'),'lock',fcl_switch_price(s.id,'lock'),'unlock',fcl_switch_price(s.id,'unlock'),'nuke',fcl_switch_price(s.id,'nuke'))),'history',history,'server_now',clock_timestamp(),'can_admin',fcl_switch_is_operator());
 END $$;
 -- Reads authoritative registration registry first, matching the existing registration workflow.
 CREATE OR REPLACE FUNCTION public.fcl_switch_registrations(p_tournament text) RETURNS jsonb
@@ -70,7 +119,7 @@ BEGIN
  ELSE
  SELECT id INTO sid FROM fcl_switch_sessions WHERE tournament_id=p_tournament;
  IF FOUND THEN RETURN fcl_switch_read(sid); END IF;
- SELECT title INTO title_text FROM tournaments WHERE id::text=p_tournament AND lower(format) LIKE '%duo%';
+ SELECT title INTO title_text FROM tournaments WHERE id::text=p_tournament AND lower(format) LIKE '%duo%' FOR UPDATE;
  IF title_text IS NULL THEN RAISE EXCEPTION 'A Duo Switch tournament is required.'; END IF;
  IF EXISTS(SELECT 1 FROM tournaments WHERE id::text=p_tournament AND jsonb_array_length(coalesce(bracket_data->'stages','[]'::jsonb))>0) THEN
  RAISE EXCEPTION 'This tournament already has a bracket. Use a fresh tournament or explicitly clear its unstarted bracket first.'; END IF;
@@ -84,7 +133,7 @@ BEGIN
  END IF;
  INSERT INTO fcl_switch_sessions(id,tournament_id,title,practice,state) VALUES(sid,CASE WHEN p_practice THEN NULL ELSE p_tournament END,title_text,p_practice,
  jsonb_build_object('version',2,'phase','registration','status','registration','enabled',true,'duos',duos,'teams','[]'::jsonb,
- 'unpaired','[]'::jsonb,'active_spin',null,'last_spin',null,'bracket_generated',false,'blowup_count',0));
+ 'unpaired','[]'::jsonb,'active_spin',null,'last_spin',null,'bracket_generated',false,'blowup_count',0,'base_prices',fcl_switch_base_prices(p_tournament,'{"phase":"registration"}'::jsonb,p_practice)));
  RETURN fcl_switch_read(sid);
 END $$;
 CREATE OR REPLACE FUNCTION public.fcl_switch_command_core(p_id text,p_action text,p_args jsonb,p_operation uuid,p_revision integer) RETURNS jsonb
@@ -94,6 +143,8 @@ DECLARE s fcl_switch_sessions; st jsonb; prior fcl_switch_actions; duos jsonb; t
  buyer text:=p_args->>'duo_id'; target text:=p_args->>'target_id'; phase text; selected integer; roster_tags text[]; total integer; unique_total integer; before_teams jsonb; before_pool jsonb;
 BEGIN
  IF NOT fcl_switch_is_operator() THEN RAISE EXCEPTION 'Switch operator access required.'; END IF;
+ SELECT tournament_id INTO phase FROM fcl_switch_sessions WHERE id=p_id;
+ PERFORM 1 FROM tournaments WHERE id::text=phase FOR UPDATE;
  SELECT * INTO s FROM fcl_switch_sessions WHERE id=p_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Switch session not found.'; END IF;
  SELECT * INTO prior FROM fcl_switch_actions WHERE operation_id=p_operation;
@@ -101,7 +152,7 @@ BEGIN
  IF prior.session_id<>p_id OR prior.action<>p_action OR prior.args<>p_args THEN RAISE EXCEPTION 'Operation ID already used for another action.'; END IF;
  RETURN fcl_switch_read(p_id); END IF;
  IF s.revision<>p_revision THEN RAISE EXCEPTION 'Another admin changed this session. Refresh and review before trying again.'; END IF;
- st:=s.state; phase:=st->>'phase';duos:=st->'duos';teams:=st->'teams';pool:=st->'unpaired';before_teams:=teams;before_pool:=pool;
+ st:=s.state||jsonb_build_object('base_prices',fcl_switch_base_prices(s.tournament_id,s.state,s.practice)); phase:=st->>'phase';duos:=st->'duos';teams:=st->'teams';pool:=st->'unpaired';before_teams:=teams;before_pool:=pool;
  IF st->'active_spin' IS NOT NULL AND st->'active_spin'<>'null'::jsonb THEN
  IF (st->'active_spin'->>'ends_at')::timestamptz>clock_timestamp() THEN RAISE EXCEPTION 'A wheel spin is still running. Wait for its result.'; END IF;
  st:=st||jsonb_build_object('last_spin',st->'active_spin','active_spin',null);
@@ -120,11 +171,11 @@ BEGIN
  IF a IS NULL THEN RAISE EXCEPTION 'Select the registered duo that purchased this action.'; END IF;
  IF p_action='entry' THEN
  IF phase<>'registration' THEN RAISE EXCEPTION 'Entry payments must be confirmed before pairing.'; END IF;
- IF (a->>'entry_verified')::boolean THEN RAISE EXCEPTION 'Entry payment already confirmed.'; END IF;amount:=5;
+ IF (a->>'entry_verified')::boolean THEN RAISE EXCEPTION 'Entry payment already confirmed.'; END IF;amount:=fcl_switch_price(p_id,'entry');
  ELSE
  IF phase<>'window' OR jsonb_array_length(pool)>0 THEN RAISE EXCEPTION 'Finish pairing all duos before accepting power-ups.'; END IF;
  IF NOT (a->>'entry_verified')::boolean THEN RAISE EXCEPTION 'Purchaser must have a verified entry.'; END IF;
- amount:=(CASE p_action WHEN 'reroll' THEN 10 WHEN 'nuke' THEN 20 ELSE 15 END)+5*coalesce((st->>'blowup_count')::integer,0);
+ amount:=fcl_switch_price(p_id,p_action);
  END IF;
  method_text:=p_args->>'method';ref_text:=nullif(btrim(p_args->>'reference'),'');
  IF s.practice THEN method_text:='Practice';ref_text:=NULL;
@@ -166,7 +217,7 @@ BEGIN
  IF NOT s.practice AND EXISTS (SELECT 1 FROM jsonb_array_elements(fcl_switch_registrations(s.tournament_id)) AS fresh(reg) FULL JOIN jsonb_array_elements(duos) AS snapshot(duo) ON fresh.reg->>'id'=snapshot.duo->>'id' WHERE fresh.reg IS NULL OR snapshot.duo IS NULL OR fresh.reg->'roster' IS DISTINCT FROM snapshot.duo->'roster' OR fresh.reg->>'team_name' IS DISTINCT FROM snapshot.duo->>'team_name') THEN RAISE EXCEPTION 'Registrations changed. Refresh registrations and review entry payments before starting.'; END IF;
  IF phase<>'registration' THEN RAISE EXCEPTION 'Initial pairing already started.'; END IF;
  IF jsonb_array_length(duos)<4 OR jsonb_array_length(duos)%2<>0 THEN RAISE EXCEPTION 'At least four duos and an even registration count are required.'; END IF;
- IF EXISTS(SELECT 1 FROM jsonb_array_elements(duos) x WHERE NOT (x->>'entry_verified')::boolean OR jsonb_typeof(x->'roster')<>'array' OR jsonb_array_length(x->'roster')<>2) THEN RAISE EXCEPTION 'Every duo needs a verified $5 entry and exactly two players.'; END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_array_elements(duos) x WHERE NOT (x->>'entry_verified')::boolean OR jsonb_typeof(x->'roster')<>'array' OR jsonb_array_length(x->'roster')<>2) THEN RAISE EXCEPTION 'Every duo needs a verified entry payment and exactly two players.'; END IF;
  SELECT count(*),count(DISTINCT lower(btrim(CASE WHEN jsonb_typeof(r)='object' THEN coalesce(r->>'gamertag',r->>'name') ELSE r#>>'{}' END))) INTO total,unique_total
  FROM jsonb_array_elements(duos) x CROSS JOIN LATERAL jsonb_array_elements(x->'roster') r;
  IF total<>unique_total OR EXISTS(SELECT 1 FROM jsonb_array_elements(duos) x CROSS JOIN LATERAL jsonb_array_elements(x->'roster') r WHERE nullif(btrim(CASE WHEN jsonb_typeof(r)='object' THEN coalesce(r->>'gamertag',r->>'name') ELSE r#>>'{}' END),'') IS NULL) THEN RAISE EXCEPTION 'Players must be named and cannot appear in multiple duos.'; END IF;
@@ -223,7 +274,7 @@ BEGIN
  IF SQLSTATE='23505' THEN failure:='This payment reference was already used. Check the activity history before recording it again.'; END IF;
  IF EXISTS(SELECT 1 FROM fcl_switch_sessions WHERE id=p_id) AND NOT EXISTS(SELECT 1 FROM fcl_switch_actions WHERE operation_id=p_operation) THEN
  INSERT INTO fcl_switch_actions(operation_id,session_id,actor,action,args,amount,method,reference,status,error)
- VALUES(p_operation,p_id,auth.uid(),p_action,p_args,CASE p_action WHEN 'entry' THEN 5 WHEN 'reroll' THEN 10 WHEN 'lock' THEN 15 WHEN 'unlock' THEN 15 WHEN 'nuke' THEN 20 ELSE 0 END + CASE WHEN p_action IN ('reroll','lock','unlock','nuke') THEN 5*coalesce((SELECT (state->>'blowup_count')::integer FROM fcl_switch_sessions WHERE id=p_id),0) ELSE 0 END,
+ VALUES(p_operation,p_id,auth.uid(),p_action,p_args,fcl_switch_price(p_id,p_action),
  p_args->>'method',nullif(btrim(p_args->>'reference'),''),'failed',failure);
  UPDATE fcl_switch_sessions SET revision=revision+1 WHERE id=p_id;
  END IF;

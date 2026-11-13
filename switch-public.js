@@ -13,7 +13,7 @@
    try {
     const { data, error } = await c.rpc('fcl_switch_read', { p_id: String(t.id) });
     if (error) throw error;
-    const next = data && !data.practice ? { id: data.id, state: { phase: data.state.phase, bracket_generated: !!data.state.bracket_generated, blowup_count: Number(data.state.blowup_count || 0) } } : null;
+    const next = data && !data.practice ? { id: data.id, state: { prices: data.state.prices, phase: data.state.phase, bracket_generated: !!data.state.bracket_generated, blowup_count: Number(data.state.blowup_count || 0) } } : null;
     if (JSON.stringify(sessions.get(String(t.id))) !== JSON.stringify(next)) changed = true;
     sessions.set(String(t.id), next);
    } catch (e) { console.warn('Could not refresh Switch phase:', e.message); }
@@ -28,6 +28,9 @@
   return { kind: 'wheel', label: 'Watch Live Wheel Spins', href: spectatorUrl(t.id) };
  }
  function updateDetails(t) {
+  const summary = document.querySelector('[data-switch-prices-summary]');
+  if(summary && window.SwitchPricing){const p=window.SwitchPricing.current(t,sessions.get(String(t.id)));summary.textContent=`Entry $${p.entry} · Respin $${p.reroll} · Lock $${p.lock} · Unlock $${p.unlock} · Nuke $${p.nuke}.`;}
+
   const a = action(t), link = document.getElementById('modal-detail-bracket-link'), reg = document.getElementById('modal-detail-register-btn');
   if (a && link) { link.href = a.href; link.textContent = a.label; link.style.display = 'inline-flex'; if (reg) reg.style.display = 'none'; }
  }
@@ -35,10 +38,10 @@
   if (!isSpectatorRoute || document.querySelector('[data-switch-public]')) return;
   document.title = 'Live Switch Tournament · Frontline';
   document.body.innerHTML = '<header style="max-width:1240px;margin:auto;padding:24px"><a href="/tournaments/" style="color:#d5f45b">FRONTLINE / TOURNAMENTS</a><h1>Live Switch Arena</h1></header><main data-switch-public aria-live="polite" style="max-width:1240px;margin:auto;padding:24px">Connecting…</main>';
-  const script = document.createElement('script'); script.src = '/switch-client.js?v=match-fixes-v19';
+  const script = document.createElement('script'); script.src = '/switch-client.js?v=prices-v110';
   script.onerror = () => { document.querySelector('[data-switch-public]').textContent = 'The spectator files could not load. Please refresh or contact tournament staff.'; };
   document.body.append(script);
  }
- window.SwitchPublic = { refresh, action, spectatorUrl, isSpectatorRoute, updateDetails, recoverSpectatorPage };
+ window.SwitchPublic = { session:id=>sessions.get(String(id)), refresh, action, spectatorUrl, isSpectatorRoute, updateDetails, recoverSpectatorPage };
  document.addEventListener('DOMContentLoaded', recoverSpectatorPage);
 })();

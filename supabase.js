@@ -5432,6 +5432,8 @@ if (dbClient && cleanPayload.user_id) {
           updated_at: new Date().toISOString()
         };
 
+        if (String(tourneyItem.format || '').toLowerCase().includes('duo')) payload.switch_prices = tourneyItem.switch_prices || null;
+
         if (tourneyItem.bracket_data) {
           payload.bracket_data = tourneyItem.bracket_data;
         }

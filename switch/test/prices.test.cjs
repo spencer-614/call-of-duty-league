@@ -12,3 +12,10 @@ test('spectator, staff options, and wheel state use the same escalating prices',
  assert.equal(engine.currentSwitchState.nuke_fee,20+5*n);assert.equal(engine.currentSwitchState.unlock_fee,15+5*n);
  }
 });
+test('server-configured prices override legacy defaults without applying the nuke increase twice',()=>{
+ const source=fs.readFileSync('switch-client.js','utf8').replace(/\}\)\(\);\s*$/,`window.testAccept=(data,el)=>{host=el;accept(data);};})();`);
+ const engine={renderModalPanels(){},syncHistoryAlerts(){}};const context={window:{DuoSwitchEngine:engine,LeagueDB:{getLeaguePaymentConfig:async()=>({})}},document:{createElement:()=>({}),head:{append(){}},querySelector:()=>null},Date,URLSearchParams,clearTimeout(){},setTimeout(){},alert(){}};vm.runInNewContext(source,context);
+ const host={dataset:{swAdmin:'false'},querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
+ context.window.testAccept({id:'s',title:'Configured',can_admin:false,practice:true,revision:1,server_now:new Date().toISOString(),history:[],state:{phase:'window',duos:[],teams:[],unpaired:[],blowup_count:3,prices:{entry:10,reroll:25,lock:30,unlock:35,nuke:30}}},host);
+ assert.ok(host.innerHTML.includes('Entry $10'));assert.ok(host.innerHTML.includes('Unlock $35'));assert.equal(engine.currentSwitchState.nuke_fee,30);
+});
