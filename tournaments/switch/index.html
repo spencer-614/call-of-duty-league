@@ -53,6 +53,28 @@
         border-radius: 2px;
         letter-spacing: 0.6px;
       }
+      .btn-watch-wheel {
+        background: #f59e0b;
+        color: #0b0e07;
+        border: 1px solid #fbbf24;
+        font: 800 11.5px var(--body, sans-serif);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        padding: 6px 14px;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+        white-space: nowrap;
+      }
+      .btn-watch-wheel:hover {
+        background: #fbbf24;
+        box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+        transform: translateY(-1px);
+      }
     </style>
   </head>
   <body>
@@ -126,9 +148,9 @@
             </nav>
           </div>
 
-          <a href="/tournaments/" class="btn-tourney-primary" style="padding:6px 12px; font-size:11px; text-decoration:none;">
-            <span>←</span> <span>Tournaments</span>
-          </a>
+          <button type="button" class="btn-watch-wheel" onclick="window.DuoSwitchEngine &amp;&amp; window.DuoSwitchEngine.openLiveWheelPreview()">
+            <span>🎡</span> <span>Watch Wheel</span>
+          </button>
         </div>
       </div>
     </header>
@@ -176,5 +198,23 @@
     <script src="/tournament-switch-wheel.js?v=switch-v3"></script>
     <script src="/switch-client.js?v=wheel-public-20261112"></script>
     <script src="/bullet-sparks.js" defer></script>
+    <script>
+      // Automatically open the synchronized wheel modal when landing on the Switch spectator page
+      (function() {
+        const p = new URLSearchParams(location.search);
+        if (p.get('session') || p.get('tournament')) {
+          let attempts = 0;
+          const timer = setInterval(() => {
+            attempts++;
+            if (window.DuoSwitchEngine && typeof window.DuoSwitchEngine.openLiveWheelPreview === 'function') {
+              window.DuoSwitchEngine.openLiveWheelPreview();
+              clearInterval(timer);
+            } else if (attempts > 35) {
+              clearInterval(timer);
+            }
+          }, 250);
+        }
+      })();
+    </script>
   </body>
 </html>
