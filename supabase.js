@@ -4520,8 +4520,8 @@ if (dbClient && cleanPayload.user_id) {
   // ==========================================
   DEFAULT_LADDER_DETAILS_SETTINGS: {
     has_prize_pool: true,
-    prize_title: "$1,000 Cash Pool",
-    prize_subtitle: "+ Custom Frontline Rings",
+    prize_title: "$100 Cash Pool",
+    prize_subtitle: "$100 for each ladder",
     season_ends: "Sat 31 Dec 2026, 8:00 PM EST",
     roster_lock: "Fri 14 Nov 2026",
     playoffs_start: "Fri 21 Nov 2026"
@@ -4531,7 +4531,16 @@ if (dbClient && cleanPayload.user_id) {
     let cached = null;
     try {
       const saved = localStorage.getItem("frontline_arena_ladder_settings");
-      if (saved) cached = JSON.parse(saved);
+      if (saved) {
+        cached = JSON.parse(saved);
+        if (cached && (cached.prize_title === "$1,000 Cash Pool" || cached.prize_title === "$1,000")) {
+          cached.prize_title = "$100 Cash Pool";
+          if (!cached.prize_subtitle || cached.prize_subtitle === "+ Custom Frontline Rings") {
+            cached.prize_subtitle = "$100 for each ladder";
+          }
+          localStorage.setItem("frontline_arena_ladder_settings", JSON.stringify(cached));
+        }
+      }
     } catch (e) {}
 
     if (dbClient) {
@@ -4544,6 +4553,12 @@ if (dbClient && cleanPayload.user_id) {
 
         if (!error && data && data.status_text) {
           const parsed = JSON.parse(data.status_text);
+          if (parsed && (parsed.prize_title === "$1,000 Cash Pool" || parsed.prize_title === "$1,000")) {
+            parsed.prize_title = "$100 Cash Pool";
+            if (!parsed.prize_subtitle || parsed.prize_subtitle === "+ Custom Frontline Rings") {
+              parsed.prize_subtitle = "$100 for each ladder";
+            }
+          }
           try {
             localStorage.setItem("frontline_arena_ladder_settings", JSON.stringify(parsed));
           } catch (e) {}

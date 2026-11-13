@@ -400,8 +400,8 @@
               <div class="fl-detail-row" style="padding-top:4px;" id="sidebar-prizepool-row">
                 <span class="fl-detail-label">🏆 Prize Pool</span>
                 <span class="fl-detail-value prize-text" id="sidebar-prizepool-val">
-                  $1,000 Cash Pool<br />
-                  <span style="color:#fde047; font-size:11px; font-weight:600;">+ Custom Frontline Rings</span>
+                  $100 Cash Pool<br />
+                  <span style="color:#fde047; font-size:11px; font-weight:600;">$100 for each ladder</span>
                 </span>
               </div>
             </div>
@@ -1012,6 +1012,7 @@
         renderHeroAction();
         loadStandings();
         renderRecentMatchesSidebar();
+        renderLadderDetailsSidebar();
       }
 
       function openLadderDropdown(e) {
@@ -2339,6 +2340,7 @@
       // INITIALIZATION
       window.addEventListener("DOMContentLoaded", () => {
         selectLadder(currentLadder);
+        renderLadderDetailsSidebar();
         renderArenaAnnouncements();
         initArenaSeasonStatus();
 
@@ -2360,6 +2362,8 @@
                 window.LeagueDB.applyArenaSeasonBadge(e.data.data);
               }
             };
+            const detailsChannel = new BroadcastChannel("frontline_ladder_details_channel");
+            detailsChannel.onmessage = () => { renderLadderDetailsSidebar(); };
           } catch (_) {}
         }
         window.addEventListener("storage", (e) => {
@@ -2369,8 +2373,12 @@
           if (e.key === "frontline_arena_season_settings") {
             initArenaSeasonStatus();
           }
+          if (e.key === "frontline_arena_ladder_settings") {
+            renderLadderDetailsSidebar();
+          }
         });
         window.addEventListener("frontline_arena_announcement_changed", renderArenaAnnouncements);
+        window.addEventListener("frontline_ladder_details_updated", renderLadderDetailsSidebar);
       }
 
       // Close modal on Escape
