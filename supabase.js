@@ -5232,6 +5232,18 @@ if (dbClient && cleanPayload.user_id) {
   DEFAULT_TOURNAMENTS: [],
 
   async getTournaments(filters = {}) {
+    if (filters.summary && dbClient) {
+      const { data, error } = await dbClient.rpc('fcl_tournament_summaries');
+      if (!error && Array.isArray(data)) {
+        return data.filter(t =>
+          (!filters.format || filters.format === 'all' || String(t.format || '').toLowerCase().includes(filters.format.toLowerCase())) &&
+          (!filters.status || filters.status === 'all' || String(t.status || '').toLowerCase() === filters.status.toLowerCase()) &&
+          (!filters.query || [t.title, t.format, t.prize_pool].some(v => String(v || '').toLowerCase().includes(filters.query.toLowerCase().trim())))
+        );
+      }
+      // Compatibility with deployments that have not applied performance/migration.sql.
+      if (error) console.warn('Tournament summaries unavailable; using full tournament loader.', error.message);
+    }
     let list = null;
 
     // 1. Try Supabase dedicated table 'tournaments' if created
@@ -7449,6 +7461,12 @@ if (dbClient && cleanPayload.user_id) {
       if (cached) return JSON.parse(cached);
     } catch (_) {}
 
+    if (dbClient) {
+      const { data, error } = await dbClient.from('tournaments')
+        .select('bracket_data').eq('id', tournamentId).maybeSingle();
+      if (!error && data) return data.bracket_data || null;
+      if (error) throw new Error(error.message || 'Unable to load the tournament bracket.');
+    }
     const tourneys = await this.getTournaments();
     const tourney = tourneys.find(t => String(t.id) === String(tournamentId));
     if (tourney?.bracket_data) return tourney.bracket_data;
@@ -15943,7 +15961,7 @@ if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
               localStorage.setItem("frontline_league_auth_user", JSON.stringify(session.user));
               localStorage.setItem("frontline_arena_auth_user", JSON.stringify(session.user));
               if (window.LeagueDB && typeof window.LeagueDB.syncDiscordAuthAccount === "function") {
-                window.LeagueDB.syncDiscordAuthAccount(session.user);
+                setTimeout(() => window.LeagueDB.syncDiscordAuthAccount(session.user).catch(console.warn), 0);
               }
             } catch(e) {}
           }
@@ -15969,5 +15987,26 @@ if (typeof window !== "undefined" && window.LeagueDB && window.LadderDB) {
         }
       });
     } catch (e) {}
+  }
+})();
+
+// Share concurrent lookups; each caller receives its own result and later reads stay fresh.
+(() => {
+  const pending = new Map();
+  for (const name of ['getTournaments', 'getSignups', 'getPlayers', 'getStaffRoles', 'getAuthDirectory', 'getLeaguePaymentConfig', 'syncDiscordAuthAccount', 'syncDiscordStaffIdentity']) {
+    const original = window.LeagueDB?.[name];
+    if (typeof original !== 'function') continue;
+    window.LeagueDB[name] = async function (...args) {
+      const key = name + ':' + JSON.stringify(args);
+      let request = pending.get(key);
+      if (!request) {
+        request = Promise.resolve().then(() => original.apply(this, args));
+        pending.set(key, request);
+        const clear = () => { if (pending.get(key) === request) pending.delete(key); };
+        request.then(clear, clear);
+      }
+      const result = await request;
+      return result === undefined ? undefined : JSON.parse(JSON.stringify(result));
+    };
   }
 })();

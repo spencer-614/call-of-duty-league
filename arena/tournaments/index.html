@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/styles.css?v=2" />
     <title>Frontline Arena — Competitive Tournaments &amp; Cash Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=prices-v110"></script>
+    <script src="/supabase.js?v=performance-v111"></script>
     <script src="/bullet-sparks.js" defer></script>
       <script src="/admin-shortcut.js" onerror="this.onerror=null;this.src='../admin-shortcut.js';"></script>
   </head>
@@ -246,7 +246,7 @@
         try {
           let list = [];
           if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-            list = await window.LeagueDB.getTournaments();
+            list = await window.LeagueDB.getTournaments({ summary: true });
           } else {
             const raw = localStorage.getItem('frontline_tournaments_data');
             if (raw) {

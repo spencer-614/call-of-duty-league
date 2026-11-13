@@ -4771,7 +4771,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/switch-pricing.js?v=prices-v110"></script>
-    <script src="/supabase.js?v=prices-v110"></script>
+    <script src="/supabase.js?v=performance-v111"></script>
     <script src="/bullet-sparks.js"></script>
     <script>
       (function() {
@@ -11060,7 +11060,7 @@
           try {
             let list = [];
             if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-              list = await window.LeagueDB.getTournaments();
+              list = await window.LeagueDB.getTournaments({ summary: true });
             } else {
               const local = localStorage.getItem("frontline_tournaments_data");
               if (local) {
@@ -11795,10 +11795,17 @@
             let bracketData = null;
 
             if (window.LeagueDB) {
-              [tourneys, regs, bracketData] = await Promise.all([
-                typeof window.LeagueDB.getTournaments === "function" ? window.LeagueDB.getTournaments() : [],
-                typeof window.LeagueDB.getTournamentRegistrations === "function" ? window.LeagueDB.getTournamentRegistrations(tourneyId) : [],
-                typeof window.LeagueDB.getTournamentBracket === "function" ? window.LeagueDB.getTournamentBracket(tourneyId) : null
+              tourneys = await window.LeagueDB.getTournaments({ summary: true });
+              const selected = tourneys.find(t => String(t.id) === String(tourneyId));
+              if (String(selected?.format || '').toLowerCase().includes('duo') && window.SwitchTournamentUI && !window._switchShowMatches) {
+                if (statusEl) statusEl.textContent = 'Switch tournament control desk';
+                controlsEl.innerHTML = '';
+                await window.SwitchTournamentUI.admin(container, selected);
+                return;
+              }
+              [regs, bracketData] = await Promise.all([
+                window.LeagueDB.getTournamentRegistrations(tourneyId),
+                window.LeagueDB.getTournamentBracket(tourneyId)
               ]);
             } else {
               tourneys = JSON.parse(localStorage.getItem("frontline_tournaments_data")) || [];
@@ -13759,7 +13766,7 @@
           try {
             let list = [];
             if (window.LeagueDB && typeof window.LeagueDB.getTournaments === "function") {
-              list = await window.LeagueDB.getTournaments();
+              list = await window.LeagueDB.getTournaments({ summary: true });
             } else {
               const local = localStorage.getItem("frontline_tournaments_data");
               if (local) {
@@ -14905,7 +14912,7 @@
     </script>
   <script src="/tournament-reports.js?v=match-fixes-v19"></script>
   <script src="/tournament-switch-wheel.js?v=switch-v3"></script>
-  <script src="/switch-client.js?v=prices-v110"></script>
+  <script src="/switch-client.js?v=performance-v111"></script>
 <a href="/admin/league/" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#d5f45b;color:#182000;padding:12px 18px;border-radius:6px;font:700 14px system-ui;text-decoration:none">League Operations &amp; Discord</a>
 <script src="/ranking/navigation.js?v=1" defer></script>
 </body>

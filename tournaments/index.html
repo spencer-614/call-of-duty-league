@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="/styles.css?v=2" />
     <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/supabase.js?v=prices-v110"></script>
+    <script src="/supabase.js?v=performance-v111"></script>
     <script src="/switch-pricing.js?v=prices-v110"></script>
-    <script src="/switch-public.js?v=prices-v110"></script>
+    <script src="/switch-public.js?v=performance-v111"></script>
     <script src="/tournament-switch-wheel.js?v=registration-fix-20261112" defer></script>
     <script src="/bullet-sparks.js" defer></script>
     <style>
@@ -1089,7 +1089,7 @@
         // 2. Fetch tournaments and active suspensions from LeagueDB
         if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
           try {
-            currentTournaments = await window.LeagueDB.getTournaments();
+            currentTournaments = await window.LeagueDB.getTournaments({ summary: true });
           } catch(e) {
             console.error('Error fetching tournaments:', e);
             currentTournaments = [];
@@ -1336,7 +1336,7 @@
                   <button type="button" class="btn-tourney-outline" onclick="openTourneyDetails('${escapeHtml(t.id)}')">
                     <span>🔍</span> Details
                   </button>
-                  ${switchAction ? `<a href="${escapeHtml(switchAction.href)}" class="btn-tourney-primary" style="text-decoration:none;">${escapeHtml(switchAction.label)}</a>` : (rawStatus.includes('live') || t.bracket_data) ? `
+                  ${switchAction ? `<a href="${escapeHtml(switchAction.href)}" class="btn-tourney-primary" style="text-decoration:none;">${escapeHtml(switchAction.label)}</a>` : (rawStatus.includes('live') || (t.has_bracket || t.bracket_data)) ? `
                     <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none;">
                       <span>⚔</span> View Bracket ↗
                     </a>
@@ -1458,7 +1458,7 @@
 
         const bracketLink = document.getElementById('modal-detail-bracket-link');
         if (bracketLink) {
-          const isLiveOrBracket = (t.status || '').toLowerCase().includes('live') || !!t.bracket_data || (t.status || '').toLowerCase().includes('completed');
+          const isLiveOrBracket = (t.status || '').toLowerCase().includes('live') || !!(t.has_bracket || t.bracket_data) || (t.status || '').toLowerCase().includes('completed');
           if (isLiveOrBracket) {
             bracketLink.href = `/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}`;
             bracketLink.style.display = 'inline-flex';
@@ -2666,7 +2666,7 @@
 
           // Re-fetch and update UI
           if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-            currentTournaments = await window.LeagueDB.getTournaments();
+            currentTournaments = await window.LeagueDB.getTournaments({ summary: true });
             renderTournaments();
           }
         } catch(err) {
@@ -2800,13 +2800,13 @@
       // Init on load
       window.addEventListener('frontline_tournament_registered', async () => {
         if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-          currentTournaments = await window.LeagueDB.getTournaments();
+          currentTournaments = await window.LeagueDB.getTournaments({ summary: true });
           renderTournaments();
         }
       });
       window.addEventListener('frontline_tournament_registration_deleted', async () => {
         if (window.LeagueDB && typeof window.LeagueDB.getTournaments === 'function') {
-          currentTournaments = await window.LeagueDB.getTournaments();
+          currentTournaments = await window.LeagueDB.getTournaments({ summary: true });
           renderTournaments();
         }
       });
