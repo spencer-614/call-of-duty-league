@@ -23,3 +23,7 @@ If image_url/banner_url contains large embedded images, move those assets to ima
 Local validation: run `node --test performance/performance.test.cjs switch/test/*.test.cjs match-fixes/test/*.test.cjs` after `npm install`.
 
 Rollback: restore the previous website files. The added SQL functions may remain unused; no tournament or registration data restoration is needed.
+
+## v1.12 connection recovery
+
+For an existing v1.11 installation, publish the updated files and hard-refresh; there is no additional SQL change. If v1.11 SQL was never applied, follow the migration step above. Read-only polling requests now time out after eight seconds. If the lightweight reader fails, the desk tries the existing full reader immediately. A short delay shows Syncing; a fifteen-second gap pauses actions. Returning to the tab triggers an immediate refresh. Errors include the actual read failure reason for diagnosis. Server revision checks and command payment/idempotency behavior are unchanged.

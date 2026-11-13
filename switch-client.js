@@ -49,25 +49,50 @@
     showSpin();
     tick();
   }
- function tick(){if(!host)return;if(wasSpinning&&!spinning()){wasSpinning=false;render();return;}wasSpinning=!!spinning();const status=host.querySelector('[data-sw-connection]');if(status)status.textContent=Date.now()-latestOK<5000?'● Live · synced':'● Reconnecting · actions paused';host.querySelectorAll('[data-sw-command]').forEach(b=>{b.disabled=!!b.dataset.swIneligible||busy||!!retry||!!spinning()||Date.now()-latestOK>=5000;});const progress=host.querySelector('[data-sw-spin-status]');if(progress){const s=active?.state.active_spin;progress.textContent=spinning()?`Live spin · ${Math.max(0,Math.ceil((Date.parse(s.ends_at)-now())/1000))}s`:active?.state.last_spin||s?`Latest result: ${(s||active.state.last_spin).requesting_duo.team_name} + ${(s||active.state.last_spin).target_duo.team_name}`:'Ready for the next spin';}}
+ function connectionState(){const age=Date.now()-latestOK;return {stale:age>=15000,label:age<5000?'● Live · synced':age<15000?'● Syncing latest state…':'● Reconnecting · actions paused'};}
+ function tick(){if(!host)return;if(wasSpinning&&!spinning()){wasSpinning=false;render();return;}wasSpinning=!!spinning();const status=host.querySelector('[data-sw-connection]');if(status)status.textContent=connectionState().label;host.querySelectorAll('[data-sw-command]').forEach(b=>{b.disabled=!!b.dataset.swIneligible||busy||!!retry||!!spinning()||connectionState().stale;});const progress=host.querySelector('[data-sw-spin-status]');if(progress){const s=active?.state.active_spin;progress.textContent=spinning()?`Live spin · ${Math.max(0,Math.ceil((Date.parse(s.ends_at)-now())/1000))}s`:active?.state.last_spin||s?`Latest result: ${(s||active.state.last_spin).requesting_duo.team_name} + ${(s||active.state.last_spin).target_duo.team_name}`:'Ready for the next spin';}}
  let lastPoll = 0, lightweightPolling = true;
+ // Bound read requests only. Commands keep their existing idempotent retry handling.
+ async function pollRead(name,args){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+   const request=db().rpc(name,args);
+   const result=await request.abortSignal(controller.signal);
+   if(result.error)throw result.error;
+   if(!result.data)throw Error('Switch session is unavailable.');
+   return result.data;
+  }finally{clearTimeout(timeout);}
+ }
  async function poll(){
   if(inFlight||document.hidden||!host?.isConnected||!active||Date.now()-lastPoll<2000)return;
   lastPoll=Date.now();inFlight=true;
+  const currentHost=host,currentId=active.id;
   try{
    let data;
    if(lightweightPolling){
-    const result=await db().rpc('fcl_switch_poll',{p_id:active.id,p_revision:lastRevision});
-    if(result.error){
-     if(result.error.code==='PGRST202')lightweightPolling=false;else throw result.error;
-    }else data=result.data;
+    try{data=await pollRead('fcl_switch_poll',{p_id:currentId,p_revision:lastRevision});}
+    catch(e){
+     if(['PGRST202','42883'].includes(e.code))lightweightPolling=false;
+     console.warn('Lightweight Switch read failed; trying the full reader:',e.message);
+     data=await pollRead('fcl_switch_read',{p_id:currentId});
+    }
+   }else data=await pollRead('fcl_switch_read',{p_id:currentId});
+   if(host!==currentHost||active?.id!==currentId)return;
+   if(data.unchanged){latestOK=Date.now();offset=Date.parse(data.server_now)-Date.now();}
+   else accept(data);
+   const notice=host.querySelector('[data-sw-message]');
+   if(notice?.textContent?.startsWith('Sync failed:')){notice.textContent='';notice.className='sw-message';}
+  }catch(e){
+   if(host===currentHost&&active?.id===currentId){
+    console.warn('Switch state refresh failed:',e);
+    message('Sync failed: '+(e.message||'The request timed out.')+' Retrying automatically.',true);
    }
-   if(!lightweightPolling)data=await rpc('fcl_switch_read',{p_id:active.id});
-   if(data?.unchanged){latestOK=Date.now();offset=Date.parse(data.server_now)-Date.now();}
-   else if(data)accept(data);
-  }catch(e){message('Connection interrupted. Reconnecting; no action is assumed successful.',true);}
-  finally{inFlight=false;tick();}
+  }finally{inFlight=false;tick();}
  }
+ document.addEventListener?.('visibilitychange',()=>{
+  if(!document.hidden){lastPoll=0;poll();}
+ });
  function showSpin(force=false){const s=active?.state.active_spin||active?.state.last_spin;if(!s||(!force&&spinId===s.id))return;spinId=s.id;clearTimeout(spinTimer);const wait=Date.parse(s.starts_at)-now();const start=()=>{if(!window.DuoSwitchEngine)return;window.DuoSwitchEngine.handleIncomingSpinBroadcast({...s,title:s.title,elapsed_ms:Math.max(0,now()-Date.parse(s.starts_at)),duration_ms:s.duration_ms});};if(wait>0)spinTimer=setTimeout(start,wait);else if(force||now()<Date.parse(s.ends_at))start();}
  function options(items,key,label){return items.map(x=>`<option value="${esc(x[key])}">${esc(label(x))}</option>`).join('');}
  function render(){if(!host||!active)return;const st={...active.state};if(spinning()){st.teams=active.state.active_spin.before_teams;st.unpaired=active.state.active_spin.before_unpaired;}const admin=active.can_admin&&host.dataset.swAdmin==='true';const done=st.phase==='finalized';const duos=st.duos;const waiting=st.unpaired.map(name);const count=duos.filter(d=>d.entry_verified).length;
@@ -141,7 +166,7 @@
  if(action==='matches'){window._switchShowMatches=true;try{await window.adminManageBracket(active.tournament_id,active.title);}finally{window._switchShowMatches=false;}return;}
  if(['finalize','reset','start'].includes(action)&&!confirm({finalize:'Close purchases and make these squads official? This cannot be reopened.',reset:'Reset this practice session? Its history will remain.',start:'Close registration and begin initial pairing? All entries must be verified and rosters complete.'}[action]))return;
  await command(action);}
- async function mount(element,id,admin=false,data=null){clearInterval(timer);clearTimeout(spinTimer);host=element;active=null;host.dataset.swAdmin=String(admin);lastRevision=-1;wasSpinning=false;spinId=null;retry=null;host.innerHTML='<p>Connecting to the live Switch desk…</p>';
+ async function mount(element,id,admin=false,data=null){clearInterval(timer);clearTimeout(spinTimer);host=element;active=null;host.dataset.swAdmin=String(admin);lastRevision=-1;lastPoll=0;latestOK=0;wasSpinning=false;spinId=null;retry=null;host.innerHTML='<p>Connecting to the live Switch desk…</p>';
  try{let result=data||await rpc('fcl_switch_read',{p_id:String(id)});if(!result){host.innerHTML=admin?`<div class="sw-desk"><h2>Switch tournament setup</h2><p>Start with the current registrations. Entry payments will be confirmed in this desk.</p><button data-sw-create>Set up Switch desk</button><button data-sw-practice>Open practice session</button></div>`:'<p>Staff have not opened the Switch desk yet. This page will update automatically.</p>';
  if(admin){host.querySelector('[data-sw-create]').onclick=async()=>{try{const s=await rpc('fcl_switch_create',{p_tournament:String(id),p_practice:false});await mount(host,s.id,true,s);}catch(e){alert(e.message);}};host.querySelector('[data-sw-practice]').onclick=async()=>{try{const s=await rpc('fcl_switch_create',{p_tournament:null,p_practice:true});await mount(host,s.id,true,s);}catch(e){alert(e.message);}};}else{timer=setInterval(async()=>{if(inFlight||document.hidden||!host?.isConnected)return;inFlight=true;try{const s=await rpc('fcl_switch_read',{p_id:String(id)});if(s)await mount(host,s.id,false,s);}finally{inFlight=false;}},2000);}return;}
  if(accept(result))return;timer=setInterval(()=>{poll();tick();},1000);
