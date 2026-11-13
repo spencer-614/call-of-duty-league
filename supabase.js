@@ -5239,8 +5239,9 @@ if (dbClient && cleanPayload.user_id) {
       }
     }
 
-    // 2. Try Supabase league_settings row 'tournaments_registry' (fallback or sync registry)
-    if ((!list || list.length === 0) && dbClient) {
+    // Keep extended event/payment settings when canonical table rows exist.
+    // Canonical IDs, titles, formats, status and brackets still take precedence.
+    if (dbClient) {
       try {
         const { data, error } = await dbClient
           .from("league_settings")
@@ -5252,7 +5253,18 @@ if (dbClient && cleanPayload.user_id) {
           try {
             const parsed = JSON.parse(data.status_text);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              list = parsed;
+              if (list && list.length > 0) {
+                const metadata = new Map(parsed.map(t => [String(t.id), t]));
+                const extended = ['circuit', 'cashapp_tag', 'paypal_handle', 'payment_instructions', 'has_entry_fee', 'entry_fee_amount', 'pinned', 'is_active', 'banner_fit', 'banner_url', 'rules_notes'];
+                list = list.map(t => {
+                  const extra = metadata.get(String(t.id)) || {};
+                  const merged = { ...extra, ...t };
+                  for (const key of extended) if (Object.prototype.hasOwnProperty.call(extra, key)) merged[key] = extra[key];
+                  return merged;
+                });
+              } else {
+                list = parsed;
+              }
               try {
                 localStorage.setItem("frontline_tournaments_data", JSON.stringify(list));
                 localStorage.setItem("frontline_tournaments_initialized", "true");
@@ -5337,6 +5349,8 @@ if (dbClient && cleanPayload.user_id) {
       return { success: false, error: "Tournament title is required." };
     }
 
+    if (!dbClient) return { success: false, error: 'Database unavailable. Tournament was not published.' };
+
     const currentList = await this.getTournaments();
     const tourneyId = tournamentData.id || ("t_" + Date.now());
     const existingIdx = currentList.findIndex(t => String(t.id) === String(tourneyId));
@@ -5378,12 +5392,6 @@ if (dbClient && cleanPayload.user_id) {
       currentList.unshift(tourneyItem);
     }
 
-    // Save to localStorage
-    try {
-      localStorage.setItem("frontline_tournaments_data", JSON.stringify(currentList));
-      localStorage.setItem("frontline_tournaments_initialized", "true");
-    } catch (e) {}
-
     // Save to Supabase (upsert into tournaments and league_settings)
     if (dbClient) {
       try {
@@ -5413,26 +5421,42 @@ if (dbClient && cleanPayload.user_id) {
           payload.bracket_data = tourneyItem.bracket_data;
         }
 
-        const { error: directErr } = await dbClient.from("tournaments").upsert(payload, { onConflict: "id" });
-        if (directErr) {
-          console.warn("Direct tournaments upsert notice:", directErr.message || directErr);
+        // Older schemas may lack optional display columns. Retry only those
+        // named by an explicit missing-column error; never bypass permissions.
+        const optionalColumns = new Set(['banner_url', 'banner_fit', 'rules_notes', 'updated_at']);
+        let directErr;
+        for (let attempt = 0; attempt <= optionalColumns.size; attempt++) {
+          ({ error: directErr } = await dbClient.from("tournaments").upsert(payload, { onConflict: "id" }));
+          if (!directErr) break;
+          const missing = String(directErr.message || '').match(/['"]([^'"]+)['"] column/i)?.[1] ||
+                          String(directErr.message || '').match(/column ['"]([^'"]+)['"]/i)?.[1];
+          if (!['PGRST204', '42703'].includes(directErr.code) || !optionalColumns.has(missing) || !(missing in payload)) break;
+          delete payload[missing];
         }
+        if (directErr) return { success: false, error: 'Tournament was not published to the main table: ' + (directErr.message || directErr) };
       } catch (err) {
-        console.warn("Tournaments upsert exception:", err);
+        return { success: false, error: 'Tournament was not published to the main table: ' + (err.message || err) };
       }
 
       // Always persist to league_settings tournaments_registry
       try {
-        await dbClient.from("league_settings").upsert({
+        const { error: registryError } = await dbClient.from("league_settings").upsert({
           id: "tournaments_registry",
           status_state: "active",
           status_text: JSON.stringify(currentList),
           updated_at: new Date().toISOString()
         }, { onConflict: "id" });
+        if (registryError) return { success: false, error: 'Tournament saved in the main table, but settings sync failed: ' + registryError.message };
       } catch (e) {
-        console.warn("league_settings upsert error:", e);
+        return { success: false, error: 'Tournament saved in the main table, but settings sync failed: ' + (e.message || e) };
       }
     }
+
+    // Save to localStorage
+    try {
+      localStorage.setItem("frontline_tournaments_data", JSON.stringify(currentList));
+      localStorage.setItem("frontline_tournaments_initialized", "true");
+    } catch (e) {}
 
     // If status was changed to Live, send notification to all registered players
     const prevStatus = String(existingObj.status || "").toLowerCase();
