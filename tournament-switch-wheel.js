@@ -106,6 +106,60 @@
     } catch (_) {}
   }
 
+  function playActionSound(type) {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      if (type === 'nuke') {
+        playNukeAlarm();
+        return;
+      }
+      if (type === 'lock') {
+        // Heavy metallic latch/clank
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(75, now + 0.18);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+        return;
+      }
+      if (type === 'unlock') {
+        // Rising chime
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(680, now + 0.18);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+        return;
+      }
+      // Default / reroll / respin: quick ascending dual blip
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(920, now + 0.14);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } catch (_) {}
+  }
+
   // ---------------------------------------------------------------------------
   // 2. CANVAS WHEEL RENDERING ENGINE
   // ---------------------------------------------------------------------------
@@ -246,7 +300,7 @@
         dCtx.lineWidth = 2 * this.dpr;
         dCtx.stroke();
 
-        // Slice text label
+        // Slice text label - dynamically sized, bounded, and stroked to prevent overlapping
         dCtx.save();
         dCtx.translate(centerX, centerY);
         const midA = startA + sliceAngle / 2;
@@ -255,17 +309,53 @@
         dCtx.textBaseline = 'middle';
 
         const label = String(sliceData.team_name || sliceData.name || `Duo ${i + 1}`).trim();
-        const shortLabel = label.length > 18 ? label.substring(0, 16) + '..' : label;
 
-        dCtx.font = `900 ${13 * this.dpr}px "Industry", "Inter", sans-serif`;
-        dCtx.fillStyle = '#ffffff';
-        dCtx.fillText(shortLabel, radius - (20 * this.dpr), 0);
+        // Calculate dynamic font size and maximum radial text width so slices never overlap
+        // As slices increase, arc width decreases; text scales down dynamically.
+        const fontSize = Math.max(9, Math.min(13, Math.round(28 / Math.sqrt(numSlices)))) * this.dpr;
+        dCtx.font = `900 ${fontSize}px "Industry", "Inter", -apple-system, sans-serif`;
 
-        if (sliceData.captain_gamertag || sliceData.captain) {
+        const maxTextWidth = radius - (centerX * 0.40); // Keep center hub clear
+        let displayLabel = label;
+        while (displayLabel.length > 2 && dCtx.measureText(displayLabel + '..').width > maxTextWidth) {
+          displayLabel = displayLabel.slice(0, -1);
+        }
+        if (displayLabel !== label) displayLabel = displayLabel + '..';
+
+        const textX = radius - (16 * this.dpr);
+        const hasCaptain = (sliceData.captain_gamertag || sliceData.captain) && numSlices <= 8;
+
+        // Draw crisp dark outline around text for maximum contrast against any slice background color
+        dCtx.lineJoin = 'round';
+        dCtx.miterLimit = 2;
+        dCtx.strokeStyle = '#050704';
+        dCtx.lineWidth = 3.5 * this.dpr;
+
+        if (hasCaptain) {
           const cap = String(sliceData.captain_gamertag || sliceData.captain).trim();
-          dCtx.font = `700 ${9.5 * this.dpr}px "Industry", "Inter", sans-serif`;
-          dCtx.fillStyle = '#fbbf24';
-          dCtx.fillText(`👑 ${cap.length > 14 ? cap.substring(0, 12) + '..' : cap}`, radius - (20 * this.dpr), 14 * this.dpr);
+          const capFontSize = Math.max(7.5, fontSize * 0.75);
+
+          // Team label
+          dCtx.strokeText(displayLabel, textX, -4.5 * this.dpr);
+          dCtx.fillStyle = '#ffffff';
+          dCtx.fillText(displayLabel, textX, -4.5 * this.dpr);
+
+          // Captain sublabel
+          dCtx.font = `800 ${capFontSize}px "Industry", "Inter", -apple-system, sans-serif`;
+          let capLabel = `👑 ${cap}`;
+          while (capLabel.length > 4 && dCtx.measureText(capLabel + '..').width > maxTextWidth) {
+            capLabel = capLabel.slice(0, -1);
+          }
+          if (capLabel !== `👑 ${cap}`) capLabel = capLabel + '..';
+
+          dCtx.strokeText(capLabel, textX, 7 * this.dpr);
+          dCtx.fillStyle = '#fde047';
+          dCtx.fillText(capLabel, textX, 7 * this.dpr);
+        } else {
+          // Centered on slice bisector (y = 0) where slice arc has maximum clearance
+          dCtx.strokeText(displayLabel, textX, 0);
+          dCtx.fillStyle = '#ffffff';
+          dCtx.fillText(displayLabel, textX, 0);
         }
 
         dCtx.restore();
@@ -437,6 +527,7 @@
       this.countdownInterval = null;
       this.currentSwitchState = null;
       this.cachedRegs = [];
+      this.actionAlerts = [];
       this.initModalDOM();
     }
 
@@ -454,56 +545,206 @@
       }
       if (document.getElementById('modal-duo-switch-wheel-wrap')) return;
 
+      if (!document.getElementById('dsw-modal-custom-styles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'dsw-modal-custom-styles';
+        styleEl.textContent = `
+          @keyframes dswAlertSlideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes dswPulseGlow {
+            0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+            50% { box-shadow: 0 0 14px rgba(34, 197, 94, 0.4); }
+            100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+          }
+          .dsw-team-card {
+            transition: transform 0.15s ease, border-color 0.15s ease;
+          }
+          .dsw-team-card:hover {
+            transform: translateY(-1px);
+          }
+          .dsw-alert-item {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+          }
+          .dsw-alert-item:hover {
+            transform: translateY(-1px);
+          }
+          @media (max-width: 960px) {
+            #dsw-modal-body {
+              flex-direction: column !important;
+              overflow-y: auto !important;
+            }
+            #dsw-teams-panel, #dsw-alerts-payment-panel {
+              width: 100% !important;
+              flex: 0 0 auto !important;
+              border-left: none !important;
+              border-right: none !important;
+              border-top: 1px solid #1e2614 !important;
+              max-height: 280px !important;
+            }
+            #dsw-wheel-stage {
+              padding: 12px !important;
+            }
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+
       const wrap = document.createElement('div');
       wrap.id = 'modal-duo-switch-wheel-wrap';
       wrap.style.cssText = 'display:none; position:fixed; inset:0; z-index:99999; background:rgba(4,6,3,0.94); align-items:center; justify-content:center; padding:16px; will-change:transform; transform:translateZ(0);';
 
       wrap.innerHTML = `
-        <div style="background:#0c0f0a; border:1px solid #283416; border-top:3px solid #fbbf24; border-radius:4px; max-width:540px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,0.95); position:relative; overflow:hidden; display:flex; flex-direction:column; max-height:92vh;">
+        <div style="background:#0c0f0a; border:1px solid #283416; border-top:3px solid #fbbf24; border-radius:6px; max-width:1160px; width:96%; box-shadow:0 25px 70px rgba(0,0,0,0.96); position:relative; overflow:hidden; display:flex; flex-direction:column; max-height:94vh;">
           <!-- Modal Header -->
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #1e2614; background:#080a06;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #1e2614; background:#080a06;">
             <div>
               <div style="font-size:10px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:6px;">
                 <span class="live-pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444;"></span>
-                <span>LIVE DUO SWITCH WHEEL ARENA</span>
+                <span>LIVE DUO SWITCH ARENA · SYNCHRONIZED WHEEL</span>
               </div>
               <h3 id="dsw-modal-title" style="margin:2px 0 0; font:900 17px var(--display, sans-serif); color:#ffffff; text-transform:uppercase;">
                 4v4 Duo Switch Reveal
               </h3>
             </div>
-            <button type="button" onclick="window.DuoSwitchEngine.closeWheelModal()" style="background:none; border:none; color:#9ca3af; font-size:22px; cursor:pointer; padding:4px 8px; line-height:1;">&times;</button>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button type="button" onclick="window.DuoSwitchEngine.testActionAlert()" class="btn-tourney-outline" style="font-size:10.5px; padding:3px 8px; color:#fbbf24; border-color:#fbbf2460;" title="Simulate a live action alert">🔔 Demo Alert</button>
+              <button type="button" onclick="window.DuoSwitchEngine.closeWheelModal()" style="background:none; border:none; color:#9ca3af; font-size:24px; cursor:pointer; padding:2px 8px; line-height:1;">&times;</button>
+            </div>
           </div>
 
-          <!-- Wheel Stage -->
-          <div style="padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;">
-            <div style="position:relative; width:340px; height:340px; max-width:100%;">
-              <canvas id="dsw-canvas" width="340" height="340" style="width:100%; height:100%; display:block; border-radius:50%; box-shadow:0 0 35px rgba(251,191,36,0.22); will-change:transform;"></canvas>
+          <!-- Modal 3-Column Body -->
+          <div id="dsw-modal-body" style="display:flex; flex-direction:row; flex:1; min-height:0; overflow:hidden;">
+            <!-- Column 1: Left - Registered Duos & Formed Teams -->
+            <div id="dsw-teams-panel" style="width:280px; flex:0 0 280px; background:#080b06; border-right:1px solid #1e2614; display:flex; flex-direction:column; min-height:0; overflow-y:auto; padding:14px; gap:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1a2211; padding-bottom:8px;">
+                <div style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; letter-spacing:0.7px; display:flex; align-items:center; gap:6px;">
+                  <span>👥</span> <span>Duos &amp; Teams</span>
+                </div>
+                <span id="dsw-teams-count-badge" style="font-size:10px; font-weight:800; color:#fbbf24; background:#141b0b; border:1px solid #283716; padding:2px 6px; border-radius:3px;">0 Squads</span>
+              </div>
+
+              <!-- Formed 4v4 Teams with Lock/Unlock Status -->
+              <div>
+                <div style="font-size:10px; font-weight:800; color:#9ca3af; text-transform:uppercase; margin-bottom:8px;">
+                  Formed 4v4 Squads
+                </div>
+                <div id="dsw-formed-teams-list" style="display:flex; flex-direction:column; gap:8px;">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Awaiting Pairing / Unpaired Duos -->
+              <div id="dsw-unpaired-section" style="border-top:1px solid #161e0e; padding-top:10px;">
+                <div style="font-size:10px; font-weight:800; color:#9ca3af; text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between;">
+                  <span>Awaiting Pairing</span>
+                  <span id="dsw-unpaired-count-badge" style="color:#fbbf24;">0</span>
+                </div>
+                <div id="dsw-unpaired-duos-list" style="display:flex; flex-wrap:wrap; gap:6px;">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
             </div>
 
-            <!-- Spin Status / Subtitle Banner -->
-            <div id="dsw-status-banner" style="margin-top:14px; text-align:center; min-height:44px; width:100%;">
-              <div id="dsw-status-text" style="font-size:13px; font-weight:800; color:#cbd5e1;">
-                Synchronized Wheel Ready
+            <!-- Column 2: Center - The Wheel Stage -->
+            <div id="dsw-wheel-stage" style="flex:1 1 420px; min-width:300px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow-y:auto; position:relative;">
+              <div style="position:relative; width:360px; height:360px; max-width:100%;">
+                <canvas id="dsw-canvas" width="360" height="360" style="width:100%; height:100%; display:block; border-radius:50%; box-shadow:0 0 35px rgba(251,191,36,0.22); will-change:transform;"></canvas>
               </div>
-              <div id="dsw-status-subtext" style="font-size:11px; color:#94a3af; margin-top:2px;">
-                Populated with official registered duos
+
+              <!-- Spin Status / Subtitle Banner -->
+              <div id="dsw-status-banner" style="margin-top:12px; text-align:center; min-height:40px; width:100%;">
+                <div id="dsw-status-text" style="font-size:13px; font-weight:800; color:#cbd5e1;">Synchronized Wheel Ready</div>
+                <div id="dsw-status-subtext" style="font-size:11px; color:#94a3af; margin-top:2px;">Populated with official registered duos</div>
+              </div>
+
+              <!-- Reveal Result Banner -->
+              <div id="dsw-result-box" style="display:none; width:100%; max-width:400px; margin-top:8px; background:#12180d; border:1px solid #2e3e18; border-left:4px solid #22c55e; padding:10px 14px; border-radius:3px; text-align:center;">
+                <span style="font-size:10px; color:#4ade80; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">🎉 PAIRING CONFIRMED</span>
+                <div id="dsw-result-text" style="font-size:15px; font-weight:900; color:#ffffff; margin:2px 0;"></div>
+                <div id="dsw-result-desc" style="font-size:11px; color:#cbd5e1;"></div>
               </div>
             </div>
 
-            <!-- Reveal Result Banner (shows when spin stops) -->
-            <div id="dsw-result-box" style="display:none; width:100%; margin-top:10px; background:#12180d; border:1px solid #2e3e18; border-left:4px solid #22c55e; padding:12px; border-radius:3px; text-align:center;">
-              <span style="font-size:10px; color:#4ade80; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">🎉 PAIRING CONFIRMED</span>
-              <div id="dsw-result-text" style="font-size:16px; font-weight:900; color:#ffffff; margin:3px 0 2px;"></div>
-              <div id="dsw-result-desc" style="font-size:11px; color:#cbd5e1;"></div>
+            <!-- Column 3: Right - Paid Action Alerts & Payment Directives -->
+            <div id="dsw-alerts-payment-panel" style="width:340px; flex:0 0 340px; background:#080b06; border-left:1px solid #1e2614; display:flex; flex-direction:column; min-height:0; overflow-y:auto; padding:14px; gap:12px;">
+              <!-- Upper: Live Action Alerts Feed -->
+              <div style="display:flex; flex-direction:column; min-height:160px; max-height:260px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1a2211; padding-bottom:8px; margin-bottom:8px;">
+                  <div style="font-size:11px; font-weight:800; color:#cbd5e1; text-transform:uppercase; letter-spacing:0.7px; display:flex; align-items:center; gap:6px;">
+                    <span class="live-pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#22c55e; box-shadow:0 0 6px #22c55e;"></span>
+                    <span>Live Action Alerts</span>
+                  </div>
+                  <span id="dsw-alerts-count-badge" style="font-size:9.5px; font-weight:800; color:#4ade80; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); padding:1px 5px; border-radius:3px;">0 Alerts</span>
+                </div>
+
+                <div id="dsw-action-alerts-feed" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
+                  <div id="dsw-alerts-empty-state" style="padding:14px; text-align:center; background:#0b0f06; border:1px dashed #1f2a12; border-radius:4px; color:#64748b; font-size:11.5px; line-height:1.4;">
+                    Watching for live paid actions... Respins, locks, unlocks, and blowups pop up here in real time.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lower: Action Pricing & Payment Directives -->
+              <div style="border-top:1px solid #1e2614; padding-top:12px; display:flex; flex-direction:column; gap:10px;">
+                <!-- Prices Grid -->
+                <div>
+                  <div style="font-size:10.5px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:6px;">
+                    Action Options &amp; Prices
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
+                    <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #38bdf8; padding:6px 8px; border-radius:3px;">
+                      <div style="font-weight:800; color:#ffffff;">🎲 Respin: <span style="color:#38bdf8;">$10</span></div>
+                      <div style="font-size:9px; color:#9ca3af;">+$5 escalation</div>
+                    </div>
+                    <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #22c55e; padding:6px 8px; border-radius:3px;">
+                      <div style="font-weight:800; color:#ffffff;">🔒 Lock: <span style="color:#4ade80;">$15</span></div>
+                      <div style="font-size:9px; color:#9ca3af;">Squad immunity</div>
+                    </div>
+                    <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #fbbf24; padding:6px 8px; border-radius:3px;">
+                      <div style="font-weight:800; color:#ffffff;">🔓 Unlock: <span style="color:#fde047;">$15</span></div>
+                      <div style="font-size:9px; color:#9ca3af;">Break squad lock</div>
+                    </div>
+                    <div style="background:#0c1107; border:1px solid #1e2b10; border-left:3px solid #ef4444; padding:6px 8px; border-radius:3px;">
+                      <div style="font-weight:800; color:#ffffff;">💥 Blow Up: <span style="color:#f87171;">$20</span></div>
+                      <div style="font-size:9px; color:#9ca3af;">Scramble all</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cash App & PayPal Box -->
+                <div style="background:#090d05; border:1px solid #243213; border-radius:4px; padding:10px;">
+                  <div style="font-size:10px; font-weight:800; color:#cbd5e1; text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between;">
+                    <span>Send Payment To</span>
+                    <span style="color:#4ade80;">Cash App / PayPal</span>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                    <div style="background:#060a03; border:1px solid #22c55e35; border-radius:3px; padding:6px 8px;">
+                      <div style="font-size:9px; color:#4ade80; font-weight:800;">CASH APP</div>
+                      <div id="dsw-payment-cashapp-val" style="font-size:12px; font-weight:900; color:#fff; word-break:break-all;">$FrontlineLeague</div>
+                      <a id="dsw-payment-cashapp-link" href="https://cash.app/$FrontlineLeague" target="_blank" class="btn-tourney-primary" style="font-size:9.5px; padding:2px 6px; text-decoration:none; display:inline-block; margin-top:3px;">Open Cash App ↗</a>
+                    </div>
+                    <div style="background:#060a03; border:1px solid #38bdf835; border-radius:3px; padding:6px 8px;">
+                      <div style="font-size:9px; color:#38bdf8; font-weight:800;">PAYPAL</div>
+                      <div id="dsw-payment-paypal-val" style="font-size:12px; font-weight:900; color:#fff; word-break:break-all;">paypal.me/frontlinecdl</div>
+                      <a id="dsw-payment-paypal-link" href="https://paypal.me/frontlinecdl" target="_blank" class="btn-tourney-primary" style="background:#0284c7; border-color:#38bdf8; font-size:9.5px; padding:2px 6px; text-decoration:none; display:inline-block; margin-top:3px;">Open PayPal ↗</a>
+                    </div>
+                  </div>
+                  <div style="font-size:10px; color:#9ca3af; line-height:1.35;">
+                    ⚠️ <strong style="color:#ffffff;">Note:</strong> Put your <span style="color:#fbbf24;">Duo Name + Action Option</span> in the note/memo so staff can verify and execute!
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Modal Footer Controls -->
-          <div style="padding:12px 20px; border-top:1px solid #1e2614; background:#080a06; display:flex; justify-content:space-between; align-items:center;">
+          <div style="padding:10px 18px; border-top:1px solid #1e2614; background:#080a06; display:flex; justify-content:space-between; align-items:center;">
             <div id="dsw-sync-indicator" style="font-size:11px; color:#22c55e; font-weight:700; display:flex; align-items:center; gap:5px;">
-              <span>●</span> <span>Synced across all competitors</span>
+              <span>●</span> <span>Synced across all competitors in real time</span>
             </div>
-            <button type="button" onclick="window.DuoSwitchEngine.closeWheelModal()" class="btn-tourney-outline" style="padding:5px 14px; font-size:11.5px;">
+            <button type="button" onclick="window.DuoSwitchEngine.closeWheelModal()" class="btn-tourney-outline" style="padding:4px 12px; font-size:11.5px;">
               Minimize ✕
             </button>
           </div>
@@ -515,6 +756,7 @@
       if (canvas) {
         this.wheelInstance = new DuoSwitchWheel(canvas);
       }
+      this.renderModalPanels();
     }
 
     openWheelModal(title, subtext) {
@@ -527,6 +769,8 @@
       if (st && subtext) st.textContent = subtext;
       const res = document.getElementById('dsw-result-box');
       if (res) res.style.display = 'none';
+
+      this.renderModalPanels();
 
       if (this.wheelInstance) {
         this.wheelInstance.setupCanvasDPI();
@@ -542,6 +786,349 @@
       }
       const wrap = document.getElementById('modal-duo-switch-wheel-wrap');
       if (wrap) wrap.style.display = 'none';
+    }
+
+    renderModalPanels() {
+      this.renderTeamsPanel();
+      this.renderAlertsPanel();
+      this.updatePaymentDirectives();
+    }
+
+    renderTeamsPanel() {
+      const container = document.getElementById('dsw-formed-teams-list');
+      const countBadge = document.getElementById('dsw-teams-count-badge');
+      const unpairedList = document.getElementById('dsw-unpaired-duos-list');
+      const unpairedBadge = document.getElementById('dsw-unpaired-count-badge');
+      if (!container) return;
+
+      const state = this.currentSwitchState || {};
+      const teams = Array.isArray(state.teams) ? state.teams : [];
+      const lockedTeams = Array.isArray(state.locked_teams) ? state.locked_teams : [];
+      const allRegs = Array.isArray(this.cachedRegs) && this.cachedRegs.length ? this.cachedRegs : (Array.isArray(state.duos) ? state.duos : []);
+
+      if (countBadge) countBadge.textContent = `${teams.length} Squads`;
+
+      if (!teams.length) {
+        container.innerHTML = `
+          <div style="background:#0c1107; border:1px dashed #233113; border-radius:4px; padding:12px; text-align:center; color:#94a3af; font-size:11px; line-height:1.4;">
+            No squads paired yet.<br />
+            <span style="color:#fbbf24;">Duos will pair into 4v4 squads as the wheel spins.</span>
+          </div>
+        `;
+      } else {
+        container.innerHTML = teams.map((t, idx) => {
+          const isLocked = !!(t.isLocked || lockedTeams.includes(t.name) || state.status === 'locked');
+          const duo1 = t.duo1_name || (t.roster && t.roster[0] ? (typeof t.roster[0] === 'object' ? t.roster[0].name : t.roster[0]) : 'Duo A');
+          const duo2 = t.duo2_name || (t.roster && t.roster[1] ? (typeof t.roster[1] === 'object' ? t.roster[1].name : t.roster[1]) : 'Duo B');
+          const teamTitle = t.name || `Squad ${idx + 1}`;
+
+          return `
+            <div class="dsw-team-card ${isLocked ? 'locked' : 'unlocked'}" style="background:#0c1107; border:1px solid ${isLocked ? '#22c55e60' : '#283716'}; border-left:3px solid ${isLocked ? '#22c55e' : '#38bdf8'}; border-radius:4px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <strong style="color:#ffffff; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">${esc(teamTitle)}</strong>
+                <span class="dsw-lock-pill ${isLocked ? 'locked' : 'unlocked'}" style="font-size:9px; font-weight:800; padding:2px 6px; border-radius:3px; text-transform:uppercase; ${isLocked ? 'background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid #22c55e;' : 'background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);'}">
+                  ${isLocked ? '🔒 LOCKED' : '🔓 UNLOCKED'}
+                </span>
+              </div>
+              <div style="font-size:10.5px; color:#cbd5e1; display:flex; flex-direction:column; gap:2px;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                  <span style="color:#fbbf24; font-size:9.5px;">👑</span>
+                  <span style="font-weight:700; color:#fff;">${esc(duo1)}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                  <span style="color:#38bdf8; font-size:9.5px;">⚡</span>
+                  <span style="font-weight:700; color:#cbd5e1;">${esc(duo2)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (unpairedList) {
+        const pairedDuoNames = new Set();
+        const pairedDuoIds = new Set();
+        teams.forEach(t => {
+          if (t.duo1_name) pairedDuoNames.add(t.duo1_name.toLowerCase());
+          if (t.duo2_name) pairedDuoNames.add(t.duo2_name.toLowerCase());
+          if (t.duo1_id) pairedDuoIds.add(String(t.duo1_id));
+          if (t.duo2_id) pairedDuoIds.add(String(t.duo2_id));
+        });
+
+        let unpaired = allRegs.filter(r => {
+          const name = (r.team_name || r.name || '').toLowerCase();
+          const id = String(r.id || '');
+          return !pairedDuoNames.has(name) && !pairedDuoIds.has(id);
+        });
+
+        if (Array.isArray(state.unpaired) && state.unpaired.length) {
+          const stateUnpairedSet = new Set(state.unpaired.map(x => typeof x === 'object' ? String(x.id || x.name) : String(x)));
+          unpaired = allRegs.filter(r => stateUnpairedSet.has(String(r.id)) || stateUnpairedSet.has(r.team_name));
+        }
+
+        if (unpairedBadge) unpairedBadge.textContent = unpaired.length;
+
+        if (!unpaired.length) {
+          unpairedList.innerHTML = `
+            <span style="font-size:10px; color:#4ade80; font-style:italic;">✓ All registered duos paired</span>
+          `;
+        } else {
+          unpairedList.innerHTML = unpaired.map(d => `
+            <span style="background:#11180b; border:1px solid #283716; color:#cbd5e1; font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:3px; display:inline-flex; align-items:center; gap:4px;">
+              <span>🎯</span>
+              <span>${esc(d.team_name || d.name || 'Duo')}</span>
+            </span>
+          `).join('');
+        }
+      }
+    }
+
+    renderAlertsPanel() {
+      const feed = document.getElementById('dsw-action-alerts-feed');
+      const badge = document.getElementById('dsw-alerts-count-badge');
+      if (!feed) return;
+
+      const alerts = Array.isArray(this.actionAlerts) ? this.actionAlerts : [];
+      if (badge) badge.textContent = `${alerts.length} Alert${alerts.length === 1 ? '' : 's'}`;
+
+      if (!alerts.length) {
+        feed.innerHTML = `
+          <div id="dsw-alerts-empty-state" style="padding:14px; text-align:center; background:#0b0f06; border:1px dashed #1f2a12; border-radius:4px; color:#64748b; font-size:11px; line-height:1.4;">
+            Watching for live paid actions...<br />
+            <span style="color:#fbbf24;">Respins, locks, unlocks, and blowups pop up here in real time.</span>
+          </div>
+        `;
+        return;
+      }
+
+      feed.innerHTML = alerts.map((a, i) => {
+        let accentBorder = '#38bdf8';
+        let accentBg = 'rgba(56,189,248,0.1)';
+        let badgeColor = '#38bdf8';
+        let icon = '🎲';
+        let title = a.action || 'Respin';
+
+        if (a.type === 'lock') {
+          accentBorder = '#22c55e';
+          accentBg = 'rgba(34,197,94,0.12)';
+          badgeColor = '#4ade80';
+          icon = '🔒';
+        } else if (a.type === 'unlock') {
+          accentBorder = '#fbbf24';
+          accentBg = 'rgba(251,191,36,0.12)';
+          badgeColor = '#fde047';
+          icon = '🔓';
+        } else if (a.type === 'nuke') {
+          accentBorder = '#ef4444';
+          accentBg = 'rgba(239,68,68,0.16)';
+          badgeColor = '#f87171';
+          icon = '💥';
+        }
+
+        const timeDiff = Math.floor((Date.now() - (a.timestamp || Date.now())) / 1000);
+        let timeStr = 'Just now';
+        if (timeDiff >= 60) timeStr = `${Math.floor(timeDiff / 60)}m ago`;
+        else if (timeDiff >= 5) timeStr = `${timeDiff}s ago`;
+
+        const isLatest = i === 0;
+
+        return `
+          <div class="dsw-alert-item" style="background:#0c1107; border:1px solid ${accentBorder}55; border-left:3px solid ${accentBorder}; border-radius:4px; padding:7px 9px; animation:dswAlertSlideIn 0.3s ease-out; ${isLatest ? 'box-shadow:0 0 14px ' + accentBorder + '30;' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <span style="font-size:9.5px; font-weight:800; color:${badgeColor}; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
+                <span>${icon}</span>
+                <span>${esc(title)}</span>
+                ${a.amount ? `<span style="background:${accentBg}; padding:1px 4px; border-radius:2px;">$${a.amount}</span>` : ''}
+              </span>
+              <span style="font-size:9px; color:#64748b;">${esc(timeStr)}</span>
+            </div>
+            <div style="font-size:11px; color:#e2e8f0; font-weight:700;">
+              ${esc(a.duo)}
+            </div>
+            ${a.target ? `<div style="font-size:9.5px; color:#fbbf24; margin-top:1px;">Target: <strong>${esc(a.target)}</strong></div>` : ''}
+            ${a.detail ? `<div style="font-size:9.5px; color:#94a3af; margin-top:2px; line-height:1.35;">${esc(a.detail)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async updatePaymentDirectives() {
+      try {
+        let cashTag = '$FrontlineLeague';
+        let paypalHandle = 'frontlinecdl';
+
+        if (window.LeagueDB && typeof window.LeagueDB.getLeaguePaymentConfig === 'function') {
+          const cfg = await window.LeagueDB.getLeaguePaymentConfig();
+          if (cfg) {
+            if (cfg.cashapp_tag) cashTag = cfg.cashapp_tag;
+            if (cfg.paypal_handle) paypalHandle = cfg.paypal_handle;
+          }
+        }
+
+        if (this.currentTournament) {
+          if (this.currentTournament.cashapp_tag) cashTag = this.currentTournament.cashapp_tag;
+          if (this.currentTournament.paypal_handle) paypalHandle = this.currentTournament.paypal_handle;
+        }
+
+        const cleanCash = String(cashTag).replace(/^[$@]/, '').trim();
+        const cleanPaypal = String(paypalHandle).replace(/^[@/]/, '').replace(/^https:\/\/(www\.)?paypal\.me\//i, '').trim();
+
+        const cashUrl = `https://cash.app/$${encodeURIComponent(cleanCash)}`;
+        const paypalUrl = /^https:\/\//i.test(paypalHandle) ? paypalHandle : `https://paypal.me/${encodeURIComponent(cleanPaypal)}`;
+
+        const cashEl = document.getElementById('dsw-payment-cashapp-val');
+        const cashLink = document.getElementById('dsw-payment-cashapp-link');
+        if (cashEl) cashEl.textContent = `$${cleanCash}`;
+        if (cashLink) cashLink.href = cashUrl;
+
+        const paypalEl = document.getElementById('dsw-payment-paypal-val');
+        const paypalLink = document.getElementById('dsw-payment-paypal-link');
+        if (paypalEl) paypalEl.textContent = `paypal.me/${cleanPaypal}`;
+        if (paypalLink) paypalLink.href = paypalUrl;
+      } catch (_) {}
+    }
+
+    postActionAlert(alertData) {
+      if (!alertData) return;
+      const alertObj = {
+        id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        type: alertData.type || 'reroll',
+        action: alertData.action || alertData.title || 'Paid Action',
+        duo: alertData.duo || alertData.duo_name || alertData.requesting_duo_name || 'Competitor Duo',
+        target: alertData.target || alertData.target_squad || '',
+        amount: alertData.amount || (alertData.type === 'lock' || alertData.type === 'unlock' ? 15 : alertData.type === 'nuke' ? 20 : 10),
+        detail: alertData.detail || alertData.message || '',
+        timestamp: alertData.timestamp || Date.now()
+      };
+
+      if (!this.actionAlerts) this.actionAlerts = [];
+      // Deduplicate if identical alert arrived within 3s
+      const duplicate = this.actionAlerts.find(a => a.type === alertObj.type && a.duo === alertObj.duo && (Date.now() - a.timestamp < 3000));
+      if (duplicate) return;
+
+      this.actionAlerts.unshift(alertObj);
+      if (this.actionAlerts.length > 25) this.actionAlerts.pop();
+
+      playActionSound(alertObj.type);
+
+      this.initModalDOM();
+      this.openWheelModal();
+      this.renderModalPanels();
+      this.showFloatingActionToast(alertObj);
+    }
+
+    syncHistoryAlerts(history) {
+      if (!Array.isArray(history) || !history.length) return;
+      const validActions = new Set(['reroll', 'lock', 'unlock', 'nuke']);
+      const labelMap = {
+        reroll: 'Partner Respin',
+        lock: 'Squad Locked',
+        unlock: 'Squad Unlocked',
+        nuke: 'Blow It Up'
+      };
+
+      history.forEach(h => {
+        if (!validActions.has(h.action)) return;
+        const exists = this.actionAlerts.some(a => a.id === h.id || (a.type === h.action && a.timestamp === Date.parse(h.created_at)));
+        if (!exists) {
+          const purchaser = h.summary?.purchaser || h.duo_id || 'Competitor Duo';
+          this.actionAlerts.push({
+            id: h.id || `hist_${h.created_at}`,
+            type: h.action,
+            action: labelMap[h.action] || h.action,
+            duo: purchaser,
+            target: h.summary?.target_squad || '',
+            amount: h.amount || (h.action === 'nuke' ? 20 : h.action === 'lock' || h.action === 'unlock' ? 15 : 10),
+            detail: h.summary?.partner ? `Paired with ${h.summary.partner}` : (h.note || ''),
+            timestamp: Date.parse(h.created_at) || Date.now()
+          });
+        }
+      });
+
+      this.actionAlerts.sort((a, b) => b.timestamp - a.timestamp);
+      if (this.actionAlerts.length > 25) this.actionAlerts.length = 25;
+      this.renderAlertsPanel();
+    }
+
+    testActionAlert(type) {
+      const types = ['reroll', 'lock', 'unlock', 'nuke'];
+      const chosen = type || types[Math.floor(Math.random() * types.length)];
+      const sampleDuos = ['Ghost & Soap Duo', 'Price & Gaz Duo', 'Hydra & Envoy Duo', 'Scump & Shotzzy Duo'];
+      const duo = sampleDuos[Math.floor(Math.random() * sampleDuos.length)];
+
+      if (chosen === 'reroll') {
+        this.postActionAlert({
+          type: 'reroll',
+          action: 'Partner Respin',
+          duo: duo,
+          amount: 10,
+          detail: 'Paid $10 for a random partner respin! Wheel is spinning live.'
+        });
+      } else if (chosen === 'lock') {
+        this.postActionAlert({
+          type: 'lock',
+          action: 'Squad Locked',
+          duo: duo,
+          amount: 15,
+          detail: 'Paid $15 to lock their 4v4 squad! Immune to all future partner swaps.'
+        });
+      } else if (chosen === 'unlock') {
+        this.postActionAlert({
+          type: 'unlock',
+          action: 'Squad Unlocked',
+          duo: duo,
+          target: 'Squad 2 (Price & Gaz)',
+          amount: 15,
+          detail: 'Paid $15 to break lock protection on Squad 2! Squad is now vulnerable to respins.'
+        });
+      } else if (chosen === 'nuke') {
+        this.postActionAlert({
+          type: 'nuke',
+          action: 'Blow It Up',
+          duo: duo,
+          amount: 20,
+          detail: 'Paid $20 to Blow It Up! All unlocked squads dissolved and scrambled.'
+        });
+      }
+    }
+
+    showFloatingActionToast(a) {
+      let container = document.getElementById('dsw-floating-toast-wrap');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'dsw-floating-toast-wrap';
+        container.style.cssText = 'position:fixed; top:24px; right:24px; z-index:999999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:340px; width:calc(100% - 48px);';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.style.cssText = 'background:#0c1107; border:1px solid #fbbf24; border-left:4px solid #fbbf24; border-radius:4px; padding:10px 14px; box-shadow:0 10px 30px rgba(0,0,0,0.85); pointer-events:auto; cursor:pointer; animation:dswAlertSlideIn 0.3s ease-out;';
+
+      const icon = a.type === 'lock' ? '🔒' : a.type === 'unlock' ? '🔓' : a.type === 'nuke' ? '💥' : '🎲';
+      toast.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+          <span style="font-size:10px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px;">
+            ${icon} ${esc(a.action)} ($${a.amount || 10})
+          </span>
+          <span style="font-size:9px; color:#64748b;">Just now</span>
+        </div>
+        <div style="font-size:11.5px; font-weight:700; color:#ffffff;">${esc(a.duo)}</div>
+        <div style="font-size:10px; color:#cbd5e1; margin-top:2px;">${esc(a.detail || 'Paid action executed')}</div>
+        <div style="font-size:9.5px; color:#38bdf8; font-weight:800; margin-top:4px; text-align:right;">Open Wheel Arena ➔</div>
+      `;
+
+      toast.onclick = () => {
+        this.openWheelModal();
+        toast.remove();
+      };
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(40px)';
+        setTimeout(() => toast.remove(), 500);
+      }, 6000);
     }
 
     // -------------------------------------------------------------------------

@@ -13,7 +13,30 @@
  const name=id=>active?.state.duos.find(d=>d.id===id)?.team_name||id||'Staff';
  function message(text,isError=false){const e=host?.querySelector('[data-sw-message]');if(e){e.textContent=text;e.className=isError?'sw-message sw-error':'sw-message';}else if(isError)alert(text);}
  function btn(action,text,extra=''){return `<button type="button" data-sw-action="${action}" ${extra}>${text}</button>`;}
- function accept(data){if(!data)return;offset=Date.parse(data.server_now)-Date.now();active=data;if(window.DuoSwitchEngine){window.DuoSwitchEngine.cachedRegs=data.state.duos;window.DuoSwitchEngine.currentSwitchState={teams:data.state.teams};}latestOK=Date.now();if(data.revision!==lastRevision){render();lastRevision=data.revision;}showSpin();tick();}
+ function accept(data){
+    if(!data)return;
+    offset=Date.parse(data.server_now)-Date.now();
+    active=data;
+    if(window.DuoSwitchEngine){
+      window.DuoSwitchEngine.cachedRegs=data.state.duos;
+      window.DuoSwitchEngine.currentSwitchState={
+        teams:data.state.teams,
+        duos:data.state.duos,
+        unpaired:data.state.unpaired,
+        status:data.state.phase==='finalized'?'locked':'open'
+      };
+      if(typeof window.DuoSwitchEngine.renderModalPanels==='function'){
+        window.DuoSwitchEngine.renderModalPanels();
+      }
+      if(typeof window.DuoSwitchEngine.syncHistoryAlerts==='function'&&Array.isArray(data.history)){
+        window.DuoSwitchEngine.syncHistoryAlerts(data.history);
+      }
+    }
+    latestOK=Date.now();
+    if(data.revision!==lastRevision){render();lastRevision=data.revision;}
+    showSpin();
+    tick();
+  }
  function tick(){if(!host)return;if(wasSpinning&&!spinning()){wasSpinning=false;render();return;}wasSpinning=!!spinning();const status=host.querySelector('[data-sw-connection]');if(status)status.textContent=Date.now()-latestOK<5000?'● Live · synced':'● Reconnecting · actions paused';host.querySelectorAll('[data-sw-command]').forEach(b=>{b.disabled=!!b.dataset.swIneligible||busy||!!retry||!!spinning()||Date.now()-latestOK>=5000;});const progress=host.querySelector('[data-sw-spin-status]');if(progress){const s=active?.state.active_spin;progress.textContent=spinning()?`Live spin · ${Math.max(0,Math.ceil((Date.parse(s.ends_at)-now())/1000))}s`:active?.state.last_spin||s?`Latest result: ${(s||active.state.last_spin).requesting_duo.team_name} + ${(s||active.state.last_spin).target_duo.team_name}`:'Ready for the next spin';}}
  async function poll(){if(inFlight||!host?.isConnected||!active)return;inFlight=true;try{accept(await rpc('fcl_switch_read',{p_id:active.id}));}catch(e){message('Connection interrupted. Reconnecting; no action is assumed successful.',true);}finally{inFlight=false;tick();}}
  function showSpin(force=false){const s=active?.state.active_spin||active?.state.last_spin;if(!s||(!force&&spinId===s.id))return;spinId=s.id;clearTimeout(spinTimer);const wait=Date.parse(s.starts_at)-now();const start=()=>{if(!window.DuoSwitchEngine)return;window.DuoSwitchEngine.handleIncomingSpinBroadcast({...s,title:s.title,elapsed_ms:Math.max(0,now()-Date.parse(s.starts_at)),duration_ms:s.duration_ms});};if(wait>0)spinTimer=setTimeout(start,wait);else if(force||now()<Date.parse(s.ends_at))start();}
@@ -39,7 +62,44 @@
  const mine=st.teams.find(t=>t.duo1_id===buyer||t.duo2_id===buyer),unlocked=st.teams.filter(t=>!t.isLocked);let reason='';if(action==='entry'&&!buyer)reason='Every entry is already confirmed.';if(action==='reroll'&&(!mine||mine.isLocked||unlocked.length<2))reason='A respin requires your squad and at least one other squad to be unlocked.';if(action==='lock'&&(!mine||mine.isLocked))reason='The purchasing squad is already locked or has not been formed.';if(action==='unlock'&&!st.teams.some(t=>t.isLocked&&t.duo1_id!==buyer&&t.duo2_id!==buyer))reason='There is no other locked squad to unlock.';if(action==='nuke'&&unlocked.length<2)reason='A blow-up requires at least two unlocked squads.';
  const impact=host.querySelector('[data-sw-impact]');if(impact)impact.textContent=reason||{entry:'Confirm the $5 payment for this duo.',reroll:'A random eligible duo becomes the new partner. The displaced partners form the other squad.',lock:'Protects both duos in the purchasing squad.',unlock:'Removes protection from the selected other squad.',nuke:'Dissolves every unlocked squad. Staff then spin the released duos into new squads.'}[action];form.querySelector('[type="submit"]').dataset.swIneligible=reason;tick();}
  async function fillPaymentLinks(){try{const c=await window.LeagueDB.getLeaguePaymentConfig();const tournaments=active.tournament_id?await window.LeagueDB.getTournaments():[];const t=tournaments.find(t=>String(t.id)===String(active.tournament_id));if(t?.cashapp_tag)c.cashapp_url='https://cash.app/$'+encodeURIComponent(t.cashapp_tag.replace(/^\$/,''));if(t?.paypal_handle)c.paypal_me_url=/^https:\/\//i.test(t.paypal_handle)?t.paypal_handle:'https://paypal.me/'+encodeURIComponent(t.paypal_handle.replace(/^@/,''));const e=host?.querySelector('[data-sw-pay-links]');if(!e)return;for(const [label,url]of [['Cash App',c.cashapp_url],['PayPal',c.paypal_me_url]]){if(!url||!/^https:\/\/(cash\.app|paypal\.me|www\.paypal\.com)(\/|$)/i.test(url))continue;const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.textContent=label;e.append(a,document.createTextNode(' '));}}catch(_){}}
- async function command(action,args={}){if(busy)return;busy=true;tick();const op=retry||{p_id:active.id,p_action:action,p_args:args,p_operation:crypto.randomUUID(),p_revision:active.revision};try{const data=await rpc('fcl_switch_command',op);retry=null;accept(data);message(`${labels[action]||action} completed${prices[action]?` · $${prices[action]}`:''}.`);}catch(e){if(/fetch|network|timeout|connection/i.test(e.message)){retry=op;message('Connection lost. The action may have completed. Use “Check / retry last action” below; do not record the payment again.',true);const b=document.createElement('button');b.textContent='Check / retry last action';b.onclick=()=>command(op.p_action,op.p_args);host.querySelector('[data-sw-message]').append(document.createElement('br'),b);}else{retry=null;message(e.message,true);await poll();}}finally{busy=false;tick();}}
+ async function command(action,args={}){
+    if(busy)return;
+    busy=true;tick();
+    const op=retry||{p_id:active.id,p_action:action,p_args:args,p_operation:crypto.randomUUID(),p_revision:active.revision};
+    try{
+      const data=await rpc('fcl_switch_command',op);
+      retry=null;
+      accept(data);
+      message(`${labels[action]||action} completed${prices[action]?` · $${prices[action]}`:''}.`);
+      if(window.DuoSwitchEngine && ['reroll','lock','unlock','nuke'].includes(action)){
+        const buyerName = name(args.duo_id);
+        const targetSquad = args.target_id ? (active?.state?.teams?.find(t=>t.id===args.target_id)?.name || 'Target Squad') : (action==='nuke'?'All Unlocked Squads':'');
+        window.DuoSwitchEngine.postActionAlert({
+          id: `cmd_${Date.now()}_${Math.random().toString(36).substr(2,5)}`,
+          type: action,
+          duo: buyerName,
+          target: targetSquad,
+          amount: prices[action] || 0,
+          created_at: new Date().toISOString()
+        });
+      }
+    }catch(e){
+      if(/fetch|network|timeout|connection/i.test(e.message)){
+        retry=op;
+        message('Connection lost. The action may have completed. Use “Check / retry last action” below; do not record the payment again.',true);
+        const b=document.createElement('button');
+        b.textContent='Check / retry last action';
+        b.onclick=()=>command(op.p_action,op.p_args);
+        host.querySelector('[data-sw-message]').append(document.createElement('br'),b);
+      }else{
+        retry=null;
+        message(e.message,true);
+        await poll();
+      }
+    }finally{
+      busy=false;tick();
+    }
+  }
  async function onSubmit(e){if(!e.target.matches('[data-sw-payment]'))return;e.preventDefault();const f=new FormData(e.target),action=f.get('action'),args=Object.fromEntries(f);delete args.action;args.payment_confirmed=f.has('payment_confirmed');if(action!=='unlock')delete args.target_id;
  if(!confirm(`${active.practice?'PRACTICE: ':''}${labels[action]} · $${prices[action]}\nPurchaser: ${name(args.duo_id)}${action==='unlock'?`\nTarget: ${active.state.teams.find(t=>t.id===args.target_id)?.name||'Not selected'}`:''}\n\n${action==='nuke'?'Every unlocked squad will dissolve. Locked squads stay intact.':action==='reroll'?'The partner is random. Both affected squads will change.':'Apply this action?'}`))return;
  await command(action,args);}
