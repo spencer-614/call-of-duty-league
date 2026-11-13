@@ -79,6 +79,7 @@ const HIERARCHY_ROUTES = [
   { path: "/schedule", file: "schedule/index.html" },
   { path: "/brackets", file: "brackets/index.html" },
   { path: "/tournaments", file: "tournaments/index.html" },
+  { path: "/tournaments/switch", file: "tournaments/switch/index.html" },
   { path: "/draft", file: "draft/index.html" },
   { path: "/ladders", file: "ladders/index.html" },
   { path: "/match", file: "match/index.html" },

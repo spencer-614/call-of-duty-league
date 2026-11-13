@@ -45,7 +45,7 @@
  function options(items,key,label){return items.map(x=>`<option value="${esc(x[key])}">${esc(label(x))}</option>`).join('');}
  function render(){if(!host||!active)return;const st={...active.state};if(spinning()){st.teams=active.state.active_spin.before_teams;st.unpaired=active.state.active_spin.before_unpaired;}const admin=active.can_admin&&host.dataset.swAdmin==='true';const done=st.phase==='finalized';const duos=st.duos;const waiting=st.unpaired.map(name);const count=duos.filter(d=>d.entry_verified).length;
  const prices=currentPrices();
- const publicLink=`/tournaments/switch/?session=${encodeURIComponent(active.id)}`;
+ const publicLink=`/tournaments/switch/index.html?session=${encodeURIComponent(active.id)}`;
  const payment=active.practice?'Practice only · no money changes hands':'Verify payment in Cash App or PayPal before executing an action.';
  host.innerHTML=`<section class="sw-desk"><div class="sw-top"><div><span class="sw-kicker">FRONTLINE / ${active.practice?'PRACTICE SESSION':'SWITCH TOURNAMENT'}</span><h2>${esc(active.title)}</h2><p>${esc(phases[st.phase]||st.phase)}</p></div><span data-sw-connection role="status">● Live · synced</span></div>
  <div class="sw-stats"><span><b>${duos.length}</b> duos</span><span><b>${count}</b> entries verified</span><span><b>${st.teams.length}</b> squads</span><span><b>${st.teams.filter(t=>t.isLocked).length}</b> locked</span><span><b>${st.unpaired.length}</b> awaiting pairing</span></div>

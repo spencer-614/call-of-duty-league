@@ -10,6 +10,7 @@
     <title>Frontline — Competitive Tournaments Hub &amp; Cups</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/supabase.js?v=switch-v3"></script>
+    <script src="/switch-public.js?v=wheel-public-20261112"></script>
     <script src="/tournament-switch-wheel.js?v=registration-fix-20261112" defer></script>
     <script src="/bullet-sparks.js" defer></script>
     <style>
@@ -1063,6 +1064,7 @@
       }
 
       async function initTournamentsPage() {
+        if (window.SwitchPublic.isSpectatorRoute) return;
         // 1. Check Platform Switcher & Commissioner Maintenance State
         if (window.LeagueDB && typeof window.LeagueDB.getPlatformSwitcherSettings === 'function') {
           try {
@@ -1101,6 +1103,7 @@
           }
         }
 
+        await window.SwitchPublic.refresh(currentTournaments);
         renderTournaments();
         updateMetrics();
         updateTourneyAuthUI();
@@ -1243,7 +1246,7 @@
           }
           // Status filter
           if (activeStatus !== 'all') {
-            const s = (t.status || '').toLowerCase();
+            const s = window.SwitchPublic.action(t)?.kind === 'wheel' ? 'live' : (t.status || '').toLowerCase();
             if (activeStatus === 'open' && !s.includes('open') && !s.includes('registration')) return false;
             if (activeStatus === 'live' && !s.includes('live')) return false;
             if (activeStatus === 'upcoming' && !s.includes('upcoming')) return false;
@@ -1269,7 +1272,8 @@
         }
 
         grid.innerHTML = filtered.map(t => {
-          const rawStatus = (t.status || 'Registration Open').toLowerCase();
+          const switchAction = window.SwitchPublic.action(t);
+          const rawStatus = switchAction?.kind === 'wheel' ? 'live' : (t.status || 'Registration Open').toLowerCase();
           let statusClass = 'open';
           let statusLabel = 'REGISTRATION OPEN';
           if (rawStatus.includes('live')) {
@@ -1283,6 +1287,7 @@
             statusLabel = 'COMPLETED';
           }
 
+          if (switchAction?.kind === 'wheel') statusLabel = 'LIVE WHEEL SPINS';
           const bannerUrl = t.banner_url || t.image_url;
           const hasImage = !!bannerUrl;
           const fitMode = t.banner_fit || 'contain';
@@ -1330,7 +1335,7 @@
                   <button type="button" class="btn-tourney-outline" onclick="openTourneyDetails('${escapeHtml(t.id)}')">
                     <span>🔍</span> Details
                   </button>
-                  ${(rawStatus.includes('live') || t.bracket_data) ? `
+                  ${switchAction ? `<a href="${escapeHtml(switchAction.href)}" class="btn-tourney-primary" style="text-decoration:none;">${escapeHtml(switchAction.label)}</a>` : (rawStatus.includes('live') || t.bracket_data) ? `
                     <a href="/tournaments/bracket/?tournament=${encodeURIComponent(t.id)}" class="btn-tourney-primary" style="background:#16a34a; border-color:#22c55e; color:#fff; text-decoration:none;">
                       <span>⚔</span> View Bracket ↗
                     </a>
@@ -1395,7 +1400,7 @@
         if (duoBanner) {
           const isDuo = String(t.format || '').toLowerCase().includes('duo');
           duoBanner.style.display = isDuo ? 'block' : 'none';
-          if (isDuo) duoBanner.innerHTML = '<strong>Duo Switch:</strong> Entry $5 · Respin $10 · Lock $15 · Unlock $15 · Blow it up $20. Pay through the configured Cash App or PayPal with your duo name and action; include the target squad for an unlock. Staff verify payments and execute actions. <a href="/tournaments/switch/?tournament=' + encodeURIComponent(t.id) + '" style="color:#d5f45b">Watch the live Switch arena ↗</a>';
+          if (isDuo) duoBanner.innerHTML = '<strong>Duo Switch:</strong> Entry $5 · Respin $10 · Lock $15 · Unlock $15 · Blow it up $20. Pay through the configured Cash App or PayPal with your duo name and action; include the target squad for an unlock. Staff verify payments and execute actions. <a href="/tournaments/switch/index.html?tournament=' + encodeURIComponent(t.id) + '" style="color:#d5f45b">Watch the live Switch arena ↗</a>';
 
         }
         document.getElementById('modal-detail-date').textContent = `${t.date || t.start_date || 'TBD'} ${t.time || t.start_time ? '· ' + (t.time || t.start_time) : ''}`;
@@ -1459,6 +1464,8 @@
             bracketLink.style.display = 'none';
           }
         }
+
+        window.SwitchPublic.updateDetails(t);
 
         // Display modal immediately on click for instant zero-latency feedback
         // Populate Payment Directives
@@ -1571,6 +1578,7 @@
               }
             }
 
+            window.SwitchPublic.updateDetails(t);
             if (!squads || squads.length === 0) {
               squadsListEl.innerHTML = `
                 <div style="color:var(--muted); font-size:12px; padding:12px 0; text-align:center; background:#10130d; border:1px dashed #242c18;">
@@ -2265,6 +2273,9 @@
       async function openTourneyRegister(id) {
         const t = currentTournaments.find(item => String(item.id) === String(id));
         if (!t) return;
+        await window.SwitchPublic.refresh([t]);
+        const switchAction = window.SwitchPublic.action(t);
+        if (switchAction) { window.location.href = switchAction.href; return; }
         currentSelectedTourney = t;
 
         document.getElementById('reg-tournament-id').value = t.id;
@@ -2771,6 +2782,18 @@
           closeTourneyRegisterModal();
         }
       });
+
+      let switchPhaseRefreshing = false;
+      setInterval(async () => {
+        if (window.SwitchPublic.isSpectatorRoute || document.hidden || switchPhaseRefreshing) return;
+        switchPhaseRefreshing = true;
+        try {
+          if (await window.SwitchPublic.refresh(currentTournaments)) {
+            renderTournaments();
+            if (currentSelectedTourney && document.getElementById('modal-tourney-details')?.style.display === 'flex') window.SwitchPublic.updateDetails(currentSelectedTourney);
+          }
+        } finally { switchPhaseRefreshing = false; }
+      }, 5000);
 
       // Init on load
       window.addEventListener('frontline_tournament_registered', async () => {
