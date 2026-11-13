@@ -7851,29 +7851,6 @@ if (dbClient && cleanPayload.user_id) {
       finalMessages = localMessages;
     }
 
-    finalMessages = (finalMessages || []).map(m => {
-      if (!m) return m;
-      let sName = m.sender_name || 'Combatant';
-      const sid = String(m.sender_id || '');
-      const lower = String(sName).toLowerCase().trim();
-      if (sid === '00dd56dd-fbc4-4243-b733-ff0a7e4086a3' || 
-          lower === 'savorypanda8645' || 
-          lower === 'savory' || 
-          lower.startsWith('savory@') || 
-          lower.includes('savorypanda') ||
-          (m.sender_email && m.sender_email.toLowerCase().includes('savory'))) {
-        sName = 'Savory';
-      } else if (sid === '82788abf-e013-4aff-8475-673fb390b340' || 
-                 lower === 'todd061496' || 
-                 lower.startsWith('todd061496@') || 
-                 lower.includes('commissioner spencer') || 
-                 lower === 'spencer' ||
-                 (m.sender_email && m.sender_email.toLowerCase().includes('todd061496'))) {
-        sName = 'Commissioner Spencer';
-      }
-      return { ...m, sender_name: sName };
-    });
-
     return finalMessages;
   },
 
@@ -7883,22 +7860,17 @@ if (dbClient && cleanPayload.user_id) {
     }
 
     const rowId = this._getMatchChatRowId(tournamentId, matchId);
-    let cleanSenderName = String(senderName || "Combatant").trim();
-    const sid = String(senderId || "");
-    const lowerSender = cleanSenderName.toLowerCase();
-    if (sid === '00dd56dd-fbc4-4243-b733-ff0a7e4086a3' || 
-        lowerSender === 'savorypanda8645' || 
-        lowerSender === 'savory' || 
-        lowerSender.startsWith('savory@') || 
-        lowerSender.includes('savorypanda')) {
-      cleanSenderName = 'Savory';
-    } else if (sid === '82788abf-e013-4aff-8475-673fb390b340' || 
-               lowerSender === 'todd061496' || 
-               lowerSender.startsWith('todd061496@') || 
-               lowerSender.includes('commissioner') || 
-               lowerSender === 'spencer') {
-      cleanSenderName = 'Commissioner Spencer';
-    }
+    const { data: chatAuth, error: chatAuthError } = await dbClient.auth.getUser();
+    if (chatAuthError || !chatAuth?.user) throw new Error('Sign in before sending a match message.');
+    const authUser = chatAuth.user;
+    const chatRegs = await this.getTournamentRegistrations(tournamentId);
+    const cleanSenderName = window.TournamentChatIdentity
+      ? window.TournamentChatIdentity.name(authUser, chatRegs)
+      : (authUser.user_metadata?.gamertag || authUser.user_metadata?.display_name || 'Combatant');
+    senderId = authUser.id;
+    let chatStaff = false;
+    try { chatStaff = !!(await this.getMyStaffAccess()).is_admin; } catch (_) {}
+    senderRole = chatStaff ? 'staff' : 'combatant';
 
     const chatMsg = {
       id: "tmc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),

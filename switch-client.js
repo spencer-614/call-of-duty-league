@@ -9,6 +9,7 @@
  const labels={entry:'Confirm entry',reroll:'Random respin',lock:'Lock squad',unlock:'Unlock another squad',nuke:'Blow it up',spin:'Pairing spin',start:'Initial pairing started',sync:'Registrations refreshed',finalize:'Squads finalized',reset:'Practice reset',practice_entries:'Practice entries verified',bracket_saved:'Bracket generated'};
  let active=null,host=null,timer=null,inFlight=false,offset=0,busy=false,lastRevision=-1,spinId=null,spinTimer=null,retry=null,latestOK=0,wasSpinning=false;
  async function rpc(name,args){const c=db();if(!c)throw Error('Database connection unavailable.');const {data,error}=await c.rpc(name,args);if(data?.command_error){accept(data);throw Error(data.command_error);}if(error)throw Error(error.message+(error.code==='PGRST202'?' Run switch/migration.sql before testing.':''));return data;}
+ const spectatorBracketUrl=(data,publicView)=>publicView&&!data.practice&&data.tournament_id&&data.state.phase==='finalized'&&data.state.bracket_generated?'/tournaments/bracket/?tournament='+encodeURIComponent(data.tournament_id):null;
  const now=()=>Date.now()+offset;
  const spinning=()=>active?.state.active_spin&&Date.parse(active.state.active_spin.ends_at)>now();
  const name=id=>active?.state.duos.find(d=>d.id===id)?.team_name||id||'Staff';
@@ -18,6 +19,12 @@
     if(!data)return;
     offset=Date.parse(data.server_now)-Date.now();
     active=data;
+    const destination = spectatorBracketUrl(data, host?.hasAttribute?.('data-switch-public'));
+    if (destination) {
+      clearInterval(timer);
+      window.location.replace(destination);
+      return true;
+    }
     const isNewRev=(data.revision!==lastRevision);
     if(window.DuoSwitchEngine){
       window.DuoSwitchEngine.cachedRegs=data.state.duos;
@@ -120,9 +127,9 @@
  async function mount(element,id,admin=false,data=null){clearInterval(timer);clearTimeout(spinTimer);host=element;active=null;host.dataset.swAdmin=String(admin);lastRevision=-1;wasSpinning=false;spinId=null;retry=null;host.innerHTML='<p>Connecting to the live Switch desk…</p>';
  try{let result=data||await rpc('fcl_switch_read',{p_id:String(id)});if(!result){host.innerHTML=admin?`<div class="sw-desk"><h2>Switch tournament setup</h2><p>Start with the current registrations. Entry payments will be confirmed in this desk.</p><button data-sw-create>Set up Switch desk</button><button data-sw-practice>Open practice session</button></div>`:'<p>Staff have not opened the Switch desk yet. This page will update automatically.</p>';
  if(admin){host.querySelector('[data-sw-create]').onclick=async()=>{try{const s=await rpc('fcl_switch_create',{p_tournament:String(id),p_practice:false});await mount(host,s.id,true,s);}catch(e){alert(e.message);}};host.querySelector('[data-sw-practice]').onclick=async()=>{try{const s=await rpc('fcl_switch_create',{p_tournament:null,p_practice:true});await mount(host,s.id,true,s);}catch(e){alert(e.message);}};}else{timer=setInterval(async()=>{if(inFlight)return;inFlight=true;try{const s=await rpc('fcl_switch_read',{p_id:String(id)});if(s)await mount(host,s.id,false,s);}finally{inFlight=false;}},2000);}return;}
- accept(result);timer=setInterval(()=>{poll();tick();},1000);
+ if(accept(result))return;timer=setInterval(()=>{poll();tick();},1000);
  }catch(e){host.innerHTML=`<div class="sw-desk sw-error"><h2>Switch desk unavailable</h2><p>${esc(e.message)}</p><p>Staff: run switch/migration.sql and authorize your Supabase account as described in SWITCH_SETUP.md, then reload.</p></div>`;}}
- window.SwitchTournamentUI={mount,async practice(){const modal=document.getElementById('modal-admin-bracket-manager'),element=document.getElementById('admin-bracket-matches-container');if(!modal||!element)return;document.getElementById('admin-bracket-controls').innerHTML='';document.getElementById('admin-bracket-modal-title').textContent='Switch practice';if(!modal.open)modal.showModal();element.innerHTML='<p>Creating isolated practice session…</p>';try{const data=await rpc('fcl_switch_create',{p_tournament:null,p_practice:true});await mount(element,data.id,true,data);}catch(e){element.textContent=e.message;}},async admin(element,tourney){await mount(element,String(tourney.id),true);}};
+ window.SwitchTournamentUI={mount,spectatorBracketUrl,async practice(){const modal=document.getElementById('modal-admin-bracket-manager'),element=document.getElementById('admin-bracket-matches-container');if(!modal||!element)return;document.getElementById('admin-bracket-controls').innerHTML='';document.getElementById('admin-bracket-modal-title').textContent='Switch practice';if(!modal.open)modal.showModal();element.innerHTML='<p>Creating isolated practice session…</p>';try{const data=await rpc('fcl_switch_create',{p_tournament:null,p_practice:true});await mount(element,data.id,true,data);}catch(e){element.textContent=e.message;}},async admin(element,tourney){await mount(element,String(tourney.id),true);}};
  // All Switch screens use the durable v2 state, never the legacy payment request flow.
  const engine=window.DuoSwitchEngine;
  if(engine){engine.connectRealtime=()=>{};engine.mountBracketDuoSwitchUI=async function(id,tourney){const el=document.getElementById(id);if(!el)return;if(!String(tourney.format||'').toLowerCase().includes('duo')){el.style.display='none';return;}el.style.display='block';await mount(el,String(tourney.id),false);};}
