@@ -154,6 +154,7 @@
         const { data: auth, error: authError } = await c.auth.getUser();
         if (authError || !auth?.user) throw new Error('Sign in to veto maps.');
         isStaff = !!(await window.LeagueDB.getMyStaffAccess()).is_admin;
+        if (window.TournamentReports?.prepare) await window.TournamentReports.prepare(tournament.id, match);
         const { data: members, error } = await c.from('tournament_report_members')
           .select('team').eq('tournament_id', String(tournament.id))
           .eq('match_id', String(match.id)).eq('user_id', auth.user.id);
@@ -202,6 +203,7 @@
       }
 
       function renderVetoUI() {
+        if(allDecided()) window.dispatchEvent(new CustomEvent('frontline_match_reporting_ready',{detail:{tournamentId:tournament.id,matchId:match.id}}));
         const warning = wrapper.querySelector('#veto-ruleset-warning');
         const oldRules = vetoState.ruleset !== MW4_RULESET;
         warning.style.display = oldRules ? 'block' : 'none';

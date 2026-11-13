@@ -11795,6 +11795,7 @@
               regs = allRegs.filter(r => String(r.tournament_id) === String(tourneyId));
             }
 
+            if (bracketData?.stages?.length && window.TournamentReports?.overlay) bracketData = await window.TournamentReports.overlay(tourneyId, bracketData);
             const tourney = tourneys.find(t => String(t.id) === String(tourneyId)) || { id: tourneyId, title: tourneyTitle };
             if (String(tourney.format || '').toLowerCase().includes('duo') && window.SwitchTournamentUI && !window._switchShowMatches) {
               if (statusEl) statusEl.textContent = 'Switch tournament control desk';
@@ -12245,10 +12246,10 @@
                 `;
 
                 (round.matches || []).forEach(m => {
-                  const isDone = m.status === 'Completed';
+                  const isDone = m.status === 'Completed' || m.status === 'Not Needed';
                   const t1Winner = m.team1?.winner;
                   const t2Winner = m.team2?.winner;
-                  const isTBD = (m.team1?.name?.includes('TBD') || !m.team1?.name) && (m.team2?.name?.includes('TBD') || !m.team2?.name);
+                  const isTBD = [m.team1, m.team2].some(t => !t?.name || t.name === 'TBD' || t.name === 'BYE' || t.isBye || /^(Winner |Loser )/.test(t.name));
 
                   matchesHtml += `
                     <div style="background:#12150e; border:1px solid ${isDone ? '#243b24' : '#252a1b'}; border-left:3px solid ${isDone ? '#22c55e' : (m.status === 'Live' ? '#ff3b3b' : '#38bdf8')}; padding:12px; border-radius:3px;">
@@ -12267,7 +12268,7 @@
                             ${escapeHtml(m.team1?.name || 'TBD')}
                           </span>
                         </div>
-                        <input type="number" id="score1-${m.id}" value="${m.team1?.score || 0}" min="0" max="5" style="width:42px; text-align:center; background:#181b12; border:1px solid #333d22; color:#fff; font-weight:800; font-size:13px; padding:3px;" />
+                        <input type="number" id="score1-${m.id}" readonly title="Verified series score" value="${m.team1?.score || 0}" min="0" max="5" style="width:42px; text-align:center; background:#181b12; border:1px solid #333d22; color:#fff; font-weight:800; font-size:13px; padding:3px;" />
                       </div>
 
                       <!-- Team 2 Row -->
@@ -12278,23 +12279,19 @@
                             ${escapeHtml(m.team2?.name || 'TBD')}
                           </span>
                         </div>
-                        <input type="number" id="score2-${m.id}" value="${m.team2?.score || 0}" min="0" max="5" style="width:42px; text-align:center; background:#181b12; border:1px solid #333d22; color:#fff; font-weight:800; font-size:13px; padding:3px;" />
+                        <input type="number" id="score2-${m.id}" readonly title="Verified series score" value="${m.team2?.score || 0}" min="0" max="5" style="width:42px; text-align:center; background:#181b12; border:1px solid #333d22; color:#fff; font-weight:800; font-size:13px; padding:3px;" />
                       </div>
 
+                      ${m.report_result?.awarded ? `<p style="font-size:12px;color:#fbbf24;">Staff award: ${escapeHtml(m.report_result.reason)}</p>` : ''}
                       <!-- Match Action Row -->
                       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                         <select id="winner-${m.id}" class="form-control" style="font-size:11px; padding:4px 6px; height:auto; flex:1;">
                           <option value="">-- Choose Winner --</option>
-                          <option value="${escapeHtml(m.team1?.name || '')}" ${t1Winner ? 'selected' : ''}>${escapeHtml(m.team1?.name || 'Team 1')}</option>
-                          <option value="${escapeHtml(m.team2?.name || '')}" ${t2Winner ? 'selected' : ''}>${escapeHtml(m.team2?.name || 'Team 2')}</option>
+                          <option value="1" ${t1Winner ? 'selected' : ''}>${escapeHtml(m.team1?.name || 'Team 1')}</option>
+                          <option value="2" ${t2Winner ? 'selected' : ''}>${escapeHtml(m.team2?.name || 'Team 2')}</option>
                         </select>
-                        ${(!isDone && !isTBD) ? `
-                          <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 8px; border-color:#fbbf24; color:#fbbf24; font-weight:700;" title="Simulate this match outcome" onclick="adminSimulateSingleMatchAction('${escapeHtml(tourneyId)}', '${escapeHtml(m.id)}')">
-                            🎲 Sim
-                          </button>
-                        ` : ''}
-                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:4px 10px; border-color:#22c55e; color:#22c55e;" onclick="adminAdvanceMatchAction('${escapeHtml(tourneyId)}', '${escapeHtml(m.id)}', '${escapeHtml(tourneyTitle)}')">
-                          ✓ Save &amp; Advance
+                        <button type="button" class="btn-action-sm" style="font-size:11px; padding:6px 10px; border-color:#fbbf24; color:#fbbf24;" ${isDone || isTBD ? 'disabled' : ''} onclick="adminAdvanceMatchAction('${escapeHtml(tourneyId)}', '${escapeHtml(m.id)}', '${escapeHtml(tourneyTitle)}')">
+                          Award series win
                         </button>
                       </div>
                     </div>
@@ -12742,44 +12739,29 @@
         }
         window.adminSendLiveTournamentAlertAction = adminSendLiveTournamentAlertAction;
 
+        const adminAwardInFlight = new Set();
         async function adminAdvanceMatchAction(tourneyId, matchId, tourneyTitle) {
-          const score1Input = document.getElementById(`score1-${matchId}`);
-          const score2Input = document.getElementById(`score2-${matchId}`);
-          const winnerSelect = document.getElementById(`winner-${matchId}`);
-
-          const s1 = parseInt(score1Input?.value || '0', 10);
-          const s2 = parseInt(score2Input?.value || '0', 10);
-          let winner = winnerSelect?.value;
-
-          if (!winner) {
-            if (s1 > s2) {
-              winner = document.getElementById(`t1-name-${matchId}`)?.textContent.trim();
-            } else if (s2 > s1) {
-              winner = document.getElementById(`t2-name-${matchId}`)?.textContent.trim();
-            }
-          }
-
-          if (!winner || winner.includes('TBD')) {
-            showToast("Please choose or specify the winning team for this match.", true);
-            return;
-          }
-
+          const key = String(tourneyId) + ':' + String(matchId);
+          if (adminAwardInFlight.has(key)) return;
+          const winner = Number(document.getElementById(`winner-${matchId}`)?.value);
+          const team1 = document.getElementById(`t1-name-${matchId}`)?.textContent.trim();
+          const team2 = document.getElementById(`t2-name-${matchId}`)?.textContent.trim();
+          if (![1, 2].includes(winner) || !team1 || !team2) { showToast('Select the team to award this series to.', true); return; }
+          const previous = window.TournamentReports?._pendingAwards.get(key);
+          const reason = prompt('Reason for awarding this series (for example: no-show or scores not submitted):', previous?.p_reason || '');
+          if (reason === null) return;
+          if (reason.trim().length < 3 || reason.trim().length > 500) { showToast('Enter a reason between 3 and 500 characters.', true); return; }
+          const winnerName = winner === 1 ? team1 : team2;
+          if (!confirm(`Award the series to "${winnerName}"?\n\nReason: ${reason.trim()}\n\nThe selected winner advances; the loser follows the double-elimination bracket. Existing map evidence is retained.`)) return;
+          adminAwardInFlight.add(key);
           try {
-            if (window.LeagueDB && typeof window.LeagueDB.advanceTournamentMatch === 'function') {
-              const res = await window.LeagueDB.advanceTournamentMatch(tourneyId, matchId, winner, s1, s2);
-              if (res.success) {
-                showToast(`✓ Match updated! "${winner}" advanced to next round.`);
-                const resolvedTitle = tourneyTitle || (cachedAdminTournaments.find(t => String(t.id) === String(tourneyId))?.title) || "Tournament";
-                await adminManageBracket(tourneyId, resolvedTitle);
-                await loadAdminTournaments();
-              } else {
-                showToast(`Failed: ${res.error || 'Could not update match'}`, true);
-              }
-            }
-          } catch (err) {
-            console.error("Advance match error:", err);
-            showToast("Error advancing match: " + err.message, true);
-          }
+            await window.TournamentReports.awardSeries(tourneyId, { id: matchId, team1: { name: team1 }, team2: { name: team2 } }, winner, reason);
+            showToast(`Series awarded to "${winnerName}". Bracket updated.`);
+            window._switchShowMatches = true;
+            try { await adminManageBracket(tourneyId, tourneyTitle); } finally { window._switchShowMatches = false; }
+            await loadAdminTournaments();
+          } catch (err) { showToast('Award failed: ' + err.message, true); }
+          finally { adminAwardInFlight.delete(key); }
         }
         window.adminAdvanceMatchAction = adminAdvanceMatchAction;
 
@@ -14910,7 +14892,7 @@
         }
       });
     </script>
-  <script src="/tournament-reports.js?v=late-byes-20261017"></script>
+  <script src="/tournament-reports.js?v=auto-reporting-20261112"></script>
   <script src="/tournament-switch-wheel.js?v=switch-v2"></script>
   <script src="/switch-client.js?v=switch-v2"></script>
 <a href="/admin/league/" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#d5f45b;color:#182000;padding:12px 18px;border-radius:6px;font:700 14px system-ui;text-decoration:none">League Operations &amp; Discord</a>

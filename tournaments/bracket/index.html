@@ -751,7 +751,7 @@
           if(String(event.detail.tournamentId)!==String(activeTournament?.id)||!activeBracketData)return;
           try{activeBracketData=await window.TournamentReports.overlay(activeTournament.id,activeBracketData);renderActiveBracket();}catch(e){console.error('Could not refresh series scores:',e);}
         });
-        setInterval(async()=>{if(!activeTournament?.id||!activeBracketData||document.hidden)return;try{await window.TournamentReports.overlay(activeTournament.id,activeBracketData);renderActiveBracket();}catch(e){console.warn('Series score refresh:',e.message);}},10000);
+        setInterval(async()=>{if(!activeTournament?.id||!activeBracketData||document.hidden)return;try{activeBracketData=await window.TournamentReports.overlay(activeTournament.id,activeBracketData);renderActiveBracket();}catch(e){console.warn('Series score refresh:',e.message);}},10000);
 
         function updateBanner(t) {
           const titleEl = document.getElementById('tourney-banner-title');
@@ -1718,8 +1718,8 @@
         });
       })();
     </script>
-  <script src="/tournament-reports.js?v=late-byes-20261017"></script>
-  <script src="/tournament-veto.js?v=mw4-20261112"></script>
+  <script src="/tournament-reports.js?v=auto-reporting-20261112"></script>
+  <script src="/tournament-veto.js?v=auto-reporting-20261112"></script>
   <script src="/tournament-switch-wheel.js?v=switch-v2"></script>
   <script src="/switch-client.js?v=switch-v2"></script>
 </body>
